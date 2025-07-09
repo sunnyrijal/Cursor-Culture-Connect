@@ -38,6 +38,7 @@ import { theme } from '@/components/theme';
 import placeholderImg from '@/assets/images/icon.png';
 import { WebView } from 'react-native-webview';
 import * as Linking from 'expo-linking';
+import YouTubeLinkCard from '@/components/YouTubeLinkCard';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -289,26 +290,7 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
         {/* YouTube Video Link Box */}
-        <TouchableOpacity
-          style={{
-            width: '100%',
-            borderRadius: 12,
-            backgroundColor: theme.primary,
-            padding: 20,
-            marginBottom: 24,
-            alignItems: 'center',
-            flexDirection: 'row',
-            gap: 16,
-          }}
-          activeOpacity={0.85}
-          onPress={() => Linking.openURL('https://youtu.be/xZespC4JRSI')}
-        >
-          <Image source={{ uri: 'https://img.youtube.com/vi/xZespC4JRSI/0.jpg' }} style={{ width: 64, height: 36, borderRadius: 6, marginRight: 16 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.white, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>Watch: Culture Connect Video</Text>
-            <Text style={{ color: theme.white, opacity: 0.85, fontSize: 13 }}>Click to open YouTube</Text>
-          </View>
-        </TouchableOpacity>
+        <YouTubeLinkCard />
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good morning,</Text>
@@ -473,21 +455,31 @@ export default function Dashboard() {
           </View>
           {eventsView === 'grid' ? (
             <View style={styles.eventsGrid}>
-              {upcomingEvents.map((event, idx) => (
-                <TouchableOpacity
-                  key={event.id}
-                  style={[styles.eventGridCard, { width: gridCardWidth, marginRight: (idx + 1) % numColumns === 0 ? 0 : gridGap }]}
-                  onPress={() => router.push(`/event/${event.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Image source={{ uri: event.image || placeholderImg }} style={styles.eventGridImage} />
-                  <View style={styles.eventGridDetails}>
-                    <Text style={styles.eventGridTitle} numberOfLines={2}>{event.title}</Text>
-                    <Text style={styles.eventGridMeta}>{event.date} • {event.time}</Text>
-                    <Text style={styles.eventGridMeta} numberOfLines={1}>{event.location}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {upcomingEvents.map((event, idx) => {
+                // For two columns, remove right margin for every second card
+                const isLastInRow = (idx + 1) % numColumns === 0;
+                return (
+                  <TouchableOpacity
+                    key={event.id}
+                    style={[
+                      styles.eventGridCard,
+                      {
+                        width: gridCardWidth,
+                        marginRight: isLastInRow ? 0 : gridGap,
+                      },
+                    ]}
+                    onPress={() => router.push(`/event/${event.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Image source={{ uri: event.image || placeholderImg }} style={styles.eventGridImage} />
+                    <View style={styles.eventGridDetails}>
+                      <Text style={styles.eventGridTitle} numberOfLines={2}>{event.title}</Text>
+                      <Text style={styles.eventGridMeta}>{event.date} • {event.time}</Text>
+                      <Text style={styles.eventGridMeta} numberOfLines={1}>{event.location}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.eventsList}>
@@ -747,7 +739,7 @@ const styles = StyleSheet.create({
   eventsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 0,
+    justifyContent: 'flex-start',
   },
   eventGridCard: {
     backgroundColor: theme.white,
