@@ -11,7 +11,8 @@ import {
   RotateCcw,
   Bookmark,     // For 'My Heritage'
   Users,        // For 'Public/Private'
-  Lock          // For 'Private'
+  Lock,         // For 'Private'
+  BookOpen      // For 'By Major'
 } from 'lucide-react-native'; 
 import { theme, spacing, typography, borderRadius } from './theme';
 // Removed heritageOptions and languageOptions as heritage and categories filters are removed
@@ -64,6 +65,16 @@ const ethnicityOptions = [
 
 // categoryOptions array removed as categories filter is removed
 
+// Define user-specific filter options
+const filterByUserOptions = [
+  { id: 'all', label: 'All People', icon: Globe, description: 'Show all people everywhere' },
+  { id: 'my-university', label: 'My University', icon: GraduationCap, description: 'People from your university only' },
+  { id: 'my-heritage', label: 'My Heritage', icon: Bookmark, description: 'People who share your heritage (from profile)' },
+  { id: 'filter-by-state', label: 'By State', icon: MapPin, description: 'Filter by specific state and city' },
+  { id: 'by-major', label: 'By Major', icon: BookOpen, description: 'Filter by major/field of study' },
+  { id: 'by-language', label: 'By Language', icon: Globe, description: 'Filter by spoken language' },
+];
+
 const filterByOptions = [
   { id: 'all', label: 'All Groups', icon: Globe, description: 'Show all groups everywhere' },
   { id: 'public', label: 'Public Only', icon: Users, description: 'Show only public groups' },
@@ -96,7 +107,9 @@ export function FilterSystem({
   const [searchQueries, setSearchQueries] = useState({
     university: '',
     city: '',
-    ethnicity: ''
+    ethnicity: '',
+    major: '', // Added for 'By Major'
+    language: '' // Added for 'By Language'
   });
 
   const [activeFilterCount, setActiveFilterCount] = useState(0);
@@ -165,7 +178,7 @@ export function FilterSystem({
       selectedUniversity: ''
     };
     setFilters(resetFilters);
-    setSearchQueries({ university: '', city: '', ethnicity: '' });
+    setSearchQueries({ university: '', city: '', ethnicity: '', major: '', language: '' });
   };
 
   const applyPreset = (preset: { name: string; filters: FilterOptions }) => {
@@ -297,7 +310,7 @@ export function FilterSystem({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Filter By</Text>
               <View style={styles.filterByOptions}>
-                {filterByOptions.map(option => (
+                {(contentType === 'users' ? filterByUserOptions : filterByOptions).map(option => (
                   <TouchableOpacity
                     key={option.id}
                     style={[
@@ -307,7 +320,7 @@ export function FilterSystem({
                     onPress={() => {
                       setFilters(prev => ({
                         ...prev,
-                        filterBy: option.id as FilterOptions['filterBy'],
+                        filterBy: option.id as any,
                         // Reset location if not filter-by-state
                         location: option.id !== 'filter-by-state' ? { country: '', state: '', city: '' } : prev.location,
                         // Reset university if not my-university
@@ -335,7 +348,7 @@ export function FilterSystem({
               </View>
             </View>
 
-            {/* University Filter - Always available for groups */}
+            {/* University Filter - Only for groups, skip for users */}
             {contentType === 'groups' && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>University</Text>
@@ -476,6 +489,43 @@ export function FilterSystem({
                 </View>
               </View>
             )}
+
+            {/* By Major - Only for users */}
+            {contentType === 'users' && filters.filterBy === 'by-major' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Major/Field of Study</Text>
+                <View style={styles.searchContainer}>
+                  <Search size={16} color={theme.gray400} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Enter major or field..."
+                    value={searchQueries.major || ''}
+                    onChangeText={(text) => setSearchQueries(prev => ({ ...prev, major: text }))}
+                    placeholderTextColor={theme.gray400}
+                  />
+                </View>
+                {/* You can add a list of majors here for selection if desired */}
+              </View>
+            )}
+
+            {/* By Language - Only for users */}
+            {contentType === 'users' && filters.filterBy === 'by-language' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Language</Text>
+                <View style={styles.searchContainer}>
+                  <Search size={16} color={theme.gray400} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Enter language..."
+                    value={searchQueries.language || ''}
+                    onChangeText={(text) => setSearchQueries(prev => ({ ...prev, language: text }))}
+                    placeholderTextColor={theme.gray400}
+                  />
+                </View>
+                {/* You can add a list of languages here for selection if desired */}
+              </View>
+            )}
+
           </ScrollView>
 
           <View style={styles.modalFooter}>
