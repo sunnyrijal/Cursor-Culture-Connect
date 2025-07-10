@@ -10,6 +10,11 @@ import { ArrowLeft, Save } from 'lucide-react-native';
 import { heritageOptions, languageOptions } from '@/data/heritageLanguageData';
 import { store } from '@/data/store';
 import { UserProfile } from '@/types/user';
+const privacyOptions = [
+  { label: 'Public', value: 'public' },
+  { label: 'Group-Only', value: 'group' },
+  { label: 'Connections Only', value: 'connections' },
+];
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({
@@ -64,6 +69,28 @@ export default function EditProfile() {
           <View style={styles.field}>
             <Text style={styles.label}>LinkedIn Profile</Text>
             <TextInput style={styles.input} value={profile.linkedinUrl} onChangeText={(text) => updateProfileValue('linkedinUrl', text)} />
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Profile Privacy</Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {privacyOptions.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: 16,
+                    backgroundColor: profile.privacy === option.value ? theme.primary : theme.gray100,
+                    marginRight: 8,
+                  }}
+                  onPress={() => updateProfileValue('privacy', option.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set profile privacy to ${option.label}`}
+                >
+                  <Text style={{ color: profile.privacy === option.value ? theme.white : theme.textPrimary, fontWeight: '500' }}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </Card>
 

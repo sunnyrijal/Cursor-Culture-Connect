@@ -21,6 +21,10 @@ export interface User {
   state?: string;
   linkedinUrl?: string;
   isPublic?: boolean;
+  /**
+   * Profile visibility: 'public', 'group', or 'connections'.
+   */
+  privacy?: 'public' | 'group' | 'connections';
   groupsList?: MockGroup[];
   connectionsList?: User[];
   isConnected?: boolean;

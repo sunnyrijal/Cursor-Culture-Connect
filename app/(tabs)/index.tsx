@@ -289,8 +289,6 @@ export default function Dashboard() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
-        {/* YouTube Video Link Box */}
-        <YouTubeLinkCard />
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good morning,</Text>
