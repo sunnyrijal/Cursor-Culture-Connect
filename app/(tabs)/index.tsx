@@ -281,10 +281,12 @@ export default function Dashboard() {
     Alert.alert(content.title, content.description);
   };
 
+  // Remove horizontal padding from grid container and adjust gridCardWidth
   const { width: screenWidth } = useWindowDimensions();
-  const numColumns = screenWidth < 600 ? 2 : 3;
+  const numColumns = 2;
   const gridGap = 16;
-  const gridCardWidth = (screenWidth - 20 * 2 - gridGap * (numColumns - 1)) / numColumns;
+  // Use full screen width minus gap(s) only
+  const gridCardWidth = (screenWidth - gridGap * (numColumns - 1)) / numColumns;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -452,9 +454,8 @@ export default function Dashboard() {
             </TouchableOpacity>
           </View>
           {eventsView === 'grid' ? (
-            <View style={styles.eventsGrid}>
+            <View style={[styles.eventsGrid, { paddingHorizontal: 0 }]}> {/* Remove horizontal padding */}
               {upcomingEvents.map((event, idx) => {
-                // For two columns, remove right margin for every second card
                 const isLastInRow = (idx + 1) % numColumns === 0;
                 return (
                   <TouchableOpacity
