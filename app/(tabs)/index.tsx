@@ -648,31 +648,25 @@ export default function Dashboard() {
             </TouchableOpacity>
           </View>
           {eventsView === 'grid' ? (
-            <View style={[styles.eventsGrid, { paddingHorizontal: 0 }]}> {/* Remove horizontal padding */}
-              {upcomingEvents.map((event, idx) => {
-                const isLastInRow = (idx + 1) % numColumns === 0;
-                return (
-                  <TouchableOpacity
-                    key={event.id}
-                    style={[
-                      styles.eventGridCard,
-                      {
-                        width: gridCardWidth,
-                        marginRight: isLastInRow ? 0 : gridGap,
-                      },
-                    ]}
-                    onPress={() => router.push(`/event/${event.id}`)}
-                    activeOpacity={0.7}
-                  >
-                    <Image source={{ uri: event.image || placeholderImg }} style={styles.eventGridImage} />
-                    <View style={styles.eventGridDetails}>
-                      <Text style={styles.eventGridTitle} numberOfLines={2}>{event.title}</Text>
-                      <Text style={styles.eventGridMeta}>{event.date} • {event.time}</Text>
-                      <Text style={styles.eventGridMeta} numberOfLines={1}>{event.location}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={[styles.eventsGrid, { paddingHorizontal: 0, justifyContent: 'space-between' }]}> {/* Remove horizontal padding, add space-between */}
+              {upcomingEvents.map((event, idx) => (
+                <TouchableOpacity
+                  key={event.id}
+                  style={[
+                    styles.eventGridCard,
+                    { width: '48%', marginRight: (idx % 2 === 0) ? '4%' : 0 }, // 2 per row, small gap
+                  ]}
+                  onPress={() => router.push(`/event/${event.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <Image source={{ uri: event.image || placeholderImg }} style={styles.eventGridImage} />
+                  <View style={styles.eventGridDetails}>
+                    <Text style={styles.eventGridTitle} numberOfLines={2}>{event.title}</Text>
+                    <Text style={styles.eventGridMeta}>{event.date} • {event.time}</Text>
+                    <Text style={styles.eventGridMeta} numberOfLines={1}>{event.location}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           ) : (
             <View style={styles.eventsList}>
@@ -1006,7 +1000,7 @@ const styles = StyleSheet.create({
   eventsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   eventGridCard: {
     backgroundColor: theme.white,
