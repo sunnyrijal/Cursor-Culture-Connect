@@ -500,19 +500,10 @@ export default function Dashboard() {
               <BookOpen size={22} color={theme.primary} />
             </TouchableOpacity>
 
-            {/* Notification Icon */}
+            {/* Notification Icon - now rightmost */}
             <TouchableOpacity onPress={() => router.push('/notifications')} style={styles.navButton}>
               <Bell size={22} color={theme.primary} />
               <View style={styles.notificationBadge} />
-            </TouchableOpacity>
-
-            {/* Uploaded Image */}
-            <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
-              <Image 
-                source={require('@/assets/images/black_circle_360x360.png')} 
-                style={styles.uploadedImage}
-                resizeMode="contain"
-              />
             </TouchableOpacity>
           </View>
         </View>
