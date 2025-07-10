@@ -119,7 +119,13 @@ export default function ChatScreen() {
           <ArrowLeft size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Image source={{ uri: chatImage }} style={styles.headerImage} />
-        <Text style={styles.headerTitle}>{chatName}</Text>
+        {isGroupChat ? (
+          <Text style={styles.headerTitle}>{chatName}</Text>
+        ) : (
+          <TouchableOpacity onPress={() => router.push(`/profile/public/${conversation.user.id}`)}>
+            <Text style={[styles.headerTitle, { textDecorationLine: 'underline', color: theme.primary }]}>{chatName}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <KeyboardAvoidingView 

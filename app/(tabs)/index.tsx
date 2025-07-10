@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, useWindowDimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { 
@@ -27,7 +27,8 @@ import {
   Building2,
   Camera,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  Bot
 } from 'lucide-react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -39,6 +40,8 @@ import placeholderImg from '@/assets/images/icon.png';
 import { WebView } from 'react-native-webview';
 import * as Linking from 'expo-linking';
 import YouTubeLinkCard from '@/components/YouTubeLinkCard';
+import { store } from '@/data/store';
+import { useEffect, useRef } from 'react';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -46,6 +49,9 @@ export default function Dashboard() {
   const [showStoriesModal, setShowStoriesModal] = useState(false);
   const [showShareCultureModal, setShowShareCultureModal] = useState(false);
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiQuestion, setAIQuestion] = useState('');
+  const [aiResults, setAIResults] = useState<any[]>([]);
 
   const upcomingEvents = [
     {
@@ -131,7 +137,8 @@ export default function Dashboard() {
       cta: "View Menu",
       icon: Utensils,
       color: theme.warning,
-      heritage: "Indian"
+      heritage: "Indian",
+      popularityByHeritage: { Indian: 120, Nepali: 42, Pakistani: 10 }
     },
     {
       id: 2,
@@ -166,7 +173,8 @@ export default function Dashboard() {
       cta: "Order Now",
       icon: Utensils,
       color: theme.success,
-      heritage: "Mexican"
+      heritage: "Mexican",
+      popularityByHeritage: { Mexican: 80, Nepali: 2 }
     },
     {
       id: 4,
@@ -201,7 +209,8 @@ export default function Dashboard() {
       cta: "View Menu",
       icon: Utensils,
       color: theme.info,
-      heritage: "Vietnamese"
+      heritage: "Vietnamese",
+      popularityByHeritage: { Vietnamese: 60, Nepali: 8 }
     },
     {
       id: 6,
@@ -236,7 +245,8 @@ export default function Dashboard() {
       cta: "Reserve Table",
       icon: Utensils,
       color: theme.accent,
-      heritage: "Japanese"
+      heritage: "Japanese",
+      popularityByHeritage: { Japanese: 70, Nepali: 1 }
     },
     {
       id: 8,
@@ -281,12 +291,196 @@ export default function Dashboard() {
     Alert.alert(content.title, content.description);
   };
 
+  const getDayOfWeek = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
+  const getToday = () => {
+    return new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
+  const normalize = (str) => (str || '').toLowerCase();
+
+  const knownDays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+  const extractLocation = (q) => {
+    // Try to extract a location from the query (city, university, state, etc.)
+    const user = store.getState().currentUser;
+    const locations = [user.location, user.university, user.state, user.country];
+    for (const loc of locations) {
+      if (loc && q.includes(normalize(loc))) return loc;
+    }
+    // Try to match against group/event locations
+    const allLocs = [
+      ...store.getState().groups.map(g => g.location),
+      ...store.getState().events.map(e => e.location),
+    ].filter(Boolean);
+    for (const loc of allLocs) {
+      if (loc && q.includes(normalize(loc))) return loc;
+    }
+    return null;
+  };
+
+  const extractDay = (q) => {
+    if (q.includes('today')) return getToday();
+    for (const day of knownDays) {
+      if (q.includes(day)) return day.charAt(0).toUpperCase() + day.slice(1);
+    }
+    return null;
+  };
+
+  // Step 3: Simple NLP helpers
+  const heritageList = [
+    'Nepali', 'Indian', 'Pakistani', 'Vietnamese', 'Japanese', 'Mexican', 'Chinese', 'Korean', 'African', 'Middle Eastern', 'Caribbean', 'South Asian', 'East Asian', 'Hispanic', 'Latino', 'European', 'Pacific Islander', 'Native American', 'International', 'Mixed Heritage'
+  ];
+
+  function extractHeritage(q) {
+    for (const h of heritageList) {
+      if (q.includes(h.toLowerCase())) return h;
+    }
+    return null;
+  }
+
+  function extractIntent(q) {
+    if (q.includes('food') || q.includes('restaurant') || q.includes('eat')) return 'food';
+    if (q.includes('event') || q.includes('activity') || q.includes('happening')) return 'event';
+    if (q.includes('group') || q.includes('community')) return 'group';
+    return null;
+  }
+
+  const handleAISubmit = () => {
+    const q = aiQuestion.trim().toLowerCase();
+    if (!q) {
+      setAIResults([{ type: 'info', text: 'Please enter a question.' }]);
+      return;
+    }
+    // Step 2: Advanced logic for food/restaurant/heritage queries
+    const heritage = extractHeritage(q);
+    const intent = extractIntent(q);
+    const location = extractLocation(q);
+    const day = extractDay ? extractDay(q) : null;
+    const outdoor = q.includes('outdoor');
+    if (intent === 'food' && heritage) {
+      // Find restaurants with highest popularity for that heritage near the user
+      let restaurants = sponsoredContent.filter(c => c.type === 'restaurant' && c.popularityByHeritage && c.popularityByHeritage[heritage]);
+      if (location) {
+        restaurants = restaurants.filter(r => normalize(r.location).includes(normalize(location)));
+      }
+      // Sort by popularity for that heritage
+      restaurants.sort((a, b) => b.popularityByHeritage[heritage] - a.popularityByHeritage[heritage]);
+      if (restaurants.length === 0) {
+        setAIResults([{ type: 'info', text: `No popular restaurants found for ${heritage} students in this area.` }]);
+        return;
+      }
+      setAIResults(restaurants.map(r => ({ type: 'restaurant', name: r.title, location: r.location, popularity: r.popularityByHeritage[heritage], id: r.id })));
+      return;
+    }
+    // Search events
+    let events = store.getState().events.filter(e =>
+      (e.name && normalize(e.name).includes(q)) ||
+      (e.description && normalize(e.description).includes(q)) ||
+      (Array.isArray(e.category) ? e.category.some(cat => normalize(cat).includes(q)) : (e.category && normalize(e.category).includes(q)))
+    );
+    // Add location filter
+    if (location) {
+      events = events.filter(e => normalize(e.location).includes(normalize(location)));
+    }
+    // Add day filter
+    if (day) {
+      events = events.filter(e => {
+        // Try to match day in event.date or event.time or event.name
+        if (e.date && normalize(e.date).includes(day.toLowerCase())) return true;
+        if (e.time && normalize(e.time).includes(day.toLowerCase())) return true;
+        if (e.name && normalize(e.name).includes(day.toLowerCase())) return true;
+        return false;
+      });
+    }
+    // Outdoor filter
+    if (outdoor) {
+      events = events.filter(e =>
+        (e.name && normalize(e.name).includes('outdoor')) ||
+        (e.description && normalize(e.description).includes('outdoor')) ||
+        (Array.isArray(e.category) ? e.category.some(cat => normalize(cat).includes('outdoor')) : (e.category && normalize(e.category).includes('outdoor')))
+      );
+    }
+
+    // Search groups
+    let groups = store.getState().groups.filter(g =>
+      (g.name && normalize(g.name).includes(q)) ||
+      (g.description && normalize(g.description).includes(q)) ||
+      (typeof g.category === 'string' ? normalize(g.category).includes(q) : Array.isArray(g.category) && g.category.some(cat => normalize(cat).includes(q)))
+    );
+    if (location) {
+      groups = groups.filter(g => normalize(g.location).includes(normalize(location)));
+    }
+    if (day) {
+      groups = groups.filter(g => {
+        // Try to match day in meetingDays or meetingDate
+        if (g.meetingDays && Array.isArray(g.meetingDays) && g.meetingDays.some(d => normalize(d) === day.toLowerCase())) return true;
+        if (g.meetingDate && normalize(g.meetingDate).includes(day.toLowerCase())) return true;
+        return false;
+      });
+    }
+    if (outdoor) {
+      groups = groups.filter(g =>
+        (g.name && normalize(g.name).includes('outdoor')) ||
+        (g.description && normalize(g.description).includes('outdoor')) ||
+        (typeof g.category === 'string' ? normalize(g.category).includes('outdoor') : Array.isArray(g.category) && g.category.some(cat => normalize(cat).includes('outdoor')))
+      );
+    }
+
+    if (events.length === 0 && groups.length === 0) {
+      setAIResults([{ type: 'info', text: 'No matching groups or events found for your question.' }]);
+      return;
+    }
+    setAIResults([
+      ...groups.map(g => ({ type: 'group', name: g.name, privacy: g.isPublic ? 'public' : 'private', canRequest: !g.isJoined && !g.isPublic })),
+      ...events.map(e => ({ type: 'event', name: e.name, date: e.date, location: e.location }))
+    ]);
+  };
+
   // Remove horizontal padding from grid container and adjust gridCardWidth
   const { width: screenWidth } = useWindowDimensions();
   const numColumns = 2;
   const gridGap = 16;
   // Use full screen width minus gap(s) only
   const gridCardWidth = (screenWidth - gridGap * (numColumns - 1)) / numColumns;
+
+  // For voice (optional, web only)
+  const isWeb = typeof window !== 'undefined';
+  const modalRef = useRef(null);
+
+  // Dismiss modal on outside click
+  useEffect(() => {
+    if (!showAIModal) return;
+    function handleClick(e) {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
+        setShowAIModal(false);
+      }
+    }
+    if (isWeb) {
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }
+  }, [showAIModal]);
+
+  // Voice command (web only, optional)
+  const handleVoice = () => {
+    if (!isWeb || !('webkitSpeechRecognition' in window)) {
+      alert('Voice recognition not supported in this browser.');
+      return;
+    }
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+      if (event.results && event.results[0] && event.results[0][0]) {
+        setAIQuestion(event.results[0][0].transcript);
+      }
+    };
+    recognition.start();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -523,6 +717,80 @@ export default function Dashboard() {
         onClose={() => setShowStoriesModal(false)}
         onPostStory={handlePostStory}
       />
+      {/* Floating Ask AI Button */}
+      <View style={{ position: 'absolute', bottom: 32, right: 24, zIndex: 200 }}>
+        <TouchableOpacity
+          style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 6, elevation: 6 }}
+          onPress={() => setShowAIModal(true)}
+          accessibilityLabel="Ask AI"
+          accessibilityRole="button"
+        >
+          <Bot size={26} color="#fff" />
+        </TouchableOpacity>
+      </View>
+      {/* AI Assistant Modal */}
+      <Modal visible={showAIModal} animationType="slide" transparent onRequestClose={() => setShowAIModal(false)}>
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View ref={modalRef} style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, width: 340, maxWidth: '90%', alignItems: 'center', position: 'relative' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Ask AI</Text>
+            <View style={{ flexDirection: 'row', width: '100%', marginBottom: 12 }}>
+              <TextInput
+                style={{ flex: 1, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12 }}
+                placeholder="Ask about groups or events..."
+                value={aiQuestion}
+                onChangeText={setAIQuestion}
+                onSubmitEditing={handleAISubmit}
+                returnKeyType="search"
+                autoFocus
+              />
+              {isWeb && (
+                <TouchableOpacity onPress={handleVoice} style={{ marginLeft: 8, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 10 }}>
+                  <Text role="img" aria-label="mic">🎤</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity style={{ backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 24, marginBottom: 12 }} onPress={handleAISubmit}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Ask</Text>
+            </TouchableOpacity>
+            <View style={{ width: '100%' }}>
+              {aiResults.map((result, idx) => (
+                <View key={idx} style={{ marginBottom: 8 }}>
+                  {result.type === 'restaurant' && (
+                    <TouchableOpacity onPress={() => {
+                      // Optionally, show more details or open a map, etc.
+                      Alert.alert(result.name, `Location: ${result.location}\nPopularity: ${result.popularity} ${heritageList.find(h => result.popularityByHeritage && result.popularityByHeritage[h] === result.popularity)?.toLowerCase() || ''} students`);
+                    }}>
+                      <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Restaurant: {result.name} ({result.popularity} {heritageList.find(h => result.popularityByHeritage && result.popularityByHeritage[h] === result.popularity)?.toLowerCase() || ''} students) - {result.location}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {result.type === 'group' && (
+                    <TouchableOpacity onPress={() => {
+                      const group = store.getState().groups.find(g => g.name === result.name);
+                      if (group) router.push(`/group/${group.id}`);
+                    }}>
+                      <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Group: {result.name} {result.privacy === 'private' && result.canRequest && <Text style={{ color: '#EC4899' }}>(Request to Join)</Text>}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {result.type === 'event' && (
+                    <TouchableOpacity onPress={() => {
+                      const event = store.getState().events.find(e => e.name === result.name);
+                      if (event) router.push(`/event/${event.id}`);
+                    }}>
+                      <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Event: {result.name} - {result.date} @ {result.location}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {result.type === 'info' && (
+                    <Text>{result.text}</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity style={{ marginTop: 8 }} onPress={() => setShowAIModal(false)}>
+              <Text style={{ color: '#EC4899', fontWeight: 'bold' }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }

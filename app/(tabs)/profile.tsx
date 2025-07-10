@@ -112,18 +112,18 @@ export default function Profile() {
 
         {/* Stats */}
         <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
+          <TouchableOpacity style={styles.statItem} onPress={() => router.push('/my-hub')}>
             <Text style={styles.statNumber}>{userProfile.joinedGroups}</Text>
             <Text style={styles.statLabel}>Groups</Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statItem} onPress={() => router.push('/my-hub')}>
             <Text style={styles.statNumber}>{userProfile.connections}</Text>
             <Text style={styles.statLabel}>Connections</Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statItem} onPress={() => router.push('/my-hub')}>
             <Text style={styles.statNumber}>{userProfile.eventsAttended}</Text>
             <Text style={styles.statLabel}>Events</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Tab Navigation */}
@@ -136,22 +136,26 @@ export default function Profile() {
               About
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'stories' && styles.activeTab]}
-            onPress={() => setActiveTab('stories')}
-          >
-            <Text style={[styles.tabText, activeTab === 'stories' && styles.activeTabText]}>
-              Stories
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
-            onPress={() => setActiveTab('activity')}
-          >
-            <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>
-              Activity
-            </Text>
-          </TouchableOpacity>
+          {culturalStories.length > 0 && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'stories' && styles.activeTab]}
+              onPress={() => setActiveTab('stories')}
+            >
+              <Text style={[styles.tabText, activeTab === 'stories' && styles.activeTabText]}>
+                Stories
+              </Text>
+            </TouchableOpacity>
+          )}
+          {recentActivity.length > 0 && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
+              onPress={() => setActiveTab('activity')}
+            >
+              <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>
+                Activity
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Tab Content */}

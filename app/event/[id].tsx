@@ -36,8 +36,8 @@ export default function EventDetail() {
 
   const generateEventShareContent = () => {
     return {
-      title: `${event.title} - Culture Connect`,
-      message: `Join me at ${event.title}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
+      title: `${event.name} - Culture Connect`,
+      message: `Join me at ${event.name}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
       url: `https://cultureconnect.app/event/${event.id}`
     };
   };
@@ -49,24 +49,24 @@ export default function EventDetail() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{paddingHorizontal: 20}}>
-        <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={styles.image} />
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonAbsolute}>
-          <ArrowLeft size={24} color={theme.white} />
-        </TouchableOpacity>
-
-        <View style={styles.shareButtonContainer}>
-          <ShareButton
-            {...generateEventShareContent()}
-            size={20}
-            color={theme.white}
-            style={styles.shareButton}
-          />
+      <ScrollView contentContainerStyle={{alignItems: 'center', paddingHorizontal: 0}}>
+        <View style={{ width: '100%', maxWidth: 600, alignSelf: 'center', overflow: 'hidden', borderRadius: 20, marginTop: 16 }}>
+          <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={{ width: '100%', height: 250, borderRadius: 20 }} resizeMode="cover" />
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backButtonAbsolute, {zIndex: 2}]}> 
+            <ArrowLeft size={24} color={theme.white} />
+          </TouchableOpacity>
+          <View style={styles.shareButtonContainer}>
+            <ShareButton
+              {...generateEventShareContent()}
+              size={20}
+              color={theme.white}
+              style={styles.shareButton}
+            />
+          </View>
         </View>
-
-        <View style={styles.content}>
+        <View style={[styles.content, { width: '100%', maxWidth: 600, alignSelf: 'center' }]}> 
           <View style={styles.headerRow}>
-              <Text style={styles.title}>{event.title}</Text>
+              <Text style={styles.title}>{event.name}</Text>
           </View>
           <View style={styles.tagsContainer}>
              {event.category.map(cat => <Badge key={cat} label={cat} variant="success" />)}
