@@ -17,6 +17,7 @@ export default function RootLayout() {
   const tabRoutes = ['/', '/discover', '/groups', '/events', '/chat', '/profile'];
   const isTabPage = tabRoutes.includes(pathname);
   const isChatDetail = pathname.startsWith('/chat/');
+  const isDashboard = pathname === '/' || pathname === '/index' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
 
   return (
     <>
@@ -36,7 +37,9 @@ export default function RootLayout() {
         <View style={slideNavStyles.overlay} pointerEvents="box-none">
           <TouchableOpacity style={slideNavStyles.overlayBg} onPress={() => setShowNav(false)} pointerEvents="auto" />
           <View style={slideNavStyles.navBar} pointerEvents="auto">
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/'); }}><Text>Home</Text></TouchableOpacity>
+            {!isDashboard && (
+              <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/'); }}><Text>Home</Text></TouchableOpacity>
+            )}
             <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/discover'); }}><Text>Discover</Text></TouchableOpacity>
             <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/groups'); }}><Text>Groups</Text></TouchableOpacity>
             <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/events'); }}><Text>Events</Text></TouchableOpacity>

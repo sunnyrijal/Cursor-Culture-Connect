@@ -267,6 +267,17 @@ export default function Dashboard() {
     }
   ];
 
+  const sponsoredCategories = [
+    { id: 'all', label: 'All' },
+    { id: 'restaurant', label: 'Restaurants' },
+    { id: 'event', label: 'Events' },
+    // Add more categories as needed, e.g. museums, shops, etc.
+  ];
+  const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
+  const filteredSponsoredContent = activeSponsoredCategory === 'all'
+    ? sponsoredContent
+    : sponsoredContent.filter(c => c.type === activeSponsoredCategory);
+
   const handleCreateEvent = (eventData: any) => {
     console.log('Creating event:', eventData);
     setShowCreateEventModal(false);
@@ -482,13 +493,29 @@ export default function Dashboard() {
     recognition.start();
   };
 
+  const welcomeMessages = [
+    "Finding your culture just got easier",
+    "Never celebrate festivals alone",
+    "Discover new communities and friends",
+    "Explore events from every heritage"
+  ];
+  const [welcomeIndex, setWelcomeIndex] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWelcomeIndex(i => (i + 1) % welcomeMessages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.userName}>{currentUser.name.split(' ')[0]}! 👋</Text>
+          <View style={styles.headerLeft}>
+            <View>
+              <Text style={styles.greeting}>Good morning,</Text>
+              <Text style={styles.userName}>{currentUser.name.split(' ')[0]}! 👋</Text>
+            </View>
           </View>
           <View style={styles.headerActions}>
             {/* Story Icon */}
@@ -508,9 +535,14 @@ export default function Dashboard() {
           </View>
         </View>
 
+        {/* Centered Welcome Message */}
+        <View style={styles.welcomeCenterContainer}>
+          <Text style={styles.welcomeCenterTitle}>{welcomeMessages[welcomeIndex]}</Text>
+        </View>
+
         <TouchableOpacity style={styles.welcomeCard} onPress={() => router.push('/my-hub')}>
-          <Text style={styles.welcomeTitle}>Your Cultural Hub</Text>
-          <Text style={styles.welcomeSubtitle}>
+          <Text style={styles.welcomeCardTitle}>Your Cultural Hub</Text>
+          <Text style={styles.welcomeCardSubtitle}>
             Connect with your heritage and explore new cultures
           </Text>
           <View style={styles.statsContainer}>
@@ -567,9 +599,26 @@ export default function Dashboard() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Discover Cultural Experiences</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.sponsoredCategoryTabs}
+              contentContainerStyle={{ alignItems: 'center' }}
+            >
+              {sponsoredCategories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.sponsoredCategoryTab, activeSponsoredCategory === cat.id && styles.sponsoredCategoryTabActive]}
+                  onPress={() => setActiveSponsoredCategory(cat.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sponsoredCategoryTabText, activeSponsoredCategory === cat.id && styles.sponsoredCategoryTabTextActive]}>{cat.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sponsoredScroll}>
-            {sponsoredContent.map((content, index) => (
+            {filteredSponsoredContent.map((content, index) => (
               <TouchableOpacity
                 key={content.id}
                 style={[styles.sponsoredCard, { marginLeft: index === 0 ? 0 : 16 }]}
@@ -789,9 +838,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 16,
     marginBottom: 16,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 16,
   },
   greeting: {
     fontSize: 14,
@@ -802,6 +855,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.textPrimary,
     marginTop: 2,
+  },
+  welcomeMessage: {
+    marginTop: 12,
+  },
+  welcomeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.primary,
+    marginBottom: 2,
+  },
+  welcomeSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    fontStyle: 'italic',
   },
   headerActions: {
     flexDirection: 'row',
@@ -842,13 +909,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  welcomeTitle: {
+  welcomeCardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: theme.textPrimary,
     marginBottom: 4,
   },
-  welcomeSubtitle: {
+  welcomeCardSubtitle: {
     fontSize: 14,
     color: theme.textSecondary,
     marginBottom: 20,
@@ -1112,5 +1179,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: theme.primary,
+  },
+  welcomeCenterContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  welcomeCenterTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.textPrimary,
+    marginBottom: 4,
+  },
+  welcomeCenterSubtitle: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    fontStyle: 'italic',
+  },
+  sponsoredCategoryTabs: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    marginLeft: 16,
+  },
+  sponsoredCategoryTab: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: theme.gray50,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginRight: 14,
+  },
+  sponsoredCategoryTabActive: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  sponsoredCategoryTabText: {
+    fontSize: 13,
+    color: theme.textPrimary,
+    fontWeight: '500',
+  },
+  sponsoredCategoryTabTextActive: {
+    color: theme.white,
   },
 });
