@@ -140,8 +140,6 @@ export default function Events() {
           <TouchableOpacity style={[styles.filterButton, activeFilter === 'week' && styles.activeFilter]} onPress={() => setActiveFilter('week')}>
             <Text style={[styles.filterButtonText, activeFilter === 'week' && styles.activeFilterText]}>This Week</Text>
           </TouchableOpacity>
-
-          {/* State dropdown styled as pill */}
           <Picker
             selectedValue={selectedState}
             onValueChange={setSelectedState}
@@ -151,8 +149,6 @@ export default function Events() {
             <Picker.Item label="State" value="" />
             {stateOptions.map(state => <Picker.Item key={state} label={state} value={state} />)}
           </Picker>
-
-          {/* City dropdown styled as pill */}
           <Picker
             selectedValue={selectedCity}
             onValueChange={setSelectedCity}
@@ -162,8 +158,6 @@ export default function Events() {
             <Picker.Item label="City" value="" />
             {cityOptions.map(city => <Picker.Item key={city} label={city} value={city} />)}
           </Picker>
-
-          {/* University dropdown styled as pill */}
           <Picker
             selectedValue={selectedUniversity}
             onValueChange={setSelectedUniversity}
@@ -173,7 +167,6 @@ export default function Events() {
             <Picker.Item label="University" value="" />
             {universityOptions.map(u => <Picker.Item key={u} label={u} value={u} />)}
           </Picker>
-
           <TouchableOpacity style={[styles.filterButton, activeFilter === 'all' && styles.activeFilter]} onPress={() => setActiveFilter('all')}>
             <Text style={[styles.filterButtonText, activeFilter === 'all' && styles.activeFilterText]}>All Events</Text>
           </TouchableOpacity>
