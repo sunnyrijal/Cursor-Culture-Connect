@@ -747,24 +747,21 @@ export default function Dashboard() {
                     }}>
                       <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Restaurant: {result.name} ({result.popularity} {heritageList.find(h => result.popularityByHeritage && result.popularityByHeritage[h] === result.popularity)?.toLowerCase() || ''} students) - {result.location}</Text>
                     </TouchableOpacity>
-                  )}
-                  {result.type === 'group' && (
+                  )}{result.type === 'group' && (
                     <TouchableOpacity onPress={() => {
                       const group = store.getState().groups.find(g => g.name === result.name);
                       if (group) router.push(`/group/${group.id}`);
                     }}>
                       <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Group: {result.name} {result.privacy === 'private' && result.canRequest && <Text style={{ color: '#EC4899' }}>(Request to Join)</Text>}</Text>
                     </TouchableOpacity>
-                  )}
-                  {result.type === 'event' && (
+                  )}{result.type === 'event' && (
                     <TouchableOpacity onPress={() => {
                       const event = store.getState().events.find(e => e.name === result.name);
                       if (event) router.push(`/event/${event.id}`);
                     }}>
                       <Text style={{ textDecorationLine: 'underline', color: '#2563EB' }}>Event: {result.name} - {result.date} @ {result.location}</Text>
                     </TouchableOpacity>
-                  )}
-                  {result.type === 'info' && (
+                  )}{result.type === 'info' && (
                     <Text>{result.text}</Text>
                   )}
                 </View>
