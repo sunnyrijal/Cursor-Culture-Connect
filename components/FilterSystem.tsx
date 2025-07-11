@@ -285,7 +285,7 @@ export function FilterSystem({
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Saved Presets */}
-            {showPresets && (
+            {showPresets && contentType !== 'users' && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Quick Filters</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -494,17 +494,26 @@ export function FilterSystem({
             {contentType === 'users' && filters.filterBy === 'by-major' && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Major/Field of Study</Text>
-                <View style={styles.searchContainer}>
-                  <Search size={16} color={theme.gray400} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Enter major or field..."
-                    value={searchQueries.major || ''}
-                    onChangeText={(text) => setSearchQueries(prev => ({ ...prev, major: text }))}
-                    placeholderTextColor={theme.gray400}
-                  />
-                </View>
-                {/* You can add a list of majors here for selection if desired */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.optionsContainer}>
+                    {['Computer Science','Business','Engineering','Medicine','Law','Education','Psychology','Biology','Economics','Political Science','Art','History','Mathematics','Physics','Chemistry','Sociology','Philosophy','Other'].map((major) => (
+                      <TouchableOpacity
+                        key={major}
+                        style={[
+                          styles.optionChip,
+                          (filters.major === major) && styles.optionChipActive
+                        ]}
+                        onPress={() => updateFilters({ major: filters.major === major ? '' : major })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.optionChipText,
+                          (filters.major === major) && styles.optionChipTextActive
+                        ]}>{major}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
@@ -512,17 +521,26 @@ export function FilterSystem({
             {contentType === 'users' && filters.filterBy === 'by-language' && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Language</Text>
-                <View style={styles.searchContainer}>
-                  <Search size={16} color={theme.gray400} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Enter language..."
-                    value={searchQueries.language || ''}
-                    onChangeText={(text) => setSearchQueries(prev => ({ ...prev, language: text }))}
-                    placeholderTextColor={theme.gray400}
-                  />
-                </View>
-                {/* You can add a list of languages here for selection if desired */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.optionsContainer}>
+                    {['English','Mandarin','Spanish','Hindi','Arabic','French','German','Japanese','Korean','Russian','Portuguese','Vietnamese','Other'].map((lang) => (
+                      <TouchableOpacity
+                        key={lang}
+                        style={[
+                          styles.optionChip,
+                          (filters.language === lang) && styles.optionChipActive
+                        ]}
+                        onPress={() => updateFilters({ language: filters.language === lang ? '' : lang })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.optionChipText,
+                          (filters.language === lang) && styles.optionChipTextActive
+                        ]}>{lang}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
