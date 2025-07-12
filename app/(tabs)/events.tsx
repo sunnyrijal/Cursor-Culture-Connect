@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
+import { FilterSystem } from '@/components/FilterSystem';
 import { mockEvents, currentUser, MockEvent } from '@/data/mockData';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import placeholderImg from '@/assets/images/icon.png';
@@ -31,20 +32,40 @@ const theme = {
 };
 
 const filterOptions = [
-    { key: 'all', label: 'All Events' },
-    { key: 'my_heritage', label: 'My Heritage' },
-    { key: 'my_university', label: 'My University' },
-    { key: 'this_week', label: 'This Week' },
+    { key: 'all', label: 'All' },
+    { key: 'cultural', label: 'Cultural' },
+    { key: 'sports', label: 'Sports' },
+    { key: 'music', label: 'Music' },
+    { key: 'games', label: 'Games' },
+    { key: 'career', label: 'Career' },
+    { key: 'wellness', label: 'Wellness' },
+    { key: 'social', label: 'Social' },
 ];
+
+interface FilterOptions {
+  location: {
+    country: string;
+    state: string;
+    city: string;
+  };
+  university: string;
+  filterBy: 'all' | 'public' | 'private' | 'my-university' | 'my-heritage' | 'filter-by-state';
+  ethnicity: string[];
+  selectedUniversity: string;
+}
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
   const [events, setEvents] = useState(mockEvents);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedUniversity, setSelectedUniversity] = useState('');
+  const [filters, setFilters] = useState<FilterOptions>({
+    location: { country: '', state: '', city: '' },
+    university: '',
+    filterBy: 'all',
+    ethnicity: [],
+    selectedUniversity: ''
+  });
 
   const stateOptions = ['California', 'New York', 'Texas', 'Minnesota'];
   const cityOptions = ['Palo Alto', 'New York City', 'Austin', 'Minneapolis'];
@@ -53,34 +74,85 @@ export default function Events() {
   const filteredEvents = useMemo(() => {
     let tempEvents = [...events];
 
-    // Category Filters
-    if (activeFilter === "my_heritage" && currentUser?.heritage) {
-        tempEvents = tempEvents.filter(event =>
-            event.category?.some(cat => currentUser.heritage.includes(cat))
-        );
-    } else if (activeFilter === "my_university" && currentUser?.university) {
-        tempEvents = tempEvents.filter(event => event.allowedUniversity === currentUser.university || !event.universityOnly);
-    } else if (activeFilter === "this_week") {
-        const now = new Date();
-        const oneWeekFromNow = new Date();
-        oneWeekFromNow.setDate(now.getDate() + 7);
-        tempEvents = tempEvents.filter(event => {
-            const eventDate = new Date(event.date);
-            return eventDate >= now && eventDate <= oneWeekFromNow;
-        });
-    }
-
-    // Search Query Filter
+    // Filter by search query
     if (searchQuery) {
-      return tempEvents.filter(event =>
-        (event.title && event.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (event.location && event.location.toLowerCase().includes(searchQuery.toLowerCase()))
+      tempEvents = tempEvents.filter(event =>
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
+    // Category filters
+    if (activeFilter === 'cultural') {
+      tempEvents = tempEvents.filter(event =>
+        event.category?.some(cat => [
+          'Chinese', 'East Asian', 'Vietnamese', 'Indian', 'South Asian', 'Hindu', 'Cultural'
+        ].includes(cat))
+      );
+    } else if (activeFilter === 'sports') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Sports'));
+    } else if (activeFilter === 'music') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Music'));
+    } else if (activeFilter === 'games') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Games'));
+    } else if (activeFilter === 'career') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Career'));
+    } else if (activeFilter === 'wellness') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Wellness'));
+    } else if (activeFilter === 'social') {
+      tempEvents = tempEvents.filter(event => event.category?.includes('Social'));
+    }
+
+    // Advanced filters from FilterSystem
+    switch (filters.filterBy) {
+      case 'my-university':
+        tempEvents = tempEvents.filter(event => 
+          event.location.includes(currentUser.university) ||
+          event.organizer?.university === currentUser.university
+        );
+        break;
+      case 'my-heritage':
+        const userHeritages = currentUser.heritage || [];
+        tempEvents = tempEvents.filter(event => 
+          userHeritages.some(heritage => 
+            event.category?.some(cat => cat.toLowerCase().includes(heritage.toLowerCase()))
+          )
+        );
+        break;
+      case 'filter-by-state':
+        if (filters.location.state) {
+          tempEvents = tempEvents.filter(event => 
+            event.location.includes(filters.location.state)
+          );
+        }
+        if (filters.location.city) {
+          tempEvents = tempEvents.filter(event => 
+            event.location.toLowerCase().includes(filters.location.city.toLowerCase())
+          );
+        }
+        break;
+    }
+
+    // Filter by ethnicity/heritage
+    if (filters.ethnicity.length > 0) {
+      tempEvents = tempEvents.filter(event => 
+        filters.ethnicity.some(ethnicity => 
+          event.category?.some(cat => cat.toLowerCase().includes(ethnicity.toLowerCase()))
+        )
+      );
+    }
+
+    // Filter by selected university
+    if (filters.selectedUniversity) {
+      tempEvents = tempEvents.filter(event => 
+        event.location.includes(filters.selectedUniversity) ||
+        event.organizer?.university === filters.selectedUniversity
+      );
+    }
+
     return tempEvents;
-  }, [events, searchQuery, activeFilter]);
+  }, [events, searchQuery, activeFilter, filters]);
 
   const handleCreateEvent = (eventData: any) => {
     console.log("New Event Data:", eventData);
@@ -107,6 +179,10 @@ export default function Events() {
     };
   };
   
+  const handleFiltersChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
         <CreateEventModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={handleCreateEvent} />
@@ -132,45 +208,24 @@ export default function Events() {
         </View>
         
         <View style={styles.filterBar}>
-          <TouchableOpacity style={[styles.filterButton, activeFilter === 'heritage' && styles.activeFilter]} onPress={() => setActiveFilter('heritage')}>
-            <Text style={[styles.filterButtonText, activeFilter === 'heritage' && styles.activeFilterText]}>My Heritage</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterButton, activeFilter === 'university' && styles.activeFilter]} onPress={() => setActiveFilter('university')}>
-            <Text style={[styles.filterButtonText, activeFilter === 'university' && styles.activeFilterText]}>My University</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterButton, activeFilter === 'week' && styles.activeFilter]} onPress={() => setActiveFilter('week')}>
-            <Text style={[styles.filterButtonText, activeFilter === 'week' && styles.activeFilterText]}>This Week</Text>
-          </TouchableOpacity>
-          <Picker
-            selectedValue={selectedState}
-            onValueChange={setSelectedState}
-            style={[styles.filterDropdown, styles.pillDropdown]}
-            itemStyle={{ fontSize: 13 }}
-          >
-            <Picker.Item label="State" value="" />
-            {stateOptions.map(state => <Picker.Item key={state} label={state} value={state} />)}
-          </Picker>
-          <Picker
-            selectedValue={selectedCity}
-            onValueChange={setSelectedCity}
-            style={[styles.filterDropdown, styles.pillDropdown]}
-            itemStyle={{ fontSize: 13 }}
-          >
-            <Picker.Item label="City" value="" />
-            {cityOptions.map(city => <Picker.Item key={city} label={city} value={city} />)}
-          </Picker>
-          <Picker
-            selectedValue={selectedUniversity}
-            onValueChange={setSelectedUniversity}
-            style={[styles.filterDropdown, styles.pillDropdown, styles.filterDropdownUniversity]}
-            itemStyle={{ fontSize: 13 }}
-          >
-            <Picker.Item label="University" value="" />
-            {universityOptions.map(u => <Picker.Item key={u} label={u} value={u} />)}
-          </Picker>
-          <TouchableOpacity style={[styles.filterButton, activeFilter === 'all' && styles.activeFilter]} onPress={() => setActiveFilter('all')}>
-            <Text style={[styles.filterButtonText, activeFilter === 'all' && styles.activeFilterText]}>All Events</Text>
-          </TouchableOpacity>
+          {filterOptions.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[styles.filterButton, activeFilter === opt.key && styles.activeFilter]}
+              onPress={() => setActiveFilter(opt.key)}
+            >
+              <Text style={[styles.filterButtonText, activeFilter === opt.key && styles.activeFilterText]}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Enhanced Filter System */}
+        <View style={styles.filterSystemContainer}>
+          <FilterSystem
+            onFiltersChange={handleFiltersChange}
+            contentType="events"
+            showPresets={true}
+          />
         </View>
 
         <View style={styles.resultsHeader}>
@@ -253,7 +308,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 20,
-    paddingHorizontal: 8,
+    marginLeft: 36, // aligns with search input start
+    paddingLeft: 0,
     paddingTop: 8,
     paddingBottom: 8,
     backgroundColor: theme.white,
@@ -337,5 +393,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.textSecondary,
     marginRight: 10,
+  },
+  filterSystemContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  activeFilter: { backgroundColor: theme.primary },
+  activeFilterText: { color: theme.white },
+  filterDropdownOutline: {
+    borderWidth: 1,
+    borderColor: theme.primary,
   },
 });

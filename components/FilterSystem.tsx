@@ -84,6 +84,13 @@ const filterByOptions = [
   { id: 'filter-by-state', label: 'Filter by State', icon: MapPin, description: 'Filter by specific state and city' },
 ];
 
+const filterByEventOptions = [
+  { id: 'all', label: 'All Events', icon: Globe, description: 'Show all events everywhere' },
+  { id: 'my-university', label: 'My University', icon: GraduationCap, description: 'Events from your university only' },
+  { id: 'my-heritage', label: 'My Heritage', icon: Bookmark, description: 'Events related to your heritage (from profile)' },
+  { id: 'filter-by-state', label: 'Filter by State', icon: MapPin, description: 'Filter by specific state and city' },
+];
+
 export function FilterSystem({ 
   onFiltersChange, 
   initialFilters = {}, 
@@ -113,38 +120,75 @@ export function FilterSystem({
   });
 
   const [activeFilterCount, setActiveFilterCount] = useState(0);
-  const [savedPresets, setSavedPresets] = useState<{ name: string; filters: FilterOptions }[]>([
-    {
-      name: 'My University',
-      filters: {
-        location: { country: '', state: '', city: '' },
-        university: 'Stanford University',
-        filterBy: 'my-university',
-        ethnicity: [],
-        selectedUniversity: ''
-      }
-    },
-    {
-      name: 'Public Groups',
-      filters: {
-        location: { country: '', state: '', city: '' },
-        university: '',
-        filterBy: 'all',
-        ethnicity: [],
-        selectedUniversity: ''
-      }
-    },
-    {
-      name: 'South Asian Groups',
-      filters: {
-        location: { country: '', state: '', city: '' },
-        university: '',
-        filterBy: 'all',
-        ethnicity: ['South Asian'],
-        selectedUniversity: ''
-      }
+  const [savedPresets, setSavedPresets] = useState<{ name: string; filters: FilterOptions }[]>(() => {
+    if (contentType === 'events') {
+      return [
+        {
+          name: 'My University Events',
+          filters: {
+            location: { country: '', state: '', city: '' },
+            university: 'Stanford University',
+            filterBy: 'my-university',
+            ethnicity: [],
+            selectedUniversity: ''
+          }
+        },
+        {
+          name: 'Cultural Events',
+          filters: {
+            location: { country: '', state: '', city: '' },
+            university: '',
+            filterBy: 'all',
+            ethnicity: ['Cultural'],
+            selectedUniversity: ''
+          }
+        },
+        {
+          name: 'Local Events',
+          filters: {
+            location: { country: 'United States', state: 'California', city: '' },
+            university: '',
+            filterBy: 'filter-by-state',
+            ethnicity: [],
+            selectedUniversity: ''
+          }
+        }
+      ];
+    } else {
+      return [
+        {
+          name: 'My University',
+          filters: {
+            location: { country: '', state: '', city: '' },
+            university: 'Stanford University',
+            filterBy: 'my-university',
+            ethnicity: [],
+            selectedUniversity: ''
+          }
+        },
+        {
+          name: 'Public Groups',
+          filters: {
+            location: { country: '', state: '', city: '' },
+            university: '',
+            filterBy: 'all',
+            ethnicity: [],
+            selectedUniversity: ''
+          }
+        },
+        {
+          name: 'South Asian Groups',
+          filters: {
+            location: { country: '', state: '', city: '' },
+            university: '',
+            filterBy: 'all',
+            ethnicity: ['South Asian'],
+            selectedUniversity: ''
+          }
+        }
+      ];
     }
-  ]);
+  });
 
   useEffect(() => {
     // Count active filters
@@ -310,7 +354,8 @@ export function FilterSystem({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Filter By</Text>
               <View style={styles.filterByOptions}>
-                {(contentType === 'users' ? filterByUserOptions : filterByOptions).map(option => (
+                {(contentType === 'users' ? filterByUserOptions : 
+                  contentType === 'events' ? filterByEventOptions : filterByOptions).map(option => (
                   <TouchableOpacity
                     key={option.id}
                     style={[
@@ -348,8 +393,8 @@ export function FilterSystem({
               </View>
             </View>
 
-            {/* University Filter - Only for groups, skip for users */}
-            {contentType === 'groups' && (
+            {/* University Filter - Only for groups and events, skip for users */}
+            {(contentType === 'groups' || contentType === 'events') && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>University</Text>
                 <View style={styles.searchContainer}>
