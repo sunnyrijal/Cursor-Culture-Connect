@@ -494,10 +494,10 @@ export default function Dashboard() {
   };
 
   const welcomeMessages = [
-    "Finding your culture just got easier",
-    "Never celebrate festivals alone",
-    "Discover new communities and friends",
-    "Explore events from every heritage"
+    { first: "Finding your culture just", second: "got easier" },
+    { first: "Never celebrate", second: "festivals alone" },
+    { first: "Discover new communities", second: "and friends" },
+    { first: "Explore events from", second: "every heritage" }
   ];
   const [welcomeIndex, setWelcomeIndex] = useState(0);
   useEffect(() => {
@@ -537,7 +537,8 @@ export default function Dashboard() {
 
         {/* Centered Welcome Message */}
         <View style={styles.welcomeCenterContainer}>
-          <Text style={styles.welcomeCenterTitle}>{welcomeMessages[welcomeIndex]}</Text>
+          <Text style={styles.welcomeCenterTitle}>{welcomeMessages[welcomeIndex].first}</Text>
+          <Text style={[styles.welcomeCenterTitle, styles.welcomeCenterTitleIndented]}>{welcomeMessages[welcomeIndex].second}</Text>
         </View>
 
         <TouchableOpacity style={styles.welcomeCard} onPress={() => router.push('/my-hub')}>
@@ -599,6 +600,8 @@ export default function Dashboard() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Discover Cultural Experiences</Text>
+          </View>
+          <View style={styles.sponsoredCategoryTabsRow}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -752,14 +755,14 @@ export default function Dashboard() {
         onPostStory={handlePostStory}
       />
       {/* Floating Ask AI Button */}
-      <View style={{ position: 'absolute', bottom: 32, right: 24, zIndex: 200 }}>
+      <View style={{ position: 'absolute', bottom: 20, right: 16, zIndex: 200 }}>
         <TouchableOpacity
-          style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 6, elevation: 6 }}
+          style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 6, elevation: 6 }}
           onPress={() => setShowAIModal(true)}
           accessibilityLabel="Ask AI"
           accessibilityRole="button"
         >
-          <Bot size={26} color="#fff" />
+          <Bot size={20} color="#fff" />
         </TouchableOpacity>
       </View>
       {/* AI Assistant Modal */}
@@ -900,14 +903,14 @@ const styles = StyleSheet.create({
   },
   welcomeCard: {
     backgroundColor: theme.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 28,
     shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
   welcomeCardTitle: {
     fontSize: 18,
@@ -941,7 +944,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   quickActions: {
-    marginBottom: 20,
+    marginBottom: 32,
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
@@ -952,28 +956,37 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 16,
   },
   actionButton: {
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 4,
+    marginHorizontal: 0,
+    backgroundColor: theme.white,
+    borderRadius: 16,
+    paddingVertical: 12,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   actionText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
     color: theme.textPrimary,
     textAlign: 'center',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1197,8 +1210,8 @@ const styles = StyleSheet.create({
   },
   sponsoredCategoryTabs: {
     flexDirection: 'row',
-    marginBottom: 16,
-    marginLeft: 16,
+    marginBottom: 0,
+    marginLeft: 0,
   },
   sponsoredCategoryTab: {
     paddingHorizontal: 20,
@@ -1220,5 +1233,15 @@ const styles = StyleSheet.create({
   },
   sponsoredCategoryTabTextActive: {
     color: theme.white,
+  },
+  welcomeCenterTitleIndented: {
+    // No margin, keep for possible future tweaks
+  },
+  sponsoredCategoryTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: 16,
+    marginLeft: 0,
   },
 });

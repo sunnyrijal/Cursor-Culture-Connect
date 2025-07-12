@@ -3,13 +3,27 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Home, Search, Users, Calendar, User, MessageSquare } from 'lucide-react-native';
+import { Platform } from 'react-native';
+import { usePathname } from 'expo-router';
 
 export default function TabLayout() {
+  const pathname = usePathname && usePathname();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#6366F1',
+        tabBarStyle: {
+          height: 54,
+          backgroundColor: '#fff',
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 8,
+        }
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <Home color={color} /> }} />
