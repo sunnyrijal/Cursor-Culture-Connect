@@ -590,9 +590,11 @@ const styles = StyleSheet.create({
   quickFilterButtonText: {
     color: theme.textPrimary,
     fontWeight: '600',
+    fontSize: 14, // Reduce font size for better fit on mobile
   },
   quickFilterButtonTextActive: {
     color: theme.white,
+    fontSize: 14, // Match reduced font size
   },
   categoryFilterTrigger: {
     backgroundColor: theme.primary,

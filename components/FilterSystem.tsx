@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Picker } from 'react-native';
 import { 
   Filter, 
   MapPin,       // For 'Filter by State'
@@ -397,28 +397,17 @@ export function FilterSystem({
             {contentType === 'events' && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Category</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.optionsContainer}>
+                <View style={{ borderWidth: 1, borderColor: theme.border, borderRadius: 20, overflow: 'hidden', backgroundColor: theme.white, marginBottom: 12 }}>
+                  <Picker
+                    selectedValue={filters.category || 'All'}
+                    onValueChange={(value) => updateFilters({ category: value })}
+                    style={{ height: 44, width: '100%' }}
+                  >
                     {['All', 'Cultural', 'Sports', 'Music', 'Games', 'Career', 'Wellness', 'Social'].map((category) => (
-                      <TouchableOpacity
-                        key={category}
-                        style={[
-                          styles.optionChip,
-                          filters.category === category && styles.optionChipActive
-                        ]}
-                        onPress={() => updateFilters({ category: filters.category === category ? '' : category })}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[
-                          styles.optionChipText,
-                          filters.category === category && styles.optionChipTextActive
-                        ]}>
-                          {category}
-                        </Text>
-                      </TouchableOpacity>
+                      <Picker.Item key={category} label={category} value={category} />
                     ))}
-                  </View>
-                </ScrollView>
+                  </Picker>
+                </View>
               </View>
             )}
 
