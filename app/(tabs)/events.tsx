@@ -328,11 +328,13 @@ export default function Events() {
                             <MapPin size={12} color={theme.gray500} />
                             <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
                         </View>
+                        {/* Move attendees count here */}
+                        <View style={styles.eventAttendeesRow}>
+                            <Users size={12} color={theme.gray500} />
+                            <Text style={styles.eventAttendeesText}>{event.attendees} going</Text>
+                        </View>
+                        {/* Only RSVP button in footer */}
                         <View style={styles.eventFooter}>
-                            <View style={styles.eventAttendees}>
-                                <Users size={12} color={theme.gray500} />
-                                <Text style={styles.eventAttendeesText}>{event.attendees} going</Text>
-                            </View>
                             <TouchableOpacity
                             style={[
                                 styles.rsvpButton,
@@ -630,5 +632,11 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     fontWeight: 'bold',
     fontSize: typography.fontSize.md,
+  },
+  eventAttendeesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
 });
