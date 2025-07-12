@@ -35,7 +35,7 @@ import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { ShareCultureModal } from '@/components/ShareCultureModal';
 import { CulturalStoriesModal } from '@/components/CulturalStoriesModal';
 import { currentUser } from '@/data/mockData';
-import { theme } from '@/components/theme';
+import { theme, spacing, borderRadius, typography } from '@/components/theme';
 import placeholderImg from '@/assets/images/icon.png';
 import { WebView } from 'react-native-webview';
 import * as Linking from 'expo-linking';
@@ -549,11 +549,11 @@ export default function Dashboard() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{currentUser.eventsAttended}</Text>
-              <Text style={styles.statLabel}>Events Attended</Text>
+              <Text style={styles.statLabel}>Events{"\n"}Attended</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{currentUser.joinedGroups}</Text>
-              <Text style={styles.statLabel}>Groups Joined</Text>
+              <Text style={styles.statLabel}>Groups{"\n"}joined</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{currentUser.connections}</Text>
@@ -836,55 +836,59 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingVertical: 16,
-    marginBottom: 16,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.lg,
   },
   headerLeft: {
     flex: 1,
-    marginRight: 16,
+    marginRight: spacing.md,
   },
   greeting: {
-    fontSize: 14,
+    fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
   },
   userName: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: 'bold',
     color: theme.textPrimary,
     marginTop: 2,
+    fontFamily: typography.fontFamily.bold,
   },
   welcomeMessage: {
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   welcomeTitle: {
-    fontSize: 16,
+    fontSize: typography.fontSize.lg,
     fontWeight: '600',
     color: theme.primary,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.semiBold,
   },
   welcomeSubtitle: {
-    fontSize: 13,
+    fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
     fontStyle: 'italic',
+    fontFamily: typography.fontFamily.regular,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: spacing.md,
   },
   navButton: {
-    padding: 8,
-    borderRadius: 8,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
     backgroundColor: theme.white,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -903,9 +907,9 @@ const styles = StyleSheet.create({
   },
   welcomeCard: {
     backgroundColor: theme.white,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 28,
+    borderRadius: borderRadius.card,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -913,15 +917,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   welcomeCardTitle: {
-    fontSize: 18,
+    fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
     color: theme.textPrimary,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.bold,
   },
   welcomeCardSubtitle: {
-    fontSize: 14,
+    fontSize: typography.fontSize.md,
     color: theme.textSecondary,
-    marginBottom: 20,
+    marginBottom: spacing.lg,
+    fontFamily: typography.fontFamily.regular,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -932,39 +938,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: 'bold',
     color: theme.primary,
+    fontFamily: typography.fontFamily.bold,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     fontWeight: '500',
     color: theme.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
+    fontFamily: typography.fontFamily.medium,
   },
   quickActions: {
-    marginBottom: 32,
-    marginTop: 8,
+    marginBottom: spacing.xl,
+    marginTop: spacing.md,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
     color: theme.textPrimary,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
+    fontFamily: typography.fontFamily.bold,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: spacing.md,
   },
   actionButton: {
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 0,
     backgroundColor: theme.white,
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: borderRadius.card,
+    paddingVertical: spacing.md,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -974,43 +983,45 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   actionText: {
-    fontSize: 13,
+    fontSize: typography.fontSize.sm,
     fontWeight: '500',
     color: theme.textPrimary,
     textAlign: 'center',
+    fontFamily: typography.fontFamily.medium,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   viewAllText: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     fontWeight: '600',
     color: theme.primary,
+    fontFamily: typography.fontFamily.semiBold,
   },
   sponsoredScroll: {
-    marginHorizontal: -20,
+    marginHorizontal: -spacing.lg,
   },
   sponsoredCard: {
     width: 200,
-    marginRight: 16,
+    marginRight: spacing.md,
     backgroundColor: theme.white,
-    borderRadius: 16,
+    borderRadius: borderRadius.card,
     overflow: 'hidden',
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -1020,44 +1031,50 @@ const styles = StyleSheet.create({
   sponsoredImage: {
     width: '100%',
     height: 120,
+    borderTopLeftRadius: borderRadius.card,
+    borderTopRightRadius: borderRadius.card,
+    resizeMode: 'cover',
   },
   sponsoredLabel: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: spacing.sm,
+    right: spacing.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
   sponsoredLabelText: {
     color: theme.white,
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontFamily: typography.fontFamily.semiBold,
   },
   sponsoredCardContent: {
-    padding: 12,
+    padding: spacing.md,
   },
   sponsoredTitle: {
-    fontSize: 14,
+    fontSize: typography.fontSize.md,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.bold,
   },
   sponsoredSubtitle: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
   },
   eventsToggleContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   toggleButton: {
-    padding: 6,
-    borderRadius: 8,
+    padding: spacing.xs,
+    borderRadius: borderRadius.md,
     backgroundColor: theme.white,
     borderWidth: 1,
     borderColor: theme.primary,
@@ -1072,8 +1089,8 @@ const styles = StyleSheet.create({
   },
   eventGridCard: {
     backgroundColor: theme.white,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: borderRadius.card,
+    marginBottom: spacing.lg,
     overflow: 'hidden',
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
@@ -1084,30 +1101,33 @@ const styles = StyleSheet.create({
   eventGridImage: {
     width: '100%',
     height: 80,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: borderRadius.card,
+    borderTopRightRadius: borderRadius.card,
+    resizeMode: 'cover',
   },
   eventGridDetails: {
-    padding: 8,
+    padding: spacing.sm,
   },
   eventGridTitle: {
-    fontSize: 13,
+    fontSize: typography.fontSize.sm,
     fontWeight: 'bold',
     color: theme.textPrimary,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.bold,
   },
   eventGridMeta: {
-    fontSize: 11,
+    fontSize: typography.fontSize.xs,
     color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
   },
   eventsList: {
-    gap: 12,
+    gap: spacing.md,
   },
   eventListCard: {
     flexDirection: 'row',
     backgroundColor: theme.white,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: borderRadius.card,
+    marginBottom: spacing.md,
     overflow: 'hidden',
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
@@ -1118,23 +1138,26 @@ const styles = StyleSheet.create({
   eventListImage: {
     width: 80,
     height: 80,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    borderTopLeftRadius: borderRadius.card,
+    borderBottomLeftRadius: borderRadius.card,
+    resizeMode: 'cover',
   },
   eventListDetails: {
     flex: 1,
-    padding: 12,
+    padding: spacing.md,
     justifyContent: 'center',
   },
   eventListTitle: {
-    fontSize: 15,
+    fontSize: typography.fontSize.md,
     fontWeight: 'bold',
     color: theme.textPrimary,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.bold,
   },
   eventListMeta: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
   },
   heritageBadge: {
     position: 'absolute',

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -39,6 +39,7 @@ export default function Events() {
   const [events, setEvents] = useState(mockEvents);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -46,10 +47,69 @@ export default function Events() {
     ethnicity: [],
     selectedUniversity: ''
   });
+  const [showHelper, setShowHelper] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedUniversity, setSelectedUniversity] = useState('');
+  const [selectedHeritage, setSelectedHeritage] = useState('');
 
+  // Add local state for pending filter selections
+  const [pendingCategory, setPendingCategory] = useState('all');
+  const [pendingState, setPendingState] = useState('');
+  const [pendingCity, setPendingCity] = useState('');
+  const [pendingUniversity, setPendingUniversity] = useState('');
+  const [pendingHeritage, setPendingHeritage] = useState('');
+
+  // When Apply Filters is pressed, update the actual filter state
+  const applyFilters = () => {
+    setSelectedCategory(pendingCategory);
+    setSelectedState(pendingState);
+    setSelectedCity(pendingCity);
+    setSelectedUniversity(pendingUniversity);
+    setSelectedHeritage(pendingHeritage);
+    setShowFilters(false);
+  };
+
+  // Example options (replace with real data as needed)
+  const categoryOptions = [
+    { key: 'all', label: 'All' },
+    { key: 'cultural', label: 'Cultural' },
+    { key: 'sports', label: 'Sports' },
+    { key: 'music', label: 'Music' },
+    { key: 'games', label: 'Games' },
+    { key: 'career', label: 'Career' },
+    { key: 'wellness', label: 'Wellness' },
+    { key: 'social', label: 'Social' },
+  ];
   const stateOptions = ['California', 'New York', 'Texas', 'Minnesota'];
-  const cityOptions = ['Palo Alto', 'New York City', 'Austin', 'Minneapolis'];
+  const cityOptionsByState = {
+    California: ['Palo Alto', 'Los Angeles', 'San Francisco'],
+    'New York': ['New York City', 'Buffalo'],
+    Texas: ['Austin', 'Houston'],
+    Minnesota: ['Minneapolis', 'St. Paul'],
+  };
   const universityOptions = ['Stanford University', 'Harvard University', 'UT Austin', 'UMN'];
+  const heritageOptions = ['South Asian', 'East Asian', 'African', 'Latino', 'European', 'Middle Eastern', 'Other'];
+
+  // Quick filter state
+  const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'thisWeek', 'myUniversity', 'myGroups', 'nearMe'
+
+  // Quick filter buttons
+  const quickFilters = [
+    { key: 'thisWeek', label: 'This Week' },
+    { key: 'myUniversity', label: 'My University' },
+    { key: 'myGroups', label: 'My Groups' },
+    { key: 'nearMe', label: 'Near Me' },
+  ];
+
+  useEffect(() => {
+    if (showHelper) {
+      const timer = setTimeout(() => setShowHelper(false), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [showHelper]);
 
   const filteredEvents = useMemo(() => {
     let tempEvents = [...events];
@@ -87,27 +147,27 @@ export default function Events() {
     // Advanced filters from FilterSystem
     switch (filters.filterBy) {
       case 'my-university':
-        tempEvents = tempEvents.filter(event => 
+        tempEvents = tempEvents.filter(event =>
           event.location.includes(currentUser.university) ||
           event.organizer?.university === currentUser.university
         );
         break;
       case 'my-heritage':
         const userHeritages = currentUser.heritage || [];
-        tempEvents = tempEvents.filter(event => 
-          userHeritages.some(heritage => 
+        tempEvents = tempEvents.filter(event =>
+          userHeritages.some(heritage =>
             event.category?.some(cat => cat.toLowerCase().includes(heritage.toLowerCase()))
           )
         );
         break;
       case 'filter-by-state':
         if (filters.location.state) {
-          tempEvents = tempEvents.filter(event => 
+          tempEvents = tempEvents.filter(event =>
             event.location.includes(filters.location.state)
           );
         }
         if (filters.location.city) {
-          tempEvents = tempEvents.filter(event => 
+          tempEvents = tempEvents.filter(event =>
             event.location.toLowerCase().includes(filters.location.city.toLowerCase())
           );
         }
@@ -116,8 +176,8 @@ export default function Events() {
 
     // Filter by ethnicity/heritage
     if (filters.ethnicity.length > 0) {
-      tempEvents = tempEvents.filter(event => 
-        filters.ethnicity.some(ethnicity => 
+      tempEvents = tempEvents.filter(event =>
+        filters.ethnicity.some(ethnicity =>
           event.category?.some(cat => cat.toLowerCase().includes(ethnicity.toLowerCase()))
         )
       );
@@ -125,7 +185,7 @@ export default function Events() {
 
     // Filter by selected university
     if (filters.selectedUniversity) {
-      tempEvents = tempEvents.filter(event => 
+      tempEvents = tempEvents.filter(event =>
         event.location.includes(filters.selectedUniversity) ||
         event.organizer?.university === filters.selectedUniversity
       );
@@ -137,7 +197,6 @@ export default function Events() {
   const handleCreateEvent = (eventData: any) => {
     console.log("New Event Data:", eventData);
     setEvents(prevEvents => {
-        // Calculate a truly unique ID by finding the maximum existing ID and incrementing it
         const maxId = prevEvents.length > 0 ? Math.max(...prevEvents.map(event => event.id)) : 0;
         const newId = maxId + 1;
         return [{...eventData, id: newId, attendees: 1, isRSVPed: true }, ...prevEvents];
@@ -146,7 +205,7 @@ export default function Events() {
   };
 
   const handleRSVP = (eventId: number) => {
-    setEvents(prevEvents => 
+    setEvents(prevEvents =>
       prevEvents.map(event => event.id === eventId ? {...event, isRSVPed: !event.isRSVPed, attendees: event.isRSVPed ? event.attendees - 1 : event.attendees + 1} : event)
     );
   };
@@ -158,7 +217,7 @@ export default function Events() {
       url: `https://cultureconnect.app/event/${event.id}`
     };
   };
-  
+
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
   };
@@ -186,18 +245,6 @@ export default function Events() {
             <Plus size={20} color={theme.white} />
             </TouchableOpacity>
         </View>
-        
-        <View style={styles.filterBar}>
-          {filterOptions.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.filterButton, activeFilter === opt.key && styles.activeFilter]}
-              onPress={() => setActiveFilter(opt.key)}
-            >
-              <Text style={[styles.filterButtonText, activeFilter === opt.key && styles.activeFilterText]}>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* Enhanced Filter System */}
         <View style={styles.filterSystemContainer}>
@@ -207,6 +254,47 @@ export default function Events() {
             showPresets={true}
           />
         </View>
+
+        {/* Quick Filter Buttons */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFilterBar} contentContainerStyle={styles.quickFilterBarContent}>
+          {quickFilters.map(f => (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.quickFilterButton, quickFilter === f.key && styles.quickFilterButtonActive]}
+              onPress={() => setQuickFilter(f.key)}
+            >
+              <Text style={[styles.quickFilterButtonText, quickFilter === f.key && styles.quickFilterButtonTextActive]}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <Modal visible={showCategoryModal} animationType="slide" transparent onRequestClose={() => setShowCategoryModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.filterLabel}>Category</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={pendingCategory}
+                  onValueChange={setPendingCategory}
+                  style={styles.picker}
+                >
+                  {categoryOptions.map(opt => (
+                    <Picker.Item key={opt.key} label={opt.label} value={opt.key} />
+                  ))}
+                </Picker>
+              </View>
+              <TouchableOpacity style={styles.applyFiltersButton} onPress={() => {
+                setSelectedCategory(pendingCategory);
+                setShowCategoryModal(false);
+              }}>
+                <Text style={styles.applyFiltersButtonText}>Apply</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowCategoryModal(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.resultsHeader}>
             <Text style={styles.resultsCount}>{filteredEvents.length} events found</Text>
@@ -286,7 +374,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.md,
     marginBottom: spacing.lg,
-    marginLeft: 36, // aligns with search input start
+    marginLeft: 36,
     paddingLeft: 0,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
@@ -302,7 +390,10 @@ const styles = StyleSheet.create({
   activeFilterButton: { backgroundColor: theme.primary },
   filterButtonText: { fontWeight: '600', color: theme.textSecondary, fontFamily: typography.fontFamily.medium },
   activeFilterButtonText: { color: theme.white },
-  resultsHeader: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+  resultsHeader: {
+    paddingHorizontal: spacing.lg,
+    // REMOVED: marginBottom is now handled by the element above for better control.
+  },
   resultsCount: { fontSize: typography.fontSize.sm, fontWeight: '500', color: theme.textSecondary, fontFamily: typography.fontFamily.medium },
   eventsList: { flex: 1, paddingHorizontal: spacing.lg },
   eventCard: {
@@ -317,7 +408,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-    width: '100%', // Ensure each card takes full width
+    width: '100%',
   },
   eventImageContainer: {
     width: 120,
@@ -329,8 +420,6 @@ const styles = StyleSheet.create({
     height: '100%',
     borderTopLeftRadius: borderRadius.card,
     borderBottomLeftRadius: borderRadius.card,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
     resizeMode: 'cover',
   },
   eventActions: {
@@ -363,7 +452,7 @@ const styles = StyleSheet.create({
   rsvpedButtonText: { color: theme.primary },
   filterSystemContainer: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md, // ADDED: Controls space below the 'All' filter.
   },
   activeFilter: { backgroundColor: theme.primary },
   activeFilterText: { color: theme.white },
@@ -387,5 +476,159 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.textSecondary,
     marginRight: spacing.sm,
+  },
+  categoryFilterSection: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    marginTop: spacing.md,
+  },
+  categoryFilterLabel: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: theme.textPrimary,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  categoryHelperText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    marginBottom: spacing.sm,
+    fontFamily: typography.fontFamily.regular,
+    opacity: 0.85,
+  },
+  categoryFilterCard: {
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  collapsibleFilterBarContainer: {
+    paddingHorizontal: spacing.lg,
+  },
+  showFiltersButton: {
+    backgroundColor: theme.primary,
+    borderRadius: borderRadius.card,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  showFiltersButtonText: {
+    color: theme.white,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.md,
+  },
+  filterCard: {
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  filterLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    color: theme.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.medium,
+  },
+  pickerWrapper: {
+    backgroundColor: theme.gray100,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
+  picker: {
+    width: '100%',
+    height: 44,
+  },
+  applyFiltersButton: {
+    backgroundColor: theme.primary,
+    borderRadius: borderRadius.card,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  applyFiltersButtonText: {
+    color: theme.white,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.md,
+  },
+  quickFilterBar: {
+    flexGrow: 0, // ADDED: Prevents the ScrollView from expanding to fill extra space.
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg, // ADDED: Creates consistent space below the filter bar.
+    // Removed explicit padding top/bottom to let content define height
+  },
+  quickFilterBarContent: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  quickFilterButton: {
+    backgroundColor: theme.gray100,
+    borderRadius: borderRadius.lg,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: spacing.sm,
+  },
+  quickFilterButtonActive: {
+    backgroundColor: theme.primary,
+  },
+  quickFilterButtonText: {
+    color: theme.textPrimary,
+    fontWeight: '600',
+  },
+  quickFilterButtonTextActive: {
+    color: theme.white,
+  },
+  categoryFilterTrigger: {
+    backgroundColor: theme.primary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginLeft: spacing.md,
+  },
+  categoryFilterTriggerText: {
+    color: theme.white,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.lg,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cancelButton: {
+    marginTop: spacing.sm,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: theme.textSecondary,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.md,
   },
 });

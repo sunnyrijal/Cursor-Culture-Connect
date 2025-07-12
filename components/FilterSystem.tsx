@@ -393,6 +393,35 @@ export function FilterSystem({
               </View>
             </View>
 
+            {/* Category Filter - Only for events */}
+            {contentType === 'events' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.optionsContainer}>
+                    {['All', 'Cultural', 'Sports', 'Music', 'Games', 'Career', 'Wellness', 'Social'].map((category) => (
+                      <TouchableOpacity
+                        key={category}
+                        style={[
+                          styles.optionChip,
+                          filters.category === category && styles.optionChipActive
+                        ]}
+                        onPress={() => updateFilters({ category: filters.category === category ? '' : category })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.optionChipText,
+                          filters.category === category && styles.optionChipTextActive
+                        ]}>
+                          {category}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
             {/* University Filter - Only for groups and events, skip for users */}
             {(contentType === 'groups' || contentType === 'events') && (
               <View style={styles.section}>
