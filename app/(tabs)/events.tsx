@@ -9,27 +9,7 @@ import { FilterSystem } from '@/components/FilterSystem';
 import { mockEvents, currentUser, MockEvent } from '@/data/mockData';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import placeholderImg from '@/assets/images/icon.png';
-
-const theme = {
-  primary: '#6366F1',
-  accent: '#EC4899',
-  success: '#10B981',
-  warning: '#F59E0B',
-  info: '#3B82F6',
-  background: '#FAFAFA',
-  white: '#FFFFFF',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray900: '#111827',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  shadow: 'rgba(0, 0, 0, 0.1)',
-};
+import { theme, spacing, borderRadius, typography } from '@/components/theme';
 
 const filterOptions = [
     { key: 'all', label: 'All' },
@@ -233,7 +213,6 @@ export default function Events() {
         </View>
 
         <ScrollView style={styles.eventsList} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
-            <View style={styles.eventsGrid}>
             {filteredEvents.map((event) => (
                 <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
                     <View style={styles.eventImageContainer}>
@@ -287,7 +266,6 @@ export default function Events() {
                     </View>
                 </TouchableOpacity>
             ))}
-            </View>
         </ScrollView>
     </SafeAreaView>
   );
@@ -295,113 +273,119 @@ export default function Events() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: theme.textSecondary, textAlign: 'center' },
-  searchContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 16, gap: 12 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.white, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: theme.border, gap: 12 },
-  searchInput: { flex: 1, fontSize: 16, color: theme.textPrimary },
-  createButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg, alignItems: 'center' },
+  title: { fontSize: typography.fontSize['2xl'], fontWeight: 'bold', color: theme.textPrimary, marginBottom: spacing.sm, fontFamily: typography.fontFamily.bold, textAlign: 'left', alignSelf: 'flex-start' },
+  subtitle: { fontSize: typography.fontSize.md, color: theme.textSecondary, textAlign: 'left', alignSelf: 'flex-start', lineHeight: typography.fontSize.md * typography.lineHeight.normal },
+  searchContainer: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.md },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.white, borderRadius: borderRadius.card, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderWidth: 1, borderColor: theme.border, gap: spacing.md },
+  searchInput: { flex: 1, fontSize: typography.fontSize.base, color: theme.textPrimary, fontFamily: typography.fontFamily.regular },
+  createButton: { width: 48, height: 48, borderRadius: borderRadius.lg, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
   filterBar: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
     marginLeft: 36, // aligns with search input start
     paddingLeft: 0,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
     backgroundColor: theme.white,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
-  filterDropdown: {
-    width: 120,
-    height: 36,
-    backgroundColor: theme.white,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-    marginLeft: 0,
-    marginRight: 0,
-    marginTop: 0,
-    marginBottom: 0,
-    justifyContent: 'center',
-  },
-  filterDropdownUniversity: {
-    width: 140,
-  },
-  filterButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: theme.gray100, marginRight: 10 },
+  filterButton: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: borderRadius.lg, backgroundColor: theme.gray100, marginRight: spacing.sm },
   activeFilterButton: { backgroundColor: theme.primary },
-  filterButtonText: { fontWeight: '600', color: theme.textSecondary },
+  filterButtonText: { fontWeight: '600', color: theme.textSecondary, fontFamily: typography.fontFamily.medium },
   activeFilterButtonText: { color: theme.white },
-  resultsHeader: { paddingHorizontal: 20, marginBottom: 8 },
-  resultsCount: { fontSize: 14, fontWeight: '500', color: theme.textSecondary },
-  eventsList: { flex: 1, paddingHorizontal: 20 },
-  eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingBottom: 20 },
-  eventCard: { width: '100%', backgroundColor: theme.white, borderRadius: 16, marginBottom: 16, overflow: 'hidden', shadowColor: theme.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3, flexDirection: 'row' },
-  eventImageContainer: { width: 100, height: '100%', position: 'relative' },
-  eventImage: { width: '100%', height: '100%' },
+  resultsHeader: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+  resultsCount: { fontSize: typography.fontSize.sm, fontWeight: '500', color: theme.textSecondary, fontFamily: typography.fontFamily.medium },
+  eventsList: { flex: 1, paddingHorizontal: spacing.lg },
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    width: '100%', // Ensure each card takes full width
+  },
+  eventImageContainer: {
+    width: 120,
+    height: 120,
+    position: 'relative',
+  },
+  eventImage: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: borderRadius.card,
+    borderBottomLeftRadius: borderRadius.card,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    resizeMode: 'cover',
+  },
   eventActions: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: spacing.sm,
+    right: spacing.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 16,
-    padding: 6,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm,
   },
   shareButton: {
     padding: 2,
   },
-  eventContent: { padding: 12, flex: 1, justifyContent: 'space-between' },
-  eventTitle: { fontSize: 16, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 8 },
-  eventMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  eventMetaText: { fontSize: 12, color: theme.textSecondary },
-  eventFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border },
-  eventAttendees: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  eventAttendeesText: { fontSize: 12, color: theme.textSecondary },
-  rsvpButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  eventContent: {
+    flex: 1,
+    padding: spacing.lg,
+    justifyContent: 'center',
+  },
+  eventTitle: { fontSize: typography.fontSize.lg, fontWeight: 'bold', color: theme.textPrimary, marginBottom: spacing.sm, fontFamily: typography.fontFamily.bold, textAlign: 'left', lineHeight: typography.fontSize.lg * typography.lineHeight.normal },
+  eventMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  eventMetaText: { fontSize: typography.fontSize.sm, color: theme.textSecondary, fontFamily: typography.fontFamily.regular },
+  eventFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: theme.border },
+  eventAttendees: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  eventAttendeesText: { fontSize: typography.fontSize.sm, color: theme.textSecondary, fontFamily: typography.fontFamily.regular },
+  rsvpButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.md },
   notRsvpedButton: { backgroundColor: theme.primary },
   rsvpedButton: { backgroundColor: theme.white, borderWidth: 1, borderColor: theme.primary },
-  rsvpButtonText: { fontSize: 12, fontWeight: '600' },
+  rsvpButtonText: { fontSize: typography.fontSize.sm, fontWeight: '600', fontFamily: typography.fontFamily.medium },
   notRsvpedButtonText: { color: theme.white },
   rsvpedButtonText: { color: theme.primary },
+  filterSystemContainer: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+  },
   activeFilter: { backgroundColor: theme.primary },
   activeFilterText: { color: theme.white },
   filterDropdownOutline: {
     borderWidth: 1,
     borderColor: theme.primary,
     backgroundColor: theme.white,
-    borderRadius: 20,
-    paddingHorizontal: 12,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: 0,
     height: 36,
     minWidth: 100,
   },
   pillDropdown: {
     backgroundColor: theme.gray100,
-    borderRadius: 20,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.gray100,
     height: 36,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     fontWeight: '600',
     color: theme.textSecondary,
-    marginRight: 10,
-  },
-  filterSystemContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  activeFilter: { backgroundColor: theme.primary },
-  activeFilterText: { color: theme.white },
-  filterDropdownOutline: {
-    borderWidth: 1,
-    borderColor: theme.primary,
+    marginRight: spacing.sm,
   },
 });
