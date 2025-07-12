@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import FloatingNavButton from '@/components/ui/FloatingNavButton';
 import { useState } from 'react';
 import { View, Modal, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -9,7 +8,6 @@ import { usePathname } from 'expo-router';
 
 export default function RootLayout() {
   useFrameworkReady();
-  const [showNav, setShowNav] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,24 +30,6 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
-      {/* Slide-in horizontal nav bar */}
-      {showNav && !isTabPage && !isChatDetail && (
-        <View style={slideNavStyles.overlay} pointerEvents="box-none">
-          <TouchableOpacity style={slideNavStyles.overlayBg} onPress={() => setShowNav(false)} pointerEvents="auto" />
-          <View style={slideNavStyles.navBar} pointerEvents="auto">
-            {!isDashboard && (
-              <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/'); }}><Text>Home</Text></TouchableOpacity>
-            )}
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/discover'); }}><Text>Discover</Text></TouchableOpacity>
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/groups'); }}><Text>Groups</Text></TouchableOpacity>
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/events'); }}><Text>Events</Text></TouchableOpacity>
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/chat'); }}><Text>Chat</Text></TouchableOpacity>
-            <TouchableOpacity style={slideNavStyles.navButton} onPress={() => { setShowNav(false); router.push('/profile'); }}><Text>Profile</Text></TouchableOpacity>
-          </View>
-        </View>
-      )}
-      {/* Floating nav button always above overlay */}
-      {!isTabPage && !isChatDetail && <FloatingNavButton onPress={() => setShowNav(v => !v)} />}
     </>
   );
 }
