@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Users, Calendar, MapPin, Plus, Lock, Globe, GraduationCap } from 'lucide-react-native';
@@ -49,6 +49,7 @@ export default function Groups() {
   const [searchQuery, setSearchQuery] = useState('');
   const [groups, setGroups] = useState(mockGroups);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [scrollY] = useState(new Animated.Value(0));
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -152,41 +153,99 @@ export default function Groups() {
   return (
     <SafeAreaView style={styles.container}>
       <CreateGroupModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={handleCreateGroup} />
-      <View style={styles.header}>
-        <Text style={styles.title}>Cultural Groups</Text>
-        <Text style={styles.subtitle}>Find your community and connect with like-minded students</Text>
+      
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: scrollY.interpolate({
+                inputRange: [0, 50],
+                outputRange: [1, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [0, 50],
+                  outputRange: [0, -30],
+                  extrapolate: 'clamp',
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.title}>Cultural Groups</Text>
+          <Text style={styles.subtitle}>Find your community and connect with like-minded students</Text>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            { zIndex: 10 },
+            {
+              transform: [
+                {
+                  translateY: scrollY.interpolate({
+                    inputRange: [0, 50],
+                    outputRange: [0, -60], // Move up into title space
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+              opacity: scrollY.interpolate({
+                inputRange: [0, 30],
+                outputRange: [1, 1], // Always visible
+                extrapolate: 'clamp',
+              }),
+            },
+          ]}
+        >
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Search size={20} color={theme.gray400} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search groups..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor={theme.gray400}
+              />
+            </View>
+            <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+              <Plus size={20} color={theme.white} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Enhanced Filter System - Always Visible */}
+          <View style={styles.filterSystemContainer}>
+            <FilterSystem
+              onFiltersChange={handleFiltersChange}
+              contentType="groups"
+              showPresets={true}
+              groupCount={filteredGroups.length}
+              filterLabel={(() => {
+                if (filters.filterBy === 'my-university') return 'My University';
+                if (filters.filterBy === 'my-heritage') return 'My Heritage';
+                if (filters.filterBy === 'filter-by-state') return 'By State';
+                if (filters.filterBy === 'public') return 'Public Groups';
+                if (filters.filterBy === 'private') return 'Private Groups';
+                return 'All';
+              })()}
+            />
+          </View>
+        </Animated.View>
       </View>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search size={20} color={theme.gray400} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search groups..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor={theme.gray400}
-          />
-        </View>
-        <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
-          <Plus size={20} color={theme.white} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Enhanced Filter System */}
-      <View style={styles.filterSystemContainer}>
-        <FilterSystem
-          onFiltersChange={handleFiltersChange}
-          contentType="groups"
-          showPresets={true}
-        />
-      </View>
-
-      <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>{filteredGroups.length} groups found</Text>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+      >
         <View style={styles.groupsGrid}>
           {filteredGroups.map((group) => (
             <TouchableOpacity key={group.id} style={styles.groupCard} onPress={() => router.push(`/group/${group.id}`)}>
@@ -251,21 +310,30 @@ export default function Groups() {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, alignItems: 'center' },
+  stickyHeader: { 
+    backgroundColor: theme.background,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8, alignItems: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 4 },
   subtitle: { fontSize: 14, color: theme.textSecondary, textAlign: 'center' },
-  searchContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 16, gap: 12 },
+  searchContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12, gap: 12 },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.white, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: theme.border, gap: 12 },
   searchInput: { flex: 1, fontSize: 16, color: theme.textPrimary },
   createButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
-  filterSystemContainer: { paddingHorizontal: 20, marginBottom: 16 },
+  filterSystemContainer: { paddingHorizontal: 20, marginBottom: 0 },
   resultsHeader: { paddingHorizontal: 20, marginBottom: 16 },
   resultsCount: { fontSize: 14, fontWeight: '500', color: theme.textSecondary },
   scrollView: { flex: 1 },

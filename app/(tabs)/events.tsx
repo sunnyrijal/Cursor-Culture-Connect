@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -40,6 +40,7 @@ export default function Events() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [scrollY] = useState(new Animated.Value(0));
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -225,48 +226,99 @@ export default function Events() {
   return (
     <SafeAreaView style={styles.container}>
         <CreateEventModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={handleCreateEvent} />
-        <View style={styles.header}>
+        
+        {/* Sticky Header */}
+        <View style={styles.stickyHeader}>
+          <Animated.View 
+            style={[
+              styles.header,
+              {
+                opacity: scrollY.interpolate({
+                  inputRange: [0, 50],
+                  outputRange: [1, 0],
+                  extrapolate: 'clamp',
+                }),
+                transform: [{
+                  translateY: scrollY.interpolate({
+                    inputRange: [0, 50],
+                    outputRange: [0, -30],
+                    extrapolate: 'clamp',
+                  }),
+                }],
+              },
+            ]}
+          >
             <Text style={styles.title}>Cultural Events</Text>
             <Text style={styles.subtitle}>Discover and participate in cultural celebrations</Text>
-        </View>
+          </Animated.View>
 
-        <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-            <Search size={20} color={theme.gray400} />
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Search events..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor={theme.gray400}
-            />
+          <Animated.View
+            style={[
+              { zIndex: 10 },
+              {
+                transform: [
+                  {
+                    translateY: scrollY.interpolate({
+                      inputRange: [0, 50],
+                      outputRange: [0, -60], // Move up into title space
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+                opacity: scrollY.interpolate({
+                  inputRange: [0, 30],
+                  outputRange: [1, 1], // Always visible
+                  extrapolate: 'clamp',
+                }),
+              },
+            ]}
+          >
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Search size={20} color={theme.gray400} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor={theme.gray400}
+                />
+              </View>
+              <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+                <Plus size={20} color={theme.white} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
-            <Plus size={20} color={theme.white} />
-            </TouchableOpacity>
-        </View>
 
-        {/* Enhanced Filter System */}
-        <View style={styles.filterSystemContainer}>
-          <FilterSystem
-            onFiltersChange={handleFiltersChange}
-            contentType="events"
-            showPresets={true}
-          />
-        </View>
+            {/* Enhanced Filter System - Always Visible */}
+            <View style={styles.filterSystemContainer}>
+              <FilterSystem
+                onFiltersChange={handleFiltersChange}
+                contentType="events"
+                showPresets={true}
+                eventCount={filteredEvents.length}
+                filterLabel={(() => {
+                  if (filters.filterBy === 'my-university') return 'My University';
+                  if (filters.filterBy === 'my-heritage') return 'My Heritage';
+                  if (filters.filterBy === 'filter-by-state') return 'By State';
+                  return 'All';
+                })()}
+              />
+            </View>
 
-        {/* Quick Filter Buttons */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFilterBar} contentContainerStyle={styles.quickFilterBarContent}>
-          {quickFilters.map(f => (
-            <TouchableOpacity
-              key={f.key}
-              style={[styles.quickFilterButton, quickFilter === f.key && styles.quickFilterButtonActive]}
-              onPress={() => setQuickFilter(f.key)}
-            >
-              <Text style={[styles.quickFilterButtonText, quickFilter === f.key && styles.quickFilterButtonTextActive]}>{f.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+            {/* Quick Filter Buttons - Always Visible */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFilterBar} contentContainerStyle={styles.quickFilterBarContent}>
+              {quickFilters.map(f => (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[styles.quickFilterButton, quickFilter === f.key && styles.quickFilterButtonActive]}
+                  onPress={() => setQuickFilter(f.key)}
+                >
+                  <Text style={[styles.quickFilterButtonText, quickFilter === f.key && styles.quickFilterButtonTextActive]}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </View>
 
         <Modal visible={showCategoryModal} animationType="slide" transparent onRequestClose={() => setShowCategoryModal(false)}>
           <View style={styles.modalOverlay}>
@@ -296,11 +348,16 @@ export default function Events() {
           </View>
         </Modal>
 
-        <View style={styles.resultsHeader}>
-            <Text style={styles.resultsCount}>{filteredEvents.length} events found</Text>
-        </View>
-
-        <ScrollView style={styles.eventsList} contentContainerStyle={{paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView 
+          style={styles.eventsList} 
+          contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+        >
             {filteredEvents.map((event) => (
                 <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
                     <View style={styles.eventImageContainer}>
@@ -356,17 +413,26 @@ export default function Events() {
                     </View>
                 </TouchableOpacity>
             ))}
-        </ScrollView>
+        </Animated.ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg, alignItems: 'center' },
+  stickyHeader: { 
+    backgroundColor: theme.background,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm, alignItems: 'center' },
   title: { fontSize: typography.fontSize['2xl'], fontWeight: 'bold', color: theme.textPrimary, marginBottom: spacing.sm, fontFamily: typography.fontFamily.bold, textAlign: 'left', alignSelf: 'flex-start' },
   subtitle: { fontSize: typography.fontSize.md, color: theme.textSecondary, textAlign: 'left', alignSelf: 'flex-start', lineHeight: typography.fontSize.md * typography.lineHeight.normal },
-  searchContainer: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.md },
+  searchContainer: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: spacing.sm, gap: spacing.md },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.white, borderRadius: borderRadius.card, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderWidth: 1, borderColor: theme.border, gap: spacing.md },
   searchInput: { flex: 1, fontSize: typography.fontSize.base, color: theme.textPrimary, fontFamily: typography.fontFamily.regular },
   createButton: { width: 48, height: 48, borderRadius: borderRadius.lg, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
@@ -454,7 +520,7 @@ const styles = StyleSheet.create({
   rsvpedButtonText: { color: theme.primary },
   filterSystemContainer: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md, // ADDED: Controls space below the 'All' filter.
+    // REMOVED: marginBottom is now handled by the element above for better control.
   },
   activeFilter: { backgroundColor: theme.primary },
   activeFilterText: { color: theme.white },

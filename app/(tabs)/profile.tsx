@@ -1,11 +1,14 @@
 // project/app/(tabs)/profile.tsx
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Mail, MapPin, GraduationCap, Globe, MessageCircle, Calendar, Users, CreditCard as Edit3, Share2 } from 'lucide-react-native';
+import { Settings, Mail, MapPin, GraduationCap, Globe, MessageCircle, Calendar, Users, CreditCard as Edit3, Share2, Plus } from 'lucide-react-native';
 import { currentUser } from '@/data/mockData';
 import { router } from 'expo-router';
+import ActivityBuddyModal from '@/components/ActivityBuddyModal';
+import ActivityBuddyCard from '@/components/ActivityBuddyCard';
+import { ActivityQuestionnaire } from '@/types/activity';
 
 const theme = {
   primary: '#6366F1',
@@ -30,6 +33,8 @@ const theme = {
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('about');
+  const [showActivityBuddyModal, setShowActivityBuddyModal] = useState(false);
+  const [activityPreferences, setActivityPreferences] = useState<ActivityQuestionnaire[]>([]);
   const userProfile = currentUser; // Use the imported current user data
 
   const culturalStories = [
@@ -57,6 +62,21 @@ export default function Profile() {
     { type: 'shared', text: 'Shared a cultural story', date: '2 weeks ago' },
     { type: 'connected', text: 'Connected with 3 new students', date: '3 weeks ago' }
   ];
+
+  const handleActivityBuddySave = (preferences: ActivityQuestionnaire[]) => {
+    setActivityPreferences(preferences);
+    Alert.alert('Success', 'Your activity preferences have been saved!');
+  };
+
+  const handleActivityContact = (activityId: string, method: 'message' | 'ping') => {
+    // In a real app, this would integrate with messaging/calling functionality
+    Alert.alert(
+      'Contact',
+      method === 'message' 
+        ? 'This would send a message to the user about the activity. In a real app, this would open the messaging interface.'
+        : 'This would show interest in doing the activity with the user. In a real app, this would notify them of your interest.'
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -134,6 +154,14 @@ export default function Profile() {
           >
             <Text style={[styles.tabText, activeTab === 'about' && styles.activeTabText]}>
               About
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'buddy' && styles.activeTab]}
+            onPress={() => setActiveTab('buddy')}
+          >
+            <Text style={[styles.tabText, activeTab === 'buddy' && styles.activeTabText]}>
+              Activity Buddy
             </Text>
           </TouchableOpacity>
           {culturalStories.length > 0 && (
@@ -231,7 +259,52 @@ export default function Profile() {
             ))}
           </View>
         )}
+
+        {activeTab === 'buddy' && (
+          <View style={styles.tabContent}>
+            {activityPreferences.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>🤝</Text>
+                <Text style={styles.emptyStateTitle}>No Activity Preferences Set</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Let others know what activities you're open to doing together
+                </Text>
+                <TouchableOpacity 
+                  style={styles.setupButton}
+                  onPress={() => setShowActivityBuddyModal(true)}
+                >
+                  <Plus size={20} color={theme.white} />
+                  <Text style={styles.setupButtonText}>Set Up Activity Buddy</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <View style={styles.buddyHeader}>
+                  <Text style={styles.buddyTitle}>Your Activity Preferences</Text>
+                  <TouchableOpacity 
+                    style={styles.editButton}
+                    onPress={() => setShowActivityBuddyModal(true)}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+                <ActivityBuddyCard
+                  userPreferences={activityPreferences}
+                  userName={userProfile.name}
+                  userImage={userProfile.image}
+                  onContact={handleActivityContact}
+                />
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
+
+      <ActivityBuddyModal
+        visible={showActivityBuddyModal}
+        onClose={() => setShowActivityBuddyModal(false)}
+        onSave={handleActivityBuddySave}
+      />
     </SafeAreaView>
   );
 }
@@ -514,5 +587,53 @@ const styles = StyleSheet.create({
   activityDate: {
     fontSize: 12,
     color: theme.textSecondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  setupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  setupButtonText: {
+    fontSize: 16,
+    color: theme.white,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  buddyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  buddyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.textPrimary,
   },
 });

@@ -28,7 +28,8 @@ import {
   Camera,
   LayoutGrid,
   List as ListIcon,
-  Bot
+  Bot,
+  Activity
 } from 'lucide-react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -518,6 +519,15 @@ export default function Dashboard() {
             </View>
           </View>
           <View style={styles.headerActions}>
+            {/* Activity Buddy Icon */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/activity-buddy')}
+              style={styles.navButton}
+              activeOpacity={0.7}
+            >
+              <Activity size={22} color={theme.primary} />
+            </TouchableOpacity>
+
             {/* Story Icon */}
             <TouchableOpacity 
               onPress={() => setShowStoriesModal(true)}

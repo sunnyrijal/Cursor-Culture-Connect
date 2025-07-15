@@ -35,6 +35,9 @@ interface FilterSystemProps {
   initialFilters?: Partial<FilterOptions>;
   contentType: 'events' | 'groups' | 'users';
   showPresets?: boolean;
+  groupCount?: number;
+  filterLabel?: string;
+  eventCount?: number;
 }
 
 // Country: Only United States
@@ -95,7 +98,10 @@ export function FilterSystem({
   onFiltersChange, 
   initialFilters = {}, 
   contentType,
-  showPresets = true 
+  showPresets = true,
+  groupCount,
+  filterLabel,
+  eventCount
 }: FilterSystemProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
@@ -289,12 +295,13 @@ export function FilterSystem({
           styles.filterTriggerText,
           activeFilterCount > 0 && styles.filterTriggerTextActive
         ]}>
-          {getActiveFiltersText()}
+          {filterLabel || getActiveFiltersText()}
         </Text>
-        {activeFilterCount > 0 && (
-          <View style={styles.filterCount}>
-            <Text style={styles.filterCountText}>{activeFilterCount}</Text>
-          </View>
+        {typeof groupCount === 'number' && (
+          <Text style={styles.groupCountText}>{groupCount} groups found</Text>
+        )}
+        {typeof eventCount === 'number' && (
+          <Text style={styles.groupCountText}>{eventCount} events found</Text>
         )}
       </TouchableOpacity>
 
@@ -941,5 +948,11 @@ const styles = StyleSheet.create({
   },
   filterByOptionDescActive: {
     color: theme.white,
+  },
+  groupCountText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.primary,
+    marginLeft: 8,
   },
 });
