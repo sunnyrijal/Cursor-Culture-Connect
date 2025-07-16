@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Search, Users, Calendar, User, MessageSquare, Heart } from 'lucide-react-native';
+import { Home, Search, Users, Calendar, MessageSquare, Activity } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { usePathname } from 'expo-router';
 
@@ -30,9 +30,8 @@ export default function TabLayout() {
       <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: ({ color }) => <Search color={color} /> }} />
       <Tabs.Screen name="groups" options={{ title: 'Groups', tabBarIcon: ({ color }) => <Users color={color} /> }} />
       <Tabs.Screen name="events" options={{ title: 'Events', tabBarIcon: ({ color }) => <Calendar color={color} /> }} />
-      <Tabs.Screen name="activity-buddy" options={{ title: 'Buddy', tabBarIcon: ({ color }) => <Heart color={color} /> }} />
       <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: ({ color }) => <MessageSquare color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <User color={color} /> }} />
+      <Tabs.Screen name="activity-buddy" options={{ title: 'Activity', tabBarIcon: ({ color }) => <Activity color={color} /> }} />
     </Tabs>
   );
 }

@@ -240,7 +240,7 @@ export default function ActivityBuddyPage() {
           style={styles.setupButton}
           onPress={() => setShowSetupModal(true)}
         >
-          <Plus size={20} color={theme.white} />
+          <Plus size={18} color={theme.white} />
           <Text style={styles.setupButtonText}>Setup</Text>
         </TouchableOpacity>
       </View>
@@ -248,19 +248,20 @@ export default function ActivityBuddyPage() {
       {/* Search and Filter */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color={theme.gray500} />
+          <Search size={18} color={theme.gray500} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name, university, or location..."
             value={searchQuery}
             onChangeText={setSearchQuery}
+            placeholderTextColor={theme.gray400}
           />
         </View>
       </View>
 
       {/* Category Filter */}
       <View style={styles.categoryFilter}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
           {categories.map(category => (
             <TouchableOpacity
               key={category.id}
@@ -269,6 +270,7 @@ export default function ActivityBuddyPage() {
                 selectedCategory === category.id && styles.categoryChipActive
               ]}
               onPress={() => setSelectedCategory(category.id)}
+              activeOpacity={0.7}
             >
               <Text style={styles.categoryChipIcon}>{category.icon}</Text>
               <Text style={[
@@ -283,7 +285,7 @@ export default function ActivityBuddyPage() {
       </View>
 
       {/* Results */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateIcon}>🔍</Text>
@@ -320,13 +322,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
+    backgroundColor: theme.white,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: theme.textPrimary,
   },
@@ -335,139 +338,153 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.primary,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 8,
   },
   setupButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.white,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.white,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.white,
+    backgroundColor: theme.gray50,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: theme.border,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
+    marginLeft: 8,
+    fontSize: 15,
     color: theme.textPrimary,
   },
   categoryFilter: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: theme.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  categoryScrollContent: {
+    paddingRight: 16,
   },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: theme.white,
+    backgroundColor: theme.gray50,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: 10,
     borderWidth: 1,
     borderColor: theme.border,
+    minHeight: 36,
   },
   categoryChipActive: {
     backgroundColor: theme.primary,
     borderColor: theme.primary,
   },
   categoryChipIcon: {
-    fontSize: 16,
+    fontSize: 14,
     marginRight: 6,
   },
   categoryChipText: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.textSecondary,
+    fontWeight: '500',
   },
   categoryChipTextActive: {
     color: theme.white,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   resultsCount: {
-    fontSize: 16,
+    fontSize: 15,
     color: theme.textSecondary,
-    marginBottom: 16,
+    marginBottom: 12,
+    fontWeight: '500',
   },
   userCard: {
     backgroundColor: theme.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
     shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   userImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 10,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: theme.textPrimary,
     marginBottom: 2,
   },
   userUniversity: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.textSecondary,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   userLocation: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   userLocationText: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.gray500,
-    marginLeft: 4,
+    marginLeft: 3,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    fontSize: 40,
+    marginBottom: 12,
   },
   emptyStateTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: theme.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: theme.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
 }); 

@@ -29,7 +29,8 @@ import {
   LayoutGrid,
   List as ListIcon,
   Bot,
-  Activity
+  Activity,
+  User
 } from 'lucide-react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -519,15 +520,6 @@ export default function Dashboard() {
             </View>
           </View>
           <View style={styles.headerActions}>
-            {/* Activity Buddy Icon */}
-            <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/activity-buddy')}
-              style={styles.navButton}
-              activeOpacity={0.7}
-            >
-              <Activity size={22} color={theme.primary} />
-            </TouchableOpacity>
-
             {/* Story Icon */}
             <TouchableOpacity 
               onPress={() => setShowStoriesModal(true)}
@@ -537,10 +529,15 @@ export default function Dashboard() {
               <BookOpen size={22} color={theme.primary} />
             </TouchableOpacity>
 
-            {/* Notification Icon - now rightmost */}
+            {/* Notification Icon */}
             <TouchableOpacity onPress={() => router.push('/notifications')} style={styles.navButton}>
               <Bell size={22} color={theme.primary} />
               <View style={styles.notificationBadge} />
+            </TouchableOpacity>
+
+            {/* Profile Icon */}
+            <TouchableOpacity onPress={() => router.push('/profile')} style={styles.navButton}>
+              <User size={22} color={theme.primary} />
             </TouchableOpacity>
           </View>
         </View>
