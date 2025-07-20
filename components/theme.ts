@@ -18,6 +18,7 @@ export const theme = {
   // Background Colors
   background: '#F8F9FA', // Off-white
   white: '#FFFFFF',
+  cardBackground: '#FFFFFF',
 
   // Gray Scale
   gray50: '#F9FAFB',
@@ -32,9 +33,10 @@ export const theme = {
   gray900: '#111827',
 
   // Text Colors
-  textPrimary: '#212529', // High contrast, not pure black
+  text: '#212529', // High contrast, not pure black
   textSecondary: '#495057',
   textTertiary: '#868E96',
+  textPlaceholder: '#9CA3AF',
 
   // Border Colors
   border: '#E9ECEF', // Subtle border

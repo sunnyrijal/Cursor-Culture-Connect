@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Modal, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePathname } from 'expo-router';
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -18,9 +19,12 @@ export default function RootLayout() {
   const isDashboard = pathname === '/' || pathname === '/index' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
 
   return (
-    <>
+    <AuthProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
         <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
         <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
         <Stack.Screen name="group/[id]" options={{ presentation: 'modal' }} />
@@ -30,7 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </AuthProvider>
   );
 }
 
