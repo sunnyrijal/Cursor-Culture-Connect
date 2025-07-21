@@ -164,22 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Logging out user');
       setIsLoading(true);
       
-      // Call logout API
-      try {
-        await fetch(`${apiBaseUrl}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        console.log('Logout API call successful');
-      } catch (apiError) {
-        // Even if API fails, continue with local logout
-        console.warn('Logout API call failed but continuing with local logout', apiError);
-      }
-      
-      // Clear storage
+      // Clear storage first to ensure token is invalidated immediately
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userData');
       
@@ -187,10 +172,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(null);
       setUser(null);
       
-      console.log('User logged out, clearing state complete');
+      // Call logout API (but don't wait for it to complete the logout process)
+      fetch(`${apiBaseUrl}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).catch(err => {
+        console.warn('Logout API call failed, but user is already logged out locally', err);
+      });
       
-      // Navigate to login screen
-      router.replace('/login');
+      console.log('User logged out, clearing state complete');
       
     } catch (error) {
       console.error('Logout error:', error);

@@ -7,6 +7,14 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password, fullName, university, culturalBackground } = req.body;
 
+    // Validate email domain (.edu only)
+    if (!email.toLowerCase().endsWith('.edu')) {
+      return res.status(400).json({
+        error: true,
+        message: 'Only .edu email addresses are allowed to register'
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ 
       where: {

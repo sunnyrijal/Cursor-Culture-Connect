@@ -29,8 +29,10 @@ export default function ProfileScreen() {
               // Call the logout function from AuthContext
               await logout();
               
-              // No need to navigate here as the logout function in AuthContext now handles navigation
-              console.log("Logout successful, navigation handled by AuthContext");
+              // Explicitly navigate to login screen after logout completes
+              setTimeout(() => {
+                router.replace('/login');
+              }, 100);
             } catch (error) {
               console.error("Logout failed:", error);
               Alert.alert("Error", "Failed to log out. Please try again.");

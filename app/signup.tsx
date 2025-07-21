@@ -56,6 +56,12 @@ export default function Signup() {
       return false;
     }
 
+    // Check for .edu email domain
+    if (!email.toLowerCase().endsWith('.edu')) {
+      setError('Only .edu email addresses are allowed to register');
+      return false;
+    }
+
     return true;
   };
 
@@ -175,6 +181,7 @@ export default function Signup() {
                 onChangeText={setEmail}
                 editable={!isSubmitting}
               />
+              <Text style={styles.helperText}>Only .edu email addresses are allowed</Text>
             </View>
             
             {/* Password */}
@@ -335,6 +342,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: theme.text,
     backgroundColor: theme.cardBackground,
+  },
+  helperText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginTop: 4,
+    textAlign: 'right',
   },
   passwordContainer: {
     flexDirection: 'row',
