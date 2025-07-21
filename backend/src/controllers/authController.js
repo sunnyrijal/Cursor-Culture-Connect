@@ -128,6 +128,25 @@ exports.login = async (req, res) => {
   }
 };
 
+// Logout user
+exports.logout = async (req, res) => {
+  try {
+    // Since JWT tokens are stateless, we don't need to do anything on the server
+    // The client will remove the token from storage
+    return res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({
+      error: true,
+      message: 'Logout failed',
+      details: error.message
+    });
+  }
+};
+
 // Get current user profile
 exports.getCurrentUser = async (req, res) => {
   try {

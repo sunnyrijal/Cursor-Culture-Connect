@@ -1,15 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
 const authMiddleware = require('../middlewares/authMiddleware');
+const { User } = require('../models');
 
 // Get user profile
-router.get('/:id', async (req, res) => {
+router.get('/profile/:id', async (req, res) => {
   try {
-    const userId = req.params.id;
-    
-    // Find user by ID
-    const user = await User.findByPk(userId, {
+    const user = await User.findByPk(req.params.id, {
       attributes: { exclude: ['password'] }
     });
     
@@ -25,22 +22,22 @@ router.get('/:id', async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('Get user profile error:', error);
     return res.status(500).json({
       error: true,
-      message: 'Failed to get user',
+      message: 'Failed to get user profile',
       details: error.message
     });
   }
 });
 
 // Update user profile
-router.put('/', authMiddleware.authenticate, async (req, res) => {
+router.put('/update-profile', authMiddleware.authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, university, culturalBackground, bio } = req.body;
+    const { fullName, bio, linkedIn, major, year, culturalBackground } = req.body;
     
-    // Find user by ID
+    // Find the user
     const user = await User.findByPk(userId);
     
     if (!user) {
@@ -51,32 +48,29 @@ router.put('/', authMiddleware.authenticate, async (req, res) => {
     }
     
     // Update user fields
-    if (fullName) user.fullName = fullName;
-    if (university) user.university = university;
-    if (culturalBackground) user.culturalBackground = culturalBackground;
-    if (bio) user.bio = bio;
+    const updatedUser = await user.update({
+      fullName: fullName || user.fullName,
+      bio: bio !== undefined ? bio : user.bio,
+      linkedIn: linkedIn !== undefined ? linkedIn : user.linkedIn,
+      major: major !== undefined ? major : user.major,
+      year: year !== undefined ? year : user.year,
+      culturalBackground: culturalBackground !== undefined ? culturalBackground : user.culturalBackground
+    });
     
-    // Save changes
-    await user.save();
+    // Return updated user without password
+    const userData = updatedUser.toJSON();
+    delete userData.password;
     
     return res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        fullName: user.fullName,
-        university: user.university,
-        culturalBackground: user.culturalBackground,
-        bio: user.bio
-      }
+      user: userData
     });
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error('Update profile error:', error);
     return res.status(500).json({
       error: true,
-      message: 'Failed to update user',
+      message: 'Failed to update profile',
       details: error.message
     });
   }

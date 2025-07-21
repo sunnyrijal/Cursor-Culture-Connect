@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +10,8 @@ import { ArrowLeft, Save } from 'lucide-react-native';
 import { heritageOptions, languageOptions } from '@/data/heritageLanguageData';
 import { store } from '@/data/store';
 import { UserProfile } from '@/types/user';
+import { useAuth } from '@/context/AuthContext';
+
 const privacyOptions = [
   { label: 'Public', value: 'public' },
   { label: 'Group-Only', value: 'group' },
@@ -17,31 +19,125 @@ const privacyOptions = [
 ];
 
 export default function EditProfile() {
+  const { user, token, apiBaseUrl } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Partial<UserProfile>>({
-    fullName: 'Alex Chen',
-    bio: 'Passionate about technology and preserving cultural traditions. Love connecting with fellow students from around the world! 🌏',
+    fullName: '',
+    bio: '',
     linkedIn: '',
-    major: 'Computer Science',
-    year: 'Junior',
-    heritage: ['Chinese', 'Taiwanese'],
-    languages: ['Mandarin', 'English', 'Cantonese'],
+    major: '',
+    year: '',
+    heritage: [],
+    languages: [],
+    privacy: 'public',
     // Add any other fields as needed
   });
 
-  const handleSave = () => {
-    if (!profile.name?.trim()) {
+  useEffect(() => {
+    // Initialize profile with user data from context
+    if (user) {
+      setProfile({
+        fullName: user.fullName || '',
+        bio: user.bio || '',
+        linkedIn: user.linkedIn || '',
+        major: user.major || '',
+        year: user.year || '',
+        heritage: user.culturalBackground ? [user.culturalBackground] : [],
+        languages: user.languages || [],
+        privacy: user.privacy || 'public',
+      });
+    }
+    
+    // Fetch complete user profile if needed
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Update profile with complete user data
+          setProfile(prev => ({
+            ...prev,
+            ...data.user,
+            heritage: data.user.culturalBackground ? [data.user.culturalBackground] : prev.heritage,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+        Alert.alert("Error", "Failed to load profile data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (token) {
+      fetchUserProfile();
+    }
+  }, [user, token]);
+
+  const handleSave = async () => {
+    if (!profile.fullName?.trim()) {
       Alert.alert('Error', 'Name is required');
       return;
     }
-    store.updateUserProfile(profile);
-    Alert.alert('Success', 'Profile updated successfully!', [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+    
+    try {
+      setLoading(true);
+      
+      // Prepare profile data for update
+      const profileData = {
+        fullName: profile.fullName,
+        bio: profile.bio,
+        linkedIn: profile.linkedIn,
+        major: profile.major,
+        year: profile.year,
+        culturalBackground: profile.heritage && profile.heritage.length > 0 ? profile.heritage[0] : null,
+        // Add other fields as needed
+      };
+      
+      // Call API to update user profile
+      const response = await fetch(`${apiBaseUrl}/api/user/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
+      // Show success message and go back
+      Alert.alert('Success', 'Profile updated successfully!', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      Alert.alert("Error", "Failed to save profile changes.");
+    } finally {
+      setLoading(false);
+    }
   };
   
   const updateProfileValue = (key: keyof UserProfile, value: any) => {
     setProfile(prev => ({...prev, [key]: value}));
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={styles.loadingText}>Loading profile data...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -60,7 +156,7 @@ export default function EditProfile() {
           <Text style={styles.sectionTitle}>Basic Information</Text>
           <View style={styles.field}>
             <Text style={styles.label}>Full Name *</Text>
-            <TextInput style={styles.input} value={profile.name} onChangeText={(text) => updateProfileValue('name', text)} />
+            <TextInput style={styles.input} value={profile.fullName} onChangeText={(text) => updateProfileValue('fullName', text)} />
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Bio *</Text>
@@ -68,7 +164,7 @@ export default function EditProfile() {
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>LinkedIn Profile</Text>
-            <TextInput style={styles.input} value={profile.linkedinUrl} onChangeText={(text) => updateProfileValue('linkedinUrl', text)} />
+            <TextInput style={styles.input} value={profile.linkedIn} onChangeText={(text) => updateProfileValue('linkedIn', text)} />
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Profile Privacy</Text>
@@ -143,6 +239,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: theme.textSecondary
   },
   header: {
     flexDirection: 'row',

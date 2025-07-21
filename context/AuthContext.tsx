@@ -164,6 +164,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Logging out user');
       setIsLoading(true);
       
+      // Call logout API
+      try {
+        await fetch(`${apiBaseUrl}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        console.log('Logout API call successful');
+      } catch (apiError) {
+        // Even if API fails, continue with local logout
+        console.warn('Logout API call failed but continuing with local logout', apiError);
+      }
+      
       // Clear storage
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userData');
@@ -173,6 +188,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       
       console.log('User logged out, clearing state complete');
+      
+      // Navigate to login screen
+      router.replace('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
