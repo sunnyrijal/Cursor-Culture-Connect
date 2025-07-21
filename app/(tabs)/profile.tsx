@@ -28,10 +28,8 @@ export default function ProfileScreen() {
               await logout();
               console.log("Logout successful, navigating to login screen");
               
-              // Important: Navigate to the login screen after logout
-              setTimeout(() => {
-                router.replace('/login');
-              }, 300);
+              // Navigate to login screen directly without setTimeout to ensure immediate redirect
+              router.replace('/login');
             } catch (error) {
               console.error("Logout failed:", error);
               Alert.alert("Error", "Failed to log out. Please try again.");

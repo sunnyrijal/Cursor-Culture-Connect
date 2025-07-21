@@ -121,6 +121,21 @@ export default function Dashboard() {
     }
   ];
 
+  const recommendedGroups = [
+    {
+      id: 1,
+      name: "Asian Student Association",
+      members: 124,
+      image: "https://images.pexels.com/photos/935949/pexels-photo-935949.jpeg?auto=compress&cs=tinysrgb&w=400"
+    },
+    {
+      id: 2,
+      name: "International Students Club",
+      members: 89,
+      image: "https://images.pexels.com/photos/1438072/pexels-photo-1438072.jpeg?auto=compress&cs=tinysrgb&w=400"
+    }
+  ];
+
   // Define handler functions
   const handleCreateEvent = (eventData) => {
     console.log('Creating event:', eventData);
@@ -172,6 +187,41 @@ export default function Dashboard() {
         <Text style={styles.welcomeText}>
           Welcome{user ? `, ${user.fullName?.split(' ')[0] || 'User'}` : ' to Culture Connect'}!
         </Text>
+
+        {/* Quick Action Cards */}
+        <View style={styles.quickActionContainer}>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => setShowCreateEventModal(true)}
+          >
+            <Calendar size={24} color={theme.primary} />
+            <Text style={styles.actionText}>New Event</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => setShowCreateGroupModal(true)}
+          >
+            <Users size={24} color={theme.primary} />
+            <Text style={styles.actionText}>New Group</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => setShowShareCultureModal(true)}
+          >
+            <Globe size={24} color={theme.primary} />
+            <Text style={styles.actionText}>Share Culture</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => setShowStoriesModal(true)}
+          >
+            <BookOpen size={24} color={theme.primary} />
+            <Text style={styles.actionText}>Stories</Text>
+          </TouchableOpacity>
+        </View>
         
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
         
@@ -199,8 +249,76 @@ export default function Dashboard() {
               </View>
             </TouchableOpacity>
           ))}
+          
+          <TouchableOpacity 
+            style={styles.viewMoreButton}
+            onPress={() => router.push('/events')}
+          >
+            <Text style={styles.viewMoreText}>View All Events</Text>
+            <ChevronRight size={16} color={theme.primary} />
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.sectionTitle}>Recommended Groups</Text>
+        
+        <View style={styles.groupsContainer}>
+          {recommendedGroups.map((group) => (
+            <TouchableOpacity
+              key={group.id}
+              style={styles.groupCard}
+              onPress={() => router.push(`/group/${group.id}`)}
+            >
+              <Image
+                source={{ uri: group.image }}
+                style={styles.groupImage}
+              />
+              <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
+              <Text style={styles.groupMembers}>{group.members} members</Text>
+            </TouchableOpacity>
+          ))}
+          
+          <TouchableOpacity 
+            style={styles.viewMoreButton}
+            onPress={() => router.push('/groups')}
+          >
+            <Text style={styles.viewMoreText}>Discover More Groups</Text>
+            <ChevronRight size={16} color={theme.primary} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
+      
+      {/* Modals */}
+      {showCreateEventModal && (
+        <CreateEventModal 
+          isVisible={showCreateEventModal} 
+          onClose={() => setShowCreateEventModal(false)} 
+          onSubmit={handleCreateEvent} 
+        />
+      )}
+      
+      {showCreateGroupModal && (
+        <CreateGroupModal 
+          isVisible={showCreateGroupModal} 
+          onClose={() => setShowCreateGroupModal(false)}
+          onSubmit={handleCreateGroup}
+        />
+      )}
+      
+      {showShareCultureModal && (
+        <ShareCultureModal 
+          isVisible={showShareCultureModal}
+          onClose={() => setShowShareCultureModal(false)}
+          onSubmit={handleShareStory}
+        />
+      )}
+      
+      {showStoriesModal && (
+        <CulturalStoriesModal
+          isVisible={showStoriesModal}
+          onClose={() => setShowStoriesModal(false)}
+          onPost={handlePostStory}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -252,6 +370,33 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  quickActionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  actionCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.cardBackground,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    width: '23%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  actionText: {
+    fontSize: 12,
+    color: theme.text,
+    marginTop: 8,
+    textAlign: 'center',
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -299,5 +444,52 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.textSecondary,
     marginLeft: 6,
+  },
+  viewMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.primary,
+    marginRight: 4,
+  },
+  groupsContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  groupCard: {
+    backgroundColor: theme.cardBackground,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  groupImage: {
+    width: '100%',
+    height: 120,
+    resizeMode: 'cover',
+  },
+  groupName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginTop: 12,
+    marginHorizontal: 12,
+  },
+  groupMembers: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    marginTop: 4,
+    marginBottom: 12,
+    marginHorizontal: 12,
   },
 });
