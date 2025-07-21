@@ -11,7 +11,7 @@ import Animated, {
   runOnJS
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/data/authContext';
 
 const theme = {
   primary: '#6366F1',
@@ -50,7 +50,7 @@ export default function Index() {
             
             // Use explicit tab name to avoid navigation loop
             setTimeout(() => {
-              router.replace('/(tabs)');
+          router.replace('/(tabs)');
             }, 500);
           } else if (!isAuthenticated) {
             // User is not authenticated, show login/signup options
@@ -89,6 +89,31 @@ export default function Index() {
   const handleGuestAccess = () => {
     // Use explicit tab name to avoid navigation loop
     router.replace('/(tabs)');
+  };
+
+  // Add a footer with debug buttons
+  const Footer = () => {
+    const showDebugLinks = __DEV__; // Only show in development mode
+    
+    if (!showDebugLinks) return null;
+    
+    return (
+      <View style={styles.debugFooter}>
+        <TouchableOpacity
+          style={styles.debugButton}
+          onPress={() => router.push('/debug')}
+        >
+          <Text style={styles.debugButtonText}>Debug</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.debugButton}
+          onPress={() => router.push('/api-test')}
+        >
+          <Text style={styles.debugButtonText}>API Test</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (
@@ -138,6 +163,8 @@ export default function Index() {
             </TouchableOpacity>
           </Animated.View>
         )}
+        
+        <Footer />
       </LinearGradient>
     </View>
   );
@@ -228,4 +255,23 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
   },
+  debugFooter: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  debugButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  debugButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+  }
 });

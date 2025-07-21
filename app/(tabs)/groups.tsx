@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Users, Calendar, MapPin, Plus, Lock, Globe, GraduationCap } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { mockGroups, MockGroup } from '@/data/mockData';
+import { mockGroups } from '@/data/mockData';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
-import { currentUser } from '@/data/mockData';
+import { useGroups } from '@/data/groupContext';
+import { useAuth } from '@/data/authContext';
 import placeholderImg from '@/assets/images/icon.png';
 
 const theme = {
@@ -47,9 +48,12 @@ interface FilterOptions {
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [groups, setGroups] = useState(mockGroups);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
+  const [initialLoading, setInitialLoading] = useState(true);
+  const { groups, userGroups, loading, error, fetchGroups, fetchUserGroups, joinGroup, leaveGroup, createGroup } = useGroups();
+  const { user } = useAuth();
+  
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -60,6 +64,20 @@ export default function Groups() {
     filterBy: 'all'
   });
 
+  // Initial data load
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await fetchGroups();
+        await fetchUserGroups();
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
   const filteredGroups = useMemo(() => {
     let tempGroups = [...groups];
     
@@ -68,7 +86,8 @@ export default function Groups() {
       tempGroups = tempGroups.filter(group =>
         group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        group.category.toLowerCase().includes(searchQuery.toLowerCase())
+        (group.category && typeof group.category === 'string' && 
+         group.category.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
@@ -81,28 +100,32 @@ export default function Groups() {
         tempGroups = tempGroups.filter(group => !group.isPublic);
         break;
       case 'my-university':
-        tempGroups = tempGroups.filter(group => 
-          group.location === currentUser.university ||
-          (group.allowedUniversity && group.allowedUniversity === currentUser.university)
-        );
+        if (user?.university) {
+          tempGroups = tempGroups.filter(group => 
+            group.location === user.university ||
+            (group.allowedUniversity && group.allowedUniversity === user.university)
+          );
+        }
         break;
       case 'my-heritage':
-        const userHeritages = currentUser.heritage || [];
-        tempGroups = tempGroups.filter(group => 
-          userHeritages.some(heritage => 
-            group.category.toLowerCase().includes(heritage.toLowerCase())
-          )
-        );
+        const userHeritages = user?.heritage || [];
+        if (userHeritages.length > 0) {
+          tempGroups = tempGroups.filter(group => 
+            userHeritages.some(heritage => 
+              group.category && group.category.toLowerCase().includes(heritage.toLowerCase())
+            )
+          );
+        }
         break;
       case 'filter-by-state':
         if (filters.location.state) {
           tempGroups = tempGroups.filter(group => 
-            group.location.includes(filters.location.state)
+            group.location && group.location.includes(filters.location.state)
           );
         }
         if (filters.location.city) {
           tempGroups = tempGroups.filter(group => 
-            group.location.toLowerCase().includes(filters.location.city.toLowerCase())
+            group.location && group.location.toLowerCase().includes(filters.location.city.toLowerCase())
           );
         }
         break;
@@ -112,7 +135,7 @@ export default function Groups() {
     // Filter by ethnicity
     if (filters.ethnicity.length > 0) {
       tempGroups = tempGroups.filter(group => 
-        filters.ethnicity.includes(group.category)
+        group.category && filters.ethnicity.includes(group.category)
       );
     }
 
@@ -125,20 +148,43 @@ export default function Groups() {
     }
 
     return tempGroups;
-  }, [groups, searchQuery, filters]);
+  }, [groups, searchQuery, filters, user]);
 
-  const handleJoinGroup = (groupId: number) => {
-    setGroups(currentGroups => 
-        currentGroups.map(g => g.id === groupId ? {...g, isJoined: !g.isJoined} : g)
-    );
+  const handleJoinGroup = async (groupId: string) => {
+    try {
+      // Check if the user is already a member of this group
+      const isJoined = userGroups.some(g => g.id === groupId);
+      
+      if (isJoined) {
+        await leaveGroup(groupId);
+      } else {
+        await joinGroup(groupId);
+      }
+      
+      // Refresh groups
+      await fetchGroups();
+      await fetchUserGroups();
+    } catch (error) {
+      console.error("Error toggling group membership:", error);
+    }
   };
 
-  const handleCreateGroup = (groupData: any) => {
-      console.log("New Group Data:", groupData);
+  const handleCreateGroup = async (groupData: any) => {
+    try {
+      console.log("Creating new group with data:", groupData);
+      await createGroup(groupData);
+      
+      // Refresh groups after creation
+      await fetchGroups();
+      await fetchUserGroups();
+      
       setShowCreateModal(false);
-  }
+    } catch (error) {
+      console.error("Error creating group:", error);
+    }
+  };
 
-  const generateGroupShareContent = (group: MockGroup) => {
+  const generateGroupShareContent = (group: any) => {
     return {
       title: `${group.name} - Culture Connect`,
       message: `Check out ${group.name} on Culture Connect!\n\n${group.description}\n\n📍 ${group.location}\n👥 ${group.memberCount} members\n\nJoin our cultural community!`,
@@ -149,6 +195,16 @@ export default function Groups() {
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
   };
+
+  // Show loading state for initial load
+  if (initialLoading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={styles.loadingText}>Loading groups...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -236,6 +292,12 @@ export default function Groups() {
         </Animated.View>
       </View>
 
+      {loading && !initialLoading ? (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      ) : null}
+
       <Animated.ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
@@ -246,70 +308,82 @@ export default function Groups() {
         )}
         scrollEventThrottle={16}
       >
-        <View style={styles.groupsGrid}>
-          {filteredGroups.map((group) => (
-            <TouchableOpacity key={group.id} style={styles.groupCard} onPress={() => router.push(`/group/${group.id}`)}>
-                <View style={styles.groupImageContainer}>
+        {filteredGroups.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>No groups found</Text>
+            <Text style={styles.emptyStateMessage}>Try changing your filters or create a new group!</Text>
+          </View>
+        ) : (
+          <View style={styles.groupsGrid}>
+            {filteredGroups.map((group) => {
+              // Check if user is a member of this group
+              const isJoined = userGroups.some(g => g.id === group.id);
+              
+              return (
+                <TouchableOpacity key={group.id} style={styles.groupCard} onPress={() => router.push(`/group/${group.id}`)}>
+                  <View style={styles.groupImageContainer}>
                     <Image source={{ uri: group.image || undefined }} defaultSource={placeholderImg} style={styles.groupImage} />
                     <View style={styles.badgeContainer}>
-                       {group.isPublic && <View style={[styles.badge, styles.publicBadge]}><Text style={styles.badgeText}>Public</Text></View>}
-                       {!group.isPublic && <View style={[styles.badge, styles.privateBadge]}><Text style={styles.badgeText}>Private</Text></View>}
+                      {group.isPublic && <View style={[styles.badge, styles.publicBadge]}><Text style={styles.badgeText}>Public</Text></View>}
+                      {!group.isPublic && <View style={[styles.badge, styles.privateBadge]}><Text style={styles.badgeText}>Private</Text></View>}
                     </View>
                     <View style={styles.groupActions}>
-                        <ShareButton
-                            {...generateGroupShareContent(group)}
-                            size={16}
-                            color={theme.white}
-                            style={styles.shareButton}
-                        />
+                      <ShareButton
+                        {...generateGroupShareContent(group)}
+                        size={16}
+                        color={theme.white}
+                        style={styles.shareButton}
+                      />
                     </View>
-                </View>
-              
-              <View style={styles.groupContent}>
-                <Text style={styles.groupName} numberOfLines={2}>{group.name}</Text>
-                <View style={styles.groupCategoryContainer}>
-                    <Text style={styles.groupCategory}>{group.category}</Text>
-                </View>
-                <View style={styles.groupLocation}>
-                  <MapPin size={12} color={theme.gray500} />
-                  <Text style={styles.groupLocationText} numberOfLines={1}>
-                    {group.location}
-                  </Text>
-                </View>
-                <Text style={styles.groupDescription} numberOfLines={2}>{group.description}</Text>
-                
-                <View style={styles.groupStats}>
-                  <View style={styles.groupStat}>
-                    <Users size={12} color={theme.gray500} />
-                    <Text style={styles.groupStatText}>{group.memberCount} members</Text>
                   </View>
-                  <View style={styles.groupStat}>
-                    <Calendar size={12} color={theme.gray500} />
-                    <Text style={styles.groupStatText}>{group.upcomingEvents} events</Text>
-                  </View>
-                </View>
-                
-                <TouchableOpacity
-                    style={[
-                      styles.joinButton,
-                      group.isJoined ? styles.joinedButton : styles.notJoinedButton
-                    ]}
-                    onPress={(e) => {
+                  
+                  <View style={styles.groupContent}>
+                    <Text style={styles.groupName} numberOfLines={2}>{group.name}</Text>
+                    <View style={styles.groupCategoryContainer}>
+                      <Text style={styles.groupCategory}>{group.category}</Text>
+                    </View>
+                    <View style={styles.groupLocation}>
+                      <MapPin size={12} color={theme.gray500} />
+                      <Text style={styles.groupLocationText} numberOfLines={1}>
+                        {group.location}
+                      </Text>
+                    </View>
+                    <Text style={styles.groupDescription} numberOfLines={2}>{group.description}</Text>
+                    
+                    <View style={styles.groupStats}>
+                      <View style={styles.groupStat}>
+                        <Users size={12} color={theme.gray500} />
+                        <Text style={styles.groupStatText}>{group.memberCount || 0} members</Text>
+                      </View>
+                      <View style={styles.groupStat}>
+                        <Calendar size={12} color={theme.gray500} />
+                        <Text style={styles.groupStatText}>{group.upcomingEvents || 0} events</Text>
+                      </View>
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={[
+                        styles.joinButton,
+                        isJoined ? styles.joinedButton : styles.notJoinedButton
+                      ]}
+                      onPress={(e) => {
                         e.stopPropagation();
-                        handleJoinGroup(group.id)
-                    }}
-                  >
-                    <Text style={[
-                      styles.joinButtonText,
-                      group.isJoined ? styles.joinedButtonText : styles.notJoinedButtonText
-                    ]}>
-                      {group.isJoined ? 'Joined' : 'Join'}
-                    </Text>
-                  </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+                        handleJoinGroup(group.id);
+                      }}
+                    >
+                      <Text style={[
+                        styles.joinButtonText,
+                        isJoined ? styles.joinedButtonText : styles.notJoinedButtonText
+                      ]}>
+                        {isJoined ? 'Joined' : 'Join'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -364,4 +438,40 @@ const styles = StyleSheet.create({
   joinButtonText: { fontSize: 16, fontWeight: '600' },
   joinedButtonText: { color: theme.textSecondary },
   notJoinedButtonText: { color: theme.white },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: theme.textSecondary,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.textPrimary,
+    marginBottom: 8,
+  },
+  emptyStateMessage: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  }
 });

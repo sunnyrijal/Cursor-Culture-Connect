@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { router, Stack } from 'expo-router';
 import { theme } from '@/components/theme';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/data/authContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -41,24 +41,14 @@ export default function Login() {
 
     try {
       console.log('Attempting login with email:', email);
-      const success = await login(email, password);
-
-      if (!success) {
-        console.log('Login failed in login screen');
-        setError('Invalid email or password');
-        setIsSubmitting(false);
-      } else {
-        console.log('Login successful in login screen');
-        
-        // Navigate to the explicit tabs route to avoid navigation loops
-        console.log('Navigating to /(tabs) after successful login');
-        setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 300);
-      }
+      await login(email, password);
+      
+      // The auth context will update isAuthenticated which will trigger the useEffect above
+      console.log('Login successful in login screen');
     } catch (error) {
       console.error('Login error in login screen:', error);
-      setError('Network error. Please try again.');
+      setError(error.message || 'Invalid email or password');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -94,7 +84,7 @@ export default function Login() {
           }}
         />
         
-        <View style={styles.container}>
+    <View style={styles.container}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Login to connect with your cultural community</Text>
           
@@ -149,7 +139,7 @@ export default function Login() {
             </TouchableOpacity>
             
             <Button
-              title={isSubmitting ? '' : "Login"}
+              title={isSubmitting ? 'Logging in...' : "Login"}
               onPress={handleLogin}
               style={styles.loginButton}
               disabled={isSubmitting}
@@ -167,7 +157,7 @@ export default function Login() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+    </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

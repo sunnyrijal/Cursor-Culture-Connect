@@ -1,11 +1,10 @@
 // project/app/(tabs)/_layout.tsx
 
 import React, { useEffect } from 'react';
-import { Tabs, router, useRootNavigation } from 'expo-router';
-import { Home, Search, Users, Calendar, MessageSquare, Activity } from 'lucide-react-native';
+import { Tabs, router, useRootNavigation, usePathname } from 'expo-router';
 import { Platform, Text, View, ActivityIndicator } from 'react-native';
-import { usePathname } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+import { Home, Search, Users, Calendar, MessageSquare, Activity } from 'lucide-react-native';
+import { useAuth } from '@/data/authContext';
 import { theme } from '@/components/theme';
 
 export default function TabLayout() {

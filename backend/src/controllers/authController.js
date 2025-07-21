@@ -5,7 +5,22 @@ const { Op } = require('sequelize');
 // Register a new user
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, fullName, university, culturalBackground } = req.body;
+    const { 
+      username, 
+      email, 
+      password, 
+      name, 
+      university, 
+      major, 
+      year, 
+      title,
+      heritage, 
+      languages, 
+      bio, 
+      location, 
+      country, 
+      state 
+    } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ 
@@ -29,16 +44,26 @@ exports.register = async (req, res) => {
       username,
       email,
       password, // Will be hashed by the User model hooks
-      fullName,
+      name,
       university,
-      culturalBackground
+      major,
+      year,
+      title,
+      heritage: heritage || [],
+      languages: languages || [],
+      bio,
+      location,
+      country,
+      state,
+      verified: false,
+      image: req.body.image || null
     });
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'culture_connect_secret_key_change_in_production',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     // Return user data (excluding password)
@@ -46,9 +71,19 @@ exports.register = async (req, res) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      fullName: user.fullName,
+      name: user.name,
       university: user.university,
-      culturalBackground: user.culturalBackground
+      major: user.major,
+      year: user.year,
+      title: user.title,
+      heritage: user.heritage,
+      languages: user.languages,
+      bio: user.bio,
+      location: user.location,
+      country: user.country,
+      state: user.state,
+      verified: user.verified,
+      image: user.image
     };
 
     return res.status(201).json({
@@ -96,7 +131,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'culture_connect_secret_key_change_in_production',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     // Return user data (excluding password)
@@ -104,12 +139,21 @@ exports.login = async (req, res) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      fullName: user.fullName,
+      name: user.name,
       university: user.university,
-      culturalBackground: user.culturalBackground,
-      interests: user.interests,
-      avatar: user.avatar,
-      bio: user.bio
+      major: user.major,
+      year: user.year,
+      title: user.title,
+      heritage: user.heritage,
+      languages: user.languages,
+      bio: user.bio,
+      location: user.location,
+      country: user.country,
+      state: user.state,
+      verified: user.verified,
+      image: user.image,
+      isPublic: user.isPublic,
+      privacy: user.privacy
     };
 
     return res.status(200).json({
@@ -133,9 +177,16 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Find user by ID
+    // Find user by ID with relationships
     const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      include: [
+        {
+          model: User,
+          as: 'connections',
+          attributes: { exclude: ['password'] }
+        }
+      ]
     });
     
     if (!user) {

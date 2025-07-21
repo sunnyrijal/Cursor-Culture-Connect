@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '@/components/theme';
 import { router } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/data/authContext';
 import { User, LogOut, Settings, Edit, Heart, Users, Calendar } from 'lucide-react-native';
 
 export default function ProfileScreen() {

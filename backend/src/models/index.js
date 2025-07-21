@@ -8,9 +8,93 @@ const db = {};
 
 let sequelize;
 if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+  
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
+  
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    
+    // Force database name to use underscore
+    if (config.database === 'culture-connect') {
+      config.database = 'culture_connect';
+      console.log('Forced database name to culture_connect');
+    }
+    
+    sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
 fs

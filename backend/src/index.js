@@ -6,10 +6,13 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const eventRoutes = require('./routes/event');
 const groupRoutes = require('./routes/group');
+const activityRoutes = require('./routes/activity');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const FALLBACK_PORTS = [5001, 5002, 5003, 5004, 5005];
+// Set default port to 5001
+const PORT = process.env.PORT || 5001;
+const FALLBACK_PORTS = [5000, 5002, 5003, 5004, 5005];
 
 // Configure CORS to allow requests from any origin
 app.use(cors({
@@ -26,6 +29,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/activities', activityRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

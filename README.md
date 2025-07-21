@@ -1,102 +1,133 @@
 # Culture Connect
 
-Culture Connect is a mobile application that helps international students connect with others from different cultural backgrounds, join cultural events, and find activity buddies.
+Culture Connect is a mobile application designed to help international students connect with others who share their cultural background, as well as to explore and learn about different cultures. The app facilitates community building through events, groups, and activity buddy matching.
+
+## Features
+
+- **Authentication System**: Secure login/registration with JWT
+- **User Profiles**: Create and customize your profile with cultural information
+- **Groups**: Join and create cultural and interest-based groups
+- **Events**: Discover, create, and RSVP to cultural events
+- **Activity Buddy**: Find partners for activities based on preferences and availability
+- **Chat System**: Direct messaging and group conversations
+- **Cultural Stories**: Share and explore stories from different cultures
+
+## Technology Stack
+
+### Frontend
+- React Native with Expo
+- TypeScript
+- Context API for state management
+- Lucide React Native for icons
+- React Navigation for routing
+
+### Backend
+- Node.js
+- Express
+- PostgreSQL
+- Sequelize ORM
+- JWT Authentication
+- Bcrypt for password hashing
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v14+)
+- npm or yarn
+- PostgreSQL database
+
+### Backend Setup
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/culture-connect.git
+   cd culture-connect
+   ```
+
+2. Install backend dependencies:
+   ```
+   cd backend
+   npm install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the `backend` directory with:
+   ```
+   PORT=3000
+   DATABASE_URL=postgres://username:password@localhost:5432/culture_connect
+   JWT_SECRET=your_jwt_secret
+   NODE_ENV=development
+   ```
+
+4. Initialize the database and seed data:
+   ```
+   npm run sync:db
+   npm run seed:activities
+   npm run seed:mock
+   ```
+
+5. Start the backend server:
+   ```
+   npm run dev
+   ```
+
+### Frontend Setup
+1. Install frontend dependencies:
+   ```
+   cd ..  # Return to project root
+   npm install
+   ```
+
+2. Configure the API URL:
+   Update the API URL in `data/api.ts` to match your backend server address.
+
+3. Start the frontend:
+   ```
+   npm start
+   ```
+
+4. Use Expo Go to run the app on your device or emulator.
+
+## Testing the API
+
+We've included a comprehensive API testing guide and tools to verify the backend functionality:
+
+1. Follow the instructions in `API_TESTING.md` to test individual API endpoints
+2. Use the built-in API Test screen in the app to test the API connections
 
 ## Project Structure
 
-The project is divided into two main parts:
-- **Frontend**: React Native app built with Expo Router
-- **Backend**: Node.js/Express API with PostgreSQL database
+- `/app` - Main application screens and navigation
+- `/components` - Reusable UI components
+- `/data` - API and context providers
+- `/backend` - Server-side code
+  - `/src/controllers` - API endpoint controllers
+  - `/src/models` - Database models
+  - `/src/routes` - API route definitions
+  - `/src/middleware` - Custom middleware functions
+  - `/src/scripts` - Database initialization and seeding scripts
 
-## Setup and Installation
+## Frontend-Backend Integration
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- Docker and Docker Compose (for PostgreSQL database)
-- Expo CLI (`npm install -g expo-cli`)
+The frontend communicates with the backend using RESTful API calls. The integration is handled through:
 
-### Setting Up the Database
+1. **API Helper Functions** (`data/api.ts`): Centralized functions for API calls
+2. **Context Providers**: State management and API interaction abstraction
+   - `authContext.tsx` - Authentication
+   - `groupContext.tsx` - Groups
+   - `eventContext.tsx` - Events
+   - `activityContext.tsx` - Activity buddy
+   - `chatContext.tsx` - Messaging
 
-1. Start the PostgreSQL database using Docker:
-```bash
-docker-compose up -d
-```
+For detailed information on the integration, see `FRONTEND_API_INTEGRATION.md`.
 
-This will start a PostgreSQL database on port 5432.
+## Contributing
 
-### Backend Setup
-
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
-
-2. Create a .env file (you can copy from .env.example):
-```bash
-cp .env.example .env
-```
-
-3. Install dependencies:
-```bash
-npm install
-```
-
-4. Start the development server:
-```bash
-npm run dev
-```
-
-The backend API will be running on http://localhost:5000.
-
-### Frontend Setup
-
-1. From the project root, install dependencies:
-```bash
-npm install
-```
-
-2. Start the Expo development server:
-```bash
-npx expo start
-```
-
-3. Use the Expo Go app on your mobile device to scan the QR code, or run on a simulator/emulator.
-
-## Authentication
-
-The application has a complete authentication system:
-
-- **User registration**: Create a new account with username, email, password, and optional fields
-- **User login**: Authenticate with email and password
-- **Protected routes**: Only authenticated users can access the main app tabs
-- **JWT authentication**: Tokens are stored in AsyncStorage for persistent sessions
-
-## API Endpoints
-
-### Authentication
-
-- **POST /api/auth/register** - Register a new user
-- **POST /api/auth/login** - Login a user
-- **GET /api/auth/me** - Get current user profile (protected)
-
-## Development
-
-### Backend Development
-
-The backend follows a modular structure:
-- `models/` - Database models using Sequelize ORM
-- `controllers/` - Request handlers
-- `routes/` - API route definitions
-- `middlewares/` - Custom middleware functions
-
-### Frontend Development
-
-The frontend is built with Expo Router for navigation:
-- `app/` - Main screens and navigation
-- `components/` - Reusable UI components
-- `context/` - React Context providers (Auth, etc.)
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-[MIT License](LICENSE)
+This project is licensed under the MIT License - see the LICENSE file for details.

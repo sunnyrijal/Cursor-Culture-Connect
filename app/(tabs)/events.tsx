@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated, Alert, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { mockEvents, currentUser, MockEvent } from '@/data/mockData';
+import { useEvents } from '@/data/eventContext';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import placeholderImg from '@/assets/images/icon.png';
 import { theme, spacing, borderRadius, typography } from '@/components/theme';
@@ -36,11 +36,25 @@ interface FilterOptions {
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState(mockEvents);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
+  const { events, loading, error, createEvent, rsvpEvent, fetchEvents } = useEvents();
+  
+  // Add useEffect to fetch events on component mount and when user authentication changes
+  useEffect(() => {
+    fetchEvents();
+    
+    // Set up refresh interval (every 30 seconds)
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing events...");
+      fetchEvents();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -195,23 +209,99 @@ export default function Events() {
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
-  const handleCreateEvent = (eventData: any) => {
-    console.log("New Event Data:", eventData);
-    setEvents(prevEvents => {
-        const maxId = prevEvents.length > 0 ? Math.max(...prevEvents.map(event => event.id)) : 0;
-        const newId = maxId + 1;
-        return [{...eventData, id: newId, attendees: 1, isRSVPed: true }, ...prevEvents];
-    });
-    setShowCreateModal(false);
+  const handleCreateEvent = async (eventData: any) => {
+    console.log("Creating event with data:", eventData);
+    try {
+      // Format numeric fields properly
+      const formattedData = {
+        ...eventData,
+        maxAttendees: eventData.maxAttendees || null,
+        price: eventData.price || 0,
+      };
+      
+      await createEvent(formattedData);
+      console.log("Event created successfully");
+      
+      // Refresh events after creation
+      await fetchEvents();
+      
+      // Close modal and show success message
+      setShowCreateModal(false);
+      Alert.alert("Success", "Event created successfully!");
+    } catch (error: any) {
+      console.error("Error creating event:", error);
+      const errorMsg = error.message || "Unknown error";
+      Alert.alert("Error", `Failed to create event: ${errorMsg}`);
+    }
   };
 
-  const handleRSVP = (eventId: number) => {
-    setEvents(prevEvents =>
-      prevEvents.map(event => event.id === eventId ? {...event, isRSVPed: !event.isRSVPed, attendees: event.isRSVPed ? event.attendees - 1 : event.attendees + 1} : event)
-    );
+  // Add state to track which events have RSVP actions in progress
+  const [rsvpLoadingStates, setRsvpLoadingStates] = useState<Record<string, boolean>>({});
+  
+  // Add state to track optimistic UI updates
+  const [localRsvpStates, setLocalRsvpStates] = useState<Record<string, boolean>>({});
+  
+  // Add a function to get the effective RSVP state for an event
+  const getEffectiveRsvpState = (event: any) => {
+    // If we have a local override, use that
+    if (event.id in localRsvpStates) {
+      return localRsvpStates[event.id];
+    }
+    // Otherwise use the event's actual state
+    return Boolean(event.isRSVPed);
   };
 
-  const generateEventShareContent = (event: MockEvent) => {
+  // Updated handleRSVP function with optimistic UI updates
+  const handleRSVP = async (eventId: string) => {
+    try {
+      // Find the event to check its current status
+      const event = filteredEvents.find(e => e.id === eventId);
+      if (!event) {
+        console.error("Event not found for RSVP:", eventId);
+        return;
+      }
+      
+      // Prevent double-clicks by tracking loading state for this event
+      if (rsvpLoadingStates[eventId]) {
+        console.log("RSVP action already in progress for event:", eventId);
+        return;
+      }
+      
+      const currentRsvpState = getEffectiveRsvpState(event);
+      console.log("Toggling RSVP for event:", eventId, "Current status:", currentRsvpState ? "attending" : "not attending");
+      
+      // Set loading state for this event
+      setRsvpLoadingStates(prev => ({...prev, [eventId]: true}));
+      
+      // Update local state immediately for responsive UI
+      setLocalRsvpStates(prev => ({...prev, [eventId]: !currentRsvpState}));
+      
+      // Use the rsvpEvent function which now calls toggleRsvp internally
+      await rsvpEvent(eventId);
+      
+      console.log("RSVP toggle successful");
+      
+      // Clear local override after successful backend update
+      setLocalRsvpStates(prev => {
+        const newState = {...prev};
+        delete newState[eventId];
+        return newState;
+      });
+    } catch (error) {
+      console.error("Error toggling RSVP:", error);
+      // Revert optimistic update on error
+      setLocalRsvpStates(prev => {
+        const newState = {...prev};
+        delete newState[eventId]; // Remove local override to go back to server state
+        return newState;
+      });
+    } finally {
+      // Clear loading state for this event
+      setRsvpLoadingStates(prev => ({...prev, [eventId]: false}));
+    }
+  };
+
+  const generateEventShareContent = (event: any) => {
     return {
       title: `${event.title} - Culture Connect`,
       message: `Join me at ${event.title}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\nDiscover amazing cultural events on Culture Connect!`,
@@ -395,19 +485,24 @@ export default function Events() {
                             <TouchableOpacity
                             style={[
                                 styles.rsvpButton,
-                                event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton
+                                getEffectiveRsvpState(event) ? styles.rsvpedButton : styles.notRsvpedButton
                             ]}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleRSVP(event.id);
                             }}
+                            disabled={rsvpLoadingStates[event.id] || loading}
                             >
-                            <Text style={[
-                                styles.rsvpButtonText,
-                                event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText
-                            ]}>
-                                {event.isRSVPed ? "RSVP'd" : 'RSVP'}
-                            </Text>
+                            {rsvpLoadingStates[event.id] ? (
+                                <ActivityIndicator size="small" color={getEffectiveRsvpState(event) ? theme.primary : theme.white} />
+                            ) : (
+                                <Text style={[
+                                    styles.rsvpButtonText,
+                                    getEffectiveRsvpState(event) ? styles.rsvpedButtonText : styles.notRsvpedButtonText
+                                ]}>
+                                    {getEffectiveRsvpState(event) ? "RSVP'd" : 'RSVP'}
+                                </Text>
+                            )}
                             </TouchableOpacity>
                         </View>
                     </View>

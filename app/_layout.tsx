@@ -5,7 +5,11 @@ import { useState } from 'react';
 import { View, Modal, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePathname } from 'expo-router';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider } from '@/data/authContext';
+import { GroupProvider } from '@/data/groupContext';
+import { EventProvider } from '@/data/eventContext';
+import { ActivityProvider } from '@/data/activityContext';
+import { ChatProvider } from '@/data/chatContext';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -20,20 +24,29 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="group/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="profile/public/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+      <GroupProvider>
+        <EventProvider>
+          <ActivityProvider>
+            <ChatProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="signup" options={{ headerShown: false }} />
+                <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="group/[id]" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="profile/public/[id]" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="debug-events" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+              <StatusBar style="auto" />
+            </ChatProvider>
+          </ActivityProvider>
+        </EventProvider>
+      </GroupProvider>
     </AuthProvider>
   );
 }

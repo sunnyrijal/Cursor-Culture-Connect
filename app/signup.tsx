@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { router, Stack } from 'expo-router';
 import { theme } from '@/components/theme';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/data/authContext';
 
 export default function Signup() {
   const [username, setUsername] = useState('');
@@ -18,7 +18,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const { signup, isAuthenticated, isLoading } = useAuth();
+  const { register, isAuthenticated, isLoading } = useAuth();
 
   // Debug current navigation state
   useEffect(() => {
@@ -71,28 +71,19 @@ export default function Signup() {
         username,
         email,
         password,
-        fullName,
+        name: fullName,
         university: university || undefined,
         culturalBackground: culturalBackground || undefined
       };
 
-      const success = await signup(userData);
-
-      if (!success) {
-        console.log('Signup failed in signup screen');
-        setError('Registration failed. Email or username may already be in use.');
-        setIsSubmitting(false);
-      } else {
-        console.log('Signup successful in signup screen');
-        console.log('Navigating to /(tabs) after successful signup');
-        // Navigate to the explicit tabs route to avoid navigation loops
-        setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 300);
-      }
+      await register(userData);
+      
+      // The authContext will handle setting isAuthenticated which will
+      // trigger the useEffect to navigate to the tabs
+      console.log('Signup successful in signup screen');
     } catch (error) {
       console.error('Registration error in signup screen:', error);
-      setError('Network error. Please try again.');
+      setError(error.message || 'Registration failed. Email or username may already be in use.');
       setIsSubmitting(false);
     }
   };
@@ -258,7 +249,7 @@ export default function Signup() {
             </View>
             
             <Button
-              title={isSubmitting ? '' : "Sign Up"}
+              title={isSubmitting ? 'Creating account...' : "Sign Up"}
               onPress={handleSignup}
               style={styles.signupButton}
               disabled={isSubmitting}

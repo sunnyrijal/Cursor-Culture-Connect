@@ -8,6 +8,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       primaryKey: true,
     },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     username: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -31,30 +35,75 @@ module.exports = (sequelize, DataTypes) => {
         len: [6, 100]
       }
     },
-    fullName: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     university: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    culturalBackground: {
+    major: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    interests: {
+    year: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    heritage: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
       defaultValue: []
     },
-    avatar: {
-      type: DataTypes.STRING,
-      allowNull: true
+    languages: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: []
     },
     bio: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    image: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    mutualConnections: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    location: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    country: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    state: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    linkedinUrl: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    isPublic: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    privacy: {
+      type: DataTypes.ENUM('public', 'group', 'connections'),
+      defaultValue: 'public'
+    },
+    eventsAttended: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     }
   }, {
     hooks: {
@@ -80,8 +129,40 @@ module.exports = (sequelize, DataTypes) => {
 
   // Associate with other models
   User.associate = function(models) {
-    // Define associations here
-    // e.g., User.hasMany(models.Event)
+    // Users can join many groups
+    User.belongsToMany(models.Group, {
+      through: 'UserGroups',
+      as: 'groups',
+      foreignKey: 'userId'
+    });
+
+    // Users can connect with other users
+    User.belongsToMany(User, {
+      through: 'UserConnections',
+      as: 'connections',
+      foreignKey: 'userId',
+      otherKey: 'connectionId'
+    });
+
+    // Users can attend many events
+    User.belongsToMany(models.Event, {
+      through: 'UserEvents',
+      as: 'events',
+      foreignKey: 'userId'
+    });
+
+    // Users can favorite events
+    User.belongsToMany(models.Event, {
+      through: 'UserFavorites',
+      as: 'favoriteEvents',
+      foreignKey: 'userId'
+    });
+    
+    // Users can have activity preferences
+    User.hasMany(models.ActivityPreference, {
+      foreignKey: 'userId',
+      as: 'activityPreferences'
+    });
   };
 
   return User;

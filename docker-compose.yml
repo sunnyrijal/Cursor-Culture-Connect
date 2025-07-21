@@ -1,10 +1,9 @@
-version: '3.8'
+version: '3'
 
 services:
   postgres:
-    image: postgres:15
-    container_name: culture-connect-postgres
-    restart: always
+    image: postgres:15-alpine
+    container_name: culture_connect_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,11 +12,66 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
-      - app-network
+      - culture_connect_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: culture_connect_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      # Use underscore in database name
+      - DATABASE_URL=postgresql://postgres:postgres@culture_connect_postgres:5432/culture_connect
+      - JWT_SECRET=dev_secret_key_change_in_production
+    restart: unless-stopped
+    networks:
+      - culture_connect_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: culture_connect_frontend
+    ports:
+      - "19000:19000"
+      - "19001:19001" 
+      - "19002:19002"
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - REACT_NATIVE_PACKAGER_HOSTNAME=localhost
+      # Update API URL to use port 5001
+      - REACT_APP_API_URL=http://culture_connect_backend:5001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - culture_connect_network
 
 networks:
-  app-network:
+  culture_connect_network:
     driver: bridge
 
 volumes:
