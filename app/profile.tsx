@@ -28,9 +28,11 @@ import {
 import { currentUser } from '@/data/mockData';
 import { theme, spacing, borderRadius, typography } from '@/components/theme';
 import placeholderImg from '@/assets/images/icon.png';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('about');
+  const { logout } = useAuth();
 
   const handleLogout = () => {
     Alert.alert(
@@ -38,7 +40,7 @@ export default function Profile() {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => router.push('/login') }
+        { text: 'Logout', style: 'destructive', onPress: logout }
       ]
     );
   };

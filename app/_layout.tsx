@@ -1,25 +1,43 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Modal, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePathname } from 'expo-router';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { router } from 'expo-router';
 
-export default function RootLayout() {
-  useFrameworkReady();
-  const router = useRouter();
+function AppContent() {
+  const { user, isLoading } = useAuth();
   const pathname = usePathname();
+  
+  useEffect(() => {
+    if (!isLoading) {
+      const publicRoutes = ['/login', '/signup'];
+      const isPublicRoute = publicRoutes.includes(pathname);
+      
+      if (!user && !isPublicRoute) {
+        router.replace('/login');
+      } else if (user && isPublicRoute) {
+        router.replace('/');
+      }
+    }
+  }, [user, isLoading, pathname]);
 
-  // List of main tab routes and chat detail route
-  const tabRoutes = ['/', '/discover', '/groups', '/events', '/chat', '/profile'];
-  const isTabPage = tabRoutes.includes(pathname);
-  const isChatDetail = pathname.startsWith('/chat/');
-  const isDashboard = pathname === '/' || pathname === '/index' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
         <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
@@ -31,6 +49,16 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </>
+  );
+}
+
+export default function RootLayout() {
+  useFrameworkReady();
+  
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
