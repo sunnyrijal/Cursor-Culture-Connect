@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { loginUser, signupUser, logoutUser, getCurrentUser } from '@/data/services/authService';
+import { API_BASE_URL } from '@/data/apiConfig';
 
 interface User {
   id: string;
@@ -11,6 +13,10 @@ interface User {
   culturalBackground?: string;
   avatar?: string;
   bio?: string;
+  languages?: string[];
+  heritage?: string[];
+  major?: string;
+  year?: string;
 }
 
 interface AuthContextType {
@@ -24,8 +30,8 @@ interface AuthContextType {
   apiBaseUrl: string;
 }
 
-// API base URL - directly set to the working port
-const API_BASE_URL = 'http://localhost:5002';
+// API base URL
+const apiBaseUrl = API_BASE_URL;
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -37,7 +43,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>(API_BASE_URL);
 
   // Debug current path
   useEffect(() => {
@@ -84,38 +89,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      console.log(`Attempting login with ${apiBaseUrl}/api/auth/login`);
-      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      console.log(`Attempting login with ${email}`);
+      const data = await loginUser({ email, password });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Login failed:', data.message);
-        setIsLoading(false);
-        return false;
+      if (data && data.token) {
+        console.log('Login successful, data received:', !!data);
+        
+        // Update context state
+        setToken(data.token);
+        setUser(data.user);
+        
+        return true;
       }
-
-      console.log('Login successful, storing data');
       
-      // Store user data
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-
-      // Update context state
-      setToken(data.token);
-      setUser(data.user);
-      
-      return true;
+      return false;
     } catch (error) {
       console.error('Login error:', error);
-      setIsLoading(false);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -123,38 +115,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (userData: any): Promise<boolean> => {
     setIsLoading(true);
     try {
-      console.log(`Attempting signup with ${apiBaseUrl}/api/auth/register`);
-      const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      console.log(`Attempting signup with ${userData.email}`);
+      const data = await signupUser(userData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Signup failed:', data.message);
-        setIsLoading(false);
-        return false;
+      if (data && data.token) {
+        console.log('Signup successful');
+        
+        // Update context state
+        setToken(data.token);
+        setUser(data.user);
+        
+        return true;
       }
-
-      console.log('Signup successful, storing data');
       
-      // Store user data
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-
-      // Update context state
-      setToken(data.token);
-      setUser(data.user);
-      
-      return true;
+      return false;
     } catch (error) {
       console.error('Signup error:', error);
-      setIsLoading(false);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -164,26 +143,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Logging out user');
       setIsLoading(true);
       
-      // Clear storage first to ensure token is invalidated immediately
-      await AsyncStorage.removeItem('userToken');
-      await AsyncStorage.removeItem('userData');
+      // Call logout service
+      await logoutUser();
       
-      // Update context state
+      // Clear state
       setToken(null);
       setUser(null);
       
-      // Call logout API (but don't wait for it to complete the logout process)
-      fetch(`${apiBaseUrl}/api/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }).catch(err => {
-        console.warn('Logout API call failed, but user is already logged out locally', err);
-      });
-      
-      console.log('User logged out, clearing state complete');
-      
+      // Navigate to login screen
+      router.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -228,7 +196,7 @@ export const AuthRoute: React.FC<AuthRouteProps> = ({ children }) => {
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      safeNavigate('/login');
+      router.replace('/login');
     }
   }, [isAuthenticated, isLoading]);
   

@@ -6,12 +6,12 @@ import { theme, spacing, typography, borderRadius } from './theme';
 import { Meeting } from '@/types/group';
 
 interface CreateGroupModalProps {
-  visible: boolean;
+  isVisible: boolean;
   onClose: () => void;
   onSubmit: (groupData: any) => void;
 }
 
-export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModalProps) {
+export function CreateGroupModal({ isVisible, onClose, onSubmit }: CreateGroupModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -26,6 +26,7 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [useLocation, setUseLocation] = useState(true);
+  const detectedLocation = "Detected Location"; // Placeholder for location detection
 
   const handleAddMeeting = () => {
       setMeetings([...meetings, { date: '', time: '', location: '' }]);
@@ -59,11 +60,11 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
     onClose();
   };
 
-  if (!visible) return null;
+  if (!isVisible) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible={isVisible}
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
