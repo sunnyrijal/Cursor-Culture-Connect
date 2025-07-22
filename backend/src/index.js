@@ -6,6 +6,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const eventRoutes = require('./routes/event');
 const groupRoutes = require('./routes/group');
+const notificationRoutes = require('./routes/notification');
+const { seedDatabase } = require('./utils/seedData');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -50,8 +53,14 @@ async function startServer(portIndex = 0) {
     console.log('Database connection has been established successfully.');
     
     // Sync models with database
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log('Database models synchronized.');
+    
+    // Seed the database with initial data (if specified)
+    if (process.env.SEED_DATABASE === 'true') {
+      await seedDatabase();
+      console.log('Database seeded successfully');
+    }
     
     const server = app.listen(currentPort, () => {
       console.log(`Server is running on port ${currentPort}`);

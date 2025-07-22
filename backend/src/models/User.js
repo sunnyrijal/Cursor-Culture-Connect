@@ -55,7 +55,25 @@ module.exports = (sequelize, DataTypes) => {
     bio: {
       type: DataTypes.TEXT,
       allowNull: true
-    }
+    },
+    major: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    year: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    languages: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: []
+    },
+    heritage: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: []
+    },
   }, {
     hooks: {
       beforeCreate: async (user) => {
@@ -80,8 +98,81 @@ module.exports = (sequelize, DataTypes) => {
 
   // Associate with other models
   User.associate = function(models) {
-    // Define associations here
-    // e.g., User.hasMany(models.Event)
+    // User belongs to many groups (as a member)
+    User.belongsToMany(models.Group, {
+      through: 'GroupMembers',
+      as: 'memberGroups',
+      foreignKey: 'userId'
+    });
+    
+    // User belongs to many groups (as an admin)
+    User.belongsToMany(models.Group, {
+      through: 'GroupAdmins',
+      as: 'adminGroups',
+      foreignKey: 'userId'
+    });
+    
+    // User has many groups (as president/creator)
+    User.hasMany(models.Group, {
+      as: 'createdGroups',
+      foreignKey: 'presidentId'
+    });
+    
+    // User belongs to many events (as an attendee)
+    User.belongsToMany(models.Event, {
+      through: 'EventAttendees',
+      as: 'attendingEvents',
+      foreignKey: 'userId'
+    });
+    
+    // User belongs to many events (as a favorite)
+    User.belongsToMany(models.Event, {
+      through: 'EventFavorites',
+      as: 'favoritedEvents',
+      foreignKey: 'userId'
+    });
+    
+    // User has many events (as creator)
+    User.hasMany(models.Event, {
+      as: 'createdEvents',
+      foreignKey: 'creatorId'
+    });
+    
+    // User has many group requests (as requester)
+    User.hasMany(models.GroupRequest, {
+      as: 'groupRequests',
+      foreignKey: 'requesterId'
+    });
+    
+    // User has many group requests (as responder)
+    User.hasMany(models.GroupRequest, {
+      as: 'respondedGroupRequests',
+      foreignKey: 'responderId'
+    });
+    
+    // User has many event requests (as creator)
+    User.hasMany(models.EventRequest, {
+      as: 'eventRequests',
+      foreignKey: 'creatorId'
+    });
+    
+    // User has many event requests (as responder)
+    User.hasMany(models.EventRequest, {
+      as: 'respondedEventRequests',
+      foreignKey: 'responderId'
+    });
+    
+    // User has many received notifications
+    User.hasMany(models.Notification, {
+      as: 'receivedNotifications',
+      foreignKey: 'recipientId'
+    });
+    
+    // User has many sent notifications
+    User.hasMany(models.Notification, {
+      as: 'sentNotifications',
+      foreignKey: 'senderId'
+    });
   };
 
   return User;

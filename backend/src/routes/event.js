@@ -1,73 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const eventController = require('../controllers/eventController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Placeholder route for events - to be implemented later
-router.get('/', async (req, res) => {
-  try {
-    // This is a placeholder that returns mock data
-    // In a real implementation, this would fetch from database
-    const events = [
-      {
-        id: '1',
-        title: 'Cultural Festival',
-        description: 'Annual cultural festival showcasing different traditions',
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        location: 'University Campus',
-        organizer: 'Cultural Society'
-      },
-      {
-        id: '2',
-        title: 'Language Exchange',
-        description: 'Weekly language exchange meetup',
-        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-        location: 'Student Center',
-        organizer: 'International Students Association'
-      }
-    ];
+// Protect all routes with authentication
+router.use(authMiddleware.authenticate);
 
-    return res.status(200).json({
-      success: true,
-      events
-    });
-  } catch (error) {
-    console.error('Get events error:', error);
-    return res.status(500).json({
-      error: true,
-      message: 'Failed to get events',
-      details: error.message
-    });
-  }
-});
+// Get all events
+router.get('/', eventController.getAllEvents);
 
-// Get event by ID - placeholder
-router.get('/:id', async (req, res) => {
-  try {
-    const eventId = req.params.id;
-    
-    // Mock data for now
-    const event = {
-      id: eventId,
-      title: 'Cultural Festival',
-      description: 'Annual cultural festival showcasing different traditions',
-      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      location: 'University Campus',
-      organizer: 'Cultural Society',
-      attendees: 42
-    };
+// Get user's events
+router.get('/my-events', eventController.getUserEvents);
 
-    return res.status(200).json({
-      success: true,
-      event
-    });
-  } catch (error) {
-    console.error('Get event error:', error);
-    return res.status(500).json({
-      error: true,
-      message: 'Failed to get event',
-      details: error.message
-    });
-  }
-});
+// Get single event by ID
+router.get('/:id', eventController.getEventById);
+
+// Create a new event
+router.post('/', eventController.createEvent);
+
+// Event requests and approval
+router.get('/requests/pending', eventController.getPendingEventRequests);
+router.put('/requests/:requestId', eventController.respondToEventRequest);
+
+// RSVP and favorite
+router.post('/:eventId/rsvp', eventController.rsvpToEvent);
+router.post('/:eventId/favorite', eventController.toggleFavoriteEvent);
+
+// Get events for a group
+router.get('/group/:groupId', eventController.getGroupEvents);
 
 module.exports = router; 
