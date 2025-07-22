@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Culture Connect API Documentation</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.1.0/swagger-ui.min.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f7f8fb;
+    }
+    .topbar {
+      background-color: #6366F1;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .topbar-title {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .swagger-ui .info {
+      margin: 20px 0 !important;
+    }
+    .swagger-ui .scheme-container {
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+    #server-select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-title">Culture Connect API Documentation</div>
+    <div style="display: flex; align-items: center;">
+      <span style="color: white; margin-right: 10px;">Server:</span>
+      <select id="server-select">
+        <option value="http://localhost:5002">Local (5002)</option>
+        <option value="http://localhost:5001">Local (5001)</option>
+        <option value="http://localhost:5000">Local (5000)</option>
+        <option value="https://culture-connect-api.example.com">Production</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="swagger-ui"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.1.0/swagger-ui-bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.1.0/swagger-ui-standalone-preset.min.js"></script>
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: "./openapi.yaml",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout",
+        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+      });
+
+      // Handle server selection
+      const serverSelect = document.getElementById('server-select');
+      serverSelect.addEventListener('change', function() {
+        const selectedServer = this.value;
+        ui.specActions.updateUrl(selectedServer + '/openapi.yaml');
+        ui.specActions.download();
+      });
+
+      window.ui = ui;
+    };
+  </script>
+</body>
+</html> 
