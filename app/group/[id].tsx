@@ -1,287 +1,410 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Linking, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Card } from '@/components/ui/Card';
+import { Users, MapPin, Calendar, ArrowLeft, Shield, Globe, MessageSquare, Bell } from 'lucide-react-native';
+import { theme } from '@/components/theme';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { ShareButton } from '@/components/ui/ShareButton';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { ArrowLeft, Users, Calendar, Info, Clock, MapPin, MessageCircle, Instagram, Twitter, Facebook, Link as LinkIcon } from 'lucide-react-native';
-import { mockGroups, MockGroup, mockEvents } from '@/data/mockData';
-import placeholderImg from '@/assets/images/icon.png';
-import { store } from '@/data/store';
+import { getGroupById, requestJoinGroup } from '@/data/services/groupService';
+import { getGroupEvents } from '@/data/services/eventService';
+import { useAuth } from '@/context/AuthContext';
 
-// Helper to get the correct social media icon
-const SocialIcon = ({ platform }: { platform: string }) => {
-  switch (platform) {
-    case 'instagram': return <Instagram size={20} color={theme.primary} />;
-    case 'twitter': return <Twitter size={20} color={theme.primary} />;
-    case 'facebook': return <Facebook size={20} color={theme.primary} />;
-    default: return <LinkIcon size={20} color={theme.primary} />;
-  }
-};
+interface GroupEvent {
+  id: string;
+  title: string;
+  date: string;
+  image?: string;
+}
 
-export default function GroupDetail() {
+export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams();
-  const [group, setGroup] = React.useState(() => mockGroups.find(g => g.id.toString() === id));
+  const groupId = Array.isArray(id) ? id[0] : id;
+  const [loading, setLoading] = useState(true);
+  const [group, setGroup] = useState<any>(null);
+  const [events, setEvents] = useState<GroupEvent[]>([]);
+  const [joiningGroup, setJoiningGroup] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'about' | 'events' | 'members'>('about');
+  const { user } = useAuth();
 
-  // Modal state for members
-  const [showMembersModal, setShowMembersModal] = useState(false);
+  useEffect(() => {
+    const fetchGroupDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  // Placeholder members
-  const members = [
-    { id: 1, name: 'Aisha Patel', role: 'President' },
-    { id: 2, name: 'Wei Chen', role: 'Coordinator' },
-    { id: 3, name: 'Maria Rodriguez', role: 'Treasurer' },
-  ];
-
-  if (!group) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Group Not Found</Text>
-          <View style={{ width: 40 }}/>
-        </View>
-        <View style={styles.centered}>
-          <Text>Sorry, we couldn't find this group.</Text>
-          <Button title="Go Back" onPress={() => router.back()} style={{ marginTop: spacing.lg }} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Find past events for this group
-  const pastEvents = mockEvents.filter(event => group.pastEvents?.includes(event.id));
-
-  const generateGroupShareContent = () => {
-    return {
-      title: `${group.name} - Culture Connect`,
-      message: `Check out ${group.name} on Culture Connect!\n\n${group.description}\n\n📍 ${group.location}\n👥 ${group.memberCount} members\n\nJoin our cultural community!`,
-      url: `https://cultureconnect.app/group/${group.id}`
-    };
-  };
-
-  // Handler for location click
-  const handleLocationClick = () => {
-    if (!group.meetingLocation) return;
-    const query = encodeURIComponent(group.meetingLocation);
-    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
-    Linking.openURL(url).catch(() => {
-      Alert.alert('Location', group.meetingLocation);
-    });
-  };
-
-  const handleJoinLeaveGroup = () => {
-    if (group.isJoined) {
-      Alert.alert(
-        'Leave Group',
-        'Are you sure you want to leave this group?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Leave', style: 'destructive', onPress: () => {
-              store.toggleGroupMembership(store.getState().currentUser.id, group.id);
-              setGroup(store.getGroupById(group.id)); // Update local state to force re-render
+        // Fetch group details
+        const groupResponse = await getGroupById(groupId);
+        if (groupResponse.success && groupResponse.group) {
+          setGroup(groupResponse.group);
+          
+          // Fetch group events
+          try {
+            const eventsResponse = await getGroupEvents(groupId);
+            if (eventsResponse.success && eventsResponse.events) {
+              setEvents(eventsResponse.events);
             }
+          } catch (eventError) {
+            console.error('Error fetching group events:', eventError);
           }
-        ]
-      );
-    } else {
-      if (group.universityOnly) {
-        Alert.prompt(
-          'Join University Group',
-          'This group requires approval. Please provide an optional message to the group administrators:',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Join', onPress: (message) => {
-                store.toggleGroupMembership(store.getState().currentUser.id, group.id);
-                setGroup(store.getGroupById(group.id)); // Update local state to force re-render
-                Alert.alert('Request Sent', 'Your request to join has been sent to the group administrators.');
-              }
-            }
-          ],
-          'plain-text',
-          ''
-        );
-      } else {
-        store.toggleGroupMembership(store.getState().currentUser.id, group.id);
-        setGroup(store.getGroupById(group.id)); // Update local state to force re-render
+        } else {
+          setError('Failed to fetch group details');
+        }
+      } catch (err) {
+        console.error('Error fetching group:', err);
+        setError('Failed to fetch group details');
+      } finally {
+        setLoading(false);
       }
+    };
+
+    if (groupId) {
+      fetchGroupDetails();
+    }
+  }, [groupId]);
+
+  const handleJoinGroup = async () => {
+    try {
+      setJoiningGroup(true);
+      setError(null);
+      
+      if (group.isJoined) {
+        // Already joined - this should be handled differently
+        return;
+      }
+      
+      const response = await requestJoinGroup(groupId);
+      if (response.success) {
+        // Update the group data with pending request status
+        setGroup({
+          ...group,
+          hasPendingRequest: true
+        });
+      } else {
+        setError('Failed to send join request');
+      }
+    } catch (err) {
+      console.error('Error joining group:', err);
+      setError('Failed to send join request');
+    } finally {
+      setJoiningGroup(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{paddingHorizontal: 20}}>
-        <Image source={{ uri: group.image || undefined }} defaultSource={placeholderImg} style={styles.image} />
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonAbsolute}>
-          <ArrowLeft size={24} color={theme.white} />
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={styles.loadingText}>Loading group details...</Text>
+      </View>
+    );
+  }
+
+  if (error || !group) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error || 'Group not found'}</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
 
-        <View style={styles.shareButtonContainer}>
-          <ShareButton
-            {...generateGroupShareContent()}
-            size={20}
-            color={theme.white}
-            style={styles.shareButton}
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: '',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <ArrowLeft size={24} color={theme.text} />
+            </TouchableOpacity>
+          ),
+          headerShadowVisible: false,
+          headerStyle: {
+            backgroundColor: 'transparent',
+          },
+        }}
+      />
+
+      <ScrollView style={styles.scrollView}>
+        {/* Group Header */}
+        <View style={styles.headerContainer}>
+          <Image
+            source={{ uri: group.image }}
+            style={styles.coverImage}
           />
-        </View>
+          
+          <View style={styles.groupMetaContainer}>
+            <Text style={styles.groupName}>{group.name}</Text>
+            
+            <View style={styles.statRow}>
+              <View style={styles.statItem}>
+                <Users size={16} color={theme.textSecondary} />
+                <Text style={styles.statText}>{group.memberCount} members</Text>
+              </View>
+              
+              {group.location && (
+                <View style={styles.statItem}>
+                  <MapPin size={16} color={theme.textSecondary} />
+                  <Text style={styles.statText}>{group.location}</Text>
+                </View>
+              )}
+            </View>
 
-        <View style={styles.content}>
-          <View style={styles.headerRow}>
-              <Text style={styles.title}>{group.name}</Text>
-              <View style={styles.actionButtons}>
-                {group.isJoined && (
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => {
-                      if (group.chatId) {
-                        router.push(`/chat/${group.chatId}`);
-                      } else {
-                        // Create a new group chat or show a message
-                        Alert.alert('Message', 'Group chat feature coming soon!');
-                      }
-                    }}
-                  >
-                      <MessageCircle size={24} color={theme.textSecondary} />
-                  </TouchableOpacity>
+            <View style={styles.categoryBadge}>
+              {group.category && (
+                <Text style={styles.categoryText}>{group.category}</Text>
+              )}
+            </View>
+            
+            {/* Join/Request Button */}
+            {!group.isMember && !group.hasPendingRequest && (
+              <Button
+                title={joiningGroup ? "Sending Request..." : "Join Group"}
+                onPress={handleJoinGroup}
+                disabled={joiningGroup}
+                style={styles.joinButton}
+              />
+            )}
+            
+            {group.hasPendingRequest && !group.isMember && (
+              <View style={styles.pendingRequestBadge}>
+                <Bell size={16} color={theme.warning} />
+                <Text style={styles.pendingRequestText}>Request Pending</Text>
+              </View>
+            )}
+            
+            {group.isMember && (
+              <View style={styles.memberBadge}>
+                <Users size={16} color={theme.success} />
+                <Text style={styles.memberText}>You're a member</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'about' && styles.activeTab
+            ]}
+            onPress={() => setActiveTab('about')}
+          >
+            <Text style={[
+              styles.tabText,
+              activeTab === 'about' && styles.activeTabText
+            ]}>About</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'events' && styles.activeTab
+            ]}
+            onPress={() => setActiveTab('events')}
+          >
+            <Text style={[
+              styles.tabText,
+              activeTab === 'events' && styles.activeTabText
+            ]}>Events</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'members' && styles.activeTab
+            ]}
+            onPress={() => setActiveTab('members')}
+          >
+            <Text style={[
+              styles.tabText,
+              activeTab === 'members' && styles.activeTabText
+            ]}>Members</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Tab Content */}
+        <View style={styles.tabContent}>
+          {/* About Tab */}
+          {activeTab === 'about' && (
+            <View>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.description}>{group.description}</Text>
+              
+              {(group.meetingTime || group.meetingDate || group.meetingLocation) && (
+                <>
+                  <Text style={styles.sectionTitle}>Meeting Details</Text>
+                  <View style={styles.meetingDetails}>
+                    {group.meetingDate && (
+                      <View style={styles.meetingDetail}>
+                        <Calendar size={16} color={theme.textSecondary} />
+                        <Text style={styles.meetingDetailText}>{group.meetingDate}</Text>
+                      </View>
+                    )}
+                    
+                    {group.meetingTime && (
+                      <View style={styles.meetingDetail}>
+                        <Calendar size={16} color={theme.textSecondary} />
+                        <Text style={styles.meetingDetailText}>{group.meetingTime}</Text>
+                      </View>
+                    )}
+                    
+                    {group.meetingLocation && (
+                      <View style={styles.meetingDetail}>
+                        <MapPin size={16} color={theme.textSecondary} />
+                        <Text style={styles.meetingDetailText}>{group.meetingLocation}</Text>
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
+              
+              <View style={styles.adminSection}>
+                <Text style={styles.sectionTitle}>Group Admin</Text>
+                {group.president && (
+                  <View style={styles.adminCard}>
+                    <Image 
+                      source={{ uri: group.president.avatar || 'https://placehold.co/100x100/ddd/aaa?text=User' }} 
+                      style={styles.adminAvatar}
+                    />
+                    <View style={styles.adminInfo}>
+                      <Text style={styles.adminName}>{group.president.fullName}</Text>
+                      <View style={styles.adminBadge}>
+                        <Shield size={12} color={theme.primary} />
+                        <Text style={styles.adminBadgeText}>Group Admin</Text>
+                      </View>
+                    </View>
+                  </View>
                 )}
               </View>
-          </View>
-          <View style={styles.tagsContainer}>
-            <Badge label={group.category} variant="primary" />
-            {group.isPublic ? 
-              <Badge label="Public" variant="success" /> : 
-              <Badge label="Private" variant="warning" />
-            }
-            {group.universityOnly && <Badge label="University Only" variant="info" />}
-          </View>
-         
-          <Card style={styles.infoCard}>
-            <TouchableOpacity style={styles.infoRow} onPress={() => setShowMembersModal(true)}>
-              <Users size={20} color={theme.primary} />
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Members</Text>
-                <Text style={styles.infoValue}>{group.memberCount}</Text>
-              </View>
-            </TouchableOpacity>
-            {group.meetingDate && (
-             <View style={styles.infoRow}>
-               <Calendar size={20} color={theme.primary} />
-               <View style={styles.infoTextContainer}>
-                 <Text style={styles.infoLabel}>Meeting Day</Text>
-                 <Text style={styles.infoValue}>{group.meetingDate}</Text>
-               </View>
-             </View>
-           )}
-           {group.meetingTime && (
-             <View style={styles.infoRow}>
-               <Clock size={20} color={theme.primary} />
-               <View style={styles.infoTextContainer}>
-                 <Text style={styles.infoLabel}>Meeting Time</Text>
-                 <Text style={styles.infoValue}>{group.meetingTime}</Text>
-               </View>
-             </View>
-           )}
-           {group.meetingLocation && (
-             <TouchableOpacity style={styles.infoRow} onPress={handleLocationClick}>
-               <MapPin size={20} color={theme.primary} />
-               <View style={styles.infoTextContainer}>
-                 <Text style={styles.infoLabel}>Meeting Location</Text>
-                 <Text style={[styles.infoValue, { textDecorationLine: 'underline', color: theme.primary }]}>{group.meetingLocation}</Text>
-               </View>
-             </TouchableOpacity>
-           )}
-           {group.socialMedia && group.socialMedia.length > 0 && (
-             <>
-               <View style={styles.separator} />
-               {group.socialMedia.map((social, index) => (
-                 <TouchableOpacity key={index} style={styles.socialRow} onPress={() => Linking.openURL(social.link)}>
-                   <SocialIcon platform={social.platform} />
-                   <Text style={styles.socialLink}>{`Follow on ${social.platform}`}</Text>
-                 </TouchableOpacity>
-               ))}
-             </>
-           )}
-          </Card>
-
-          <Text style={styles.sectionTitle}>About this Group</Text>
-          <Text style={styles.description}>{group.description}</Text>
-
-          {group.isJoined && pastEvents.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Past Events</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg, paddingHorizontal: spacing.lg }}>
-                {pastEvents.map(event => (
-                  <TouchableOpacity key={event.id} onPress={() => router.push(`/event/${event.id}`)}>
-                    <Card style={styles.eventCard}>
-                      <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={styles.eventImage} />
-                      <Text style={styles.eventTitle} numberOfLines={2}>{event.name}</Text>
-                    </Card>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </>
+              
+              {group.isPublic !== undefined && (
+                <View style={styles.privacySection}>
+                  <Text style={styles.sectionTitle}>Privacy</Text>
+                  <View style={styles.privacyBadge}>
+                    {group.isPublic ? (
+                      <>
+                        <Globe size={16} color={theme.success} />
+                        <Text style={[styles.privacyText, { color: theme.success }]}>
+                          Public Group
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Shield size={16} color={theme.warning} />
+                        <Text style={[styles.privacyText, { color: theme.warning }]}>
+                          Private Group
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
           )}
-
-          {group.isJoined && group.media && group.media.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Media</Text>
-              <View style={styles.mediaContainer}>
-                {group.media.map((item, index) => (
-                  <TouchableOpacity key={index} style={styles.mediaItem}>
-                    <Image source={{ uri: item.url || undefined }} defaultSource={placeholderImg} style={styles.mediaImage} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
+          
+          {/* Events Tab */}
+          {activeTab === 'events' && (
+            <View>
+              <Text style={styles.sectionTitle}>Upcoming Events</Text>
+              
+              {events.length === 0 ? (
+                <Text style={styles.noContentText}>No upcoming events</Text>
+              ) : (
+                <View style={styles.eventsList}>
+                  {events.map((event) => (
+                    <TouchableOpacity 
+                      key={event.id} 
+                      style={styles.eventCard}
+                      onPress={() => router.push(`/event/${event.id}`)}
+                    >
+                      {event.image && (
+                        <Image 
+                          source={{ uri: event.image }} 
+                          style={styles.eventImage} 
+                        />
+                      )}
+                      <View style={styles.eventDetails}>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
+                        <View style={styles.eventDate}>
+                          <Calendar size={14} color={theme.textSecondary} />
+                          <Text style={styles.eventDateText}>{event.date}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              
+              {group.isMember && (
+                <Button 
+                  title="Create Event" 
+                  onPress={() => router.push('/events/create')} 
+                  style={styles.createEventButton}
+                />
+              )}
+            </View>
+          )}
+          
+          {/* Members Tab */}
+          {activeTab === 'members' && (
+            <View>
+              <Text style={styles.sectionTitle}>Group Members</Text>
+              
+              {!group.members || group.members.length === 0 ? (
+                <Text style={styles.noContentText}>No members to display</Text>
+              ) : (
+                <View style={styles.membersList}>
+                  {group.members.map((member: any) => (
+                    <TouchableOpacity 
+                      key={member.id} 
+                      style={styles.memberCard}
+                      onPress={() => router.push(`/profile/public/${member.id}`)}
+                    >
+                      <Image 
+                        source={{ uri: member.avatar || 'https://placehold.co/100x100/ddd/aaa?text=User' }} 
+                        style={styles.memberAvatar} 
+                      />
+                      <View style={styles.memberDetails}>
+                        <Text style={styles.memberName}>{member.fullName}</Text>
+                        {member.university && (
+                          <Text style={styles.memberUniversity}>{member.university}</Text>
+                        )}
+                        {group.president && member.id === group.president.id && (
+                          <View style={styles.adminBadge}>
+                            <Shield size={12} color={theme.primary} />
+                            <Text style={styles.adminBadgeText}>Group Admin</Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           )}
         </View>
       </ScrollView>
-      {/* Members Modal */}
-      {showMembersModal && (
-        <View style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          justifyContent: 'center', alignItems: 'center',
-          zIndex: 1000,
-        }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, minWidth: 320, maxWidth: 360 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Group Members</Text>
-            <View style={{ gap: 12 }}>
-              {members.map(m => (
-                <View
-                  key={m.id}
-                  style={{
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: 12,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: '#E5E7EB',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 2,
-                    elevation: 2,
-                    marginBottom: 0,
-                  }}
-                >
-                  <Text style={{ fontWeight: '600', fontSize: 16, marginBottom: 2 }}>{m.name}</Text>
-                  <Text style={{ color: theme.textSecondary, fontSize: 13 }}>{m.role}</Text>
-                </View>
-              ))}
-            </View>
-            <Button title="Close" onPress={() => setShowMembersModal(false)} style={{ marginTop: 16 }} />
-          </View>
+
+      {group.isMember && (
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.chatButton}
+            onPress={() => router.push(`/chat/${group.chatId || groupId}`)}
+          >
+            <MessageSquare size={20} color={theme.white} />
+            <Text style={styles.chatButtonText}>Group Chat</Text>
+          </TouchableOpacity>
         </View>
       )}
-      <View style={styles.footer}>
-        <Button title={group.isJoined ? "Leave Group" : "Join Group"} onPress={handleJoinLeaveGroup} />
-      </View>
     </SafeAreaView>
   );
 }
@@ -289,177 +412,318 @@ export default function GroupDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.white,
+    backgroundColor: theme.background,
   },
-  centered: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: theme.textSecondary,
   },
-  headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.semiBold,
-  },
-  backButton: {
-    padding: spacing.xs,
-  },
-  backButtonAbsolute: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  shareButtonContainer: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  shareButton: {
-    padding: 4,
-  },
-  image: {
-    width: '100%',
-    height: 250,
-  },
-  content: {
-    padding: spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  title: {
-    fontSize: typography.fontSize['3xl'],
-    fontFamily: typography.fontFamily.bold,
-    color: theme.textPrimary,
+  errorContainer: {
     flex: 1,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    padding: spacing.sm,
-    marginLeft: spacing.sm,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  infoCard: {
-    marginBottom: spacing.lg,
-    padding: spacing.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    padding: 20,
   },
-  infoTextContainer: {
-    marginLeft: spacing.md,
-  },
-  infoLabel: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.medium,
-    color: theme.textSecondary,
-  },
-  infoValue: {
-    fontSize: typography.fontSize.base,
-    fontFamily: typography.fontFamily.semiBold,
-    color: theme.textPrimary,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: theme.border,
-    marginVertical: spacing.sm,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  socialLink: {
-    marginLeft: spacing.md,
-    color: theme.primary,
-    fontFamily: typography.fontFamily.medium,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.bold,
-    color: theme.textPrimary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  description: {
-    fontSize: typography.fontSize.base,
-    fontFamily: typography.fontFamily.regular,
-    color: theme.textSecondary,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-  },
-  eventCard: {
-    width: 100,
-    marginRight: spacing.md,
-    backgroundColor: theme.white,
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-    alignItems: 'center',
-    padding: 0,
-    elevation: 2,
-    shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-  },
-  eventImage: {
-    width: 100,
-    height: 100,
-    borderTopLeftRadius: borderRadius.md,
-    borderTopRightRadius: borderRadius.md,
-  },
-  eventTitle: {
-    padding: spacing.sm,
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+  errorText: {
+    fontSize: 16,
+    color: theme.error,
+    marginBottom: 20,
     textAlign: 'center',
   },
-  mediaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    margin: -spacing.xs,
+  backButton: {
+    backgroundColor: theme.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
-  mediaItem: {
-    width: 100,
-    height: 100,
-    padding: spacing.xs,
+  backButtonText: {
+    color: 'white',
+    fontWeight: '500',
   },
-  mediaImage: {
+  scrollView: {
+    flex: 1,
+  },
+  headerContainer: {
+    backgroundColor: theme.cardBackground,
+    marginBottom: 16,
+  },
+  coverImage: {
     width: '100%',
-    height: '100%',
-    borderRadius: borderRadius.md,
+    height: 200,
     resizeMode: 'cover',
   },
+  groupMetaContainer: {
+    padding: 16,
+  },
+  groupName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 8,
+  },
+  statRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  statText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: theme.textSecondary,
+  },
+  categoryBadge: {
+    backgroundColor: theme.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.primary,
+  },
+  joinButton: {
+    borderRadius: 8,
+  },
+  pendingRequestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.warningLight,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  pendingRequestText: {
+    marginLeft: 8,
+    color: theme.warning,
+    fontWeight: '500',
+  },
+  memberBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.successLight,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  memberText: {
+    marginLeft: 8,
+    color: theme.success,
+    fontWeight: '500',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.cardBackground,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: theme.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.textSecondary,
+  },
+  activeTabText: {
+    color: theme.primary,
+  },
+  tabContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 80,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: theme.text,
+    marginBottom: 20,
+  },
+  meetingDetails: {
+    backgroundColor: theme.cardBackground,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+  },
+  meetingDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  meetingDetailText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: theme.text,
+  },
+  adminSection: {
+    marginBottom: 20,
+  },
+  adminCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.cardBackground,
+    borderRadius: 8,
+    padding: 12,
+  },
+  adminAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  adminInfo: {
+    marginLeft: 12,
+  },
+  adminName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.text,
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  adminBadgeText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: theme.primary,
+  },
+  privacySection: {
+    marginBottom: 20,
+  },
+  privacyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.cardBackground,
+    borderRadius: 8,
+    padding: 12,
+  },
+  privacyText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  eventsList: {
+    marginBottom: 20,
+  },
+  eventCard: {
+    flexDirection: 'row',
+    backgroundColor: theme.cardBackground,
+    borderRadius: 8,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  eventImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'cover',
+  },
+  eventDetails: {
+    padding: 12,
+    flex: 1,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.text,
+    marginBottom: 8,
+  },
+  eventDate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eventDateText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: theme.textSecondary,
+  },
+  createEventButton: {
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  noContentText: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  membersList: {
+    marginBottom: 20,
+  },
+  memberCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.cardBackground,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  memberDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 16,
+    color: theme.text,
+  },
+  memberUniversity: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    marginTop: 2,
+  },
   footer: {
-    padding: spacing.lg,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: theme.background,
     borderTopWidth: 1,
     borderTopColor: theme.border,
-    backgroundColor: theme.white,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+  },
+  chatButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.white,
   },
 });
