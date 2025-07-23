@@ -1,3 +1,4 @@
+// sunnyrijal/cursor-culture-connect/Cursor-Culture-Connect-dev4/app/settings.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +7,24 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { ArrowLeft, User, CreditCard as Edit3, Share2, Eye, Shield, Bell, Lock, CircleHelp as HelpCircle, LogOut, ChevronRight, Settings as SettingsIcon, Globe, Smartphone, Mail } from 'lucide-react-native';
+import { 
+  ArrowLeft, 
+  User, 
+  CreditCard as Edit3, 
+  Share2, 
+  Eye, 
+  Shield, 
+  Bell, 
+  Lock, 
+  CircleHelp as HelpCircle, 
+  LogOut, 
+  ChevronRight, 
+  Settings as SettingsIcon, 
+  Globe, 
+  Smartphone, 
+  Mail 
+} from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface SettingsOption {
   id: string;
@@ -19,6 +37,7 @@ interface SettingsOption {
 }
 
 export default function Settings() {
+  const { logout } = useAuth(); // Get logout function from context
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleEditProfile = () => {
@@ -57,13 +76,8 @@ export default function Settings() {
           style: 'destructive',
           onPress: async () => {
             setIsLoggingOut(true);
-            // Simulate logout process
-            setTimeout(() => {
-              setIsLoggingOut(false);
-              Alert.alert('Success', 'You have been logged out successfully');
-              // In a real app, this would navigate to login screen
-              router.push('/');
-            }, 1500);
+            await logout(); // Use the logout function from AuthContext
+            setIsLoggingOut(false);
           }
         }
       ]

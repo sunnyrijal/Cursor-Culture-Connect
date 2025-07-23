@@ -1,3 +1,4 @@
+// sunnyrijal/cursor-culture-connect/Cursor-Culture-Connect-dev4/components/CreateGroupModal.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Switch } from 'react-native';
 import { X, Globe, Lock, GraduationCap, ChevronDown, Check, AlertCircle, Calendar, Clock, MapPin, PlusCircle, MinusCircle } from 'lucide-react-native';
@@ -15,12 +16,12 @@ export function CreateGroupModal({ isVisible, onClose, onSubmit }: CreateGroupMo
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
+    category: '', // Add category to the form state
     isPublic: true,
     universityOnly: false,
     allowedUniversity: '',
   });
-  
+
   const [meetings, setMeetings] = useState<Meeting[]>([{ date: '', time: '', location: ''}]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [city, setCity] = useState('');
@@ -48,6 +49,13 @@ export function CreateGroupModal({ isVisible, onClose, onSubmit }: CreateGroupMo
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (!useLocation && (!city || !state)) {
       Alert.alert('Please enter both city and state, or enable location.');
+      setIsSubmitting(false); // Make sure to stop submitting on error
+      return;
+    }
+    // Add validation for required fields
+    if (!formData.name || !formData.description || !formData.category) {
+      Alert.alert('Please fill in all required fields: Name, Description, and Category.');
+      setIsSubmitting(false);
       return;
     }
     const groupData = {
@@ -59,6 +67,7 @@ export function CreateGroupModal({ isVisible, onClose, onSubmit }: CreateGroupMo
     setIsSubmitting(false);
     onClose();
   };
+
 
   if (!isVisible) return null;
 
@@ -85,6 +94,11 @@ export function CreateGroupModal({ isVisible, onClose, onSubmit }: CreateGroupMo
           <View style={styles.field}>
             <Text style={styles.label}>Description *</Text>
             <TextInput style={[styles.input, styles.textArea]} value={formData.description} onChangeText={text => setFormData({...formData, description: text})} placeholder="Describe your group" multiline/>
+          </View>
+          {/* Add Category Input */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Category *</Text>
+            <TextInput style={styles.input} value={formData.category} onChangeText={text => setFormData({...formData, category: text})} placeholder="e.g., Cultural, Academic, Sports" />
           </View>
 
           <Text style={styles.sectionTitle}>Meeting Details (Optional)</Text>

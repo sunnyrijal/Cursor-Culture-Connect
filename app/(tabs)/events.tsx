@@ -1,15 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { mockEvents, currentUser, MockEvent } from '@/data/mockData';
+import { currentUser, MockEvent } from '@/data/mockData';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import placeholderImg from '@/assets/images/icon.png';
 import { theme, spacing, borderRadius, typography } from '@/components/theme';
+import { getUserGroups } from '@/data/services/groupService';
+import { useAuth } from '@/context/AuthContext';
+import { createEvent, getAllEvents } from '@/data/services/eventService';
 
 const filterOptions = [
     { key: 'all', label: 'All' },
@@ -36,7 +39,7 @@ interface FilterOptions {
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -55,6 +58,9 @@ export default function Events() {
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedUniversity, setSelectedUniversity] = useState('');
   const [selectedHeritage, setSelectedHeritage] = useState('');
+  const [userGroups, setUserGroups] = useState([]);
+  
+  const { isAuthenticated, user } = useAuth();
 
   // Add local state for pending filter selections
   const [pendingCategory, setPendingCategory] = useState('all');
@@ -112,6 +118,43 @@ export default function Events() {
     }
   }, [showHelper]);
 
+  // Fetch user groups
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      try {
+        const response = await getUserGroups();
+        if (response && response.groups) {
+          setUserGroups(response.groups);
+          console.log("Fetched user groups for events tab:", response.groups);
+        }
+      } catch (error) {
+        console.error("Error fetching user groups:", error);
+      }
+    };
+
+    if (isAuthenticated && user) {
+      fetchUserGroups();
+    }
+  }, [isAuthenticated, user]);
+
+  // Fetch all events when the component mounts
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const eventsData = await getAllEvents();
+        setEvents(eventsData);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+    
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    console.log('Events data:', events);
+  }, [events]);
+
   const filteredEvents = useMemo(() => {
     let tempEvents = [...events];
 
@@ -127,7 +170,7 @@ export default function Events() {
     // Category filters
     if (activeFilter === 'cultural') {
       tempEvents = tempEvents.filter(event =>
-        event.category?.some(cat => [
+        event.category?.some((cat: string) => [
           'Chinese', 'East Asian', 'Vietnamese', 'Indian', 'South Asian', 'Hindu', 'Cultural'
         ].includes(cat))
       );
@@ -157,7 +200,7 @@ export default function Events() {
         const userHeritages = currentUser.heritage || [];
         tempEvents = tempEvents.filter(event =>
           userHeritages.some(heritage =>
-            event.category?.some(cat => cat.toLowerCase().includes(heritage.toLowerCase()))
+            event.category?.some((cat: string) => cat.toLowerCase().includes(heritage.toLowerCase()))
           )
         );
         break;
@@ -179,7 +222,7 @@ export default function Events() {
     if (filters.ethnicity.length > 0) {
       tempEvents = tempEvents.filter(event =>
         filters.ethnicity.some(ethnicity =>
-          event.category?.some(cat => cat.toLowerCase().includes(ethnicity.toLowerCase()))
+          event.category?.some((cat: string) => cat.toLowerCase().includes(ethnicity.toLowerCase()))
         )
       );
     }
@@ -195,14 +238,53 @@ export default function Events() {
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
-  const handleCreateEvent = (eventData: any) => {
+  const handleCreateEvent = async (eventData: any) => {
     console.log("New Event Data:", eventData);
-    setEvents(prevEvents => {
-        const maxId = prevEvents.length > 0 ? Math.max(...prevEvents.map(event => event.id)) : 0;
-        const newId = maxId + 1;
-        return [{...eventData, id: newId, attendees: 1, isRSVPed: true }, ...prevEvents];
-    });
-    setShowCreateModal(false);
+    try {
+      const response = await createEvent(eventData);
+      console.log("Event created response:", response);
+      
+      if (response && response.success) {
+        Alert.alert(
+          "Success", 
+          "Your event has been created successfully! It may need approval from group admins.",
+          [{ text: "OK" }]
+        );
+        
+        // Update the events list with the new event
+        // Fetch all events again to get the updated list
+        try {
+          const eventsResponse = await getAllEvents();
+          if (eventsResponse && eventsResponse.events) {
+            setEvents(eventsResponse.events);
+          }
+        } catch (error) {
+          console.error("Error fetching updated events:", error);
+          // Add the new event to the local state as a fallback
+          const maxId = events.length > 0 ? Math.max(...events.map(event => event.id)) : 0;
+          const newId = maxId + 1;
+          setEvents(prevEvents => [
+            {...eventData, id: newId, attendees: 1, isRSVPed: true },
+            ...prevEvents
+          ]);
+        }
+      } else {
+        Alert.alert(
+          "Error", 
+          "There was a problem creating your event. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      Alert.alert(
+        "Error", 
+        "Failed to create event. Please check your network connection and try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setShowCreateModal(false);
+    }
   };
 
   const handleRSVP = (eventId: number) => {
@@ -225,7 +307,12 @@ export default function Events() {
 
   return (
     <SafeAreaView style={styles.container}>
-        <CreateEventModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={handleCreateEvent} />
+        <CreateEventModal 
+          isVisible={showCreateModal} 
+          onClose={() => setShowCreateModal(false)} 
+          onSubmit={handleCreateEvent}
+          userGroups={userGroups}  
+        />
         
         {/* Sticky Header */}
         <View style={styles.stickyHeader}>
@@ -359,59 +446,43 @@ export default function Events() {
           scrollEventThrottle={16}
         >
             {filteredEvents.map((event) => (
-                <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
-                    <View style={styles.eventImageContainer}>
-                        <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={styles.eventImage} />
-                        <View style={styles.eventActions}>
-                            <ShareButton
-                                {...generateEventShareContent(event)}
-                                size={16}
-                                color={theme.white}
-                                style={styles.shareButton}
-                            />
-                        </View>
+                <View style={styles.eventCard} key={event.id}>
+                  <Image source={event.image || placeholderImg} style={styles.eventImage} />
+                  <View style={styles.eventDetails}>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    <View style={styles.eventInfo}>
+                      <Calendar size={16} color={theme.text} />
+                      <Text style={styles.eventText}>{event.date} • {event.time}</Text>
                     </View>
-                    <View style={styles.eventContent}>
-                        <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
-                        <View style={styles.eventMeta}>
-                            <Calendar size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{event.date}</Text>
-                        </View>
-                        <View style={styles.eventMeta}>
-                            <Clock size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{event.time}</Text>
-                        </View>
-                        <View style={styles.eventMeta}>
-                            <MapPin size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
-                        </View>
-                        {/* Move attendees count here */}
-                        <View style={styles.eventAttendeesRow}>
-                            <Users size={12} color={theme.gray500} />
-                            <Text style={styles.eventAttendeesText}>{event.attendees} going</Text>
-                        </View>
-                        {/* Only RSVP button in footer */}
-                        <View style={styles.eventFooter}>
-                            <TouchableOpacity
-                            style={[
-                                styles.rsvpButton,
-                                event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton
-                            ]}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                handleRSVP(event.id);
-                            }}
-                            >
-                            <Text style={[
-                                styles.rsvpButtonText,
-                                event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText
-                            ]}>
-                                {event.isRSVPed ? "RSVP'd" : 'RSVP'}
-                            </Text>
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.eventMeta}>
+                      <MapPin size={12} color={theme.gray500} />
+                      <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
                     </View>
-                </TouchableOpacity>
+                    <View style={styles.eventAttendeesRow}>
+                      <Users size={12} color={theme.gray500} />
+                      <Text style={styles.eventAttendeesText}>{event.attendees} going</Text>
+                    </View>
+                    <View style={styles.eventFooter}>
+                      <TouchableOpacity
+                        style={[
+                          styles.rsvpButton,
+                          event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleRSVP(event.id);
+                        }}
+                      >
+                        <Text style={[
+                          styles.rsvpButtonText,
+                          event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText
+                        ]}>
+                          {event.isRSVPed ? "RSVP'd" : 'RSVP'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
             ))}
         </Animated.ScrollView>
     </SafeAreaView>
@@ -478,35 +549,21 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: '100%',
   },
-  eventImageContainer: {
+  eventImage: {
     width: 120,
     height: 120,
-    position: 'relative',
-  },
-  eventImage: {
-    width: '100%',
-    height: '100%',
     borderTopLeftRadius: borderRadius.card,
     borderBottomLeftRadius: borderRadius.card,
     resizeMode: 'cover',
   },
-  eventActions: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: borderRadius.lg,
-    padding: spacing.sm,
-  },
-  shareButton: {
-    padding: 2,
-  },
-  eventContent: {
+  eventDetails: {
     flex: 1,
     padding: spacing.lg,
     justifyContent: 'center',
   },
   eventTitle: { fontSize: typography.fontSize.lg, fontWeight: 'bold', color: theme.textPrimary, marginBottom: spacing.sm, fontFamily: typography.fontFamily.bold, textAlign: 'left', lineHeight: typography.fontSize.lg * typography.lineHeight.normal },
+  eventInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  eventText: { fontSize: typography.fontSize.sm, color: theme.textSecondary, fontFamily: typography.fontFamily.regular },
   eventMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
   eventMetaText: { fontSize: typography.fontSize.sm, color: theme.textSecondary, fontFamily: typography.fontFamily.regular },
   eventFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: theme.border },

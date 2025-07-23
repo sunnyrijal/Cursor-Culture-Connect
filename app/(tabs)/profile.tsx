@@ -11,6 +11,7 @@ export default function ProfileScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = () => {
+    console.log('Logout button pressed');
     Alert.alert(
       "Log Out",
       "Are you sure you want to log out?",

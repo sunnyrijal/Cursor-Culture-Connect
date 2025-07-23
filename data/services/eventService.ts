@@ -23,20 +23,30 @@ const authRequest = async (url: string, method: string, body?: any) => {
     options.body = JSON.stringify(body);
   }
   
-  const response = await fetch(url, options);
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Something went wrong');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    let errorMessage = 'Failed to fetch';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    console.error(`Fetch error for ${url}:`, errorMessage);
+    throw new Error(errorMessage);
   }
-  
-  return data;
 };
 
 // Get all events
 export const getAllEvents = async () => {
   try {
-    return await authRequest(EVENT_API.all, 'GET');
+    const response = await authRequest(EVENT_API.all, 'GET');
+    return response.events;
   } catch (error) {
     console.error('Get all events error:', error);
     throw error;

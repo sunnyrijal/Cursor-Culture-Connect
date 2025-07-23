@@ -42,6 +42,8 @@ import placeholderImg from '@/assets/images/icon.png';
 import { WebView } from 'react-native-webview';
 import * as Linking from 'expo-linking';
 import { useAuth } from '@/context/AuthContext';
+import { getUserGroups } from '@/data/services/groupService';
+import { createEvent } from '@/data/services/eventService';
 
 // Component to render until the screen is fully loaded
 function LoadingScreen() {
@@ -65,6 +67,7 @@ export default function Dashboard() {
   const [aiQuestion, setAIQuestion] = useState('');
   const [aiResults, setAIResults] = useState([]);
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
+  const [userGroups, setUserGroups] = useState([]);
   
   const { isAuthenticated, user } = useAuth();
   const isInitialMount = useRef(true);
@@ -75,10 +78,27 @@ export default function Dashboard() {
     console.log("User authenticated:", isAuthenticated);
     console.log("Current user:", user);
 
+    // Fetch user groups when component mounts
+    const fetchUserGroups = async () => {
+      try {
+        const response = await getUserGroups();
+        if (response && response.groups) {
+          setUserGroups(response.groups);
+          console.log("Fetched user groups:", response.groups);
+        }
+      } catch (error) {
+        console.error("Error fetching user groups:", error);
+      }
+    };
+
     // Simulate data loading
     const loadData = setTimeout(() => {
       setIsLoading(false);
     }, 500);
+
+    if (isAuthenticated && user) {
+      fetchUserGroups();
+    }
 
     if (isInitialMount.current) {
       console.log("Initial Dashboard render");
@@ -137,9 +157,35 @@ export default function Dashboard() {
   ];
 
   // Define handler functions
-  const handleCreateEvent = (eventData) => {
+  const handleCreateEvent = async (eventData) => {
     console.log('Creating event:', eventData);
-    setShowCreateEventModal(false);
+    try {
+      const response = await createEvent(eventData);
+      console.log("Event created response:", response);
+      
+      if (response && response.success) {
+        Alert.alert(
+          "Success", 
+          "Your event has been created successfully! It may need approval from group admins.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Error", 
+          "There was a problem creating your event. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      Alert.alert(
+        "Error", 
+        "Failed to create event. Please check your network connection and try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setShowCreateEventModal(false);
+    }
   };
 
   const handleCreateGroup = (groupData) => {
@@ -293,6 +339,7 @@ export default function Dashboard() {
           isVisible={showCreateEventModal} 
           onClose={() => setShowCreateEventModal(false)} 
           onSubmit={handleCreateEvent} 
+          userGroups={userGroups}
         />
       )}
       

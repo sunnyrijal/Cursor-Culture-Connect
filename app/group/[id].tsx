@@ -345,10 +345,10 @@ export default function GroupDetailScreen() {
               )}
               
               {group.isMember && (
-                <Button 
-                  title="Create Event" 
-                  onPress={() => router.push('/events/create')} 
-                  style={styles.createEventButton}
+                 <Button 
+                 title="Create Event" 
+                 onPress={() => router.push(`/events/create?groupId=${groupId}`)} 
+                 style={styles.createEventButton}
                 />
               )}
             </View>
