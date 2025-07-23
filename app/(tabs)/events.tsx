@@ -6,13 +6,11 @@ import { router } from 'expo-router';
 import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { currentUser, MockEvent } from '@/data/mockData';
-import { CreateEventModal } from '@/components/CreateEventModal';
-import placeholderImg from '@/assets/images/icon.png';
-import { theme, spacing, borderRadius, typography } from '@/components/theme';
 import { getUserGroups } from '@/data/services/groupService';
 import { useAuth } from '@/context/AuthContext';
 import { createEvent, getAllEvents } from '@/data/services/eventService';
+import { CreateEventModal } from '@/components/CreateEventModal';
+import { theme, spacing, borderRadius, typography } from '@/components/theme';
 
 const filterOptions = [
     { key: 'all', label: 'All' },
@@ -137,17 +135,24 @@ export default function Events() {
     }
   }, [isAuthenticated, user]);
 
-  // Fetch all events when the component mounts
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        console.log('Starting event fetch...');
+        const startTime = new Date().getTime();
         const eventsData = await getAllEvents();
+        const endTime = new Date().getTime();
+        console.log(`Fetched events in ${endTime - startTime}ms:`, eventsData);
+        console.log('Number of events:', eventsData.length);
         setEvents(eventsData);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Failed to fetch events:', error);
+        Alert.alert('Error', 'Failed to fetch events');
+      } finally {
+        console.log('Event fetch completed');
       }
     };
-    
+
     fetchEvents();
   }, []);
 
@@ -192,12 +197,12 @@ export default function Events() {
     switch (filters.filterBy) {
       case 'my-university':
         tempEvents = tempEvents.filter(event =>
-          event.location.includes(currentUser.university) ||
-          event.organizer?.university === currentUser.university
+          event.location.includes(user.university) ||
+          event.organizer?.university === user.university
         );
         break;
       case 'my-heritage':
-        const userHeritages = currentUser.heritage || [];
+        const userHeritages = user.heritage || [];
         tempEvents = tempEvents.filter(event =>
           userHeritages.some(heritage =>
             event.category?.some((cat: string) => cat.toLowerCase().includes(heritage.toLowerCase()))
@@ -293,7 +298,7 @@ export default function Events() {
     );
   };
 
-  const generateEventShareContent = (event: MockEvent) => {
+  const generateEventShareContent = (event: any) => {
     return {
       title: `${event.title} - Culture Connect`,
       message: `Join me at ${event.title}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\nDiscover amazing cultural events on Culture Connect!`,
@@ -304,6 +309,8 @@ export default function Events() {
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
   };
+
+  const placeholderImg = 'https://via.placeholder.com/150';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -378,6 +385,7 @@ export default function Events() {
 
             {/* Enhanced Filter System - Always Visible */}
             <View style={styles.filterSystemContainer}>
+              <Text>Debug: {events.length} events loaded</Text>
               <FilterSystem
                 onFiltersChange={handleFiltersChange}
                 contentType="events"
@@ -447,7 +455,7 @@ export default function Events() {
         >
             {filteredEvents.map((event) => (
                 <View style={styles.eventCard} key={event.id}>
-                  <Image source={event.image || placeholderImg} style={styles.eventImage} />
+                  <Image source={{ uri: event.image || placeholderImg }} style={styles.eventImage} />
                   <View style={styles.eventDetails}>
                     <Text style={styles.eventTitle}>{event.title}</Text>
                     <View style={styles.eventInfo}>
@@ -499,6 +507,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 3,
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm, alignItems: 'center' },
   title: { fontSize: typography.fontSize['2xl'], fontWeight: 'bold', color: theme.textPrimary, marginBottom: spacing.sm, fontFamily: typography.fontFamily.bold, textAlign: 'left', alignSelf: 'flex-start' },
