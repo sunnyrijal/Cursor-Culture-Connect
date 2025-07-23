@@ -2,37 +2,18 @@
 
 import { MockGroup } from "./group";
 
-export interface User {
-  id: number | string;
+export type User = {
+  id: string;
   name: string;
-  email?: string;
-  university: string;
-  major: string;
-  year: string;
-  title: string;
-  heritage: string[];
-  languages: string[];
+  email: string;
+  password: string;
+  heritage: string;
+  profileImage: string;
   bio: string;
-  image: string;
-  verified: boolean;
-  mutualConnections?: number;
-  location: string;
-  country: string;
-  state?: string;
-  linkedinUrl?: string;
-  isPublic?: boolean;
-  /**
-   * Profile visibility: 'public', 'group', or 'connections'.
-   */
-  privacy?: 'public' | 'group' | 'connections';
-  groupsList?: MockGroup[];
-  connectionsList?: User[];
-  isConnected?: boolean;
-  joinedGroups?: number;
-  connections?: number;
-  eventsAttended?: number;
-  categories?: string[];
-}
+  interests: string[];
+  university: string;
+  connections: string[];
+};
 
 export interface UserProfile extends User {
   // UserProfile is now just an alias for User to maintain compatibility

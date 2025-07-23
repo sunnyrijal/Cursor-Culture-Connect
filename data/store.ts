@@ -10,7 +10,7 @@ interface AppState {
   users: User[];
   events: Event[];
   groups: Group[];
-  currentUser: User;
+  currentUser: User | null; // Change to allow null for logged out state
   connections: Record<string, string[]>; // Store connections as a map of user IDs
   rsvps: Record<string, number[]>; // Store RSVPs as a map of user IDs to event IDs
   favorites: Record<string, number[]>; // Store favorites as a map of user IDs to event IDs
@@ -21,17 +21,43 @@ const state: AppState = {
   users: allUsers,
   events: [...mockEvents],
   groups: [...mockGroups],
-  currentUser: allUsers[0], // Set a default user for demonstration
+  currentUser: null, // Initialize as null
   connections: {
     '1': ['2', '3'], // Mock initial connections for the current user
   },
   rsvps: {
-    '1': [2, 10], // Mock initial RSVPs for the current user
+    '1': [1, 2], // Mock initial RSVPs for the current user
   },
   favorites: {
-    '1': [2, 4, 6], // Mock initial favorites for the current user
+    '1': [1, 3], // Mock initial favorites for the current user
   },
 };
+
+// Auth methods
+export const login = (email: string, password: string): boolean => {
+  const user = state.users.find(u => u.email === email);
+  if (user && user.password === password) { // In a real app, compare hashed passwords
+    state.currentUser = user;
+    return true;
+  }
+  return false;
+};
+
+export const signup = (user: User): boolean => {
+  // Check if user already exists
+  if (state.users.some(u => u.email === user.email)) {
+    return false;
+  }
+  state.users.push(user);
+  state.currentUser = user;
+  return true;
+};
+
+export const logout = (): void => {
+  state.currentUser = null;
+};
+
+export const getCurrentUser = (): User | null => state.currentUser;
 
 export const store = {
   getState: () => ({ ...state }),

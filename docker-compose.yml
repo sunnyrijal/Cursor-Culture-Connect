@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: ccc_postgres
+    environment:
+      POSTGRES_DB: culture_connect
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: securepassword
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

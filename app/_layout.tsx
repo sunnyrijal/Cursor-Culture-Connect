@@ -1,10 +1,11 @@
-import { Stack } from 'expo-router';
+import { Stack, Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useState } from 'react';
 import { View, Modal, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePathname } from 'expo-router';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -18,17 +19,35 @@ export default function RootLayout() {
   const isDashboard = pathname === '/' || pathname === '/index' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
 
   return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
+}
+
+function RootLayoutNav() {
+  const { authState } = useAuth();
+
+  return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="group/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="profile/public/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      {authState?.authenticated ? (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="my-hub" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="my-university" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="group/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="profile/public/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      ) : (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      )}
       <StatusBar style="auto" />
     </>
   );

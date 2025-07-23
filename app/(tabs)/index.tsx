@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, useWindowDimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, useWindowDimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { 
@@ -538,6 +538,11 @@ export default function Dashboard() {
             {/* Profile Icon */}
             <TouchableOpacity onPress={() => router.push('/profile')} style={styles.navButton}>
               <User size={22} color={theme.primary} />
+            </TouchableOpacity>
+
+            {/* Logout Icon */}
+            <TouchableOpacity onPress={() => router.push('/login')} style={styles.navButton}>
+              <LogOut size={22} color={theme.primary} />
             </TouchableOpacity>
           </View>
         </View>
