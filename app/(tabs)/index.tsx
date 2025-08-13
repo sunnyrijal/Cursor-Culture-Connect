@@ -44,6 +44,7 @@ import * as Linking from 'expo-linking';
 import YouTubeLinkCard from '@/components/YouTubeLinkCard';
 import { store } from '@/data/store';
 import { useEffect, useRef } from 'react';
+import LogoutButton from '@/components/LogoutButton';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -321,18 +322,32 @@ export default function Dashboard() {
   const extractLocation = (q) => {
     // Try to extract a location from the query (city, university, state, etc.)
     const user = store.getState().currentUser;
+    
+    // Add null check for user
+    if (!user) {
+      console.log('User data not available for location extraction');
+      return null;
+    }
+    
     const locations = [user.location, user.university, user.state, user.country];
     for (const loc of locations) {
       if (loc && q.includes(normalize(loc))) return loc;
     }
+    
     // Try to match against group/event locations
+    const state = store.getState();
+    const groups = state.groups || [];
+    const events = state.events || [];
+    
     const allLocs = [
-      ...store.getState().groups.map(g => g.location),
-      ...store.getState().events.map(e => e.location),
+      ...groups.map(g => g?.location),
+      ...events.map(e => e?.location),
     ].filter(Boolean);
+    
     for (const loc of allLocs) {
       if (loc && q.includes(normalize(loc))) return loc;
     }
+    
     return null;
   };
 
@@ -369,89 +384,130 @@ export default function Dashboard() {
       setAIResults([{ type: 'info', text: 'Please enter a question.' }]);
       return;
     }
-    // Step 2: Advanced logic for food/restaurant/heritage queries
-    const heritage = extractHeritage(q);
-    const intent = extractIntent(q);
-    const location = extractLocation(q);
-    const day = extractDay ? extractDay(q) : null;
-    const outdoor = q.includes('outdoor');
-    if (intent === 'food' && heritage) {
-      // Find restaurants with highest popularity for that heritage near the user
-      let restaurants = sponsoredContent.filter(c => c.type === 'restaurant' && c.popularityByHeritage && c.popularityByHeritage[heritage]);
-      if (location) {
-        restaurants = restaurants.filter(r => normalize(r.location).includes(normalize(location)));
-      }
-      // Sort by popularity for that heritage
-      restaurants.sort((a, b) => b.popularityByHeritage[heritage] - a.popularityByHeritage[heritage]);
-      if (restaurants.length === 0) {
-        setAIResults([{ type: 'info', text: `No popular restaurants found for ${heritage} students in this area.` }]);
+    
+    try {
+      // Step 2: Advanced logic for food/restaurant/heritage queries
+      const heritage = extractHeritage(q);
+      const intent = extractIntent(q);
+      const location = extractLocation(q);
+      const day = extractDay ? extractDay(q) : null;
+      const outdoor = q.includes('outdoor');
+      
+      if (intent === 'food' && heritage) {
+        // Find restaurants with highest popularity for that heritage near the user
+        let restaurants = sponsoredContent.filter(c => 
+          c.type === 'restaurant' && 
+          c.popularityByHeritage && 
+          c.popularityByHeritage[heritage]
+        );
+        
+        if (location) {
+          restaurants = restaurants.filter(r => normalize(r.location).includes(normalize(location)));
+        }
+        
+        // Sort by popularity for that heritage
+        restaurants.sort((a, b) => b.popularityByHeritage[heritage] - a.popularityByHeritage[heritage]);
+        
+        if (restaurants.length === 0) {
+          setAIResults([{ type: 'info', text: `No popular restaurants found for ${heritage} students in this area.` }]);
+          return;
+        }
+        
+        setAIResults(restaurants.map(r => ({ 
+          type: 'restaurant', 
+          name: r.title, 
+          location: r.location, 
+          popularity: r.popularityByHeritage[heritage], 
+          id: r.id 
+        })));
+        
         return;
       }
-      setAIResults(restaurants.map(r => ({ type: 'restaurant', name: r.title, location: r.location, popularity: r.popularityByHeritage[heritage], id: r.id })));
-      return;
-    }
-    // Search events
-    let events = store.getState().events.filter(e =>
-      (e.name && normalize(e.name).includes(q)) ||
-      (e.description && normalize(e.description).includes(q)) ||
-      (Array.isArray(e.category) ? e.category.some(cat => normalize(cat).includes(q)) : (e.category && normalize(e.category).includes(q)))
-    );
-    // Add location filter
-    if (location) {
-      events = events.filter(e => normalize(e.location).includes(normalize(location)));
-    }
-    // Add day filter
-    if (day) {
-      events = events.filter(e => {
-        // Try to match day in event.date or event.time or event.name
-        if (e.date && normalize(e.date).includes(day.toLowerCase())) return true;
-        if (e.time && normalize(e.time).includes(day.toLowerCase())) return true;
-        if (e.name && normalize(e.name).includes(day.toLowerCase())) return true;
-        return false;
-      });
-    }
-    // Outdoor filter
-    if (outdoor) {
-      events = events.filter(e =>
-        (e.name && normalize(e.name).includes('outdoor')) ||
-        (e.description && normalize(e.description).includes('outdoor')) ||
-        (Array.isArray(e.category) ? e.category.some(cat => normalize(cat).includes('outdoor')) : (e.category && normalize(e.category).includes('outdoor')))
+      
+      // Get store state safely
+      const state = store.getState();
+      const storeEvents = state.events || [];
+      
+      // Search events
+      let events = storeEvents.filter(e =>
+        (e.name && normalize(e.name).includes(q)) ||
+        (e.description && normalize(e.description).includes(q)) ||
+        (Array.isArray(e.category) ? e.category.some(cat => normalize(cat).includes(q)) : (e.category && normalize(e.category).includes(q)))
       );
-    }
+      
+      // Add location filter
+      if (location) {
+        events = events.filter(e => e.location && normalize(e.location).includes(normalize(location)));
+      }
+      
+      // Add day filter
+      if (day) {
+        events = events.filter(e => {
+          // Try to match day in event.date or event.time or event.name
+          if (e.date && normalize(e.date).includes(day.toLowerCase())) return true;
+          if (e.time && normalize(e.time).includes(day.toLowerCase())) return true;
+          if (e.name && normalize(e.name).includes(day.toLowerCase())) return true;
+          return false;
+        });
+      }
+      
+      // Outdoor filter
+      if (outdoor) {
+        events = events.filter(e => 
+          (e.category && Array.isArray(e.category) && e.category.some(c => c.toLowerCase().includes('outdoor'))) ||
+          (e.name && e.name.toLowerCase().includes('outdoor')) ||
+          (e.description && e.description.toLowerCase().includes('outdoor'))
+        );
+      }
 
-    // Search groups
-    let groups = store.getState().groups.filter(g =>
-      (g.name && normalize(g.name).includes(q)) ||
-      (g.description && normalize(g.description).includes(q)) ||
-      (typeof g.category === 'string' ? normalize(g.category).includes(q) : Array.isArray(g.category) && g.category.some(cat => normalize(cat).includes(q)))
-    );
-    if (location) {
-      groups = groups.filter(g => normalize(g.location).includes(normalize(location)));
-    }
-    if (day) {
-      groups = groups.filter(g => {
-        // Try to match day in meetingDays or meetingDate
-        if (g.meetingDays && Array.isArray(g.meetingDays) && g.meetingDays.some(d => normalize(d) === day.toLowerCase())) return true;
-        if (g.meetingDate && normalize(g.meetingDate).includes(day.toLowerCase())) return true;
-        return false;
-      });
-    }
-    if (outdoor) {
-      groups = groups.filter(g =>
-        (g.name && normalize(g.name).includes('outdoor')) ||
-        (g.description && normalize(g.description).includes('outdoor')) ||
-        (typeof g.category === 'string' ? normalize(g.category).includes('outdoor') : Array.isArray(g.category) && g.category.some(cat => normalize(cat).includes('outdoor')))
+      // Search groups
+      const storeGroups = state.groups || [];
+      let groups = storeGroups.filter(g =>
+        (g && g.name && normalize(g.name).includes(q)) ||
+        (g && g.description && normalize(g.description).includes(q)) ||
+        (g && g.category && normalize(g.category).includes(q))
       );
-    }
+      
+      // Apply filters to groups
+      if (location) {
+        groups = groups.filter(g => g.location && normalize(g.location).includes(normalize(location)));
+      }
+      
+      if (day) {
+        groups = groups.filter(g => {
+          // Try to match day in meetingDays or meetingDate
+          if (g.meetingDays && Array.isArray(g.meetingDays) && g.meetingDays.some(d => normalize(d) === day.toLowerCase())) return true;
+          if (g.meetingDate && normalize(g.meetingDate).includes(day.toLowerCase())) return true;
+          return false;
+        });
+      }
+      
+      if (outdoor) {
+        groups = groups.filter(g =>
+          (g.name && normalize(g.name).includes('outdoor')) ||
+          (g.description && normalize(g.description).includes('outdoor')) ||
+          (g.category && (typeof g.category === 'string' ? 
+            normalize(g.category).includes('outdoor') : 
+            Array.isArray(g.category) && g.category.some(cat => normalize(cat).includes('outdoor')))
+          )
+        );
+      }
 
-    if (events.length === 0 && groups.length === 0) {
-      setAIResults([{ type: 'info', text: 'No matching groups or events found for your question.' }]);
-      return;
+      // Combine results or show not found
+      if (events.length === 0 && groups.length === 0) {
+        setAIResults([{ type: 'info', text: `No results found for "${aiQuestion}". Try broadening your search.` }]);
+        return;
+      }
+
+      setAIResults([
+        ...groups.map(g => ({ type: 'group', name: g.name, description: g.description, location: g.location })),
+        ...events.map(e => ({ type: 'event', name: e.name, date: e.date, location: e.location }))
+      ]);
+      
+    } catch (error) {
+      console.error('Error in AI search:', error);
+      setAIResults([{ type: 'info', text: 'Sorry, I encountered an error while searching. Please try again.' }]);
     }
-    setAIResults([
-      ...groups.map(g => ({ type: 'group', name: g.name, privacy: g.isPublic ? 'public' : 'private', canRequest: !g.isJoined && !g.isPublic })),
-      ...events.map(e => ({ type: 'event', name: e.name, date: e.date, location: e.location }))
-    ]);
   };
 
   // Remove horizontal padding from grid container and adjust gridCardWidth
@@ -540,10 +596,8 @@ export default function Dashboard() {
               <User size={22} color={theme.primary} />
             </TouchableOpacity>
 
-            {/* Logout Icon */}
-            <TouchableOpacity onPress={() => router.push('/login')} style={styles.navButton}>
-              <LogOut size={22} color={theme.primary} />
-            </TouchableOpacity>
+            {/* Logout Button */}
+            <LogoutButton />
           </View>
         </View>
 

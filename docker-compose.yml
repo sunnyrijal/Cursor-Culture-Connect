@@ -13,5 +13,32 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:alpine
+    container_name: ccc_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    container_name: ccc_backend
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://app_user:securepassword@db:5432/culture_connect
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your_jwt_secret_key_here
+      - SESSION_SECRET=your_session_secret_key_here
+      - NODE_ENV=development
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
 volumes:
   postgres_data:
+  redis_data:

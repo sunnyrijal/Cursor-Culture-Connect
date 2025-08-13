@@ -3,6 +3,7 @@ import { View, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Globe } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -21,6 +22,7 @@ export default function Index() {
   const logoScale = useSharedValue(0);
   const logoOpacity = useSharedValue(0);
   const backgroundOpacity = useSharedValue(1);
+  const { authState } = useAuth();
 
   useEffect(() => {
     // Start logo animation
@@ -35,13 +37,18 @@ export default function Index() {
     const timer = setTimeout(() => {
       backgroundOpacity.value = withTiming(0, { duration: 500 }, () => {
         runOnJS(() => {
-          router.replace('/(tabs)');
+          // Check authentication status and redirect accordingly
+          if (authState.authenticated) {
+            router.replace('/(tabs)');
+          } else {
+            router.replace('/(auth)/login');
+          }
         })();
       });
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],

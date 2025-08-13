@@ -1,0 +1,3 @@
+INSERT INTO events (name, description, is_rsvped, is_favorited, image_url, date, time, location, categories, organizer) VALUES
+('Lunar New Year Festival', 'Welcome the Year of the Snake with traditional lantern making, calligraphy workshops, dumplings, and lion dance performances. Red envelopes with surprises for all attendees!', true, true, 'https://images.pexels.com/photos/6786961/pexels-photo-6786961.jpeg?auto=compress&cs=tinysrgb&w=400', 'Feb 10, 2024', '6:00 PM', 'Student Center Ballroom', '{"Chinese", "East Asian", "Vietnamese"}', 'Chinese Students & Scholars Association');
+-- Add more events as needed

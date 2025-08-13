@@ -1,15 +1,19 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated, FlatList } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { mockEvents, currentUser, MockEvent } from '@/data/mockData';
+import { currentUser } from '@/data/mockData';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import placeholderImg from '@/assets/images/icon.png';
+// Update placeholder image to use require instead of import
+const placeholderImg = require('@/assets/images/icon.png');
 import { theme, spacing, borderRadius, typography } from '@/components/theme';
+
+// Add import for date formatting
+import { format } from 'date-fns';
 
 const filterOptions = [
     { key: 'all', label: 'All' },
@@ -34,9 +38,46 @@ interface FilterOptions {
   selectedUniversity: string;
 }
 
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  location: string;
+  date: string | Date; // Updated to handle Date objects
+  time: string;
+  startTime?: string; // Added field
+  endTime?: string;   // Added field
+  image: string; // Kept for backward compatibility
+  images?: string[]; // Array of images for the event
+  groupId?: number; // Associated group ID
+  groupImage?: string; // Image from associated group
+  attendees: number;
+  isRSVPed: boolean;
+  category?: string[]; // Add optional category field to fix TypeScript errors
+  organizer?: {
+    university?: string;
+  };
+}
+
+// Helper function to format dates
+const formatEventDate = (date: string | Date): string => {
+  if (date instanceof Date) {
+    return format(date, 'MMM d, yyyy');
+  }
+  return date;
+};
+
+// Helper function to format times
+const formatEventTime = (time: string | Date): string => {
+  if (time instanceof Date) {
+    return format(time, 'h:mm a');
+  }
+  return time;
+};
+
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -105,6 +146,104 @@ export default function Events() {
     { key: 'nearMe', label: 'Near Me' },
   ];
 
+  // Extract fetchEvents function for reuse
+  const fetchEvents = async () => {
+    try {
+      // Update with full URL including the origin for CORS
+      const response = await fetch('http://localhost:3001/api/events', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Process the data to ensure dates are properly formatted
+      const processedData = data.map((event: any) => ({
+        ...event,
+        // Convert date strings to Date objects if they're not already
+        date: event.date instanceof Date ? event.date : event.date,
+        time: event.time instanceof Date ? event.time : event.time,
+        // Keep startTime and endTime as they are
+        startTime: event.startTime,
+        endTime: event.endTime,
+        // Add attendees field if not present
+        attendees: event.attendees || 1,
+        isRSVPed: event.isRSVPed || false,
+        // Map the name field to title for frontend consistency
+        title: event.name || event.title,
+        // Map categories to category for frontend consistency
+        category: event.categories || event.category || [],
+        // Handle images array or create from single image
+        images: event.images || (event.image ? [event.image] : []),
+        // Ensure groupImage is available if provided
+        groupImage: event.groupImage || null,
+      }));
+      
+      // For events with groupId but no groupImage, fetch group information
+      const eventsNeedingGroupData = processedData.filter(
+        (event: Event) => event.groupId && !event.groupImage
+      );
+      
+      // If there are events needing group data, fetch it
+      if (eventsNeedingGroupData.length > 0) {
+        try {
+          // Get unique group IDs to minimize API calls
+          const uniqueGroupIds = [...new Set(eventsNeedingGroupData.map((event: Event) => event.groupId))];
+          
+          // Fetch group data for each unique group ID
+          const groupDataPromises = uniqueGroupIds.map(groupId => 
+            fetch(`http://localhost:3001/api/groups/${groupId}`, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              }
+            }).then(res => res.json())
+          );
+          
+          // Wait for all group data to be fetched
+          const groupsData = await Promise.all(groupDataPromises);
+          
+          // Create a map of group ID to group image
+          const groupImageMap = groupsData.reduce((map: Record<number, string>, group: any) => {
+            if (group && group.image) {
+              map[group.id] = group.image;
+            }
+            return map;
+          }, {});
+          
+          // Update the events with group images
+          const updatedEvents = processedData.map((event: Event) => {
+            if (event.groupId && !event.groupImage && groupImageMap[event.groupId]) {
+              return { ...event, groupImage: groupImageMap[event.groupId] };
+            }
+            return event;
+          });
+          
+          setEvents(updatedEvents);
+        } catch (error) {
+          console.error('Error fetching group data:', error);
+          // Fall back to using the events without group images
+          setEvents(processedData);
+        }
+      } else {
+        // If no events need group data, just set the events
+        setEvents(processedData);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
   useEffect(() => {
     if (showHelper) {
       const timer = setTimeout(() => setShowHelper(false), 3500);
@@ -155,11 +294,13 @@ export default function Events() {
         break;
       case 'my-heritage':
         const userHeritages = currentUser.heritage || [];
-        tempEvents = tempEvents.filter(event =>
-          userHeritages.some(heritage =>
-            event.category?.some(cat => cat.toLowerCase().includes(heritage.toLowerCase()))
-          )
-        );
+        if (Array.isArray(userHeritages)) {
+          tempEvents = tempEvents.filter(event =>
+            userHeritages.some((heritage: string) =>
+              event.category?.some((cat: string) => cat.toLowerCase().includes(heritage.toLowerCase()))
+            )
+          );
+        }
         break;
       case 'filter-by-state':
         if (filters.location.state) {
@@ -195,26 +336,110 @@ export default function Events() {
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
-  const handleCreateEvent = (eventData: any) => {
+  const handleCreateEvent = async (eventData: any) => {
     console.log("New Event Data:", eventData);
-    setEvents(prevEvents => {
+    
+    try {
+      // Format the data for the API
+      const formattedData = {
+        ...eventData,
+        // Ensure date is properly serialized
+        date: eventData.date instanceof Date ? eventData.date.toISOString() : eventData.date,
+        // Keep both combined time and individual start/end time fields
+        time: `${eventData.startTime} - ${eventData.endTime}`,
+        startTime: eventData.startTime,
+        endTime: eventData.endTime,
+        // Map category properly
+        categories: eventData.category || [],
+        // Handle multiple images
+        images: eventData.images || (eventData.image ? [eventData.image] : []),
+        // Include group association if available
+        groupId: eventData.groupId,
+      };
+      
+      // Send the data to the backend
+      const response = await fetch('http://localhost:3001/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(formattedData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to create event:', errorData);
+        throw new Error(`Failed to create event: ${errorData.details || response.statusText}`);
+      }
+      
+      // Get the created event from the response
+      const createdEvent = await response.json();
+      console.log('Event created successfully:', createdEvent);
+      
+      // Refresh the events list
+      fetchEvents();
+      
+    } catch (error) {
+      console.error('Error creating event:', error);
+      
+      // Fall back to local state update if API call fails
+      setEvents(prevEvents => {
         const maxId = prevEvents.length > 0 ? Math.max(...prevEvents.map(event => event.id)) : 0;
         const newId = maxId + 1;
         return [{...eventData, id: newId, attendees: 1, isRSVPed: true }, ...prevEvents];
-    });
+      });
+    }
+    
     setShowCreateModal(false);
   };
 
-  const handleRSVP = (eventId: number) => {
-    setEvents(prevEvents =>
-      prevEvents.map(event => event.id === eventId ? {...event, isRSVPed: !event.isRSVPed, attendees: event.isRSVPed ? event.attendees - 1 : event.attendees + 1} : event)
-    );
+  const handleRSVP = async (eventId: number) => {
+    try {
+      // Get current RSVP status for the event
+      const currentEvent = events.find(event => event.id === eventId);
+      if (!currentEvent) return;
+      
+      const newRSVPStatus = !currentEvent.isRSVPed;
+      
+      // Optimistically update UI
+      setEvents(prevEvents =>
+        prevEvents.map(event => event.id === eventId ? 
+          {...event, isRSVPed: newRSVPStatus, attendees: event.isRSVPed ? event.attendees - 1 : event.attendees + 1} : 
+          event
+        )
+      );
+      
+      // Send update to backend
+      const response = await fetch(`http://localhost:3001/api/events/${eventId}/rsvp`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ isRSVPed: newRSVPStatus })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update RSVP: ${response.statusText}`);
+      }
+      
+      console.log(`Successfully ${newRSVPStatus ? 'RSVP\'d to' : 'cancelled RSVP for'} event ${eventId}`);
+      
+    } catch (error) {
+      console.error('Error updating RSVP:', error);
+      // Revert the optimistic update on error
+      fetchEvents();
+    }
   };
 
-  const generateEventShareContent = (event: MockEvent) => {
+  const generateEventShareContent = (event: Event) => {
+    const formattedDate = formatEventDate(event.date);
+    const formattedTime = formatEventTime(event.time);
+    
     return {
       title: `${event.title} - Culture Connect`,
-      message: `Join me at ${event.title}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\nDiscover amazing cultural events on Culture Connect!`,
+      message: `Join me at ${event.title}!\n\n📅 ${formattedDate} at ${formattedTime}\n📍 ${event.location}\n\nDiscover amazing cultural events on Culture Connect!`,
       url: `https://cultureconnect.app/event/${event.id}`
     };
   };
@@ -222,6 +447,9 @@ export default function Events() {
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
   };
+
+  // Add state for tracking active image indexes for each event
+  const [activeImageIndexes, setActiveImageIndexes] = useState<Record<number, number>>({});
 
   return (
     <SafeAreaView style={styles.container}>
@@ -248,7 +476,7 @@ export default function Events() {
               },
             ]}
           >
-            <Text style={styles.title}>Cultural Events</Text>
+            <Text style={styles.title}>Culture Connect</Text>
             <Text style={styles.subtitle}>Discover and participate in cultural celebrations</Text>
           </Animated.View>
 
@@ -358,10 +586,65 @@ export default function Events() {
           )}
           scrollEventThrottle={16}
         >
-            {filteredEvents.map((event) => (
+            {filteredEvents.map((event) => {
+                // Format dates and times for rendering
+                const formattedDate = formatEventDate(event.date);
+                const formattedTime = formatEventTime(event.time);
+                
+                // Get all available images - event images or group image as fallback
+                const eventImages = event.images && event.images.length > 0 
+                  ? event.images 
+                  : event.image ? [event.image] : [];
+                
+                // Add group image to the end if available and not already included
+                if (event.groupImage && !eventImages.includes(event.groupImage)) {
+                  eventImages.push(event.groupImage);
+                }
+                
+                const hasMultipleImages = eventImages.length > 1;
+                const activeImageIndex = activeImageIndexes[event.id] || 0;
+                
+                return (
                 <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
                     <View style={styles.eventImageContainer}>
-                        <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={styles.eventImage} />
+                        {!hasMultipleImages ? (
+                          // Single image display (original behavior)
+                          <Image 
+                            source={{ uri: eventImages[0] || undefined }} 
+                            defaultSource={placeholderImg} 
+                            style={styles.eventImage} 
+                          />
+                        ) : (
+                          // Multiple images carousel
+                          <FlatList
+                            data={eventImages}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(item, index) => `image-${index}`}
+                            renderItem={({item}) => (
+                              <Image 
+                                source={{ uri: item }} 
+                                defaultSource={placeholderImg}
+                                style={styles.eventImage} 
+                              />
+                            )}
+                            onScroll={(e) => {
+                              // Update active image index based on scroll position
+                              const contentOffset = e.nativeEvent.contentOffset.x;
+                              const viewSize = e.nativeEvent.layoutMeasurement.width;
+                              const index = Math.floor(contentOffset / viewSize);
+                              
+                              if (index !== activeImageIndexes[event.id]) {
+                                setActiveImageIndexes(prev => ({
+                                  ...prev,
+                                  [event.id]: index
+                                }));
+                              }
+                            }}
+                            scrollEventThrottle={16}
+                          />
+                        )}
                         <View style={styles.eventActions}>
                             <ShareButton
                                 {...generateEventShareContent(event)}
@@ -370,16 +653,29 @@ export default function Events() {
                                 style={styles.shareButton}
                             />
                         </View>
+                        {hasMultipleImages && (
+                          <View style={styles.imagePagination}>
+                            {eventImages.map((_, index) => (
+                              <View 
+                                key={`dot-${index}`} 
+                                style={[
+                                  styles.paginationDot, 
+                                  index === activeImageIndex && styles.activePaginationDot
+                                ]} 
+                              />
+                            ))}
+                          </View>
+                        )}
                     </View>
                     <View style={styles.eventContent}>
                         <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
                         <View style={styles.eventMeta}>
                             <Calendar size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{event.date}</Text>
+                            <Text style={styles.eventMetaText}>{formattedDate}</Text>
                         </View>
                         <View style={styles.eventMeta}>
                             <Clock size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{event.time}</Text>
+                            <Text style={styles.eventMetaText}>{formattedTime}</Text>
                         </View>
                         <View style={styles.eventMeta}>
                             <MapPin size={12} color={theme.gray500} />
@@ -412,7 +708,7 @@ export default function Events() {
                         </View>
                     </View>
                 </TouchableOpacity>
-            ))}
+            )})}
         </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -706,5 +1002,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     marginTop: spacing.xs,
+  },
+  imagePagination: {
+    position: 'absolute',
+    bottom: spacing.sm,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginHorizontal: 4,
+  },
+  activePaginationDot: {
+    backgroundColor: theme.white,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

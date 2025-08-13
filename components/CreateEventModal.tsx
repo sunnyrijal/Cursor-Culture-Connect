@@ -1,14 +1,23 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Platform } from 'react-native';
-import { X, Calendar, Clock, MapPin, Users, DollarSign, GraduationCap, ChevronDown, Check, CircleAlert as AlertCircle, Globe, Lock } from 'lucide-react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Platform, ActivityIndicator, Image } from 'react-native';
+import { X, Calendar, Clock, MapPin, Users, DollarSign, GraduationCap, ChevronDown, Check, CircleAlert as AlertCircle, Globe, Lock, Image as ImageIcon, Plus } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { theme, spacing, typography, borderRadius } from './theme';
-import { mockGroups, currentUser } from '@/data/mockData';
+// Import currentUser but not mockGroups
+import { currentUser } from '@/data/mockData';
 
 interface CreateEventModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (eventData: any) => void;
+}
+
+// Define the Group interface
+interface Group {
+  id: number;
+  name: string;
+  president_id?: string | number;
+  is_joined?: boolean; // for compatibility with existing code
 }
 
 const categories = [
@@ -21,7 +30,8 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
     title: '',
     description: '',
     date: new Date(),
-    time: '',
+    startTime: '',
+    endTime: '',
     location: '',
     category: [],
     maxAttendees: '',
@@ -30,31 +40,134 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
     universityOnly: false,
     allowedUniversity: '',
     groupId: null as number | null,
+    // Add images array for multiple images
+    images: [] as string[],
   });
+
+  // Add state for groups from database
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupError, setGroupError] = useState<string | null>(null);
+  
+  // Add state for image management
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
+
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!visible) {
+      setFormData({
+        title: '',
+        description: '',
+        date: new Date(),
+        startTime: '',
+        endTime: '',
+        location: '',
+        category: [],
+        maxAttendees: '',
+        price: '',
+        isPublic: true,
+        universityOnly: false,
+        allowedUniversity: '',
+        groupId: null,
+        images: [],
+      });
+      setCurrentImageUrl('');
+    }
+  }, [visible]);
+
+  // Fetch groups from API when modal is opened
+  useEffect(() => {
+    if (visible) {
+      fetchGroups();
+    }
+  }, [visible]);
+
+  const fetchGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      setGroupError(null);
+      
+      console.log('Fetching groups from API...');
+      const response = await fetch('http://localhost:3001/api/groups');
+      
+      if (!response.ok) {
+        console.error('Error response from groups API:', response.status, response.statusText);
+        throw new Error(`Failed to fetch groups: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched groups:', data, 'Count:', data.length);
+      
+      // Add is_joined property for compatibility with existing code
+      const processedGroups = data.map((group: any) => ({
+        ...group,
+        is_joined: true // Assuming all returned groups are joined by the user
+      }));
+      
+      setGroups(processedGroups);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      setGroupError('Failed to load groups');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
   
   const hasPermission = useMemo(() => {
     if (!formData.groupId) return true;
-    const group = mockGroups.find(g => g.id === formData.groupId);
+    const group = groups.find(g => g.id === formData.groupId);
     if (!group) return false;
-    // @ts-ignore
-    return group.presidentId === currentUser.id || group.officerIds?.includes(currentUser.id);
-  }, [formData.groupId]);
+    // Check if current user is the president
+    return group.president_id === currentUser.id;
+  }, [formData.groupId, groups]);
+
+  // Add an image URL to the event images array
+  const addImageUrl = () => {
+    if (!currentImageUrl.trim()) {
+      Alert.alert("Invalid URL", "Please enter a valid image URL");
+      return;
+    }
+    
+    setFormData({
+      ...formData,
+      images: [...formData.images, currentImageUrl.trim()]
+    });
+    
+    setCurrentImageUrl('');
+  };
+
+  // Remove an image from the images array
+  const removeImage = (index: number) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({
+      ...formData,
+      images: newImages
+    });
+  };
 
   const handleSubmit = async () => {
-    if (!formData.groupId) {
-        Alert.alert("Group Required", "Please associate this event with a group.");
-        return;
+    if (!formData.title || !formData.description || !formData.startTime || !formData.endTime || !formData.location) {
+      Alert.alert("Missing Fields", "Please fill in all required fields.");
+      return;
     }
-    if (!hasPermission) {
-        Alert.alert("Permission Denied", "You are not authorized to create an event for this group. Your submission will be sent for approval.");
-        return;
+    if (formData.groupId && !hasPermission) {
+      Alert.alert("Permission Denied", "You are not authorized to create an event for this group. Your submission will be sent for approval.");
+      return;
     }
-    onSubmit(formData);
+    
+    // Make sure to include at least one image for backward compatibility
+    const eventData = {
+      ...formData,
+      image: formData.images.length > 0 ? formData.images[0] : null,
+    };
+    
+    onSubmit(eventData);
     onClose();
   };
   
@@ -63,7 +176,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
   const monthName = new Date(displayYear, displayMonth).toLocaleString('default', { month: 'long' });
-  const userGroups = mockGroups.filter(g => g.isJoined);
+  const userGroups = groups.filter(g => g.is_joined);
 
   return (
     <Modal
@@ -89,30 +202,85 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
               <Text style={styles.label}>Description *</Text>
               <TextInput style={[styles.input, styles.textArea]} value={formData.description} onChangeText={text => setFormData({...formData, description: text})} placeholder="Describe your event" multiline/>
             </View>
-            <View style={styles.row}>
-                <View style={[styles.field, styles.halfField]}>
-                <Text style={styles.label}>Date *</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                    <View style={styles.inputWithIcon}>
-                    <Calendar size={16} color={theme.gray500} />
-                    <Text style={[styles.inputText]}>{formData.date.toLocaleDateString()}</Text>
-                    </View>
+            
+            {/* Images section */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Event Images</Text>
+              <View style={styles.imageInputContainer}>
+                <View style={styles.inputWithIcon}>
+                  <ImageIcon size={16} color={theme.gray500} />
+                  <TextInput
+                    style={styles.inputText}
+                    value={currentImageUrl}
+                    onChangeText={setCurrentImageUrl}
+                    placeholder="Enter image URL"
+                  />
+                </View>
+                <TouchableOpacity style={styles.addImageButton} onPress={addImageUrl}>
+                  <Plus size={20} color={theme.white} />
                 </TouchableOpacity>
+              </View>
+              
+              {formData.images.length > 0 && (
+                <View style={styles.imagesPreview}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {formData.images.map((url, index) => (
+                      <View key={`image-${index}`} style={styles.imagePreviewContainer}>
+                        <Image source={{ uri: url }} style={styles.imagePreview} />
+                        <TouchableOpacity 
+                          style={styles.removeImageButton} 
+                          onPress={() => removeImage(index)}
+                        >
+                          <X size={16} color={theme.white} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
                 </View>
-                 <View style={[styles.field, styles.halfField]}>
-                  <Text style={styles.label}>Time *</Text>
-                   <View style={styles.inputWithIcon}>
-                      <Clock size={16} color={theme.gray500} />
-                      <TextInput
-                        style={styles.inputText}
-                        value={formData.time}
-                        onChangeText={(text) => setFormData({ ...formData, time: text })}
-                        placeholder="HH:MM AM/PM"
-                      />
-                    </View>
-                </View>
+              )}
             </View>
-             <View style={styles.field}>
+            
+            {/* Fix date field for mobile */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Date *</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <View style={styles.inputWithIcon}>
+                  <Calendar size={16} color={theme.gray500} />
+                  <Text style={styles.inputText}>{formData.date.toLocaleDateString()}</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Fix time fields for mobile */}
+            <View style={styles.timeFieldsContainer}>
+              <View style={styles.timeField}>
+                <Text style={styles.label}>Start Time *</Text>
+                <View style={styles.inputWithIcon}>
+                  <Clock size={16} color={theme.gray500} />
+                  <TextInput
+                    style={styles.inputText}
+                    value={formData.startTime}
+                    onChangeText={(text) => setFormData({ ...formData, startTime: text })}
+                    placeholder="e.g., 7:40 AM"
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.timeField}>
+                <Text style={styles.label}>End Time *</Text>
+                <View style={styles.inputWithIcon}>
+                  <Clock size={16} color={theme.gray500} />
+                  <TextInput
+                    style={styles.inputText}
+                    value={formData.endTime}
+                    onChangeText={(text) => setFormData({ ...formData, endTime: text })}
+                    placeholder="e.g., 10:00 AM"
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.field}>
                 <Text style={styles.label}>Location *</Text>
                 <View style={styles.inputWithIcon}>
                   <MapPin size={16} color={theme.gray500} />
@@ -125,13 +293,20 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                 </View>
             </View>
             <View style={styles.field}>
-                <Text style={styles.label}>Associated Group *</Text>
+                <Text style={styles.label}>Associated Group</Text>
                  <TouchableOpacity onPress={() => setShowGroupPicker(true)}>
                     <View style={styles.inputWithIcon}>
                         <Users size={16} color={theme.gray500} />
-                        <Text style={[styles.inputText, !formData.groupId && {color: theme.gray400}]}>
-                            {formData.groupId ? mockGroups.find(g=>g.id === formData.groupId)?.name : "Select a group"}
-                        </Text>
+                        {loadingGroups ? (
+                            <View style={styles.inlineLoadingContainer}>
+                                <ActivityIndicator size="small" color={theme.gray400} />
+                                <Text style={[styles.inputText, {color: theme.gray400}]}>Loading groups...</Text>
+                            </View>
+                        ) : (
+                            <Text style={[styles.inputText, !formData.groupId && {color: theme.gray400}]}>
+                                {formData.groupId ? groups.find(g=>g.id === formData.groupId)?.name : "Select a group (optional)"}
+                            </Text>
+                        )}
                     </View>
                 </TouchableOpacity>
                 {formData.groupId && !hasPermission && (
@@ -185,21 +360,45 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
         </Modal>
         
         <Modal visible={showGroupPicker} transparent animationType='fade'>
-             <TouchableOpacity style={styles.datePickerOverlay} onPress={() => setShowGroupPicker(false)} activeOpacity={1}>
-                <View style={styles.datePickerContainer}>
-                    <Text style={styles.datePickerHeaderText}>Select Your Group</Text>
-                     <ScrollView>
-                        {userGroups.map(group => (
-                            <TouchableOpacity key={group.id} style={styles.groupPickerItem} onPress={() => {
-                                setFormData({...formData, groupId: group.id});
-                                setShowGroupPicker(false);
-                            }}>
-                                <Text>{group.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+          <TouchableOpacity style={styles.datePickerOverlay} onPress={() => setShowGroupPicker(false)} activeOpacity={1}>
+            <View style={styles.datePickerContainer}>
+              <Text style={styles.datePickerHeaderText}>Select Your Group</Text>
+              
+              {loadingGroups ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={theme.primary} />
+                  <Text style={styles.loadingText}>Loading groups...</Text>
                 </View>
-            </TouchableOpacity>
+              ) : groupError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{groupError}</Text>
+                  <TouchableOpacity style={styles.retryButton} onPress={fetchGroups}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : userGroups.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No groups found.</Text>
+                  <Text style={styles.emptySubText}>You must create or join a group before associating it with an event.</Text>
+                </View>
+              ) : (
+                <ScrollView>
+                  {userGroups.map(group => (
+                    <TouchableOpacity 
+                      key={group.id} 
+                      style={styles.groupPickerItem} 
+                      onPress={() => {
+                        setFormData({...formData, groupId: group.id});
+                        setShowGroupPicker(false);
+                      }}
+                    >
+                      <Text>{group.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </TouchableOpacity>
         </Modal>
       </View>
     </Modal>
@@ -213,12 +412,21 @@ const styles = StyleSheet.create({
   closeButton: { padding: 4 },
   content: { flex: 1, padding: 20 },
   field: { marginBottom: 24 },
-  row: { flexDirection: 'row', gap: 16 },
-  halfField: { flex: 1 },
+  row: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+  halfField: { flex: 1, minWidth: '45%' },
   label: { fontSize: 16, fontWeight: '600', color: theme.textPrimary, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: theme.border, borderRadius: 12, padding: 16, fontSize: 16 },
   textArea: { height: 100, textAlignVertical: 'top' },
-  inputWithIcon: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.border, borderRadius: 12, paddingHorizontal: 16, height: 58 },
+  inputWithIcon: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: theme.border, 
+    borderRadius: 12, 
+    paddingHorizontal: 16, 
+    height: 58,
+    width: '100%'
+  },
   inputText: { flex: 1, paddingLeft: 12, fontSize: 16, color: theme.textPrimary },
   actions: { flexDirection: 'row', padding: 20, borderTopWidth: 1, borderTopColor: theme.border, gap: 12 },
   actionButton: { flex: 1 },
@@ -239,5 +447,114 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
-  }
+  },
+  timeFieldsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 24,
+    flexWrap: 'wrap',
+  },
+  timeField: {
+    flex: 1,
+    minWidth: Platform.OS === 'ios' ? '45%' : '40%',
+    marginBottom: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: theme.gray500,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  errorText: {
+    color: theme.warning,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: theme.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: theme.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  emptyText: {
+    color: theme.gray500,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  emptySubText: {
+    color: theme.gray400,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  inlineLoadingContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 12,
+    gap: 8,
+  },
+  // New styles for image handling
+  imageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  addImageButton: {
+    backgroundColor: theme.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagesPreview: {
+    marginTop: 10,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

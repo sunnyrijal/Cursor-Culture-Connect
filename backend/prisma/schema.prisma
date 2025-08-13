@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordHash  String
+  fullName      String?
+  university    String?
+  major         String?
+  year          String?
+  state         String?
+  city          String?
+  bio           String?
+  linkedin      String?
+  mobileNumber  String?
+  dateOfBirth   DateTime?
+  heritage      String[]
+  languages     String[]
+  profileImage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  groups        Group[]   @relation("UserGroups")
+  events        Event[]   @relation("UserEvents")
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  isRSVPed    Boolean  @default(false)
+  isFavorited Boolean  @default(false)
+  image       String?  // For backward compatibility
+  images      String[] // Array of image URLs
+  date        DateTime
+  time        String
+  startTime   String?  // Restored field
+  endTime     String?  // Restored field
+  location    String
+  categories  String[]
+  organizer   String
+  attendees   Int      @default(1)
+  groupId     Int?     // Foreign key to Group
+  group       Group?   @relation(fields: [groupId], references: [id])
+  users       User[]   @relation("UserEvents")
+}
+
+model Group {
+  id           Int       @id @default(autoincrement())
+  name         String
+  description  String
+  image        String?
+  events       Event[]
+  presidentId  Int?
+  members      User[]    @relation("UserGroups")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}

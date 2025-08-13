@@ -1,14 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, Users, Calendar, MapPin, Plus, Lock, Globe, GraduationCap } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
-import { mockGroups, MockGroup } from '@/data/mockData';
-import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { currentUser } from '@/data/mockData';
-import placeholderImg from '@/assets/images/icon.png';
+const placeholderImg = 'https://via.placeholder.com/150';
+import { CreateGroupModal } from '@/components/CreateGroupModal';
 
 const theme = {
   primary: '#6366F1',
@@ -21,14 +20,20 @@ const theme = {
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
   gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
+  gray400: '#94A3B8',
+  gray500: '#64748B',
   gray600: '#4B5563',
   gray900: '#111827',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
+  textPrimary: '#1E293B',
+  textSecondary: '#64748B',
   border: '#E5E7EB',
   shadow: 'rgba(0, 0, 0, 0.1)',
+};
+
+const spacing = {
+  sm: 8,
+  md: 16,
+  lg: 24,
 };
 
 interface FilterOptions {
@@ -43,11 +48,31 @@ interface FilterOptions {
   groupType: 'all' | 'public' | 'private';
   selectedUniversity: string;
   filterBy: string;
+  heritage?: string;
+}
+
+interface ApiGroup {
+  id: number;
+  name: string;
+  description: string;
+  category: string | string[];
+  location: string;
+  isPublic: boolean;
+  universityOnly: boolean;
+  allowedUniversity: string;
+  presidentId: number;
+  meetings: any[];
+  memberCount: number;
+  recentActivity: string;
+  upcomingEvents: number;
+  image: string;
+  isJoined: boolean;
+  heritage?: string;
 }
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [groups, setGroups] = useState(mockGroups);
+  const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
   const [filters, setFilters] = useState<FilterOptions>({
@@ -60,6 +85,35 @@ export default function Groups() {
     filterBy: 'all'
   });
 
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/groups');
+      const data = await response.json();
+      console.log('Fetched groups:', data);
+      setGroups(data.map(group => ({
+        ...group,
+        // Map database field names to frontend field names
+        isPublic: group.is_public,
+        universityOnly: group.university_only,
+        allowedUniversity: group.allowed_university,
+        presidentId: group.president_id,
+        memberCount: group.member_count || 1,
+        // Add default values for UI fields
+        recentActivity: 'just now',
+        upcomingEvents: 0,
+        image: 'https://images.unsplash.com/photo-1578836537282-3171d77f8632?q=80&w=300',
+        isJoined: group.president_id === currentUser?.id
+      })));
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      Alert.alert('Error', 'Failed to load groups. Please try again.');
+    }
+  };
+
   const filteredGroups = useMemo(() => {
     let tempGroups = [...groups];
     
@@ -68,7 +122,7 @@ export default function Groups() {
       tempGroups = tempGroups.filter(group =>
         group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        group.category.toLowerCase().includes(searchQuery.toLowerCase())
+        (Array.isArray(group.category) ? group.category.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase())) : group.category.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
@@ -90,7 +144,7 @@ export default function Groups() {
         const userHeritages = currentUser.heritage || [];
         tempGroups = tempGroups.filter(group => 
           userHeritages.some(heritage => 
-            group.category.toLowerCase().includes(heritage.toLowerCase())
+            (Array.isArray(group.category) ? group.category.some(cat => cat.toLowerCase().includes(heritage.toLowerCase())) : group.category.toLowerCase().includes(heritage.toLowerCase()))
           )
         );
         break;
@@ -112,7 +166,7 @@ export default function Groups() {
     // Filter by ethnicity
     if (filters.ethnicity.length > 0) {
       tempGroups = tempGroups.filter(group => 
-        filters.ethnicity.includes(group.category)
+        Array.isArray(group.category) ? group.category.some(cat => filters.ethnicity.includes(cat)) : filters.ethnicity.includes(group.category)
       );
     }
 
@@ -124,6 +178,14 @@ export default function Groups() {
       );
     }
 
+    // Filter by heritage (if any selected)
+    if (filters.heritage && filters.heritage.length > 0) {
+      tempGroups = tempGroups.filter(group => {
+        // Assuming group has a 'heritage' property
+        return group.heritage === filters.heritage;
+      });
+    }
+
     return tempGroups;
   }, [groups, searchQuery, filters]);
 
@@ -133,12 +195,50 @@ export default function Groups() {
     );
   };
 
-  const handleCreateGroup = (groupData: any) => {
-      console.log("New Group Data:", groupData);
+  const handleCreateGroup = async (groupData: any) => {
+    try {
+      console.log("Creating new group:", groupData);
+      
+      // Format the data to match backend expectations
+      const formattedData = {
+        name: groupData.name,
+        description: groupData.description,
+        category: groupData.category || "",
+        location: groupData.location || "",
+        isPublic: groupData.isPublic,
+        universityOnly: groupData.universityOnly,
+        allowedUniversity: groupData.allowedUniversity,
+        presidentId: currentUser?.id,
+        meetings: groupData.meetings
+      };
+      
+      // Call the backend API
+      const response = await fetch('http://localhost:3001/api/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formattedData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error creating group: ${response.status}`);
+      }
+      
+      const newGroup = await response.json();
+      console.log("Group created successfully:", newGroup);
+      
+      // Refresh the groups list to include the newly created group
+      await fetchGroups();
+      Alert.alert('Success', 'Group created successfully!');
       setShowCreateModal(false);
-  }
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      Alert.alert('Error', 'Failed to create group. Please try again.');
+    }
+  };
 
-  const generateGroupShareContent = (group: MockGroup) => {
+  const generateGroupShareContent = (group: ApiGroup) => {
     return {
       title: `${group.name} - Culture Connect`,
       message: `Check out ${group.name} on Culture Connect!\n\n${group.description}\n\n📍 ${group.location}\n👥 ${group.memberCount} members\n\nJoin our cultural community!`,
@@ -146,13 +246,17 @@ export default function Groups() {
     };
   };
 
-  const handleFiltersChange = (newFilters: FilterOptions) => {
-    setFilters(newFilters);
+  const handleFiltersChange = (filters: FilterOptions) => {
+    setFilters(filters);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <CreateGroupModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={handleCreateGroup} />
+      <CreateGroupModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateGroup}
+      />
       
       {/* Sticky Header */}
       <View style={styles.stickyHeader}>
@@ -250,7 +354,7 @@ export default function Groups() {
           {filteredGroups.map((group) => (
             <TouchableOpacity key={group.id} style={styles.groupCard} onPress={() => router.push(`/group/${group.id}`)}>
                 <View style={styles.groupImageContainer}>
-                    <Image source={{ uri: group.image || undefined }} defaultSource={placeholderImg} style={styles.groupImage} />
+                    <Image source={{ uri: group.image || undefined }} defaultSource={{ uri: placeholderImg }} style={styles.groupImage} />
                     <View style={styles.badgeContainer}>
                        {group.isPublic && <View style={[styles.badge, styles.publicBadge]}><Text style={styles.badgeText}>Public</Text></View>}
                        {!group.isPublic && <View style={[styles.badge, styles.privateBadge]}><Text style={styles.badgeText}>Private</Text></View>}
@@ -268,7 +372,7 @@ export default function Groups() {
               <View style={styles.groupContent}>
                 <Text style={styles.groupName} numberOfLines={2}>{group.name}</Text>
                 <View style={styles.groupCategoryContainer}>
-                    <Text style={styles.groupCategory}>{group.category}</Text>
+                    <Text style={styles.groupCategory}>{Array.isArray(group.category) ? group.category.join(', ') : group.category}</Text>
                 </View>
                 <View style={styles.groupLocation}>
                   <MapPin size={12} color={theme.gray500} />

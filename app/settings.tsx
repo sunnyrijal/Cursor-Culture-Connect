@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { ArrowLeft, User, CreditCard as Edit3, Share2, Eye, Shield, Bell, Lock, CircleHelp as HelpCircle, LogOut, ChevronRight, Settings as SettingsIcon, Globe, Smartphone, Mail } from 'lucide-react-native';
+import { ArrowLeft, User, CreditCard as Edit3, Share2, Eye, Shield, Bell, Lock, CircleHelp as HelpCircle, ChevronRight, Settings as SettingsIcon, Globe, Smartphone, Mail } from 'lucide-react-native';
+import LogoutButton from '@/components/LogoutButton';
 
 interface SettingsOption {
   id: string;
@@ -19,8 +20,6 @@ interface SettingsOption {
 }
 
 export default function Settings() {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const handleEditProfile = () => {
     router.push('/profile/edit');
   };
@@ -41,33 +40,6 @@ export default function Settings() {
 
   const handleViewPublicProfile = () => {
     router.push('/profile/public/1');
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoggingOut(true);
-            // Simulate logout process
-            setTimeout(() => {
-              setIsLoggingOut(false);
-              Alert.alert('Success', 'You have been logged out successfully');
-              // In a real app, this would navigate to login screen
-              router.push('/');
-            }, 1500);
-          }
-        }
-      ]
-    );
   };
 
   const profileOptions: SettingsOption[] = [
@@ -138,14 +110,6 @@ export default function Settings() {
       color: theme.gray500,
       onPress: () => Alert.alert('Help & Support', 'Contact us at support@cultureconnect.app'),
       showChevron: true
-    },
-    {
-      id: 'logout',
-      icon: LogOut,
-      label: 'Logout',
-      description: 'Sign out of your account',
-      color: theme.error,
-      onPress: handleLogout
     }
   ];
 
@@ -161,19 +125,14 @@ export default function Settings() {
               index === options.length - 1 && styles.lastOption
             ]}
             onPress={option.onPress}
-            disabled={option.id === 'logout' && isLoggingOut}
           >
             <View style={styles.optionLeft}>
               <View style={[styles.optionIcon, { backgroundColor: `${option.color}15` }]}>
                 <option.icon size={20} color={option.color} />
               </View>
               <View style={styles.optionContent}>
-                <Text style={[
-                  styles.optionLabel,
-                  option.id === 'logout' && styles.logoutLabel
-                ]}>
+                <Text style={styles.optionLabel}>
                   {option.label}
-                  {option.id === 'logout' && isLoggingOut && ' ...'}
                 </Text>
                 <Text style={styles.optionDescription}>{option.description}</Text>
               </View>
@@ -194,7 +153,7 @@ export default function Settings() {
           <ArrowLeft size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
-        <View style={styles.placeholder} />
+        <LogoutButton />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -225,38 +184,8 @@ export default function Settings() {
         {/* Account Settings */}
         {renderSettingsSection('Account Settings', accountOptions)}
 
-        {/* App Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Information</Text>
-          <Card style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Smartphone size={16} color={theme.gray500} />
-              <Text style={styles.infoLabel}>Version</Text>
-              <Text style={styles.infoValue}>1.0.0</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Globe size={16} color={theme.gray500} />
-              <Text style={styles.infoLabel}>Region</Text>
-              <Text style={styles.infoValue}>United States</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Mail size={16} color={theme.gray500} />
-              <Text style={styles.infoLabel}>Support</Text>
-              <Text style={styles.infoValue}>support@cultureconnect.app</Text>
-            </View>
-          </Card>
-        </View>
-
-        {/* Support & Logout */}
+        {/* Support & Help */}
         {renderSettingsSection('Support', supportOptions)}
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Culture Connect v1.0.0</Text>
-          <Text style={styles.footerSubtext}>
-            Connecting students through shared heritage and cultural experiences
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

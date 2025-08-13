@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Cultural Festival",
+    "description": "A celebration of diverse cultures with food, music, and dance performances.",
+    "isRSVPed": false,
+    "isFavorited": false,
+    "image": "https://example.com/cultural-festival.jpg",
+    "date": "2023-06-15",
+    "time": "14:00",
+    "location": "City Park",
+    "category": ["Festival", "Food", "Music"],
+    "organizer": "Cultural Association"
+  },
+  {
+    "name": "Art Exhibition",
+    "description": "Local artists showcase their work in various mediums.",
+    "isRSVPed": true,
+    "isFavorited": true,
+    "image": "https://example.com/art-exhibition.jpg",
+    "date": "2023-06-20",
+    "time": "18:00",
+    "location": "Art Gallery",
+    "category": ["Art", "Exhibition"],
+    "organizer": "Art Society"
+  }
+]

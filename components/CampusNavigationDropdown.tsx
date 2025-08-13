@@ -237,9 +237,9 @@ export function CampusNavigationDropdown({ onItemPress, onContentChange }: Campu
           {
             maxHeight,
             opacity: animatedOpacity,
+            pointerEvents: isOpen ? 'auto' : 'none'
           },
         ]}
-        pointerEvents={isOpen ? 'auto' : 'none'}
       >
         <View style={styles.dropdownContent}>
           {/* Reset to All Content */}

@@ -31,3 +31,10 @@ export interface Group {
 
 // Alias for backward compatibility
 export interface MockGroup extends Group {}
+
+export interface ApiGroup {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
