@@ -1,11 +1,11 @@
 export const theme = {
-  // Primary Colors
-  primary: '#4F8EF7', // Calm blue accent
-  primaryLight: '#7CA9FF',
-  primaryDark: '#1B3C7F',
+  // Primary Colors (Purple)
+  primary: '#6366F1', // Vibrant indigo purple
+  primaryLight: '#A5B4FC', // Soft lavender tint
+  primaryDark: '#4338CA', // Deep royal purple
 
-  // Accent Colors
-  accent: '#38B2AC', // Calm green accent
+  // Accent Colors (keeping your calm green accent)
+  accent: '#38B2AC',
   accentLight: '#81E6D9',
   accentDark: '#285E61',
 
@@ -16,13 +16,13 @@ export const theme = {
   info: '#3B82F6',
 
   // Background Colors
-  background: '#F8F9FA', // Off-white
+  background: '#F8F9FA',
   white: '#FFFFFF',
 
   // Gray Scale
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
-  gray200: '#E9ECEF', // Updated for border
+  gray200: '#E9ECEF',
   gray300: '#D1D5DB',
   gray400: '#9CA3AF',
   gray500: '#6B7280',
@@ -32,16 +32,16 @@ export const theme = {
   gray900: '#111827',
 
   // Text Colors
-  textPrimary: '#212529', // High contrast, not pure black
+  textPrimary: '#212529',
   textSecondary: '#495057',
   textTertiary: '#868E96',
 
   // Border Colors
-  border: '#E9ECEF', // Subtle border
+  border: '#E9ECEF',
   borderLight: '#F3F4F6',
 
   // Shadow
-  shadow: 'rgba(0, 0, 0, 0.08)', // Gentle, diffused shadow
+  shadow: 'rgba(0, 0, 0, 0.08)',
   shadowDark: 'rgba(0, 0, 0, 0.16)',
 };
 
@@ -54,6 +54,14 @@ export const spacing = {
   xl: 32,
   xxl: 48,
 };
+
+export const neomorphColors = {
+  background: '#F0F3F7',
+  lightShadow: '#FFFFFF',
+  darkShadow: '#CDD2D8',
+  primary: theme.primary || '#6366F1',
+};
+
 
 // Border radius: 11px for all cards/containers
 export const borderRadius = {
