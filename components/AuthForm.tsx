@@ -14,32 +14,32 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  User, 
-  Phone, 
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
   Calendar,
   MapPin,
   GraduationCap,
   Sparkles,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'expo-router';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSpring,
   withSequence,
   withDelay,
   interpolate,
   Easing,
-  runOnJS
+  runOnJS,
 } from 'react-native-reanimated';
 import { rgbaColor } from 'react-native-reanimated/lib/typescript/Colors';
 
@@ -65,8 +65,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [focusedInput, setFocusedInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-  const [fieldValidation, setFieldValidation] = useState<{[key: string]: boolean}>({});
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState<boolean>(false);
+  const [fieldValidation, setFieldValidation] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const { login, signup } = useAuth();
   const router = useRouter();
@@ -84,18 +87,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   useEffect(() => {
     // Entry animations
     headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }));
-    headerScale.value = withDelay(200, withSpring(1, { damping: 15, stiffness: 100 }));
-    
+    headerScale.value = withDelay(
+      200,
+      withSpring(1, { damping: 15, stiffness: 100 })
+    );
+
     formOpacity.value = withDelay(600, withTiming(1, { duration: 800 }));
-    formTranslateY.value = withDelay(600, withSpring(0, { damping: 15, stiffness: 120 }));
-    
-    switchScale.value = withDelay(1000, withSpring(1, { damping: 12, stiffness: 100 }));
+    formTranslateY.value = withDelay(
+      600,
+      withSpring(0, { damping: 15, stiffness: 120 })
+    );
+
+    switchScale.value = withDelay(
+      1000,
+      withSpring(1, { damping: 12, stiffness: 100 })
+    );
     particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }));
 
     // Continuous background rotation
-    backgroundRotation.value = withTiming(360, { 
-      duration: 60000, 
-      easing: Easing.linear 
+    backgroundRotation.value = withTiming(360, {
+      duration: 60000,
+      easing: Easing.linear,
     });
   }, []);
 
@@ -111,29 +123,34 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     let isValid = false;
     switch (field) {
       case 'email':
-        isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.endsWith('.edu');
+        isValid =
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.endsWith('.edu');
         break;
       case 'password':
-        isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/.test(value);
+        isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/.test(
+          value
+        );
         break;
       case 'fullName':
         isValid = value.trim().length >= 2;
         break;
       case 'mobileNumber':
-        isValid = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(value);
+        isValid = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(
+          value
+        );
         break;
       default:
         isValid = value.trim().length > 0;
     }
-    
-    setFieldValidation(prev => ({ ...prev, [field]: isValid }));
+
+    setFieldValidation((prev) => ({ ...prev, [field]: isValid }));
     return isValid;
   };
 
   const handleSubmit = async () => {
     setError('');
     setLoading(true);
-    
+
     // Button press animation
     buttonScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
@@ -141,7 +158,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
       router.replace('/(tabs)');
     } catch (err) {
       setError('Authentication failed. Please try again.');
@@ -176,23 +193,31 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   ) => {
     const isValid = fieldValidation[inputKey];
     const isFocused = focusedInput === inputKey;
-    
+
     return (
       <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
         <Text style={styles.inputLabel}>{label}</Text>
-        <View style={[
-          styles.inputWrapper,
-          isFocused && styles.inputWrapperFocused,
-          isValid === true && styles.inputWrapperValid,
-          isValid === false && value && styles.inputWrapperInvalid
-        ]}>
+        <View
+          style={[
+            styles.inputWrapper,
+            isFocused && styles.inputWrapperFocused,
+            isValid === true && styles.inputWrapperValid,
+            isValid === false && value && styles.inputWrapperInvalid,
+          ]}
+        >
           <View style={styles.inputIcon}>
             {React.createElement(icon, {
               size: 20,
-              color: isFocused ? '#6366F1' : isValid === true ? '#10B981' : isValid === false && value ? '#EF4444' : '#9CA3AF'
+              color: isFocused
+                ? '#6366F1'
+                : isValid === true
+                ? '#10B981'
+                : isValid === false && value
+                ? '#EF4444'
+                : '#9CA3AF',
             })}
           </View>
-          
+
           <TextInput
             style={styles.input}
             placeholder={placeholder}
@@ -210,7 +235,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
             placeholderTextColor="#9CA3AF"
             {...options}
           />
-          
+
           {inputKey === 'password' && (
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
@@ -223,7 +248,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
               )}
             </TouchableOpacity>
           )}
-          
+
           {inputKey === 'confirmPassword' && (
             <TouchableOpacity
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -236,27 +261,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
               )}
             </TouchableOpacity>
           )}
-          
+
           {isValid === true && value && (
             <View style={styles.validIcon}>
               <CheckCircle size={16} color="#10B981" />
             </View>
           )}
-          
+
           {isValid === false && value && (
             <View style={styles.validIcon}>
               <AlertCircle size={16} color="#EF4444" />
             </View>
           )}
         </View>
-        
+
         {isValid === false && value && (
           <Text style={styles.validationText}>
             {inputKey === 'email' && 'Please enter a valid .edu email address'}
-            {inputKey === 'password' && 'Password must be 8+ chars with uppercase, lowercase & number'}
+            {inputKey === 'password' &&
+              'Password must be 8+ chars with uppercase, lowercase & number'}
             {inputKey === 'fullName' && 'Name must be at least 2 characters'}
             {inputKey === 'mobileNumber' && 'Please enter a valid phone number'}
-            {inputKey !== 'email' && inputKey !== 'password' && inputKey !== 'fullName' && inputKey !== 'mobileNumber' && 'This field is required'}
+            {inputKey !== 'email' &&
+              inputKey !== 'password' &&
+              inputKey !== 'fullName' &&
+              inputKey !== 'mobileNumber' &&
+              'This field is required'}
           </Text>
         )}
       </Animated.View>
@@ -292,7 +322,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-      
+
       {/* Animated Background */}
       <LinearGradient
         colors={['#F8FAFC', '#F1F5F9', '#E2E8F0']}
@@ -300,12 +330,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
       />
-      
+
       {/* Floating Particles */}
       <Animated.View style={[styles.particleContainer, particleAnimatedStyle]}>
         <Animated.View style={[styles.backgroundOrb, backgroundAnimatedStyle]}>
           {[...Array(12)].map((_, index) => (
-            <View 
+            <View
               key={index}
               style={[
                 styles.particle,
@@ -313,16 +343,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                   top: `${10 + (index % 4) * 20}%`,
                   left: `${5 + (index % 3) * 30}%`,
                   animationDelay: `${index * 200}ms`,
-                }
+                },
               ]}
             >
-              <Sparkles size={8 + (index % 3) * 2} color="rgba(99, 102, 241, 0.3)" />
+              <Sparkles
+                size={8 + (index % 3) * 2}
+                color="rgba(99, 102, 241, 0.3)"
+              />
             </View>
           ))}
         </Animated.View>
       </Animated.View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -335,7 +368,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
           {/* Header */}
           <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
+              colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerGradient}
@@ -351,7 +384,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                     <GraduationCap size={24} color="white" />
                   </LinearGradient>
                 </View>
-                
+
                 <Text style={styles.title}>
                   {isSignup ? 'Join the Community' : 'Welcome Back'}
                 </Text>
@@ -381,18 +414,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
           <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
             <BlurView intensity={20} style={styles.blurView}>
               <LinearGradient
-                colors={['rgba(255, 255, 255, 0.95)', 'rgba(248, 250, 252, 0.9)']}
+                colors={[
+                  'rgba(255, 255, 255, 1)',
+                  'rgba(248, 250, 252, 1)',
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.formGradient}
               >
-                {isSignup && renderAnimatedInput(
-                  User, 'Full Name', fullName, setFullName, 'Enter your full name', 'fullName',
-                  { autoCapitalize: 'words', autoComplete: 'name' }
-                )}
+                {isSignup &&
+                  renderAnimatedInput(
+                    User,
+                    'Full Name',
+                    fullName,
+                    setFullName,
+                    'Enter your full name',
+                    'fullName',
+                    { autoCapitalize: 'words', autoComplete: 'name' }
+                  )}
 
                 {renderAnimatedInput(
-                  Mail, 'Email', email, setEmail, 'Enter your .edu email', 'email',
+                  Mail,
+                  'Email',
+                  email,
+                  setEmail,
+                  'Enter your .edu email',
+                  'email',
                   {
                     keyboardType: 'email-address',
                     autoCapitalize: 'none',
@@ -402,7 +449,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 )}
 
                 {renderAnimatedInput(
-                  Lock, 'Password', password, setPassword, 'Enter your password', 'password',
+                  Lock,
+                  'Password',
+                  password,
+                  setPassword,
+                  'Enter your password',
+                  'password',
                   {
                     secureTextEntry: !showPassword,
                     autoComplete: 'password',
@@ -413,7 +465,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 {isSignup && (
                   <>
                     {renderAnimatedInput(
-                      Lock, 'Confirm Password', confirmPassword, setConfirmPassword, 'Confirm your password', 'confirmPassword',
+                      Lock,
+                      'Confirm Password',
+                      confirmPassword,
+                      setConfirmPassword,
+                      'Confirm your password',
+                      'confirmPassword',
                       {
                         secureTextEntry: !showConfirmPassword,
                         autoComplete: 'password',
@@ -422,42 +479,73 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                     )}
 
                     {renderAnimatedInput(
-                      GraduationCap, 'University', university, setUniversity, 'Enter your university name', 'university',
+                      GraduationCap,
+                      'University',
+                      university,
+                      setUniversity,
+                      'Enter your university name',
+                      'university',
                       { autoCapitalize: 'words' }
                     )}
 
                     <View style={styles.rowContainer}>
                       <View style={styles.halfWidth}>
                         {renderAnimatedInput(
-                          MapPin, 'State', state, setState, 'State', 'state',
+                          MapPin,
+                          'State',
+                          state,
+                          setState,
+                          'State',
+                          'state',
                           { autoCapitalize: 'words' }
                         )}
                       </View>
                       <View style={styles.halfWidth}>
                         {renderAnimatedInput(
-                          MapPin, 'City', city, setCity, 'City', 'city',
+                          MapPin,
+                          'City',
+                          city,
+                          setCity,
+                          'City',
+                          'city',
                           { autoCapitalize: 'words' }
                         )}
                       </View>
                     </View>
 
                     {renderAnimatedInput(
-                      Phone, 'Mobile Number', mobileNumber, setMobileNumber, '(123) 456-7890', 'mobileNumber',
+                      Phone,
+                      'Mobile Number',
+                      mobileNumber,
+                      setMobileNumber,
+                      '(123) 456-7890',
+                      'mobileNumber',
                       { keyboardType: 'phone-pad', maxLength: 14 }
                     )}
 
                     {renderAnimatedInput(
-                      Calendar, 'Date of Birth', dateOfBirth, (text) => {
+                      Calendar,
+                      'Date of Birth',
+                      dateOfBirth,
+                      (text) => {
                         const cleaned = text.replace(/\D/g, '');
                         let formatted = cleaned;
                         if (cleaned.length >= 4) {
-                          formatted = cleaned.slice(0, 4) + '-' + cleaned.slice(4);
+                          formatted =
+                            cleaned.slice(0, 4) + '-' + cleaned.slice(4);
                         }
                         if (cleaned.length >= 6) {
-                          formatted = cleaned.slice(0, 4) + '-' + cleaned.slice(4, 6) + '-' + cleaned.slice(6, 8);
+                          formatted =
+                            cleaned.slice(0, 4) +
+                            '-' +
+                            cleaned.slice(4, 6) +
+                            '-' +
+                            cleaned.slice(6, 8);
                         }
                         setDateOfBirth(formatted);
-                      }, 'YYYY-MM-DD', 'dateOfBirth',
+                      },
+                      'YYYY-MM-DD',
+                      'dateOfBirth',
                       { keyboardType: 'numeric', maxLength: 10 }
                     )}
                   </>
@@ -475,7 +563,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={loading ? ['#CBD5E1', '#94A3B8'] : ['#6366F1', '#8B5CF6', '#EC4899']}
+                colors={
+                  loading
+                    ? ['#CBD5E1', '#94A3B8']
+                    : ['#6366F1', '#8B5CF6', '#EC4899']
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
@@ -503,11 +595,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
           <Animated.View style={[styles.switchContainer, switchAnimatedStyle]}>
             <BlurView intensity={10} style={styles.switchBlur}>
               <LinearGradient
-                colors={['rgba(255, 255, 255, 0.8)', 'rgba(248, 250, 252, 0.6)']}
+                colors={[
+                  'rgba(255, 255, 255, 0.8)',
+                  'rgba(248, 250, 252, 0.6)',
+                ]}
                 style={styles.switchGradient}
               >
                 <Text style={styles.switchLabel}>
-                  {isSignup ? 'Already have an account?' : "Don't have an account?"}
+                  {isSignup
+                    ? 'Already have an account?'
+                    : "Don't have an account?"}
                 </Text>
                 <TouchableOpacity
                   onPress={toggleMode}
@@ -516,7 +613,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                   activeOpacity={0.7}
                 >
                   <LinearGradient
-                    colors={['rgba(99, 102, 241, 0.1)', 'rgba(139, 92, 246, 0.1)']}
+                    colors={[
+                      'rgba(99, 102, 241, 0.1)',
+                      'rgba(139, 92, 246, 0.1)',
+                    ]}
                     style={styles.switchButtonGradient}
                   >
                     <Text style={styles.switchButtonText}>
@@ -533,7 +633,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   );
 };
 
-export default AuthForm
+export default AuthForm;
 
 const styles = StyleSheet.create({
   container: {
@@ -587,11 +687,12 @@ const styles = StyleSheet.create({
     }),
   },
   headerGradient: {
-    padding: 32,
+    padding: 24,
     borderRadius: 24,
   },
   headerContent: {
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   headerIcon: {
     width: 60,
@@ -617,7 +718,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,
@@ -625,7 +726,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 24,
@@ -663,7 +764,7 @@ const styles = StyleSheet.create({
         shadowRadius: 25,
       },
       android: {
-        elevation: 15,
+        elevation: 12,
       },
     }),
   },
@@ -672,11 +773,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   formGradient: {
-    padding: 28,
+    padding: 24,
     borderRadius: 24,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 14,
@@ -688,7 +789,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 4,
@@ -738,10 +839,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '500',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+
   },
   eyeIcon: {
     padding: 8,
     marginLeft: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+
   },
   validIcon: {
     marginLeft: 8,
