@@ -158,7 +158,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500)); 
       router.replace('/(tabs)');
     } catch (err) {
       setError('Authentication failed. Please try again.');

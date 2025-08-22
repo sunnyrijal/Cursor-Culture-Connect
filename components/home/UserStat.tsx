@@ -7,8 +7,12 @@ import { theme, spacing, typography } from '../theme';
 export const neomorphColors = {
   background: '#F0F3F7',
   lightShadow: '#FFFFFF',
-  darkShadow: '#CDD2D8',
+  darkShadow: '#A3B1C6',
+  shadowLight: 'rgba(255, 255, 255, 0.9)',
+  shadowDark: 'rgba(163, 177, 198, 0.2)',
   primary: theme.primary || '#6366F1',
+  cardBackground: '#F0F3F7',
+  statBackground: '#EDF1F7',
 };
 
 const UserStat = ({ currentUser }: { currentUser: any }) => {
@@ -20,44 +24,115 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
       onPress={() => router.push('/my-hub')} 
       onPressIn={() => setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}
-      style={isPressed ? styles.outerShadowPressed : styles.outerShadow}
+      style={[
+        styles.mainContainer,
+        isPressed ? styles.mainContainerPressed : styles.mainContainerNormal
+      ]}
       activeOpacity={1}
     >
+      {/* Outer gradient for enhanced depth */}
       <LinearGradient
-        colors={[neomorphColors.lightShadow, neomorphColors.background]}
-        start={{ x: 0.1, y: 0.1 }}
-        end={{ x: 0.9, y: 0.9 }}
-        style={styles.card}
+        colors={[
+          'rgba(255, 255, 255, 0.8)',
+          neomorphColors.background,
+          'rgba(163, 177, 198, 0.1)'
+        ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.outerGradient}
       >
-        <Text style={styles.title}>Your Cultural Hub</Text>
-        <Text style={styles.subtitle}>
-          Connect with heritage and explore cultures
-        </Text>
-
-        <View style={styles.statsContainer}>
-          {/* Stat 1 */}
-          <View style={styles.statWrapper}>
-            <View style={styles.statContainer}>
-              <Text style={styles.statNumber}>{currentUser.eventsAttended}</Text>
-              <Text style={styles.statLabel}>Events{"\n"}Attended</Text>
+        {/* Inner card with neumorphic effect */}
+        <View style={[
+          styles.innerCard,
+          isPressed ? styles.innerCardPressed : styles.innerCardNormal
+        ]}>
+          <LinearGradient
+            colors={[
+              neomorphColors.lightShadow,
+              neomorphColors.cardBackground,
+              'rgba(163, 177, 198, 0.05)'
+            ]}
+            start={{ x: 0.1, y: 0.1 }}
+            end={{ x: 0.9, y: 0.9 }}
+            style={styles.cardContent}
+          >
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <Text style={styles.title}>Your Cultural Hub</Text>
+              <Text style={styles.subtitle}>
+                Connect with heritage and explore cultures
+              </Text>
             </View>
-          </View>
 
-          {/* Stat 2 */}
-          <View style={styles.statWrapper}>
-            <View style={styles.statContainer}>
-              <Text style={styles.statNumber}>{currentUser.joinedGroups}</Text>
-              <Text style={styles.statLabel}>Groups{"\n"}Joined</Text>
-            </View>
-          </View>
+            {/* Stats Container */}
+            <View style={styles.statsContainer}>
+              {/* Stat 1 */}
+              <View style={styles.statWrapper}>
+                <View style={[
+                  styles.statContainer,
+                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                ]}>
+                  <LinearGradient
+                    colors={[
+                      'rgba(255, 255, 255, 0.6)',
+                      neomorphColors.statBackground,
+                      'rgba(163, 177, 198, 0.08)'
+                    ]}
+                    start={{ x: 0.2, y: 0.2 }}
+                    end={{ x: 0.8, y: 0.8 }}
+                    style={styles.statGradient}
+                  >
+                    <Text style={styles.statNumber}>{currentUser.eventsAttended}</Text>
+                    <Text style={styles.statLabel}>Events{"\n"}Attended</Text>
+                  </LinearGradient>
+                </View>
+              </View>
 
-          {/* Stat 3 */}
-          <View style={styles.statWrapper}>
-            <View style={styles.statContainer}>
-              <Text style={styles.statNumber}>{currentUser.connections}</Text>
-              <Text style={styles.statLabel}>Connections</Text>
+              {/* Stat 2 */}
+              <View style={styles.statWrapper}>
+                <View style={[
+                  styles.statContainer,
+                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                ]}>
+                  <LinearGradient
+                    colors={[
+                      'rgba(255, 255, 255, 0.6)',
+                      neomorphColors.statBackground,
+                      'rgba(163, 177, 198, 0.08)'
+                    ]}
+                    start={{ x: 0.2, y: 0.2 }}
+                    end={{ x: 0.8, y: 0.8 }}
+                    style={styles.statGradient}
+                  >
+                    <Text style={styles.statNumber}>{currentUser.joinedGroups}</Text>
+                    <Text style={styles.statLabel}>Groups{"\n"}Joined</Text>
+                  </LinearGradient>
+                </View>
+              </View>
+
+              {/* Stat 3 */}
+              <View style={styles.statWrapper}>
+                <View style={[
+                  styles.statContainer,
+                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                ]}>
+                  <LinearGradient
+                    colors={[
+                      'rgba(255, 255, 255, 0.6)',
+                      neomorphColors.statBackground,
+                      'rgba(163, 177, 198, 0.08)'
+                    ]}
+                    start={{ x: 0.2, y: 0.2 }}
+                    end={{ x: 0.8, y: 0.8 }}
+                    style={styles.statGradient}
+                  >
+                    <Text style={styles.statNumber}>{currentUser.connections}</Text>
+                    <Text style={styles.statLabel}>Connections</Text>
+                  </LinearGradient>
+                </View>
+              </View>
             </View>
-          </View>
+          </LinearGradient>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -67,76 +142,134 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
 export default UserStat;
 
 const styles = StyleSheet.create({
-  // Main card - normal state
-  outerShadow: {
-    borderRadius: 24,
-    backgroundColor: neomorphColors.background,
+  mainContainer: {
     marginBottom: spacing.lg,
     marginHorizontal: spacing.xs,
-    // Cross-platform shadows
+  },
+
+  mainContainerNormal: {
     ...Platform.select({
+      web: {
+        filter: 'drop-shadow(8px 8px 16px rgba(163, 177, 198, 0.25)) drop-shadow(-8px -8px 16px rgba(255, 255, 255, 0.8))',
+      },
       ios: {
         shadowColor: neomorphColors.darkShadow,
         shadowOffset: { width: 8, height: 8 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.25,
         shadowRadius: 16,
       },
       android: {
-        elevation: 8,
+        elevation: 24,
       },
     }),
   },
 
-  // Main card - pressed state
-  outerShadowPressed: {
-    borderRadius: 24,
-    backgroundColor: neomorphColors.background,
-    marginBottom: spacing.lg,
-    marginHorizontal: spacing.xs,
-    // Reduced shadows for pressed effect
+  mainContainerPressed: {
     ...Platform.select({
+      web: {
+        filter: 'drop-shadow(4px 4px 8px rgba(163, 177, 198, 0.3)) drop-shadow(-2px -2px 6px rgba(255, 255, 255, 0.7))',
+      },
       ios: {
         shadowColor: neomorphColors.darkShadow,
         shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.3,
         shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
 
-  card: {
+  outerGradient: {
+    borderRadius: 28,
+    padding: 2,
+  },
+
+  innerCard: {
+    borderRadius: 26,
+    backgroundColor:'white',
+  },
+
+  innerCardNormal: {
+    ...Platform.select({
+      web: {
+        boxShadow: 'inset 2px 2px 4px rgba(163, 177, 198, 0.1), inset -2px -2px 4px rgba(255, 255, 255, 0.8)',
+      },
+      ios: {
+        shadowColor: neomorphColors.lightShadow,
+        shadowOffset: { width: -2, height: -2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+      },
+      android: {
+        borderWidth: 1,
+        borderTopColor: 'rgba(255, 255, 255, 0.5)',
+        borderLeftColor: 'rgba(255, 255, 255, 0.5)',
+        borderRightColor: 'rgba(163, 177, 198, 0.2)',
+        borderBottomColor: 'rgba(163, 177, 198, 0.2)',
+      },
+    }),
+  },
+
+  innerCardPressed: {
+    ...Platform.select({
+      web: {
+        boxShadow: 'inset 4px 4px 8px rgba(163, 177, 198, 0.15), inset -1px -1px 3px rgba(255, 255, 255, 0.6)',
+      },
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        borderWidth: 1,
+        borderTopColor: 'rgba(163, 177, 198, 0.3)',
+        borderLeftColor: 'rgba(163, 177, 198, 0.3)',
+        borderRightColor: 'rgba(255, 255, 255, 0.3)',
+        borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+      },
+    }),
+  },
+
+  cardContent: {
     borderRadius: 24,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    // Add subtle border for light shadow effect
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
+    paddingHorizontal: spacing.md + 4,
+    paddingVertical: spacing.md + 4,
+    paddingTop: spacing.lg,
+  },
+
+  headerSection: {
+    marginBottom: spacing.md,
   },
 
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1E293B',
-    marginBottom: 4,
+    marginBottom: 6,
     fontFamily: typography.fontFamily.bold,
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#64748B',
-    marginBottom: spacing.sm,
     fontFamily: typography.fontFamily.regular,
-    lineHeight: 18,
+    lineHeight: 20,
+    textShadowColor: 'rgba(255, 255, 255, 0.5)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 1,
   },
 
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.xs,
-    marginTop: 8,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
 
   statWrapper: {
@@ -144,41 +277,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Individual stat containers with neumorphic effect
   statContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
+    width: '100%',
+    minHeight: 95,
     backgroundColor: neomorphColors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 8,
-    width: '90%',
-    minHeight: 85,
-    // Cross-platform shadows for stats
+  },
+
+  statContainerNormal: {
     ...Platform.select({
+      web: {
+        boxShadow: '4px 4px 12px rgba(163, 177, 198, 0.2), -4px -4px 12px rgba(255, 255, 255, 0.8)',
+      },
       ios: {
         shadowColor: neomorphColors.darkShadow,
         shadowOffset: { width: 4, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+
+  statContainerPressed: {
+    ...Platform.select({
+      web: {
+        boxShadow: '2px 2px 6px rgba(163, 177, 198, 0.25), -2px -2px 6px rgba(255, 255, 255, 0.7)',
+      },
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.25,
-        shadowRadius: 8,
+        shadowRadius: 6,
       },
       android: {
         elevation: 4,
       },
     }),
-    // Light border for inner highlight
+  },
+
+  statGradient: {
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: 10,
+    minHeight: 93,
+    // Subtle inner border for enhanced 3D effect
     borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
+    borderTopColor: 'rgba(255, 255, 255, 0.6)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.6)',
+    borderRightColor: 'rgba(163, 177, 198, 0.15)',
+    borderBottomColor: 'rgba(163, 177, 198, 0.15)',
   },
 
   statNumber: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: neomorphColors.primary,
     fontFamily: typography.fontFamily.bold,
-    textShadowColor: neomorphColors.lightShadow,
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+    marginBottom: 4,
   },
 
   statLabel: {
@@ -186,8 +349,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#475569',
     textAlign: 'center',
-    marginTop: 4,
     fontFamily: typography.fontFamily.medium,
-    lineHeight: 13,
+    lineHeight: 14,
+    textShadowColor: 'rgba(255, 255, 255, 0.6)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 1,
   },
 });

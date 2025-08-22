@@ -2,20 +2,17 @@ import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router'
 import { 
-  Plus, 
+  Calendar, 
   Users, 
-  Building2,
+  MapPin,
 } from 'lucide-react-native';
-import { theme, spacing, typography, neomorphColors } from '../theme';
+import { theme, spacing, typography } from '../theme';
 
-const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }: {
-    setShowCreateEventModal: (value: boolean) => void;
-    setShowCreateGroupModal: (value: boolean) => void
-}) => {
+const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }:any) => {
   const router = useRouter()
-  const [pressedButton, setPressedButton] = useState<string | null>(null)
+  const [pressedButton, setPressedButton] = useState(null)
 
-  const handlePressIn = (buttonId: string) => {
+  const handlePressIn = (buttonId:any) => {
     setPressedButton(buttonId)
   }
 
@@ -23,57 +20,72 @@ const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }: {
     setPressedButton(null)
   }
 
-  const getButtonStyle = (buttonId: string) => {
-    return pressedButton === buttonId ? styles.actionButtonPressed : styles.actionButton
+  const quickActionsData = [
+    {
+      id: 'createEvent',
+      title: 'Create Event',
+      description: 'Host cultural events',
+      icon: Calendar,
+      iconColor: '#1d4ed8', // blue-700
+      backgroundColor: '#dbeafe', // blue-100
+      gradientColors: ['#dbeafe', '#e9d5ff'], // blue-200 to purple-200
+      action: () => setShowCreateEventModal(true)
+    },
+    {
+      id: 'createGroup', 
+      title: 'Create Group',
+      description: 'Start new community',
+      icon: Users,
+      iconColor: '#15803d', // green-700
+      backgroundColor: '#dcfce7', // green-100
+      gradientColors: ['#dcfce7', '#dbeafe'], // green-200 to blue-200
+      action: () => setShowCreateGroupModal(true)
+    },
+    {
+      id: 'myUniversity',
+      title: 'My University', 
+      description: 'Campus resources',
+      icon: MapPin,
+      iconColor: '#c2410c', // orange-700
+      backgroundColor: '#fed7aa', // orange-100
+      gradientColors: ['#fed7aa', '#fecaca'], // orange-200 to pink-200
+      action: () => router.push('/my-university')
+    }
+  ]
+
+  const getButtonStyle = (buttonId:string) => {
+    const baseStyle = styles.actionButton
+    const pressedStyle = styles.actionButtonPressed
+    return pressedButton === buttonId ? pressedStyle : baseStyle
+  }
+
+  const QuickActionCard = ({ item }:any) => {
+    const IconComponent = item.icon
+    
+    return (
+      <TouchableOpacity
+        style={[getButtonStyle(item.id), { backgroundColor: item.backgroundColor }]}
+        onPress={item.action}
+        onPressIn={() => handlePressIn(item.id)}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]}>
+          <IconComponent size={24} color={item.iconColor} />
+        </View>
+        <Text style={[styles.actionTitle, { color: item.iconColor }]}>{item.title}</Text>
+        {/* <Text style={styles.actionDescription}>{item.description}</Text> */}
+      </TouchableOpacity>
+    )
   }
 
   return (
     <View style={styles.quickActions}>
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionButtons}>
-        
-        {/* Create Event */}
-        <TouchableOpacity
-          style={getButtonStyle('createEvent')}
-          onPress={() => setShowCreateEventModal(true)}
-          onPressIn={() => handlePressIn('createEvent')}
-          onPressOut={handlePressOut}
-          activeOpacity={1}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: theme.primary }]}>
-            <Plus size={16} color={theme.white} />
-          </View>
-          <Text style={styles.actionText}>Create Event</Text>
-        </TouchableOpacity>
-
-        {/* Create Group */}
-        <TouchableOpacity
-          style={getButtonStyle('createGroup')}
-          onPress={() => setShowCreateGroupModal(true)}
-          onPressIn={() => handlePressIn('createGroup')}
-          onPressOut={handlePressOut}
-          activeOpacity={1}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: theme.accent }]}>
-            <Users size={16} color={theme.white} />
-          </View>
-          <Text style={styles.actionText}>Create Group</Text>
-        </TouchableOpacity>
-
-        {/* My University */}
-        <TouchableOpacity
-          style={getButtonStyle('myUniversity')}
-          onPress={() => router.push('/my-university')}
-          onPressIn={() => handlePressIn('myUniversity')}
-          onPressOut={handlePressOut}
-          activeOpacity={1}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: theme.info }]}>
-            <Building2 size={16} color={theme.white} />
-          </View>
-          <Text style={styles.actionText}>My University</Text>
-        </TouchableOpacity>
-
+        {quickActionsData.map((item) => (
+          <QuickActionCard key={item.id} item={item} />
+        ))}
       </View>
     </View>
   )
@@ -85,103 +97,108 @@ const styles = StyleSheet.create({
   quickActions: {
     marginBottom: spacing.xs,
     marginTop: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: theme.textPrimary,
-    marginBottom: spacing.sm,
-    fontFamily: typography.fontFamily.bold,
+    color: '#1f2937', 
+    marginBottom: spacing.md,
+    fontFamily: typography?.fontFamily?.bold || 'System',
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
 
-  // Neumorphic button style - normal state with cross-platform shadows
+  // Clay shadow effect - normal state
   actionButton: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: neomorphColors.background,
+    borderRadius: 24, // rounded-3xl equivalent
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
-    minHeight: 90,
-    // Add subtle border for light shadow effect
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
-    // Cross-platform shadows
+    minHeight: 120,
+    // Clay shadow effect
     ...Platform.select({
       ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 6, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowColor: '#a3b1c6',
+        shadowOffset: { width: 8, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
       },
       android: {
         elevation: 8,
+        shadowColor: '#a3b1c6',
       },
     }),
+    // Additional light shadow for clay effect
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.7)',
   },
 
-  // Neumorphic button style - pressed state with cross-platform shadows
+  // Clay shadow effect - pressed state
   actionButtonPressed: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: neomorphColors.background,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+ paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
-    minHeight: 90,
-    // Add subtle border for light shadow effect
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
-    // Reduced shadows for pressed effect
+    // Pressed clay shadow effect (inset-like)
     ...Platform.select({
       ios: {
-        shadowColor: neomorphColors.darkShadow,
+        shadowColor: '#a3b1c6',
         shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+        shadowColor: '#a3b1c6',
+      },
+    }),
+    borderWidth: 0.5,
+    borderColor: 'rgba(163, 177, 198, 0.15)',
+    // transform: [{ scale: 0.98 }], 
+  },
+
+  actionIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
         elevation: 2,
       },
     }),
   },
-
-  actionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    // Cross-platform shadows for icons
-    ...Platform.select({
-      ios: {
-        shadowColor: 'rgba(0,0,0,0.1)',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
   
-  actionText: {
+  actionTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: theme.textPrimary,
+    // fontWeight: 'bold',
     textAlign: 'center',
-    fontFamily: typography.fontFamily.medium,
-    lineHeight: 13,
+    fontFamily: typography?.fontFamily?.bold || 'System',
+    marginBottom: 2,
+  },
+
+  actionDescription: {
+    fontSize: 12,
+    color: '#6b7280', // gray-500
+    textAlign: 'center',
+    fontFamily: typography?.fontFamily?.regular || 'System',
+    lineHeight: 14,
   },
 })

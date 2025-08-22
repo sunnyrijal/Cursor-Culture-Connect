@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Globe, Sparkles } from 'lucide-react-native';
+import { Globe, GraduationCap, Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import Animated, {
   useSharedValue,
@@ -15,7 +15,6 @@ import Animated, {
   runOnJS,
   interpolate,
 } from 'react-native-reanimated';
-
 const { width, height } = Dimensions.get('window');
 
 const theme = {
@@ -160,7 +159,9 @@ export default function Index() {
     opacity: interpolate(glowScale.value, [0.8, 1.2], [0.3, 0.6]),
   }));
 
+
   return (
+
     <Animated.View style={[styles.container, backgroundAnimatedStyle]}>
       <LinearGradient
         colors={['#667eea', '#764ba2', '#f093fb']}
@@ -206,7 +207,7 @@ export default function Index() {
                 style={styles.logoGradient}
               >
                 <View style={styles.logoInner}>
-                  <Globe size={44} color={theme.primary} strokeWidth={2.5} />
+                  <GraduationCap size={44} color={theme.primary} strokeWidth={2.5} />
                 </View>
               </LinearGradient>
             </View>
@@ -244,6 +245,7 @@ export default function Index() {
         </View>
       </LinearGradient>
     </Animated.View>
+
   );
 }
 

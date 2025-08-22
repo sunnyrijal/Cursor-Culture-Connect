@@ -5,60 +5,31 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
-  Dimensions,
   useWindowDimensions,
   Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Button,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
-  Bell,
-  Plus,
-  Calendar,
-  Users,
-  MapPin,
-  ChevronRight,
-  Heart,
-  MessageCircle,
-  LogOut,
-  Globe,
-  GraduationCap,
-  Star,
-  Clock,
-  DollarSign,
-  ExternalLink,
   Utensils,
   Music,
   Palette,
-  BookOpen,
-  Phone,
-  Navigation,
-  Building2,
   Camera,
-  LayoutGrid,
-  List as ListIcon,
   Bot,
-  Activity,
-  User,
+
 } from 'lucide-react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { ShareCultureModal } from '@/components/ShareCultureModal';
 import { CulturalStoriesModal } from '@/components/CulturalStoriesModal';
 import { currentUser } from '@/data/mockData';
-import { theme, spacing, borderRadius, typography } from '@/components/theme';
-import placeholderImg from '@/assets/images/icon.png';
-import { WebView } from 'react-native-webview';
-import * as Linking from 'expo-linking';
+import { theme, spacing} from '@/components/theme';
 import { store } from '@/data/store';
 import { useEffect, useRef } from 'react';
-import LogoutButton from '@/components/LogoutButton';
 import Header from '@/components/home/Header';
 import UserStat from '@/components/home/UserStat';
 import CulturalExperiences from '@/components/home/CulturalExperiences';
@@ -275,7 +246,7 @@ export default function Dashboard() {
 
   const extractLocation = (q: string) => {
     // Try to extract a location from the query (city, university, state, etc.)
-    const user = store.getState().currentUser;
+    const user:any = store.getState().currentUser;
 
     // Add null check for user
     if (!user) {
@@ -310,7 +281,7 @@ export default function Dashboard() {
     return null;
   };
 
-  const extractDay = (q) => {
+  const extractDay = (q:string) => {
     if (q.includes('today')) return getToday();
     for (const day of knownDays) {
       if (q.includes(day)) return day.charAt(0).toUpperCase() + day.slice(1);
@@ -342,14 +313,14 @@ export default function Dashboard() {
     'Mixed Heritage',
   ];
 
-  function extractHeritage(q) {
+  function extractHeritage(q:string) {
     for (const h of heritageList) {
       if (q.includes(h.toLowerCase())) return h;
     }
     return null;
   }
 
-  function extractIntent(q) {
+  function extractIntent(q:string) {
     if (q.includes('food') || q.includes('restaurant') || q.includes('eat'))
       return 'food';
     if (
@@ -380,7 +351,7 @@ export default function Dashboard() {
       if (intent === 'food' && heritage) {
         // Find restaurants with highest popularity for that heritage near the user
         let restaurants = sponsoredContent.filter(
-          (c) =>
+          (c:any) =>
             c.type === 'restaurant' &&
             c.popularityByHeritage &&
             c.popularityByHeritage[heritage]
@@ -394,7 +365,7 @@ export default function Dashboard() {
 
         // Sort by popularity for that heritage
         restaurants.sort(
-          (a, b) =>
+          (a:any, b:any ) =>
             b.popularityByHeritage[heritage] - a.popularityByHeritage[heritage]
         );
 
@@ -409,7 +380,7 @@ export default function Dashboard() {
         }
 
         setAIResults(
-          restaurants.map((r) => ({
+          restaurants.map((r:any) => ({
             type: 'restaurant',
             name: r.title,
             location: r.location,
@@ -427,11 +398,11 @@ export default function Dashboard() {
 
       // Search events
       let events = storeEvents.filter(
-        (e) =>
+        (e:any) =>
           (e.name && normalize(e.name).includes(q)) ||
           (e.description && normalize(e.description).includes(q)) ||
           (Array.isArray(e.category)
-            ? e.category.some((cat) => normalize(cat).includes(q))
+            ? e.category.some((cat:string) => normalize(cat).includes(q))
             : e.category && normalize(e.category).includes(q))
       );
 
@@ -445,7 +416,7 @@ export default function Dashboard() {
 
       // Add day filter
       if (day) {
-        events = events.filter((e) => {
+        events = events.filter((e:any) => {
           // Try to match day in event.date or event.time or event.name
           if (e.date && normalize(e.date).includes(day.toLowerCase()))
             return true;
@@ -460,10 +431,10 @@ export default function Dashboard() {
       // Outdoor filter
       if (outdoor) {
         events = events.filter(
-          (e) =>
+          (e:any) =>
             (e.category &&
               Array.isArray(e.category) &&
-              e.category.some((c) => c.toLowerCase().includes('outdoor'))) ||
+              e.category.some((c:string) => c.toLowerCase().includes('outdoor'))) ||
             (e.name && e.name.toLowerCase().includes('outdoor')) ||
             (e.description && e.description.toLowerCase().includes('outdoor'))
         );
@@ -506,14 +477,14 @@ export default function Dashboard() {
 
       if (outdoor) {
         groups = groups.filter(
-          (g) =>
+          (g:any) =>
             (g.name && normalize(g.name).includes('outdoor')) ||
             (g.description && normalize(g.description).includes('outdoor')) ||
             (g.category &&
               (typeof g.category === 'string'
                 ? normalize(g.category).includes('outdoor')
                 : Array.isArray(g.category) &&
-                  g.category.some((cat) => normalize(cat).includes('outdoor'))))
+                  g.category.some((cat:string) => normalize(cat).includes('outdoor'))))
         );
       }
 
@@ -535,7 +506,7 @@ export default function Dashboard() {
           description: g.description,
           location: g.location,
         })),
-        ...events.map((e) => ({
+        ...events.map((e:any) => ({
           type: 'event',
           name: e.name,
           date: e.date,
@@ -567,7 +538,7 @@ export default function Dashboard() {
   // Dismiss modal on outside click
   useEffect(() => {
     if (!showAIModal) return;
-    function handleClick(e) {
+    function handleClick(e:any) {
       if (modalRef.current && !modalRef.current.contains(e.target)) {
         setShowAIModal(false);
       }
@@ -586,7 +557,7 @@ export default function Dashboard() {
     }
     const recognition = new window.webkitSpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.onresult = (event) => {
+    recognition.onresult = (event:any) => {
       if (event.results && event.results[0] && event.results[0][0]) {
         setAIQuestion(event.results[0][0].transcript);
       }
@@ -615,21 +586,6 @@ export default function Dashboard() {
         showsVerticalScrollIndicator={false}
       >
         <Header setShowStoriesModal={setShowStoriesModal} />
-
-        {/* Centered Welcome Message */}
-        {/* <View style={styles.welcomeCenterContainer}>
-          <Text style={styles.welcomeCenterTitle}>
-            {welcomeMessages[welcomeIndex].first}
-          </Text>
-          <Text
-            style={[
-              styles.welcomeCenterTitle,
-              styles.welcomeCenterTitleIndented,
-            ]}
-          >
-            {welcomeMessages[welcomeIndex].second}
-          </Text>
-        </View> */}
 
         <WelcomeCenter welcomeMessages={welcomeMessages} welcomeIndex={welcomeIndex}/>
 

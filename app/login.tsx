@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Dimensions, TouchableOpacity, Platform } from '
 import { useRouter } from 'expo-router';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { Globe, Sparkles } from 'lucide-react-native';
+import { Globe, GraduationCap, Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import Animated, {
   useSharedValue,
@@ -211,7 +211,7 @@ export default function Index() {
                 style={styles.logoGradient}
               >
                 <View style={styles.logoInner}>
-                  <Globe size={44} color={theme.primary} strokeWidth={2.5} />
+                  <GraduationCap size={44} color={theme.primary} strokeWidth={2.5} />
                 </View>
               </LinearGradient>
             </View>

@@ -1,19 +1,35 @@
-import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import React, { useState } from 'react';
 import { Camera, Bell } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
-
-export const neomorphColors = {
+import { Shadow } from 'react-native-shadow-2';
+export const clayColors = {
   background: '#F0F3F7',
   lightShadow: '#FFFFFF',
-  darkShadow: '#CDD2D8',
-  primary: '#6366F1',
+  darkShadow: '#A3B1C6',
+  shadowLight: 'rgba(255, 255, 255, 0.7)',
+  shadowDark: 'rgba(163, 177, 198, 0.15)',
+  purple: '#8B5FBF',
+  pink: '#FF6B9D',
+  blue: '#4A9EFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
 };
 
-const currentUser = { name: 'Prasanna' };
+const currentUser = { name: 'Alex' };
 
-const Header = ({ setShowStoriesModal }: { setShowStoriesModal: (value: boolean) => void }) => {
+const Header = ({
+  setShowStoriesModal,
+}: {
+  setShowStoriesModal: (value: boolean) => void;
+}) => {
   const router = useRouter();
   const [pressedButton, setPressedButton] = useState<string | null>(null);
 
@@ -26,45 +42,71 @@ const Header = ({ setShowStoriesModal }: { setShowStoriesModal: (value: boolean)
   };
 
   const getButtonStyle = (buttonId: string) => {
-    return pressedButton === buttonId ? styles.actionButtonPressed : styles.actionButton;
+    return pressedButton === buttonId
+      ? styles.actionButtonPressed
+      : styles.actionButton;
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>P</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/profile')}
+            style={styles.avatarButton}
+            activeOpacity={1}
+          >
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
+                {currentUser.name.charAt(0)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
           <View style={styles.greetingContainer}>
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{currentUser.name}!</Text>
           </View>
         </View>
-        
+
         <View style={styles.headerActions}>
-          {/* Camera/Story Icon */}
-          <TouchableOpacity
-            onPress={() => setShowStoriesModal(true)}
-            onPressIn={() => handlePressIn('camera')}
-            onPressOut={handlePressOut}
-            style={getButtonStyle('camera')}
-            activeOpacity={1}
+          <Shadow
+            distance={8} // similar to blur radius
+            startColor="rgba(163, 177, 198, 0.15)"
+            // finalColor="rgba(255, 255, 255, 0.7)"
+            offset={[4, 4]} // x, y offset
+            // radius={16} // border radius
           >
-            <Camera size={22} color="#FF6B9D" />
-          </TouchableOpacity>
-
-          {/* Notification Icon */}
-          <TouchableOpacity 
-            onPress={() => router.push('/notifications')}
-            onPressIn={() => handlePressIn('notification')}
-            onPressOut={handlePressOut}
-            style={getButtonStyle('notification')}
-            activeOpacity={1}
+            <TouchableOpacity
+              onPress={() => setShowStoriesModal(true)}
+              onPressIn={() => handlePressIn('camera')}
+              onPressOut={handlePressOut}
+              style={[getButtonStyle('camera'), styles.cameraButton]}
+              activeOpacity={1}
+            >
+              <Camera size={20} color="#EC4899" />
+            </TouchableOpacity>
+          </Shadow>
+          <Shadow
+            distance={8} // similar to blur radius
+            startColor="rgba(163, 177, 198, 0.15)"
+            // finalColor="rgba(255, 255, 255, 0.7)"
+            offset={[4, 4]} // x, y offset
+            // radius={16} // border radius
           >
-            <Bell size={22} color="#4A9EFF" />
-          </TouchableOpacity>
-
+            <TouchableOpacity
+              onPress={() => router.push('/notifications')}
+              onPressIn={() => handlePressIn('notification')}
+              onPressOut={handlePressOut}
+              style={[
+                getButtonStyle('notification'),
+                styles.notificationButton,
+              ]}
+              activeOpacity={1}
+            >
+              <Bell size={20} color="#3B82F6" />
+            </TouchableOpacity>
+          </Shadow>
           <LogoutButton />
         </View>
       </View>
@@ -76,7 +118,7 @@ export default Header;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: neomorphColors.background,
+    backgroundColor: clayColors.background,
     paddingTop: 10,
   },
   header: {
@@ -84,109 +126,133 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: neomorphColors.background,
+    paddingVertical: 24,
+    backgroundColor: clayColors.background,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  avatarContainer: {
-    width: 52,
-    height: 52,
+
+  avatarButton: {
     borderRadius: 16,
-    backgroundColor: neomorphColors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 4,
     marginRight: 16,
-    // Neumorphic effect for avatar
+    backgroundColor: clayColors.background,
     ...Platform.select({
       ios: {
-        shadowColor: neomorphColors.darkShadow,
+        shadowColor: clayColors.darkShadow,
         shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 4,
       },
     }),
-    // Inner content styling
+  },
+
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#fadaffff', // Pink gradient simulation
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Inner shadow effect
     borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
+
   avatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#8B5FBF',
-    textShadowColor: neomorphColors.lightShadow,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#7C3AED', // Purple text
   },
+
   greetingContainer: {
     flex: 1,
   },
   greeting: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#64748B',
+    color: clayColors.textSecondary,
     marginBottom: 2,
   },
   userName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 2,
+    color: clayColors.textPrimary,
   },
+
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  
-  // Normal state - raised neumorphic button
+
   actionButton: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    backgroundColor: neomorphColors.background,
+    borderRadius: 16,
+    backgroundColor: clayColors.background,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: 'rgba(163, 177, 198, 0.15)',
+
     ...Platform.select({
+      web: {
+        boxShadow:
+          '4px 4px 8px rgba(163, 177, 198, 0.15), -4px -4px 8px rgba(255, 255, 255, 0.7)',
+      },
       ios: {
-        shadowColor: neomorphColors.darkShadow,
+        shadowColor: clayColors.darkShadow || '#A3B1C6',
         shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
+        // Add these for better iOS shadow rendering
+        shadowPath: undefined, // Let iOS calculate automatically
       },
       android: {
         elevation: 6,
+        // For better neumorphic effect on Android, you might want to add:
+        shadowColor: clayColors.darkShadow || '#A3B1C6',
       },
     }),
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
   },
 
   actionButtonPressed: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    backgroundColor: neomorphColors.background,
+    borderRadius: 16,
+    backgroundColor: '#E5E9F0', // Slightly darker for pressed state
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        shadowColor: clayColors.darkShadow,
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
     }),
-    borderWidth: 0.5,
-    borderColor: neomorphColors.darkShadow,
+    borderWidth: 1,
+    borderColor: clayColors.darkShadow,
+  },
+
+  cameraButton: {
+    backgroundColor: '#FDF2F8', // Light pink background
+    borderWidth: 1,
+    borderColor: 'rgba(236, 72, 153, 0.1)',
+  },
+
+  notificationButton: {
+    backgroundColor: '#EFF6FF', // Light blue background
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.1)',
   },
 });

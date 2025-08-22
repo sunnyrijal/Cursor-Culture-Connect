@@ -1,8 +1,28 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Animated, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Animated,
+  Alert,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Search, Users, Calendar, MapPin, Plus, Lock, Globe, GraduationCap } from 'lucide-react-native';
+import {
+  Search,
+  Users,
+  Calendar,
+  MapPin,
+  Plus,
+  Lock,
+  Globe,
+  GraduationCap,
+} from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
 import { currentUser } from '@/data/mockData';
@@ -15,7 +35,7 @@ const theme = {
   success: '#10B981',
   warning: '#F59E0B',
   info: '#3B82F6',
-  background: '#FAFAFA',
+  background: '#F0F3F7',
   white: '#FFFFFF',
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
@@ -26,8 +46,9 @@ const theme = {
   gray900: '#111827',
   textPrimary: '#1E293B',
   textSecondary: '#64748B',
-  border: '#E5E7EB',
-  shadow: 'rgba(0, 0, 0, 0.1)',
+  border: '#E2E8F0',
+  shadow: '#CDD2D8',
+  shadowPrimary: '#6366F1',
 };
 
 const spacing = {
@@ -75,6 +96,7 @@ export default function Groups() {
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
+  const [searchFocused, setSearchFocused] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
     university: '',
@@ -82,7 +104,7 @@ export default function Groups() {
     ethnicity: [],
     groupType: 'all',
     selectedUniversity: '',
-    filterBy: 'all'
+    filterBy: 'all',
   });
 
   useEffect(() => {
@@ -94,20 +116,20 @@ export default function Groups() {
       const response = await fetch('http://localhost:3001/api/groups');
       const data = await response.json();
       console.log('Fetched groups:', data);
-      setGroups(data.map(group => ({
-        ...group,
-        // Map database field names to frontend field names
-        isPublic: group.is_public,
-        universityOnly: group.university_only,
-        allowedUniversity: group.allowed_university,
-        presidentId: group.president_id,
-        memberCount: group.member_count || 1,
-        // Add default values for UI fields
-        recentActivity: 'just now',
-        upcomingEvents: 0,
-        image: 'https://images.unsplash.com/photo-1578836537282-3171d77f8632?q=80&w=300',
-        isJoined: group.president_id === currentUser?.id
-      })));
+      setGroups(
+        data.map((group) => ({
+          ...group,
+          isPublic: group.is_public,
+          universityOnly: group.university_only,
+          allowedUniversity: group.allowed_university,
+          presidentId: group.president_id,
+          memberCount: group.member_count || 1,
+          recentActivity: 'just now',
+          upcomingEvents: 0,
+          image: 'https://images.unsplash.com/photo-1578836537282-3171d77f8632?q=80&w=300',
+          isJoined: group.president_id === currentUser?.id,
+        }))
+      );
     } catch (error) {
       console.error('Error fetching groups:', error);
       Alert.alert('Error', 'Failed to load groups. Please try again.');
@@ -116,72 +138,82 @@ export default function Groups() {
 
   const filteredGroups = useMemo(() => {
     let tempGroups = [...groups];
-    
-    // Filter by search query
+
     if (searchQuery) {
-      tempGroups = tempGroups.filter(group =>
-        group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (Array.isArray(group.category) ? group.category.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase())) : group.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      tempGroups = tempGroups.filter(
+        (group) =>
+          group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (Array.isArray(group.category)
+            ? group.category.some((cat) =>
+                cat.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+            : group.category.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
-    // Unified filterBy logic
     switch (filters.filterBy) {
       case 'public':
-        tempGroups = tempGroups.filter(group => group.isPublic);
+        tempGroups = tempGroups.filter((group) => group.isPublic);
         break;
       case 'private':
-        tempGroups = tempGroups.filter(group => !group.isPublic);
+        tempGroups = tempGroups.filter((group) => !group.isPublic);
         break;
       case 'my-university':
-        tempGroups = tempGroups.filter(group => 
-          group.location === currentUser.university ||
-          (group.allowedUniversity && group.allowedUniversity === currentUser.university)
+        tempGroups = tempGroups.filter(
+          (group) =>
+            group.location === currentUser.university ||
+            (group.allowedUniversity &&
+              group.allowedUniversity === currentUser.university)
         );
         break;
       case 'my-heritage':
         const userHeritages = currentUser.heritage || [];
-        tempGroups = tempGroups.filter(group => 
-          userHeritages.some(heritage => 
-            (Array.isArray(group.category) ? group.category.some(cat => cat.toLowerCase().includes(heritage.toLowerCase())) : group.category.toLowerCase().includes(heritage.toLowerCase()))
+        tempGroups = tempGroups.filter((group) =>
+          userHeritages.some((heritage) =>
+            Array.isArray(group.category)
+              ? group.category.some((cat) =>
+                  cat.toLowerCase().includes(heritage.toLowerCase())
+                )
+              : group.category.toLowerCase().includes(heritage.toLowerCase())
           )
         );
         break;
       case 'filter-by-state':
         if (filters.location.state) {
-          tempGroups = tempGroups.filter(group => 
+          tempGroups = tempGroups.filter((group) =>
             group.location.includes(filters.location.state)
           );
         }
         if (filters.location.city) {
-          tempGroups = tempGroups.filter(group => 
-            group.location.toLowerCase().includes(filters.location.city.toLowerCase())
+          tempGroups = tempGroups.filter((group) =>
+            group.location
+              .toLowerCase()
+              .includes(filters.location.city.toLowerCase())
           );
         }
         break;
-      // 'all' does not filter
     }
 
-    // Filter by ethnicity
     if (filters.ethnicity.length > 0) {
-      tempGroups = tempGroups.filter(group => 
-        Array.isArray(group.category) ? group.category.some(cat => filters.ethnicity.includes(cat)) : filters.ethnicity.includes(group.category)
+      tempGroups = tempGroups.filter((group) =>
+        Array.isArray(group.category)
+          ? group.category.some((cat) => filters.ethnicity.includes(cat))
+          : filters.ethnicity.includes(group.category)
       );
     }
 
-    // Filter by selected university
     if (filters.selectedUniversity) {
-      tempGroups = tempGroups.filter(group => 
-        group.location === filters.selectedUniversity ||
-        (group.allowedUniversity && group.allowedUniversity === filters.selectedUniversity)
+      tempGroups = tempGroups.filter(
+        (group) =>
+          group.location === filters.selectedUniversity ||
+          (group.allowedUniversity &&
+            group.allowedUniversity === filters.selectedUniversity)
       );
     }
 
-    // Filter by heritage (if any selected)
     if (filters.heritage && filters.heritage.length > 0) {
-      tempGroups = tempGroups.filter(group => {
-        // Assuming group has a 'heritage' property
+      tempGroups = tempGroups.filter((group) => {
         return group.heritage === filters.heritage;
       });
     }
@@ -190,29 +222,29 @@ export default function Groups() {
   }, [groups, searchQuery, filters]);
 
   const handleJoinGroup = (groupId: number) => {
-    setGroups(currentGroups => 
-        currentGroups.map(g => g.id === groupId ? {...g, isJoined: !g.isJoined} : g)
+    setGroups((currentGroups) =>
+      currentGroups.map((g) =>
+        g.id === groupId ? { ...g, isJoined: !g.isJoined } : g
+      )
     );
   };
 
   const handleCreateGroup = async (groupData: any) => {
     try {
-      console.log("Creating new group:", groupData);
-      
-      // Format the data to match backend expectations
+      console.log('Creating new group:', groupData);
+
       const formattedData = {
         name: groupData.name,
         description: groupData.description,
-        category: groupData.category || "",
-        location: groupData.location || "",
+        category: groupData.category || '',
+        location: groupData.location || '',
         isPublic: groupData.isPublic,
         universityOnly: groupData.universityOnly,
         allowedUniversity: groupData.allowedUniversity,
         presidentId: currentUser?.id,
-        meetings: groupData.meetings
+        meetings: groupData.meetings,
       };
-      
-      // Call the backend API
+
       const response = await fetch('http://localhost:3001/api/groups', {
         method: 'POST',
         headers: {
@@ -220,20 +252,19 @@ export default function Groups() {
         },
         body: JSON.stringify(formattedData),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Error creating group: ${response.status}`);
       }
-      
+
       const newGroup = await response.json();
-      console.log("Group created successfully:", newGroup);
-      
-      // Refresh the groups list to include the newly created group
+      console.log('Group created successfully:', newGroup);
+
       await fetchGroups();
       Alert.alert('Success', 'Group created successfully!');
       setShowCreateModal(false);
     } catch (error) {
-      console.error("Failed to create group:", error);
+      console.error('Failed to create group:', error);
       Alert.alert('Error', 'Failed to create group. Please try again.');
     }
   };
@@ -242,7 +273,7 @@ export default function Groups() {
     return {
       title: `${group.name} - Culture Connect`,
       message: `Check out ${group.name} on Culture Connect!\n\n${group.description}\n\n📍 ${group.location}\n👥 ${group.memberCount} members\n\nJoin our cultural community!`,
-      url: `https://cultureconnect.app/group/${group.id}`
+      url: `https://cultureconnect.app/group/${group.id}`,
     };
   };
 
@@ -251,221 +282,533 @@ export default function Groups() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <CreateGroupModal
-        visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateGroup}
-      />
-      
-      {/* Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: scrollY.interpolate({
-                inputRange: [0, 50],
-                outputRange: [1, 0],
-                extrapolate: 'clamp',
-              }),
-              transform: [{
-                translateY: scrollY.interpolate({
-                  inputRange: [0, 50],
-                  outputRange: [0, -30],
-                  extrapolate: 'clamp',
-                }),
-              }],
-            },
-          ]}
-        >
-          <Text style={styles.title}>Cultural Groups</Text>
-          <Text style={styles.subtitle}>Find your community and connect with like-minded students</Text>
-        </Animated.View>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <CreateGroupModal
+          visible={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateGroup}
+        />
 
-        <Animated.View
-          style={[
-            { zIndex: 10 },
-            {
-              transform: [
-                {
-                  translateY: scrollY.interpolate({
-                    inputRange: [0, 50],
-                    outputRange: [0, -60], // Move up into title space
-                    extrapolate: 'clamp',
-                  }),
-                },
-              ],
-              opacity: scrollY.interpolate({
-                inputRange: [0, 30],
-                outputRange: [1, 1], // Always visible
-                extrapolate: 'clamp',
-              }),
-            },
-          ]}
-        >
-          <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-              <Search size={20} color={theme.gray400} />
+        {/* Modern Header */}
+        <View style={styles.header}>
+          <View style={styles.headerGradient}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.headerTitle}>Cultural Groups</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.headerRight}
+                onPress={() => setShowCreateModal(true)}
+              >
+                <Plus size={28} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Modern Search */}
+        <View style={styles.searchWrapper}>
+          <View style={styles.searchBlur}>
+            <View style={[
+              styles.searchContainer,
+              searchFocused && styles.searchContainerFocused
+            ]}>
+              <View style={styles.searchIcon}>
+                <Search size={20} color={searchFocused ? theme.primary : theme.gray400} />
+              </View>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search groups..."
+                placeholder="Search cultural groups..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 placeholderTextColor={theme.gray400}
               />
-            </View>
-            <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
-              <Plus size={20} color={theme.white} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Enhanced Filter System - Always Visible */}
-          <View style={styles.filterSystemContainer}>
-            <FilterSystem
-              onFiltersChange={handleFiltersChange}
-              contentType="groups"
-              showPresets={true}
-              groupCount={filteredGroups.length}
-              filterLabel={(() => {
-                if (filters.filterBy === 'my-university') return 'My University';
-                if (filters.filterBy === 'my-heritage') return 'My Heritage';
-                if (filters.filterBy === 'filter-by-state') return 'By State';
-                if (filters.filterBy === 'public') return 'Public Groups';
-                if (filters.filterBy === 'private') return 'Private Groups';
-                return 'All';
-              })()}
-            />
-          </View>
-        </Animated.View>
-      </View>
-
-      <Animated.ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.groupsGrid}>
-          {filteredGroups.map((group) => (
-            <TouchableOpacity key={group.id} style={styles.groupCard} onPress={() => router.push(`/group/${group.id}`)}>
-                <View style={styles.groupImageContainer}>
-                    <Image source={{ uri: group.image || undefined }} defaultSource={{ uri: placeholderImg }} style={styles.groupImage} />
-                    <View style={styles.badgeContainer}>
-                       {group.isPublic && <View style={[styles.badge, styles.publicBadge]}><Text style={styles.badgeText}>Public</Text></View>}
-                       {!group.isPublic && <View style={[styles.badge, styles.privateBadge]}><Text style={styles.badgeText}>Private</Text></View>}
-                    </View>
-                    <View style={styles.groupActions}>
-                        <ShareButton
-                            {...generateGroupShareContent(group)}
-                            size={16}
-                            color={theme.white}
-                            style={styles.shareButton}
-                        />
-                    </View>
-                </View>
-              
-              <View style={styles.groupContent}>
-                <Text style={styles.groupName} numberOfLines={2}>{group.name}</Text>
-                <View style={styles.groupCategoryContainer}>
-                    <Text style={styles.groupCategory}>{Array.isArray(group.category) ? group.category.join(', ') : group.category}</Text>
-                </View>
-                <View style={styles.groupLocation}>
-                  <MapPin size={12} color={theme.gray500} />
-                  <Text style={styles.groupLocationText} numberOfLines={1}>
-                    {group.location}
-                  </Text>
-                </View>
-                <Text style={styles.groupDescription} numberOfLines={2}>{group.description}</Text>
-                
-                <View style={styles.groupStats}>
-                  <View style={styles.groupStat}>
-                    <Users size={12} color={theme.gray500} />
-                    <Text style={styles.groupStatText}>{group.memberCount} members</Text>
-                  </View>
-                  <View style={styles.groupStat}>
-                    <Calendar size={12} color={theme.gray500} />
-                    <Text style={styles.groupStatText}>{group.upcomingEvents} events</Text>
-                  </View>
-                </View>
-                
+              {searchQuery.length > 0 && (
                 <TouchableOpacity
-                    style={[
-                      styles.joinButton,
-                      group.isJoined ? styles.joinedButton : styles.notJoinedButton
-                    ]}
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        handleJoinGroup(group.id)
-                    }}
-                  >
-                    <Text style={[
-                      styles.joinButtonText,
-                      group.isJoined ? styles.joinedButtonText : styles.notJoinedButtonText
-                    ]}>
-                      {group.isJoined ? 'Joined' : 'Join'}
-                    </Text>
-                  </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
-      </Animated.ScrollView>
-    </SafeAreaView>
+
+        {/* Enhanced Filter System */}
+        <View style={styles.filterWrapper}>
+          <FilterSystem
+            onFiltersChange={handleFiltersChange}
+            contentType="groups"
+            showPresets={true}
+            groupCount={filteredGroups.length}
+            filterLabel={(() => {
+              if (filters.filterBy === 'my-university') return 'My University';
+              if (filters.filterBy === 'my-heritage') return 'My Heritage';
+              if (filters.filterBy === 'filter-by-state') return 'By State';
+              if (filters.filterBy === 'public') return 'Public Groups';
+              if (filters.filterBy === 'private') return 'Private Groups';
+              return 'All';
+            })()}
+          />
+        </View>
+
+        {/* Groups List */}
+        <View style={styles.listContainer}>
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false }
+            )}
+            scrollEventThrottle={16}
+          >
+            {filteredGroups.map((group) => (
+              <View key={group.id} style={styles.groupItem}>
+                <View style={styles.groupItemBlur}>
+                  <TouchableOpacity
+                    style={styles.groupItemContent}
+                    onPress={() => router.push(`/group/${group.id}`)}
+                  >
+                    {/* Group Image */}
+                    <View style={styles.groupImageContainer}>
+                      <Image
+                        source={{ uri: group.image || undefined }}
+                        defaultSource={{ uri: placeholderImg }}
+                        style={styles.groupImage}
+                      />
+                      <View style={styles.badgeContainer}>
+                        {group.isPublic ? (
+                          <View style={[styles.badge, styles.publicBadge]}>
+                            <Globe size={8} color={theme.white} />
+                            <Text style={styles.badgeText}>Public</Text>
+                          </View>
+                        ) : (
+                          <View style={[styles.badge, styles.privateBadge]}>
+                            <Lock size={8} color={theme.white} />
+                            <Text style={styles.badgeText}>Private</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.groupActions}>
+                        <ShareButton
+                          {...generateGroupShareContent(group)}
+                          size={16}
+                          color={theme.white}
+                          style={styles.shareButton}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Group Content */}
+                    <View style={styles.groupContent}>
+                      <View style={styles.groupHeader}>
+                        <Text style={styles.groupName} numberOfLines={2}>
+                          {group.name}
+                        </Text>
+                        <View style={styles.groupCategoryContainer}>
+                          <Text style={styles.groupCategory}>
+                            {Array.isArray(group.category)
+                              ? group.category.join(', ')
+                              : group.category}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.groupLocation}>
+                        <MapPin size={14} color={theme.gray500} />
+                        <Text style={styles.groupLocationText} numberOfLines={1}>
+                          {group.location}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.groupDescription} numberOfLines={2}>
+                        {group.description}
+                      </Text>
+
+                      <View style={styles.groupStats}>
+                        <View style={styles.groupStat}>
+                          <Users size={14} color={theme.gray500} />
+                          <Text style={styles.groupStatText}>
+                            {group.memberCount} members
+                          </Text>
+                        </View>
+                        <View style={styles.groupStat}>
+                          <Calendar size={14} color={theme.gray500} />
+                          <Text style={styles.groupStatText}>
+                            {group.upcomingEvents} events
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.joinButton,
+                          group.isJoined ? styles.joinedButton : styles.notJoinedButton,
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleJoinGroup(group.id);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.joinButtonText,
+                            group.isJoined ? styles.joinedButtonText : styles.notJoinedButtonText,
+                          ]}
+                        >
+                          {group.isJoined ? 'Joined' : 'Join Group'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-  stickyHeader: { 
+  container: {
+    flex: 1,
     backgroundColor: theme.background,
-    zIndex: 1000,
-    elevation: 5,
-    shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8, alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: theme.textSecondary, textAlign: 'center' },
-  searchContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12, gap: 12 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.white, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: theme.border, gap: 12 },
-  searchInput: { flex: 1, fontSize: 16, color: theme.textPrimary },
-  createButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
-  filterSystemContainer: { paddingHorizontal: 20, marginBottom: 0 },
-  resultsHeader: { paddingHorizontal: 20, marginBottom: 16 },
-  resultsCount: { fontSize: 14, fontWeight: '500', color: theme.textSecondary },
-  scrollView: { flex: 1 },
-  groupsGrid: { paddingBottom: 20 },
-  groupCard: { width: '100%', backgroundColor: theme.white, borderRadius: 16, marginBottom: 16, overflow: 'hidden', shadowColor: theme.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
-  groupImageContainer: { position: 'relative', height: 200 },
-  groupImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  badgeContainer: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
-  publicBadge: { backgroundColor: 'rgba(16, 185, 129, 0.9)', borderColor: '#10B981' },
-  privateBadge: { backgroundColor: 'rgba(245, 158, 11, 0.9)', borderColor: '#F59E0B' },
-  badgeText: { fontSize: 10, fontWeight: '600', color: theme.white },
-  groupActions: { position: 'absolute', top: 12, right: 12 },
-  shareButton: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: 8 },
-  groupContent: { padding: 16 },
-  groupName: { fontSize: 18, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 8 },
-  groupCategoryContainer: { marginBottom: 8 },
-  groupCategory: { fontSize: 12, fontWeight: '600', color: theme.primary, backgroundColor: theme.gray100, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
-  groupLocation: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 4 },
-  groupLocationText: { fontSize: 12, color: theme.gray500, flex: 1 },
-  groupDescription: { fontSize: 14, color: theme.textSecondary, marginBottom: 12, lineHeight: 20 },
-  groupStats: { flexDirection: 'row', gap: 16, marginBottom: 16 },
-  groupStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  groupStatText: { fontSize: 12, color: theme.gray500 },
-  joinButton: { paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  joinedButton: { backgroundColor: theme.gray100, borderWidth: 1, borderColor: theme.border },
-  notJoinedButton: { backgroundColor: theme.primary },
-  joinButtonText: { fontSize: 16, fontWeight: '600' },
-  joinedButtonText: { color: theme.textSecondary },
-  notJoinedButtonText: { color: theme.white },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  headerGradient: {
+    backgroundColor: theme.white,
+    padding: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerRight: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: theme.gray50,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadowPrimary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: theme.textPrimary,
+    letterSpacing: -0.5,
+  },
+  searchWrapper: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  searchBlur: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: theme.border,
+    minHeight: 52,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  searchContainerFocused: {
+    borderColor: theme.primary,
+    backgroundColor: theme.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadowPrimary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: theme.textPrimary,
+    fontWeight: '500',
+    paddingVertical: 12,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: theme.gray400,
+  },
+  filterWrapper: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  listContainer: {
+    flex: 1,
+    marginHorizontal: 20,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  groupItem: {
+    marginBottom: 16,
+    padding: 4,
+  },
+  groupItemBlur: {
+    borderRadius: 20,
+    backgroundColor: theme.white,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  groupItemContent: {
+    overflow: 'hidden',
+  },
+  groupImageContainer: {
+    position: 'relative',
+    height: 200,
+  },
+  groupImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  publicBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.95)',
+  },
+  privateBadge: {
+    backgroundColor: 'rgba(245, 158, 11, 0.95)',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.white,
+  },
+  groupActions: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  shareButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  groupContent: {
+    padding: 20,
+  },
+  groupHeader: {
+    marginBottom: 12,
+  },
+  groupName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: 8,
+    letterSpacing: -0.2,
+  },
+  groupCategoryContainer: {
+    alignSelf: 'flex-start',
+  },
+  groupCategory: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.primary,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  groupLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 6,
+  },
+  groupLocationText: {
+    fontSize: 14,
+    color: theme.gray500,
+    flex: 1,
+    fontWeight: '500',
+  },
+  groupDescription: {
+    fontSize: 15,
+    color: theme.textSecondary,
+    marginBottom: 16,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  groupStats: {
+    flexDirection: 'row',
+    gap: 20,
+    marginBottom: 20,
+  },
+  groupStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  groupStatText: {
+    fontSize: 13,
+    color: theme.gray500,
+    fontWeight: '600',
+  },
+  joinButton: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadowPrimary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  joinedButton: {
+    backgroundColor: theme.gray100,
+    borderWidth: 1,
+    borderColor: theme.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  notJoinedButton: {
+    backgroundColor: theme.primary,
+  },
+  joinButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  joinedButtonText: {
+    color: theme.textSecondary,
+  },
+  notJoinedButtonText: {
+    color: theme.white,
+  },
 });
