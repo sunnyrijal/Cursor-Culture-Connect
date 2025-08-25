@@ -1,205 +1,731 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { ShareButton } from '@/components/ui/ShareButton';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { ArrowLeft, Users, Calendar, Clock, MapPin } from 'lucide-react-native';
-import { mockEvents } from '@/data/mockData';
-import placeholderImg from '@/assets/images/icon.png';
-import { store } from '@/data/store';
+"use client"
+
+import React from "react"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { router, useLocalSearchParams } from "expo-router"
+import { ShareButton } from "@/components/ui/ShareButton"
+import { theme, spacing, typography, borderRadius } from "@/components/theme"
+import {
+  ArrowLeft,
+  Users,
+  Calendar,
+  Clock,
+  MapPin,
+  Heart,
+  Star,
+  Bookmark,
+  Music,
+  Gift,
+  Navigation,
+} from "lucide-react-native"
+import placeholderImg from "@/assets/images/icon.png"
+import { store } from "@/data/store"
+
+// Enhanced theme for neumorphism
+const neomorphColors = {
+  background: "#F8FAFC",
+  lightShadow: "#FFFFFF",
+  darkShadow: "#a3b1c6",
+}
+
+// Extended theme
+const extendedTheme = {
+  ...theme,
+  accent: "#EC4899",
+  success: "#10B981",
+  warning: "#F59E0B",
+  info: "#3B82F6",
+}
 
 export default function EventDetail() {
-  const { id } = useLocalSearchParams();
-  const [event, setEvent] = React.useState(() => store.getEventById(Number(id)));
+  const { id } = useLocalSearchParams()
+  const [event, setEvent] = React.useState(() => store.getEventById(Number(id)))
+  const [isLiked, setIsLiked] = React.useState(false)
+  const [isBookmarked, setIsBookmarked] = React.useState(false)
 
   if (!event) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Event Not Found</Text>
-          <View style={{ width: 40 }}/>
-        </View>
-        <View style={styles.centered}>
-          <Text>Sorry, we couldn't find this event.</Text>
-          <Button title="Go Back" onPress={() => router.back()} style={{ marginTop: spacing.lg }} />
+        <View style={styles.errorContainer}>
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>Event Not Found</Text>
+            <Text style={styles.errorSubtext}>Sorry, we couldn't find this event.</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
+              <Text style={styles.backLinkText}>← Go Back</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
   const generateEventShareContent = () => {
     return {
       title: `${event.name} - Culture Connect`,
       message: `Join me at ${event.name}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
-      url: `https://cultureconnect.app/event/${event.id}`
-    };
-  };
+      url: `https://cultureconnect.app/event/${event.id}`,
+    }
+  }
 
   const handleRSVP = () => {
-    store.toggleRsvp(store.getState().currentUser.id, event.id);
-    setEvent(store.getEventById(event.id)); // force re-render with updated RSVP status
-  };
+    store.toggleRsvp(store.getState().currentUser.id, event.id)
+    setEvent(store.getEventById(event.id))
+  }
+
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked)
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{alignItems: 'center', paddingHorizontal: 0}}>
-        <View style={{ width: '100%', maxWidth: 600, alignSelf: 'center', overflow: 'hidden', borderRadius: 20, marginTop: 16 }}>
-          <Image source={{ uri: event.image || undefined }} defaultSource={placeholderImg} style={{ width: '100%', height: 250, borderRadius: 20 }} resizeMode="cover" />
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButtonAbsolute, {zIndex: 2}]}> 
-            <ArrowLeft size={24} color={theme.white} />
-          </TouchableOpacity>
-          <View style={styles.shareButtonContainer}>
-            <ShareButton
-              {...generateEventShareContent()}
-              size={20}
-              color={theme.white}
-              style={styles.shareButton}
-            />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Hero Image Section */}
+        <View style={styles.heroContainer}>
+          <Image
+            source={{ uri: event.image || undefined }}
+            defaultSource={placeholderImg}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroOverlay} />
+
+          {/* Header Actions */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+              <ArrowLeft size={20} color={theme.textPrimary} />
+            </TouchableOpacity>
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={handleBookmark} style={styles.headerButton}>
+                <Bookmark
+                  size={18}
+                  color={isBookmarked ? extendedTheme.accent : theme.textPrimary}
+                  fill={isBookmarked ? extendedTheme.accent : "none"}
+                />
+              </TouchableOpacity>
+              <ShareButton
+                {...generateEventShareContent()}
+                size={18}
+                color={theme.textPrimary}
+                style={styles.headerButton}
+              />
+            </View>
+          </View>
+
+          {/* Event Badge */}
+          <View style={styles.eventBadge}>
+            <Music size={16} color={theme.white} />
+            <Text style={styles.eventBadgeText}>Live Event</Text>
+          </View>
+
+          {/* Hero Bottom Info */}
+          <View style={styles.heroBottomInfo}>
+            <View style={styles.heroTitleContainer}>
+              <Text style={styles.heroTitle}>{event.name}</Text>
+              <View style={styles.heroRating}>
+                <Star size={16} color="#FFD700" fill="#FFD700" />
+                <Text style={styles.heroRatingText}>4.8</Text>
+              </View>
+            </View>
+            <View style={styles.heroMetaContainer}>
+              <Text style={styles.heroSubtitle}>{event.attendees} people attending</Text>
+              <View style={styles.heroStatusBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.heroStatusText}>Booking Open</Text>
+              </View>
+            </View>
           </View>
         </View>
-        <View style={[styles.content, { width: '100%', maxWidth: 600, alignSelf: 'center' }]}> 
-          <View style={styles.headerRow}>
-              <Text style={styles.title}>{event.name}</Text>
-          </View>
-          <View style={styles.tagsContainer}>
-             {event.category.map(cat => <Badge key={cat} label={cat} variant="success" />)}
-          </View>
-         
-          <Card style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Calendar size={20} color={theme.primary} />
-              <Text style={styles.infoValue}>{event.date}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Clock size={20} color={theme.primary} />
-              <Text style={styles.infoValue}>{event.time}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <MapPin size={20} color={theme.primary} />
-              <Text style={styles.infoValue}>{event.location}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Users size={20} color={theme.primary} />
-              <Text style={styles.infoValue}>{event.attendees} going</Text>
-            </View>
-          </Card>
 
-          <Text style={styles.sectionTitle}>About this Event</Text>
-          <Text style={styles.description}>{event.description}</Text>
+        {/* Content Container */}
+        <View style={styles.contentContainer}>
+          {/* Categories */}
+          <View style={styles.tagsSection}>
+            <View style={styles.tagsContainer}>
+              {event.category.map((cat, index) => (
+                <View key={`${cat}-${index}`} style={styles.categoryTag}>
+                  <Text style={styles.categoryText}>{cat}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Event Details Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Event Details</Text>
+            </View>
+            <View style={styles.detailsContainer}>
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconWrapper, { backgroundColor: "#EEF2FF" }]}>
+                    <Calendar size={24} color={theme.primary} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Date</Text>
+                    <Text style={styles.infoValue}>{event.date}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconWrapper, { backgroundColor: "#FDF2F8" }]}>
+                    <Clock size={24} color={extendedTheme.accent} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Time</Text>
+                    <Text style={styles.infoValue}>{event.time}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconWrapper, { backgroundColor: "#ECFDF5" }]}>
+                    <MapPin size={24} color={extendedTheme.success} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Location</Text>
+                    <Text style={styles.infoValue}>{event.location}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.mapButton}>
+                    <Navigation size={16} color={theme.white} />
+                    <Text style={styles.mapButtonText}>Map</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconWrapper, { backgroundColor: "#FEF3C7" }]}>
+                    <Users size={24} color={extendedTheme.warning} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Attendees</Text>
+                    <Text style={styles.infoValue}>{event.attendees} going</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Description Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>About This Event</Text>
+            </View>
+            <View style={styles.descriptionContainer}>
+              <View style={styles.descriptionCard}>
+                <Text style={styles.description}>{event.description}</Text>
+
+                <View style={styles.highlightsList}>
+                  <Text style={styles.highlightsTitle}>Event Highlights</Text>
+                  {[
+                    { icon: Music, text: "Live performances" },
+                    { icon: Gift, text: "Special activities" },
+                    { icon: Users, text: "Networking opportunities" },
+                    { icon: Heart, text: "Cultural experiences" },
+                  ].map((item, index) => (
+                    <View key={index} style={styles.highlightItem}>
+                      <View style={styles.highlightIconWrapper}>
+                        <item.icon size={16} color={theme.primary} />
+                      </View>
+                      <Text style={styles.highlightText}>{item.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
         </View>
       </ScrollView>
+
+      {/* Footer RSVP */}
       <View style={styles.footer}>
-        <Button title={event.isRSVPed ? "Cancel RSVP" : "RSVP"} onPress={handleRSVP} />
+        <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
+          <View style={styles.rsvpContent}>
+            <Text style={styles.rsvpButtonText}>{event.isRSVPed ? "Cancel RSVP" : "RSVP Now"}</Text>
+            <View style={styles.rsvpIcon}>
+              <Text style={styles.rsvpIconText}>→</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        {/* <Text style={styles.rsvpSubtext}>🔒 Secure booking • ⚡ Instant confirmation</Text> */}
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.white,
+    backgroundColor: neomorphColors.background,
   },
-  centered: {
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 80, // Reduced from 100 to 80
+  },
+
+  // Error States
+  errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg, // Reduced from spacing.xl to spacing.lg
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+  errorCard: {
+    backgroundColor: theme.white,
+    padding: spacing.lg, // Reduced from spacing.xl to spacing.lg
+    borderRadius: 20,
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 300,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 8, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+        shadowColor: neomorphColors.darkShadow,
+      },
+    }),
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.7)",
   },
-  headerTitle: {
+  errorText: {
     fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.semiBold,
-  },
-  backButton: {
-    padding: spacing.xs,
-  },
-  backButtonAbsolute: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  shareButtonContainer: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  shareButton: {
-    padding: 4,
-  },
-  image: {
-    width: '100%',
-    height: 250,
-  },
-  content: {
-    padding: spacing.lg,
-  },
-  headerRow: {
+    color: theme.error,
+    fontWeight: "700",
     marginBottom: spacing.sm,
+    textAlign: "center",
   },
-  title: {
-    fontSize: typography.fontSize['3xl'],
-    fontFamily: typography.fontFamily.bold,
-    color: theme.textPrimary,
+  errorSubtext: {
+    fontSize: typography.fontSize.base,
+    color: theme.textSecondary,
+    marginBottom: spacing.md,
+    textAlign: "center",
+  },
+  backLink: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm, 
+    backgroundColor: neomorphColors.background,
+    borderRadius: borderRadius.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 4, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  backLinkText: {
+    color: theme.primary,
+    fontSize: typography.fontSize.base,
+    fontWeight: "600",
+  },
+
+  // Hero Section
+  heroContainer: {
+    position: "relative",
+    height: 350,
+    marginHorizontal: spacing.sm, 
+    marginTop: spacing.sm, 
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom:spacing.lg,
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  headerActions: {
+    position: "absolute",
+    top: 20,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+  },
+  headerRight: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 4, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  eventBadge: {
+    position: "absolute",
+    top: 80,
+    left: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    gap: spacing.xs,
+  },
+  eventBadgeText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: "600",
+  },
+  heroBottomInfo: {
+    position: "absolute",
+    bottom: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+  },
+  heroTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: spacing.xs,
+  },
+  heroTitle: {
+    fontSize: typography.fontSize["2xl"],
+    fontWeight: "800",
+    color: theme.white,
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  heroRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+    gap: spacing.xs,
+  },
+  heroRatingText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: "600",
+  },
+  heroMetaContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  heroSubtitle: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: typography.fontSize.sm,
+    fontWeight: "500",
+  },
+  heroStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    gap: spacing.xs,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: extendedTheme.success,
+  },
+  heroStatusText: {
+    color: extendedTheme.success,
+    fontSize: typography.fontSize.xs,
+    fontWeight: "600",
+  },
+
+  // Content Container
+  contentContainer: {
+    backgroundColor: neomorphColors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: spacing.lg, // Reduced from spacing.xl to spacing.lg
+  },
+
+  // Tags Section
+  tagsSection: {
+    paddingHorizontal: spacing.md,
   },
   tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
-    marginBottom: spacing.lg,
+  },
+  categoryTag: {
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: spacing.xs, // Reduced from spacing.sm to spacing.xs
+    borderRadius: 20,
+    backgroundColor: neomorphColors.background,
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  categoryText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: "600",
+    color: theme.primary,
+  },
+
+  section: {
+    marginVertical: spacing.sm, 
+    backgroundColor: neomorphColors.background,
+    paddingTop: spacing.md,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
+    marginHorizontal: spacing.md,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.md, 
+    // marginBottom: spacing.sm, // Reduced from 15 to spacing.sm
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1f2937",
+    marginBottom: spacing.sm, 
+    fontFamily: typography?.fontFamily?.bold || "System",
+  },
+
+  detailsContainer: {
   },
   infoCard: {
-    marginBottom: spacing.lg,
+    backgroundColor: theme.white,
+    marginTop:spacing.md,
     padding: spacing.md,
+    borderRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 6, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.sm, 
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  infoIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: spacing.sm, 
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    fontWeight: "500",
+    marginBottom: 2,
   },
   infoValue: {
     fontSize: typography.fontSize.base,
     fontFamily: typography.fontFamily.semiBold,
     color: theme.textPrimary,
   },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.bold,
-    color: theme.textPrimary,
-    marginBottom: spacing.sm,
+  mapButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: extendedTheme.success,
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+    gap: spacing.xs,
+  },
+  mapButtonText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: "600",
+  },
+
+  descriptionContainer: {
+    paddingBottom: spacing.md,
+  },
+  descriptionCard: {
+    backgroundColor: theme.white,
+    padding: spacing.md,
+    borderRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 6, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
   },
   description: {
     fontSize: typography.fontSize.base,
     fontFamily: typography.fontFamily.regular,
-    color: theme.textSecondary,
+    color: theme.textPrimary,
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
+    marginBottom: spacing.md, 
   },
+  highlightsList: {
+    gap: spacing.sm, 
+  },
+  highlightsTitle: {
+    fontSize: typography.fontSize.md,
+    color: theme.textPrimary,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
+  },
+  highlightItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm, 
+    backgroundColor: neomorphColors.background,
+    padding: spacing.sm, 
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+  },
+  highlightIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: `${theme.primary}15`,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  highlightText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textPrimary,
+    fontWeight: "500",
+    flex: 1,
+  },
+
+  // Footer RSVP
   footer: {
-    padding: spacing.lg,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.md,
+    backgroundColor: neomorphColors.background,
     borderTopWidth: 1,
-    borderTopColor: theme.border,
-    backgroundColor: theme.white,
+    borderTopColor: neomorphColors.lightShadow,
+    alignItems: "center",
   },
-});
+  rsvpButton: {
+    width: "100%",
+    borderRadius: 16,
+    backgroundColor: theme.primary,
+    marginBottom: spacing.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  rsvpContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg, 
+  },
+  rsvpButtonText: {
+    fontSize: typography.fontSize.md,
+    color: theme.white,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  rsvpIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  rsvpIconText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: "700",
+  },
+  rsvpSubtext: {
+    fontSize: typography.fontSize.xs,
+    color: theme.textSecondary,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+})

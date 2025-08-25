@@ -1,85 +1,251 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Globe } from 'lucide-react-native';
+import { Globe, GraduationCap, Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSequence,
-  runOnJS
+  withDelay,
+  withRepeat,
+  Easing,
+  runOnJS,
+  interpolate,
 } from 'react-native-reanimated';
+const { width, height } = Dimensions.get('window');
 
 const theme = {
   primary: '#6366F1',
+  secondary: '#EC4899',
+  accent: '#8B5CF6',
   white: '#FFFFFF',
-  textSecondary: '#9CA3AF',
+  textSecondary: 'rgba(255, 255, 255, 0.8)',
+  textLight: 'rgba(255, 255, 255, 0.6)',
 };
 
 export default function Index() {
   const logoScale = useSharedValue(0);
   const logoOpacity = useSharedValue(0);
+  const logoRotate = useSharedValue(0);
+  const titleOpacity = useSharedValue(0);
+  const titleTranslateY = useSharedValue(30);
+  const subtitleOpacity = useSharedValue(0);
+  const subtitleTranslateY = useSharedValue(30);
   const backgroundOpacity = useSharedValue(1);
+  const particleScale = useSharedValue(0);
+  const particleRotate = useSharedValue(0);
+  const glowScale = useSharedValue(0.8);
+
   const { authState } = useAuth();
 
   useEffect(() => {
-    // Start logo animation
+    // Logo animation sequence
+    logoOpacity.value = withTiming(1, {
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+    });
     logoScale.value = withSequence(
-      withTiming(1.2, { duration: 800 }),
-      withTiming(1, { duration: 200 })
+      withTiming(1.3, { duration: 600, easing: Easing.out(Easing.back(1.2)) }),
+      withTiming(1, { duration: 300, easing: Easing.inOut(Easing.quad) })
     );
-    
-    logoOpacity.value = withTiming(1, { duration: 800 });
 
-    // Navigate to main app after animation
+    // Subtle logo rotation
+    logoRotate.value = withRepeat(
+      withTiming(360, { duration: 20000, easing: Easing.linear }),
+      -1,
+      false
+    );
+
+    // Title animation with delay
+    titleOpacity.value = withDelay(
+      400,
+      withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+    titleTranslateY.value = withDelay(
+      400,
+      withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+
+    // Subtitle animation with delay
+    subtitleOpacity.value = withDelay(
+      600,
+      withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+    subtitleTranslateY.value = withDelay(
+      600,
+      withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+
+    // Particle animations
+    particleScale.value = withDelay(
+      800,
+      withTiming(1, { duration: 1000, easing: Easing.out(Easing.cubic) })
+    );
+    particleRotate.value = withDelay(
+      800,
+      withRepeat(
+        withTiming(360, { duration: 15000, easing: Easing.linear }),
+        -1,
+        false
+      )
+    );
+
+    // Glow pulse effect
+    glowScale.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.8, { duration: 2000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+
+    // Navigate after animation
     const timer = setTimeout(() => {
-      backgroundOpacity.value = withTiming(0, { duration: 500 }, () => {
-        runOnJS(() => {
-          // Check authentication status and redirect accordingly
-          if (authState.authenticated) {
-            router.replace('/(tabs)');
-          } else {
-            router.replace('/(auth)/login');
-          }
-        })();
-      });
-    }, 2000);
+      backgroundOpacity.value = withTiming(
+        0,
+        { duration: 600, easing: Easing.in(Easing.cubic) },
+        () => {
+          // runOnJS(() => {
+          //   if (authState.authenticated) {
+          //     router.replace('/(tabs)');
+          //   } else {
+          //     router.replace('/(auth)/login');
+          //   }
+          // })();
+          router.replace('/(auth)/login');
+        }
+      );
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: logoScale.value }],
+    transform: [
+      { scale: logoScale.value },
+      { rotate: `${logoRotate.value}deg` },
+    ],
     opacity: logoOpacity.value,
+  }));
+
+  const titleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: titleTranslateY.value }],
+  }));
+
+  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
+    transform: [{ translateY: subtitleTranslateY.value }],
   }));
 
   const backgroundAnimatedStyle = useAnimatedStyle(() => ({
     opacity: backgroundOpacity.value,
   }));
 
+  const particleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: particleScale.value,
+    transform: [
+      { scale: particleScale.value },
+      { rotate: `${particleRotate.value}deg` },
+    ],
+  }));
+
+  const glowAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowScale.value }],
+    opacity: interpolate(glowScale.value, [0.8, 1.2], [0.3, 0.6]),
+  }));
+
+
   return (
+
     <Animated.View style={[styles.container, backgroundAnimatedStyle]}>
       <LinearGradient
-        colors={['#6366F1', '#8B5CF6', '#EC4899']}
+        colors={['#667eea', '#764ba2', '#f093fb']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-          <View style={styles.logo}>
-            <View style={styles.logoInner}>
-              <Globe size={40} color={theme.primary} />
+        {/* Animated background particles */}
+        <Animated.View
+          style={[styles.particleContainer, particleAnimatedStyle]}
+        >
+          {[...Array(6)].map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.particle,
+                {
+                  top: (height * (0.2 + index * 0.15)) % height,
+                  left: (width * (0.1 + index * 0.18)) % width,
+                  transform: [{ rotate: `${index * 60}deg` }],
+                },
+              ]}
+            >
+              <Sparkles
+                size={12 + (index % 3) * 4}
+                color="rgba(255, 255, 255, 0.2)"
+              />
             </View>
-          </View>
+          ))}
         </Animated.View>
-        <View style={styles.header}>
-          <Text style={styles.title}>Culture Connect</Text>
-          <Text style={styles.subtitle}>Connect with different cultures and events wherever you are.</Text>
+
+        <View style={styles.content}>
+          {/* Glow effect behind logo */}
+          <Animated.View style={[styles.logoGlow, glowAnimatedStyle]} />
+
+          {/* Main logo container */}
+          <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+            <View style={styles.logo}>
+              <LinearGradient
+                colors={['#ffffff', '#f8fafc']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoGradient}
+              >
+                <View style={styles.logoInner}>
+                  <GraduationCap size={44} color={theme.primary} strokeWidth={2.5} />
+                </View>
+              </LinearGradient>
+            </View>
+          </Animated.View>
+
+          {/* Text content */}
+          <View style={styles.textContainer}>
+            <Animated.View style={titleAnimatedStyle}>
+              <Text style={styles.title}>Culture Connect</Text>
+              <View style={styles.titleUnderline} />
+            </Animated.View>
+
+            <Animated.View style={subtitleAnimatedStyle}>
+              <Text style={styles.subtitle}>
+                Discover amazing cultures and connect with events around the
+                world
+              </Text>
+              <View style={styles.dots}>
+                <View style={[styles.dot, styles.dotActive]} />
+                <View style={styles.dot} />
+                <View style={styles.dot} />
+              </View>
+            </Animated.View>
+          </View>
+        </View>
+
+        {/* Bottom decorative element */}
+        <View style={styles.bottomDecoration}>
+          <LinearGradient
+            colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.decorationLine}
+          />
         </View>
       </LinearGradient>
     </Animated.View>
+
   );
 }
 
@@ -89,47 +255,117 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+    position: 'relative',
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  particleContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  particle: {
+    position: 'absolute',
   },
   logoContainer: {
     alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -40,
   },
   logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 30,
-    backgroundColor: theme.white,
+    width: 130,
+    height: 130,
+    borderRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  logoGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
   },
   logoInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    width: 90,
+    height: 90,
+    borderRadius: 24,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.15)',
   },
-  header: {
+  textContainer: {
     alignItems: 'center',
-    marginTop: 16,
+    width: '100%',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     color: theme.white,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  titleUnderline: {
+    width: 60,
+    height: 4,
+    backgroundColor: theme.white,
+    borderRadius: 2,
+    marginTop: 12,
+    opacity: 0.8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: theme.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 16,
+    lineHeight: 26,
+    marginTop: 24,
+    maxWidth: 280,
+    fontWeight: '500',
+  },
+  dots: {
+    flexDirection: 'row',
+    marginTop: 32,
+    gap: 12,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  dotActive: {
+    backgroundColor: theme.white,
+    width: 24,
+  },
+  bottomDecoration: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  decorationLine: {
+    width: '60%',
+    height: 2,
+    borderRadius: 1,
   },
 });

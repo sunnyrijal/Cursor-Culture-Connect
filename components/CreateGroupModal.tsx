@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Switch } from 'react-native';
-import { X, Globe, Lock, GraduationCap, ChevronDown, Check, AlertCircle, Calendar, Clock, MapPin, PlusCircle, MinusCircle } from 'lucide-react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Switch, Platform } from 'react-native';
+import { X, Globe, Lock, GraduationCap, ChevronDown, Check, AlertCircle, Calendar, Clock, MapPin, PlusCircle, MinusCircle, Sparkles } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Button } from '@/components/ui/Button';
-import { theme, spacing, typography, borderRadius } from './theme';
 import { Meeting } from '@/types/group';
 
 interface CreateGroupModalProps {
@@ -26,37 +27,91 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [useLocation, setUseLocation] = useState(true);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   const handleAddMeeting = () => {
-      setMeetings([...meetings, { date: '', time: '', location: '' }]);
+    setMeetings([...meetings, { date: '', time: '', location: '' }]);
   };
   
   const handleRemoveMeeting = (index: number) => {
-      const newMeetings = meetings.filter((_, i) => i !== index);
-      setMeetings(newMeetings);
+    const newMeetings = meetings.filter((_, i) => i !== index);
+    setMeetings(newMeetings);
   };
 
   const handleMeetingChange = (index: number, field: keyof Meeting, value: string) => {
-      const newMeetings = [...meetings];
-      newMeetings[index][field] = value;
-      setMeetings(newMeetings);
-  }
+    const newMeetings = [...meetings];
+    newMeetings[index][field] = value;
+    setMeetings(newMeetings);
+  };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (!useLocation && (!city || !state)) {
-      Alert.alert('Please enter both city and state, or enable location.');
+    if (!formData.name.trim() || !formData.description.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields.');
       return;
     }
+
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    if (!useLocation && (!city || !state)) {
+      Alert.alert('Error', 'Please enter both city and state, or enable location.');
+      setIsSubmitting(false);
+      return;
+    }
+    
     const groupData = {
       ...formData,
       meetings,
-      location: useLocation ? detectedLocation : `${city}, ${state}`,
+      location: useLocation ? 'Current Location' : `${city}, ${state}`,
     };
+    
     onSubmit(groupData);
     setIsSubmitting(false);
     onClose();
+  };
+
+  const renderInput = (
+    label: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    placeholder: string,
+    icon?: React.ReactNode,
+    multiline = false,
+    required = false
+  ) => {
+    const inputKey = `${label.toLowerCase().replace(/\s+/g, '_')}`;
+    const isFocused = focusedInput === inputKey;
+    const hasValue = value.length > 0;
+
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>
+          {label} {required && <Text style={{ color: '#EF4444' }}>*</Text>}
+        </Text>
+        <View style={[
+          styles.inputWrapper,
+          isFocused && styles.inputWrapperFocused,
+          hasValue && styles.inputWrapperValid,
+        ]}>
+          {icon && <View style={styles.inputIcon}>{icon}</View>}
+          <TextInput
+            style={[styles.inputText, multiline && styles.textArea]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor="#94A3B8"
+            multiline={multiline}
+            onFocus={() => setFocusedInput(inputKey)}
+            onBlur={() => setFocusedInput(null)}
+          />
+          {hasValue && (
+            <View style={styles.validIcon}>
+              <Check size={16} color="#10B981" />
+            </View>
+          )}
+        </View>
+      </View>
+    );
   };
 
   if (!visible) return null;
@@ -69,109 +124,222 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Create New Group</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color={theme.gray500} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Group Name *</Text>
-            <TextInput style={styles.input} value={formData.name} onChangeText={text => setFormData({...formData, name: text})} placeholder="Enter group name" />
+        <ScrollView 
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>Create New Group</Text>
+            <Text style={styles.subtitle}>
+              Build your community and connect with like-minded people
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <X size={24} color="#64748B" />
+            </TouchableOpacity>
           </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Description *</Text>
-            <TextInput style={[styles.input, styles.textArea]} value={formData.description} onChangeText={text => setFormData({...formData, description: text})} placeholder="Describe your group" multiline/>
-          </View>
 
-          <Text style={styles.sectionTitle}>Meeting Details (Optional)</Text>
-          
-          {meetings.map((meeting, index) => (
-            <View key={index} style={styles.meetingContainer}>
-               <View style={styles.meetingHeader}>
-                 <Text style={styles.meetingTitle}>Meeting {index + 1}</Text>
-                 {index > 0 && (
-                    <TouchableOpacity onPress={() => handleRemoveMeeting(index)}>
-                        <MinusCircle color={theme.error} size={20} />
+          {/* Form Container */}
+          <View style={styles.formContainer}>
+            <BlurView intensity={20} style={styles.blurView}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
+                style={styles.formGradient}
+              >
+                {/* Basic Info */}
+                {renderInput(
+                  'Group Name',
+                  formData.name,
+                  (text) => setFormData({...formData, name: text}),
+                  'Enter a catchy group name',
+                  <Sparkles size={16} color="#6366F1" />,
+                  false,
+                  true
+                )}
+
+                {renderInput(
+                  'Description',
+                  formData.description,
+                  (text) => setFormData({...formData, description: text}),
+                  'Tell people what your group is about...',
+                  <GraduationCap size={16} color="#6366F1" />,
+                  true,
+                  true
+                )}
+
+                {/* Visibility Settings */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Group Visibility</Text>
+                  <View style={styles.rowContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.visibilityButton,
+                        formData.isPublic && styles.visibilityButtonActive,
+                      ]}
+                      onPress={() => setFormData({...formData, isPublic: true})}
+                    >
+                      <LinearGradient
+                        colors={formData.isPublic 
+                          ? ['#6366F1', '#8B5CF6'] 
+                          : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                        }
+                        style={styles.visibilityButtonGradient}
+                      >
+                        <Globe size={16} color={formData.isPublic ? '#FFFFFF' : '#374151'} />
+                        <Text style={[
+                          styles.visibilityButtonText,
+                          formData.isPublic && styles.visibilityButtonTextActive,
+                        ]}>
+                          Public
+                        </Text>
+                      </LinearGradient>
                     </TouchableOpacity>
-                 )}
-               </View>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Meeting Day/Date</Text>
-                <View style={styles.inputWithIcon}>
-                  <Calendar size={16} color={theme.gray500} />
-                  <TextInput
-                    style={styles.inputText}
-                    value={meeting.date}
-                    onChangeText={(text) => handleMeetingChange(index, 'date', text)}
-                    placeholder="e.g., Every Tuesday, First Monday"
-                  />
+                    <TouchableOpacity
+                      style={[
+                        styles.visibilityButton,
+                        !formData.isPublic && styles.visibilityButtonActive,
+                      ]}
+                      onPress={() => setFormData({...formData, isPublic: false})}
+                    >
+                      <LinearGradient
+                        colors={!formData.isPublic 
+                          ? ['#6366F1', '#8B5CF6'] 
+                          : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                        }
+                        style={styles.visibilityButtonGradient}
+                      >
+                        <Lock size={16} color={!formData.isPublic ? '#FFFFFF' : '#374151'} />
+                        <Text style={[
+                          styles.visibilityButtonText,
+                          !formData.isPublic && styles.visibilityButtonTextActive,
+                        ]}>
+                          Private
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Meeting Time</Text>
-                <View style={styles.inputWithIcon}>
-                  <Clock size={16} color={theme.gray500} />
-                  <TextInput
-                    style={styles.inputText}
-                    value={meeting.time}
-                    onChangeText={(text) => handleMeetingChange(index, 'time', text)}
-                    placeholder="e.g., 7:00 PM"
-                  />
+                {/* Location Section */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Location</Text>
+                  <View style={styles.locationToggle}>
+                    <Switch 
+                      value={useLocation} 
+                      onValueChange={setUseLocation}
+                      trackColor={{ false: '#E2E8F0', true: '#6366F1' }}
+                      thumbColor={useLocation ? '#FFFFFF' : '#94A3B8'}
+                    />
+                    <Text style={styles.locationToggleText}>Use my current location</Text>
+                  </View>
+                  
+                  {!useLocation && (
+                    <View style={styles.rowContainer}>
+                      {renderInput(
+                        '',
+                        city,
+                        setCity,
+                        'City',
+                        <MapPin size={16} color="#6366F1" />
+                      )}
+                      {renderInput(
+                        '',
+                        state,
+                        setState,
+                        'State',
+                        <MapPin size={16} color="#6366F1" />
+                      )}
+                    </View>
+                  )}
                 </View>
-              </View>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Meeting Location</Text>
-                <View style={styles.inputWithIcon}>
-                  <MapPin size={16} color={theme.gray500} />
-                  <TextInput
-                    style={styles.inputText}
-                    value={meeting.location}
-                    onChangeText={(text) => handleMeetingChange(index, 'location', text)}
-                    placeholder="e.g., Student Union Room 210"
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
+                {/* Meeting Details */}
+                <View style={styles.sectionDivider} />
+                <Text style={styles.sectionTitle}>Meeting Schedule (Optional)</Text>
+                
+                {meetings.map((meeting, index) => (
+                  <View key={index} style={styles.meetingCard}>
+                    <View style={styles.meetingHeader}>
+                      <Text style={styles.meetingTitle}>Meeting {index + 1}</Text>
+                      {index > 0 && (
+                        <TouchableOpacity 
+                          onPress={() => handleRemoveMeeting(index)}
+                          style={styles.removeMeetingButton}
+                        >
+                          <MinusCircle color="#EF4444" size={20} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
 
-          <TouchableOpacity style={styles.addMeetingButton} onPress={handleAddMeeting}>
-            <PlusCircle color={theme.primary} size={20} />
-            <Text style={styles.addMeetingText}>Add Another Meeting Time</Text>
-          </TouchableOpacity>
+                    {renderInput(
+                      'Day/Date',
+                      meeting.date,
+                      (text) => handleMeetingChange(index, 'date', text),
+                      'e.g., Every Tuesday, First Monday',
+                      <Calendar size={16} color="#6366F1" />
+                    )}
 
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.label}>Location</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Switch value={useLocation} onValueChange={setUseLocation} />
-              <Text style={{ marginLeft: 8 }}>Use my current location</Text>
-            </View>
-            {!useLocation && (
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="City"
-                  value={city}
-                  onChangeText={setCity}
-                />
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="State"
-                  value={state}
-                  onChangeText={setState}
-                />
-              </View>
-            )}
+                    {renderInput(
+                      'Time',
+                      meeting.time,
+                      (text) => handleMeetingChange(index, 'time', text),
+                      'e.g., 7:00 PM',
+                      <Clock size={16} color="#6366F1" />
+                    )}
+
+                    {renderInput(
+                      'Location',
+                      meeting.location,
+                      (text) => handleMeetingChange(index, 'location', text),
+                      'e.g., Student Union Room 210',
+                      <MapPin size={16} color="#6366F1" />
+                    )}
+                  </View>
+                ))}
+
+                <TouchableOpacity style={styles.addMeetingButton} onPress={handleAddMeeting}>
+                  <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    style={styles.addMeetingButtonGradient}
+                  >
+                    <PlusCircle color="#FFFFFF" size={20} />
+                    <Text style={styles.addMeetingText}>Add Another Meeting Time</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </LinearGradient>
+            </BlurView>
           </View>
         </ScrollView>
-        <View style={styles.actions}>
-            <Button title="Cancel" variant="outline" onPress={onClose} style={styles.actionButton} disabled={isSubmitting}/>
-            <Button title={isSubmitting ? "Creating..." : "Create Group"} onPress={handleSubmit} style={styles.actionButton} disabled={isSubmitting}/>
+
+        {/* Actions */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity 
+            style={styles.cancelButton} 
+            onPress={onClose}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            <LinearGradient
+              colors={isSubmitting ? ['#94A3B8', '#64748B'] : ['#6366F1', '#8B5CF6']}
+              style={styles.buttonGradient}
+            >
+              <View style={styles.buttonContent}>
+                <Text style={styles.primaryButtonText}>
+                  {isSubmitting ? 'Creating...' : 'Create Group'}
+                </Text>
+                {!isSubmitting && <Sparkles size={16} color="#FFFFFF" style={styles.buttonIcon} />}
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -179,117 +347,329 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
 }
 
 const styles = StyleSheet.create({
-    container: {
+  container: {
     flex: 1,
-    backgroundColor: theme.white,
+    backgroundColor: '#F0F3F7',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+  scrollContainer: {
+    flex: 1,
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    marginHorizontal: 20,
+    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginBottom: 24,
+    position: 'relative',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.textPrimary,
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 24,
+    fontWeight: '500',
   },
   closeButton: {
-    padding: 4,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  field: {
+  formContainer: {
+    marginHorizontal: 20,
     marginBottom: 24,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.textPrimary,
-    marginBottom: 8,
+  blurView: {
+    borderRadius: 24,
+    overflow: 'hidden',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 12,
+  formGradient: {
     padding: 16,
-    fontSize: 16,
-    color: theme.textPrimary,
-    backgroundColor: theme.white,
+    borderRadius: 24,
   },
-  textArea: {
-      height: 100,
-      textAlignVertical: 'top'
+  inputContainer: {
+    marginTop: 6,
+    marginBottom: 12,
   },
-  inputWithIcon: {
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 12,
+    backgroundColor: '#F0F3F7',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    backgroundColor: theme.white,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: '#CDD2D8',
+    minHeight: 56,
+    shadowColor: '#CDD2D8',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    ...Platform.select({
+      android: {
+        elevation: 0,
+      },
+    }),
+  },
+  inputWrapperFocused: {
+    borderColor: '#6366F1',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: -2, height: -2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    ...Platform.select({
+      android: {
+        elevation: 0,
+      },
+    }),
+  },
+  inputWrapperValid: {
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   inputText: {
     flex: 1,
-    padding: 16,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: '#1F2937',
+    fontWeight: '500',
+    paddingVertical: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+    paddingTop: 12,
+  },
+  validIcon: {
+    marginLeft: 8,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  visibilityButton: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: 'white',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  visibilityButtonActive: {
+    borderColor: '#6366F1',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  visibilityButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  visibilityButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  visibilityButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+  },
+  locationToggleText: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 24,
+    marginHorizontal: -16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: theme.textPrimary,
-    marginTop: 24,
+    fontWeight: '700',
+    color: '#1E293B',
     marginBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    paddingTop: 16,
+    textAlign: 'center',
   },
-  meetingContainer: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 12,
+  meetingCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#CDD2D8',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    ...Platform.select({
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   meetingHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   meetingTitle: {
-      fontSize: 16,
-      fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  removeMeetingButton: {
+    padding: 4,
   },
   addMeetingButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.primary,
-      borderStyle: 'dashed',
-      gap: 8,
+    marginTop: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  addMeetingButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 8,
   },
   addMeetingText: {
-      color: theme.primary,
-      fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
   },
-  actions: {
+  actionsContainer: {
     flexDirection: 'row',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: 20,
+    gap: 16,
+    backgroundColor: '#F0F3F7',
     borderTopWidth: 1,
-    borderTopColor: theme.border,
-    gap: 12,
+    borderTopColor: '#CDD2D8',
   },
-  actionButton: {
+  cancelButton: {
     flex: 1,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 2,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  primaryButton: {
+    flex: 2,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonIcon: {
+    marginLeft: 4,
   },
 });

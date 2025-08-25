@@ -2,7 +2,7 @@
 export const API_URL = "http://localhost:3001/api";
 
 // Helper function to check if a string is a valid .edu email
-export const isValidEduEmail = (email) => {
+export const isValidEduEmail = (email:string) => {
   if (!email || typeof email !== 'string') return false;
   return email.endsWith('.edu');
 };
