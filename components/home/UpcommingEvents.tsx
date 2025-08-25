@@ -114,7 +114,7 @@ const UpcomingEvents = () => {
               />
               <View style={styles.eventListDetails}>
                 <Text style={styles.eventListTitle} numberOfLines={2}>
-                  {event.title}
+                  {event.name}
                 </Text>
                 <Text style={styles.eventListMeta}>
                   {event.date} • {event.time}
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
   },
   eventsList: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   eventListCard: {
     flexDirection: 'row',
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   eventListImage: {
     width: 80,
-    height: 80,
+    height: '100%',
     borderTopLeftRadius: borderRadius.card,
     borderBottomLeftRadius: borderRadius.card,
     resizeMode: 'cover',
