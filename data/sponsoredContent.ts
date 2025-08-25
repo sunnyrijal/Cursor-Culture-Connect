@@ -21,6 +21,7 @@ export const sponsoredContent = [
     color: theme.warning,
     heritage: 'Indian',
     popularityByHeritage: { Indian: 120, Nepali: 42, Pakistani: 10 },
+    link:"http://localhost:8081"
   },
   {
     id: 2,
@@ -40,6 +41,8 @@ export const sponsoredContent = [
     icon: Palette,
     color: theme.accent,
     heritage: 'Asian',
+    link:"http://localhost:8081"
+
   },
   {
     id: 3,
@@ -61,6 +64,8 @@ export const sponsoredContent = [
     color: theme.success,
     heritage: 'Mexican',
     popularityByHeritage: { Mexican: 80, Nepali: 2 },
+    link:"http://localhost:8081"
+
   },
   {
     id: 4,
@@ -80,6 +85,8 @@ export const sponsoredContent = [
     icon: Music,
     color: theme.primary,
     heritage: 'African',
+    link:"http://localhost:8081"
+
   },
   {
     id: 5,
@@ -101,6 +108,8 @@ export const sponsoredContent = [
     color: theme.info,
     heritage: 'Vietnamese',
     popularityByHeritage: { Vietnamese: 60, Nepali: 8 },
+    link:"http://localhost:8081"
+
   },
   {
     id: 6,
@@ -120,6 +129,8 @@ export const sponsoredContent = [
     icon: Camera,
     color: theme.warning,
     heritage: 'Middle Eastern',
+    link:"http://localhost:8081"
+
   },
   {
     id: 7,
@@ -141,6 +152,8 @@ export const sponsoredContent = [
     color: theme.accent,
     heritage: 'Japanese',
     popularityByHeritage: { Japanese: 70, Nepali: 1 },
+    link:"http://localhost:8081"
+
   },
   {
     id: 8,
@@ -160,6 +173,8 @@ export const sponsoredContent = [
     icon: Music,
     color: theme.success,
     heritage: 'Caribbean',
+    link:"http://localhost:8081"
+
   },
 ];
 

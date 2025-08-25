@@ -6,10 +6,11 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Bell } from 'lucide-react-native';
+import { Camera, Bell, GraduationCap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
+
 export const clayColors = {
   background: '#F0F3F7',
   lightShadow: '#FFFFFF',
@@ -57,25 +58,25 @@ const Header = ({
             activeOpacity={1}
           >
             <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>
+              {/* <Text style={styles.avatarText}>
                 {currentUser.name.charAt(0)}
-              </Text>
+              </Text> */}
+              <GraduationCap size={24} color="#7C3AED" />
             </View>
           </TouchableOpacity>
 
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{currentUser.name}!</Text>
+          <View style={styles.appTitleContainer}>
+            <Text style={styles.appTitle}>Culture Connect App</Text>
+            {/* <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>
         </View>
 
         <View style={styles.headerActions}>
           <Shadow
-            distance={8} // similar to blur radius
+            distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
-            // finalColor="rgba(255, 255, 255, 0.7)"
-            offset={[4, 4]} // x, y offset
-            // radius={16} // border radius
+            offset={[4, 4]}
           >
             <TouchableOpacity
               onPress={() => setShowStoriesModal(true)}
@@ -88,11 +89,9 @@ const Header = ({
             </TouchableOpacity>
           </Shadow>
           <Shadow
-            distance={8} // similar to blur radius
+            distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
-            // finalColor="rgba(255, 255, 255, 0.7)"
-            offset={[4, 4]} // x, y offset
-            // radius={16} // border radius
+            offset={[4, 4]}
           >
             <TouchableOpacity
               onPress={() => router.push('/notifications')}
@@ -107,7 +106,7 @@ const Header = ({
               <Bell size={20} color="#3B82F6" />
             </TouchableOpacity>
           </Shadow>
-          <LogoutButton />
+          {/* <LogoutButton /> */}
         </View>
       </View>
     </View>
@@ -165,26 +164,39 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
 
-  avatarText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#7C3AED', // Purple text
-  },
+  // Commented out avatar text style
+  // avatarText: {
+  //   fontSize: 24,
+  //   fontWeight: '600',
+  //   color: '#7C3AED', // Purple text
+  // },
 
-  greetingContainer: {
+  // New app title styles
+  appTitleContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
-  greeting: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: clayColors.textSecondary,
-    marginBottom: 2,
-  },
-  userName: {
+  appTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: clayColors.textPrimary,
   },
+
+  // Commented out greeting styles
+  // greetingContainer: {
+  //   flex: 1,
+  // },
+  // greeting: {
+  //   fontSize: 14,
+  //   fontWeight: '500',
+  //   color: clayColors.textSecondary,
+  //   marginBottom: 2,
+  // },
+  // userName: {
+  //   fontSize: 20,
+  //   fontWeight: '700',
+  //   color: clayColors.textPrimary,
+  // },
 
   headerActions: {
     flexDirection: 'row',
@@ -211,12 +223,10 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 8,
-        // Add these for better iOS shadow rendering
-        shadowPath: undefined, // Let iOS calculate automatically
+        shadowPath: undefined,
       },
       android: {
         elevation: 6,
-        // For better neumorphic effect on Android, you might want to add:
         shadowColor: clayColors.darkShadow || '#A3B1C6',
       },
     }),

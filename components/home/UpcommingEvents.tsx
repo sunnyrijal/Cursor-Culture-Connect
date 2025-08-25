@@ -11,11 +11,16 @@ import { LayoutGrid, List as ListIcon } from 'lucide-react-native';
 import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme'; // adjust if needed
 import { router } from 'expo-router'; // or your navigation lib
 import { upcomingEvents } from '@/data/upcommingEvents';
+import { mockEvents } from '@/data/mockData';
+import { Event } from '@/types/event'; // Import the Event interface
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
-const UpcommingEvents = () => {
+const UpcomingEvents = () => {
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
+
+  // Use the same data source for consistency - you can choose either mockEvents or upcomingEvents
+  const eventsData: Event[] = mockEvents; // or upcomingEvents, depending on your preference
 
   return (
     <View style={styles.section}>
@@ -61,7 +66,7 @@ const UpcommingEvents = () => {
             { paddingHorizontal: 0, justifyContent: 'space-between' },
           ]}
         >
-          {upcomingEvents.map((event:any, idx:number) => (
+          {eventsData.map((event: Event, idx: number) => (
             <TouchableOpacity
               key={event.id}
               style={[
@@ -77,7 +82,7 @@ const UpcommingEvents = () => {
               />
               <View style={styles.eventGridDetails}>
                 <Text style={styles.eventGridTitle} numberOfLines={2}>
-                  {event.title}
+                  {event.name}
                 </Text>
                 <Text style={styles.eventGridMeta}>
                   {event.date} • {event.time}
@@ -85,13 +90,18 @@ const UpcommingEvents = () => {
                 <Text style={styles.eventGridMeta} numberOfLines={1}>
                   {event.location}
                 </Text>
+                {event.price && (
+                  <Text style={styles.eventGridPrice}>
+                    {event.price}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
           ))}
         </View>
       ) : (
         <View style={styles.eventsList}>
-          {upcomingEvents.map((event:any) => (
+          {eventsData.map((event: Event) => (
             <TouchableOpacity
               key={event.id}
               style={styles.eventListCard}
@@ -112,6 +122,16 @@ const UpcommingEvents = () => {
                 <Text style={styles.eventListMeta} numberOfLines={1}>
                   {event.location}
                 </Text>
+                <View style={styles.eventListFooter}>
+                  {event.price && (
+                    <Text style={styles.eventListPrice}>
+                      {event.price}
+                    </Text>
+                  )}
+                  <Text style={styles.eventListDistance}>
+                    {event.distance}
+                  </Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))}
@@ -121,14 +141,14 @@ const UpcommingEvents = () => {
   );
 };
 
-export default UpcommingEvents;
+export default UpcomingEvents;
 
 const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.lg,
     backgroundColor: neomorphColors.background,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 20,
     width:'100%',
     // Cross-platform neumorphic outer shadow
@@ -301,6 +321,13 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
+    marginBottom: spacing.xs / 2,
+  },
+  eventGridPrice: {
+    fontSize: typography.fontSize.xs,
+    color: theme.primary,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.semiBold,
   },
   eventsList: {
     gap: spacing.md,
@@ -363,6 +390,24 @@ const styles = StyleSheet.create({
   },
   eventListMeta: {
     fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
+    marginBottom: spacing.xs / 2,
+  },
+  eventListFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  eventListPrice: {
+    fontSize: typography.fontSize.sm,
+    color: theme.primary,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  eventListDistance: {
+    fontSize: typography.fontSize.xs,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
   },

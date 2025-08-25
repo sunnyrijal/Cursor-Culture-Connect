@@ -1,22 +1,43 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme'; 
 import { Star, MapPin, Clock } from 'lucide-react-native';
+import { trackClick, trackImpression } from '@/contexts/analytics';
 
 const CulturalExperienceCard = ({
   content,
   handleSponsoredContentPress,
-  index
+  index,
+  activeSponsoredCategory
 }: {
   content: any,
   index: number,
+  activeSponsoredCategory: string,
   handleSponsoredContentPress: (value: any) => void
 }) => {
+  const [impressionSent, setImpressionSent] = useState(false);
+
+  useEffect(() => {
+    if (!impressionSent) {
+      setTimeout(() => {
+        // Directly post impression to API
+        trackImpression(content.id, activeSponsoredCategory);
+        setImpressionSent(true);
+      }, 500); // 500ms delay to ensure card is actually visible
+    }
+  }, [content.id, activeSponsoredCategory, impressionSent]);
+
+  const handlePress = () => {
+    // Directly post click to API
+    trackClick(content.id, activeSponsoredCategory);
+    
+    handleSponsoredContentPress(content);
+  };
+
   return (
     <TouchableOpacity
-      key={content.id}
       style={[styles.card, { marginLeft: index === 0 ? 0 : spacing.md }]}
-      onPress={() => handleSponsoredContentPress(content)}
+      onPress={handlePress}
       activeOpacity={0.9}
     >
       {/* Image */}
@@ -76,7 +97,6 @@ const styles = StyleSheet.create({
     backgroundColor: neomorphColors.background,
     borderRadius: 14,
     overflow: 'hidden',
-    // Light cross-platform shadows
     ...Platform.select({
       ios: {
         shadowColor: neomorphColors.darkShadow,
@@ -164,7 +184,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 5,
     paddingVertical: 2,
-    // Very light shadow for rating
     ...Platform.select({
       ios: {
         shadowColor: neomorphColors.darkShadow,

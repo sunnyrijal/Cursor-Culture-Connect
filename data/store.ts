@@ -107,7 +107,11 @@ export const store = {
 
   // Event actions
   getEventById: (id: number): Event | undefined => {
-    return state.events.find((event) => event.id === id);
+    console.log(id)
+    console.log(state.events)
+    const event= state.events.find((event) => event.id === id);
+    console.log(event)
+    return event
   },
   
   toggleRsvp: (userId: string, eventId: number) => {

@@ -5,10 +5,11 @@ import {
   Calendar, 
   Users, 
   MapPin,
+  Zap, // Added for quick event icon
 } from 'lucide-react-native';
 import { theme, spacing, typography } from '../theme';
 
-const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }:any) => {
+const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal, setShowCreateQuickEventModal }:any) => {
   const router = useRouter()
   const [pressedButton, setPressedButton] = useState(null)
 
@@ -30,6 +31,16 @@ const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }:any) 
       backgroundColor: '#dbeafe', // blue-100
       gradientColors: ['#dbeafe', '#e9d5ff'], // blue-200 to purple-200
       action: () => setShowCreateEventModal(true)
+    },
+    {
+      id: 'createQuickEvent',
+      title: 'Quick Event',
+      description: 'Fast event setup',
+      icon: Zap,
+      iconColor: '#7c3aed', // violet-700
+      backgroundColor: '#e9d5ff', // violet-100
+      gradientColors: ['#e9d5ff', '#fecaca'], // violet-200 to pink-200
+      action: () => setShowCreateQuickEventModal(true)
     },
     {
       id: 'createGroup', 
@@ -83,7 +94,7 @@ const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal }:any) 
     <View style={styles.quickActions}>
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionButtons}>
-        {quickActionsData.map((item) => (
+        {quickActionsData.map((item, index) => (
           <QuickActionCard key={item.id} item={item} />
         ))}
       </View>
@@ -109,13 +120,14 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
 
   // Clay shadow effect - normal state
   actionButton: {
-    flex: 1,
+    width: '48%', // Two cards per row with gap
     borderRadius: 24, // rounded-3xl equivalent
     alignItems: 'center',
     justifyContent: 'center',
@@ -138,16 +150,18 @@ const styles = StyleSheet.create({
     // Additional light shadow for clay effect
     borderWidth: 0.5,
     borderColor: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: spacing.sm, // Add space between rows
   },
 
   // Clay shadow effect - pressed state
   actionButtonPressed: {
-    flex: 1,
+    width: '48%', // Two cards per row with gap
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
- paddingVertical: spacing.xs,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
+    minHeight: 120,
     // Pressed clay shadow effect (inset-like)
     ...Platform.select({
       ios: {
@@ -163,6 +177,7 @@ const styles = StyleSheet.create({
     }),
     borderWidth: 0.5,
     borderColor: 'rgba(163, 177, 198, 0.15)',
+    marginBottom: spacing.sm, // Add space between rows
     // transform: [{ scale: 0.98 }], 
   },
 

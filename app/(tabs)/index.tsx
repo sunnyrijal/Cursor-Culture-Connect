@@ -36,9 +36,12 @@ import CulturalExperiences from '@/components/home/CulturalExperiences';
 import UpcommingEvents from '@/components/home/UpcommingEvents';
 import QuickActions from '@/components/home/QuickActions';
 import WelcomeCenter from '@/components/home/WelcomeMesage';
+import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showCreateQuickEventModal, setShowCreateQuickEventModal] = useState(false);
+
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
   const [showShareCultureModal, setShowShareCultureModal] = useState(false);
@@ -212,6 +215,12 @@ export default function Dashboard() {
     console.log('Creating event:', eventData);
     setShowCreateEventModal(false);
   };
+
+  const handleCreateQuickEvent = (eventData: any) => {
+    console.log('Creating event:', eventData);
+    setShowCreateQuickEventModal(false);
+  };
+
 
   const handleCreateGroup = (groupData: any) => {
     console.log('Creating group:', groupData);
@@ -594,6 +603,7 @@ export default function Dashboard() {
         <QuickActions
           setShowCreateEventModal={setShowCreateEventModal}
           setShowCreateGroupModal={setShowCreateGroupModal}
+          setShowCreateQuickEventModal={setShowCreateQuickEventModal}
         />
 
         <CulturalExperiences />
@@ -606,6 +616,12 @@ export default function Dashboard() {
         visible={showCreateEventModal}
         onClose={() => setShowCreateEventModal(false)}
         onSubmit={handleCreateEvent}
+      />
+
+       <CreateQuickEventModal
+        visible={showCreateQuickEventModal}
+        onClose={() => handleCreateQuickEvent(false)}
+        onSubmit={handleCreateQuickEvent}
       />
       <CreateGroupModal
         visible={showCreateGroupModal}

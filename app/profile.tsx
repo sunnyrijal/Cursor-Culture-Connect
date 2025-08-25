@@ -1099,7 +1099,8 @@ const styles = StyleSheet.create({
   },
 
   bioSection: {
-    marginBottom: 24,
+    marginBottom: 20,
+    marginHorizontal:20
   },
   bioTitle: {
     fontSize: 20,
@@ -1131,6 +1132,8 @@ const styles = StyleSheet.create({
   },
   culturalIdentitySection: {
     marginBottom: 20,
+    marginHorizontal:20
+
   },
   identityCard: {
     backgroundColor: neumorphTheme.cardBackground,
@@ -1420,8 +1423,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    marginHorizontal: 20,
+    paddingVertical: 12,
+    marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 24,
     backgroundColor: neumorphTheme.cardBackground,
