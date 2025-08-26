@@ -1,5 +1,8 @@
+import { getPathWithConventionsCollapsed } from "expo-router/build/fork/getPathFromState-forks";
+import { University } from "lucide-react-native";
+
 // API base URL
-export const API_URL = "http://localhost:3001/api";
+export const API_URL = "http://localhost:3000/api";
 
 // Helper function to check if a string is a valid .edu email
 export const isValidEduEmail = (email:string) => {
@@ -62,7 +65,7 @@ export const endpoints = {
 interface SignupData {
   email: string;
   password: string;
-  fullName?: string;
+  name?: string;
   university?: string;
   state?: string;
   city?: string;
@@ -74,11 +77,11 @@ interface SignupData {
 export const apiClient = {
   async login(email: string, password: string) {
     try {
-      // Validate email domain
-      if (!isValidEduEmail(email)) {
-        throw new Error('Only .edu email addresses are allowed');
-      }
-      
+      // // Validate email domain
+      // if (!isValidEduEmail(email)) {
+      //   throw new Error('Only .edu email addresses are allowed');
+      // }
+      console.log(email, password)
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -100,23 +103,28 @@ export const apiClient = {
     }
   },
 
-  async signup(email: string, password: string, additionalData?: Omit<SignupData, 'email' | 'password'>) {
+  async signup(name:string, email: string, password: string, confirmPassword:string,  state:string, city:string,university:string, mobileNumber:string ) {
     try {
-      // Validate email domain
-      if (!isValidEduEmail(email)) {
-        throw new Error('Only .edu email addresses are allowed');
-      }
+      // // Validate email domain
+      // if (!isValidEduEmail(email)) {
+      //   throw new Error('Only .edu email addresses are allowed');
+      // }
       
-      const response = await fetch(`${API_URL}/auth/signup`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // Important for session cookies
         body: JSON.stringify({ 
+          name,
           email, 
           password,
-          ...additionalData
+          university,
+          state:state,
+          city:city,
+          phone:mobileNumber,
+          confirmPassword,
         }),
       });
       
@@ -124,7 +132,7 @@ export const apiClient = {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Signup failed');
       }
-      
+      console.log(response)
       return await response.json();
     } catch (error) {
       console.error('Signup error:', error);

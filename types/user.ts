@@ -14,6 +14,10 @@ export type User = {
   interests: string[];
   university: string;
   connections: string[];
+  state?:string;
+  city?:string;
+  phone?:string;
+  // linkedIn:string;
 };
 
 export interface UserProfile extends User {

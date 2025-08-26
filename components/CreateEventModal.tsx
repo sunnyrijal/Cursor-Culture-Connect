@@ -1,18 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Modal,
-  Platform,
-  Image,
-} from "react-native"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Image, Platform } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
 import {
@@ -30,6 +20,8 @@ import {
   Sparkles,
   Minus,
 } from "lucide-react-native"
+import { createEvent } from "@/contexts/event.api"
+
 
 interface CreateEventModalProps {
   visible: boolean
@@ -38,9 +30,9 @@ interface CreateEventModalProps {
 }
 
 interface Group {
-  id: number
+  id: string
   name: string
-  president_id?: string | number
+  president_id?: string
   is_joined?: boolean
 }
 
@@ -49,25 +41,27 @@ interface EventTime {
   endTime: string
 }
 
-const currentUser = { id: 1 }
+const currentUser = { id: "1" }
 
 export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModalProps) {
+  const queryClient = useQueryClient()
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     date: new Date(),
     eventTimes: [{ startTime: "", endTime: "" }] as EventTime[],
     location: "",
-    groupId: null as number | null,
+    groupId: null as string | null,
     images: [] as string[],
     isPublic: true,
     universityOnly: false,
   })
 
   const [groups, setGroups] = useState<Group[]>([
-    { id: 1, name: "Cultural Club", president_id: 1, is_joined: true },
-    { id: 2, name: "Tech Society", president_id: 2, is_joined: true },
-    { id: 3, name: "Art Community", president_id: 1, is_joined: true },
+    { id: "1", name: "Cultural Club", president_id: "1", is_joined: true },
+    { id: "2", name: "Tech Society", president_id: "2", is_joined: true },
+    { id: "3", name: "Art Community", president_id: "1", is_joined: true },
   ])
 
   const [currentImageUrl, setCurrentImageUrl] = useState("")
@@ -76,6 +70,31 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth())
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
   const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  // TanStack Query mutation for creating event
+  const createEventMutation = useMutation({
+    mutationFn: createEvent,
+    onSuccess: (data, variables) => {
+      console.log("Event created successfully:", data)
+
+      queryClient.invalidateQueries({ queryKey: ["events"] })
+
+      Alert.alert("Success", "Event created successfully!")
+
+      onSubmit(variables)
+
+      // Close modal
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error("Error creating event:", error)
+
+      // Show user-friendly error message
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "Failed to create event. Please try again."
+      Alert.alert("Error", errorMessage)
+    },
+  })
 
   useEffect(() => {
     if (!visible) {
@@ -142,9 +161,98 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
     }
   }
 
+  const formatTimeInput = (input: string): string => {
+    // Remove any non-digit or colon characters
+    const cleaned = input.replace(/[^\d:]/g, "")
+
+    if (cleaned.length === 1) {
+      // First digit of hours: only allow 0, 1, 2
+      const firstDigit = cleaned[0]
+      if (firstDigit > "2") {
+        return "" // Don't allow first digit greater than 2
+      }
+      return cleaned
+    } else if (cleaned.length === 2) {
+      // Second digit of hours: if first digit is 2, only allow 0-3
+      const firstDigit = cleaned[0]
+      const secondDigit = cleaned[1]
+      if (firstDigit === "2" && secondDigit > "3") {
+        return cleaned[0] // Don't allow hours > 23
+      }
+      return cleaned
+    } else if (cleaned.length === 3) {
+      // Add colon after 2 digits if not present
+      if (cleaned[2] !== ":") {
+        return cleaned.slice(0, 2) + ":" + cleaned.slice(2)
+      }
+      return cleaned
+    } else if (cleaned.length === 4) {
+      // First digit of minutes: only allow 0-5
+      const parts = cleaned.split(":")
+      if (parts.length === 2) {
+        const minuteFirstDigit = parts[1][0]
+        if (minuteFirstDigit > "5") {
+          return parts[0] + ":" // Don't allow minutes > 59
+        }
+      }
+      return cleaned
+    } else if (cleaned.length <= 5) {
+      // Ensure colon is in the right place and validate complete time
+      const parts = cleaned.split(":")
+      if (parts.length === 1) {
+        const formatted = parts[0].slice(0, 2) + ":" + parts[0].slice(2, 4)
+        const minutePart = parts[0].slice(2, 4)
+        if (minutePart.length > 0 && minutePart[0] > "5") {
+          return parts[0].slice(0, 2) + ":" // Don't allow minutes > 59
+        }
+        return formatted
+      }
+
+      // Validate minutes don't exceed 59
+      if (parts[1] && parts[1].length === 2) {
+        const minutes = Number.parseInt(parts[1])
+        if (minutes > 59) {
+          return parts[0] + ":" + parts[1][0] // Keep only first digit of minutes
+        }
+      }
+
+      return parts[0].slice(0, 2) + ":" + parts[1].slice(0, 2)
+    }
+
+    // Limit to 5 characters (HH:MM)
+    return cleaned.slice(0, 5)
+  }
+
+  const validateTimeFormat = (time: string): boolean => {
+    // Allow formats like 5:30, 05:30, 15:45, etc.
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/
+    return timeRegex.test(time)
+  }
+
+  const validateTime = (time: string): { isValid: boolean; error?: string } => {
+    if (!time) return { isValid: true } // Empty is allowed during typing
+
+    if (!validateTimeFormat(time)) {
+      return { isValid: false, error: "Use HH:MM format (24-hour)" }
+    }
+
+    const [hours, minutes] = time.split(":").map(Number)
+
+    if (hours > 23) {
+      return { isValid: false, error: "Hours must be 00-23" }
+    }
+
+    if (minutes > 59) {
+      return { isValid: false, error: "Minutes must be 00-59" }
+    }
+
+    return { isValid: true }
+  }
+
   const updateTimeSlot = (index: number, field: "startTime" | "endTime", value: string) => {
+    const formattedValue = formatTimeInput(value)
     const newEventTimes = [...formData.eventTimes]
-    newEventTimes[index][field] = value
+    newEventTimes[index][field] = formattedValue
     setFormData({
       ...formData,
       eventTimes: newEventTimes,
@@ -152,11 +260,21 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
   }
 
   const handleSubmit = async () => {
-    // Check if all required fields are filled
     const hasEmptyTimes = formData.eventTimes.some((time) => !time.startTime || !time.endTime)
+    const hasInvalidTimes = formData.eventTimes.some(
+      (time) => !validateTime(time.startTime).isValid || !validateTime(time.endTime).isValid,
+    )
 
     if (!formData.title || !formData.description || hasEmptyTimes || !formData.location) {
       Alert.alert("Missing Fields", "Please fill in all required fields including all time slots.")
+      return
+    }
+
+    if (hasInvalidTimes) {
+      Alert.alert(
+        "Invalid Time Format",
+        "Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).",
+      )
       return
     }
 
@@ -164,23 +282,16 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
       name: formData.title,
       description: formData.description,
       eventTimes: formData.eventTimes,
-      imageurl: formData.images.length > 0 ? formData.images[0] : null,
+      imageUrl: formData.images.length > 0 ? formData.images[0] : null,
       location: formData.location,
       date: formData.date.toISOString(),
-      groupId: formData.groupId,
-      isPublic: formData.isPublic,
-      universityOnly: formData.universityOnly,
+      // groupId: formData.groupId,
+      // isPublic: formData.isPublic,
+      UniversityOnly: formData.universityOnly,
     }
-
-    try {
-      const response = await createEventAPI(eventData)
-      console.log("Event created successfully:", response)
-      onSubmit(eventData)
-      onClose()
-    } catch (error) {
-      Alert.alert("Error", "Failed to create event. Please try again.")
-      console.error("Error creating event:", error)
-    }
+    console.log(eventData)
+    // Use the TanStack Query mutation
+    createEventMutation.mutate(eventData)
   }
 
   if (!visible) return null
@@ -227,6 +338,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                       onFocus={() => setFocusedField("title")}
                       onBlur={() => setFocusedField(null)}
                       placeholderTextColor="#9CA3AF"
+                      editable={!createEventMutation.isPending}
                     />
                     {formData.title && <Check size={20} color="#10B981" style={styles.validIcon} />}
                   </View>
@@ -252,6 +364,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                       onFocus={() => setFocusedField("description")}
                       onBlur={() => setFocusedField(null)}
                       placeholderTextColor="#9CA3AF"
+                      editable={!createEventMutation.isPending}
                     />
                   </View>
                 </View>
@@ -268,9 +381,14 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                         onChangeText={setCurrentImageUrl}
                         placeholder="Enter image URL"
                         placeholderTextColor="#9CA3AF"
+                        editable={!createEventMutation.isPending}
                       />
                     </View>
-                    <TouchableOpacity style={styles.addImageButton} onPress={addImageUrl}>
+                    <TouchableOpacity
+                      style={styles.addImageButton}
+                      onPress={addImageUrl}
+                      disabled={createEventMutation.isPending}
+                    >
                       <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.addImageButtonGradient}>
                         <Plus size={20} color="#FFFFFF" />
                       </LinearGradient>
@@ -283,7 +401,11 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                         {formData.images.map((url, index) => (
                           <View key={`image-${index}`} style={styles.imagePreviewContainer}>
                             <Image source={{ uri: url }} style={styles.imagePreview} />
-                            <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
+                            <TouchableOpacity
+                              style={styles.removeImageButton}
+                              onPress={() => removeImage(index)}
+                              disabled={createEventMutation.isPending}
+                            >
                               <X size={16} color="#FFFFFF" />
                             </TouchableOpacity>
                           </View>
@@ -296,7 +418,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                 {/* Date */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                  <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={createEventMutation.isPending}>
                     <View style={[styles.inputWrapper, formData.date && styles.inputWrapperValid]}>
                       <Calendar size={20} color="#6366F1" style={styles.inputIcon} />
                       <Text style={styles.inputText}>{formData.date.toLocaleDateString()}</Text>
@@ -308,7 +430,11 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                 <View style={styles.inputContainer}>
                   <View style={styles.timeSlotsHeader}>
                     <Text style={styles.inputLabel}>Event Times *</Text>
-                    <TouchableOpacity style={styles.addTimeSlotButton} onPress={addTimeSlot}>
+                    <TouchableOpacity
+                      style={styles.addTimeSlotButton}
+                      onPress={addTimeSlot}
+                      disabled={createEventMutation.isPending}
+                    >
                       <Plus size={16} color="#6366F1" />
                       <Text style={styles.addTimeSlotText}>Add Time Slot</Text>
                     </TouchableOpacity>
@@ -319,7 +445,11 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                       <View style={styles.timeSlotHeader}>
                         <Text style={styles.timeSlotLabel}>Time Slot {index + 1}</Text>
                         {formData.eventTimes.length > 1 && (
-                          <TouchableOpacity style={styles.removeTimeSlotButton} onPress={() => removeTimeSlot(index)}>
+                          <TouchableOpacity
+                            style={styles.removeTimeSlotButton}
+                            onPress={() => removeTimeSlot(index)}
+                            disabled={createEventMutation.isPending}
+                          >
                             <Minus size={16} color="#EF4444" />
                           </TouchableOpacity>
                         )}
@@ -332,7 +462,12 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                             style={[
                               styles.inputWrapper,
                               focusedField === `startTime-${index}` && styles.inputWrapperFocused,
-                              timeSlot.startTime && styles.inputWrapperValid,
+                              timeSlot.startTime &&
+                                validateTime(timeSlot.startTime).isValid &&
+                                styles.inputWrapperValid,
+                              timeSlot.startTime &&
+                                !validateTime(timeSlot.startTime).isValid &&
+                                styles.inputWrapperError,
                             ]}
                           >
                             <Clock size={20} color="#6366F1" style={styles.inputIcon} />
@@ -340,13 +475,21 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                               style={styles.input}
                               value={timeSlot.startTime}
                               onChangeText={(text) => updateTimeSlot(index, "startTime", text)}
-                              placeholder="e.g., 7:40 AM"
+                              placeholder="e.g., 09:30 or 21:45"
                               onFocus={() => setFocusedField(`startTime-${index}`)}
                               onBlur={() => setFocusedField(null)}
                               placeholderTextColor="#9CA3AF"
+                              editable={!createEventMutation.isPending}
+                              keyboardType="numeric"
+                              maxLength={5}
                             />
-                            {timeSlot.startTime && <Check size={20} color="#10B981" style={styles.validIcon} />}
+                            {timeSlot.startTime && validateTime(timeSlot.startTime).isValid && (
+                              <Check size={20} color="#10B981" style={styles.validIcon} />
+                            )}
                           </View>
+                          {timeSlot.startTime && !validateTime(timeSlot.startTime).isValid && (
+                            <Text style={styles.errorText}>{validateTime(timeSlot.startTime).error}</Text>
+                          )}
                         </View>
 
                         <View style={styles.halfWidth}>
@@ -355,7 +498,8 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                             style={[
                               styles.inputWrapper,
                               focusedField === `endTime-${index}` && styles.inputWrapperFocused,
-                              timeSlot.endTime && styles.inputWrapperValid,
+                              timeSlot.endTime && validateTime(timeSlot.endTime).isValid && styles.inputWrapperValid,
+                              timeSlot.endTime && !validateTime(timeSlot.endTime).isValid && styles.inputWrapperError,
                             ]}
                           >
                             <Clock size={20} color="#6366F1" style={styles.inputIcon} />
@@ -363,13 +507,21 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                               style={styles.input}
                               value={timeSlot.endTime}
                               onChangeText={(text) => updateTimeSlot(index, "endTime", text)}
-                              placeholder="e.g., 10:00 AM"
+                              placeholder="e.g., 12:00 or 23:30"
                               onFocus={() => setFocusedField(`endTime-${index}`)}
                               onBlur={() => setFocusedField(null)}
                               placeholderTextColor="#9CA3AF"
+                              editable={!createEventMutation.isPending}
+                              keyboardType="numeric"
+                              maxLength={5}
                             />
-                            {timeSlot.endTime && <Check size={20} color="#10B981" style={styles.validIcon} />}
+                            {timeSlot.endTime && validateTime(timeSlot.endTime).isValid && (
+                              <Check size={20} color="#10B981" style={styles.validIcon} />
+                            )}
                           </View>
+                          {timeSlot.endTime && !validateTime(timeSlot.endTime).isValid && (
+                            <Text style={styles.errorText}>{validateTime(timeSlot.endTime).error}</Text>
+                          )}
                         </View>
                       </View>
                     </View>
@@ -395,6 +547,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                       onFocus={() => setFocusedField("location")}
                       onBlur={() => setFocusedField(null)}
                       placeholderTextColor="#9CA3AF"
+                      editable={!createEventMutation.isPending}
                     />
                     {formData.location && <Check size={20} color="#10B981" style={styles.validIcon} />}
                   </View>
@@ -403,7 +556,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                 {/* Associated Group */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
-                  <TouchableOpacity onPress={() => setShowGroupPicker(true)}>
+                  <TouchableOpacity onPress={() => setShowGroupPicker(true)} disabled={createEventMutation.isPending}>
                     <View style={styles.inputWrapper}>
                       <Users size={20} color="#6366F1" style={styles.inputIcon} />
                       <Text style={[styles.inputText, !formData.groupId && { color: "#9CA3AF" }]}>
@@ -431,6 +584,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                         formData.isPublic && !formData.universityOnly && styles.visibilityButtonActive,
                       ]}
                       onPress={() => setFormData((f) => ({ ...f, isPublic: true, universityOnly: false }))}
+                      disabled={createEventMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -458,6 +612,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                     <TouchableOpacity
                       style={[styles.visibilityButton, formData.universityOnly && styles.visibilityButtonActive]}
                       onPress={() => setFormData((f) => ({ ...f, isPublic: false, universityOnly: true }))}
+                      disabled={createEventMutation.isPending}
                     >
                       <LinearGradient
                         colors={formData.universityOnly ? ["#6366F1", "#8B5CF6"] : ["transparent", "transparent"]}
@@ -483,14 +638,23 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={createEventMutation.isPending}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit}>
-            <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.buttonGradient}>
+          <TouchableOpacity
+            style={[styles.primaryButton, createEventMutation.isPending && styles.primaryButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={createEventMutation.isPending}
+          >
+            <LinearGradient
+              colors={createEventMutation.isPending ? ["#9CA3AF", "#6B7280"] : ["#6366F1", "#8B5CF6"]}
+              style={styles.buttonGradient}
+            >
               <View style={styles.buttonContent}>
-                <Text style={styles.primaryButtonText}>Create Event</Text>
+                <Text style={styles.primaryButtonText}>
+                  {createEventMutation.isPending ? "Creating..." : "Create Event"}
+                </Text>
                 <Sparkles size={20} color="#FFFFFF" style={styles.buttonIcon} />
               </View>
             </LinearGradient>
@@ -498,7 +662,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
         </View>
 
         {/* Date Picker Modal */}
-        <Modal visible={showDatePicker} transparent animationType="fade">
+        <Modal visible={showDatePicker && !createEventMutation.isPending} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.datePickerContainer}>
               <LinearGradient
@@ -556,7 +720,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
         </Modal>
 
         {/* Group Picker Modal */}
-        <Modal visible={showGroupPicker} transparent animationType="fade">
+        <Modal visible={showGroupPicker && !createEventMutation.isPending} transparent animationType="fade">
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowGroupPicker(false)}>
             <TouchableOpacity style={styles.groupPickerContainer} activeOpacity={1}>
               <View style={styles.groupPickerContent}>
@@ -597,35 +761,24 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
   )
 }
 
-const createEventAPI = async (eventData: any) => {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  console.log("Event API Call - Data being sent:", {
-    name: eventData.name,
-    description: eventData.description,
-    eventTimes: eventData.eventTimes,
-    imageurl: eventData.imageurl,
-    location: eventData.location,
-    date: eventData.date,
-    groupId: eventData.groupId,
-    isPublic: eventData.isPublic,
-    universityOnly: eventData.universityOnly,
-  })
-
-  return {
-    success: true,
-    eventId: Math.floor(Math.random() * 10000),
-    message: "Event created successfully",
-    data: eventData,
-  }
-}
-
 const styles = StyleSheet.create({
+  primaryButtonDisabled:{},
   timeSlotsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+  },
+    errorText: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 4,
+    marginLeft: 4,
+  },
+   inputWrapperError: {
+    borderColor: "#EF4444",
+    borderWidth: 2,
+    backgroundColor: "rgba(239, 68, 68, 0.05)",
   },
   addTimeSlotButton: {
     flexDirection: "row",

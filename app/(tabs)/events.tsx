@@ -1,19 +1,40 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Animated, FlatList, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock } from 'lucide-react-native';
+import { Search, Plus, MapPin, Calendar, Users, Heart, Star, Clock, LayoutGrid, List as ListIcon } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { FilterSystem } from '@/components/FilterSystem';
 import { currentUser } from '@/data/mockData';
 import { CreateEventModal } from '@/components/CreateEventModal';
 // Update placeholder image to use require instead of import
 const placeholderImg = require('@/assets/images/icon.png');
-import { theme, spacing, borderRadius, typography } from '@/components/theme';
+import { theme, spacing, borderRadius, typography, neomorphColors } from '@/components/theme';
+import { useQuery } from '@tanstack/react-query';
+import { getEvents } from '@/contexts/event.api';
 
 // Add import for date formatting
 import { format } from 'date-fns';
+
+// Helper function to format date
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+// Helper function to format time
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 const filterOptions = [
     { key: 'all', label: 'All' },
@@ -39,24 +60,27 @@ interface FilterOptions {
 }
 
 interface Event {
-  id: number;
-  title: string;
+  id: string;
+  name: string;
   description: string;
   location: string;
-  date: string | Date; // Updated to handle Date objects
-  time: string;
-  startTime?: string; // Added field
-  endTime?: string;   // Added field
-  image: string; // Kept for backward compatibility
-  images?: string[]; // Array of images for the event
-  groupId?: number; // Associated group ID
-  groupImage?: string; // Image from associated group
-  attendees: number;
-  isRSVPed: boolean;
-  category?: string[]; // Add optional category field to fix TypeScript errors
-  organizer?: {
-    university?: string;
+  imageUrl?: string | null;
+  userId: string;
+  eventTimes: {
+    id: number;
+    eventId: string;
+    startTime: string;
+    endTime: string;
+  }[];
+  user: {
+    id: string;
+    email: string;
+    name: string;
   };
+  // Static fields for UI
+  attendees?: number;
+  isRSVPed?: boolean;
+  category?: string[];
 }
 
 // Helper function to format dates
@@ -77,7 +101,7 @@ const formatEventTime = (time: string | Date): string => {
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState<Event[]>([]);
+  const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -146,103 +170,18 @@ export default function Events() {
     { key: 'nearMe', label: 'Near Me' },
   ];
 
-  // Extract fetchEvents function for reuse
-  const fetchEvents = async () => {
-    try {
-      // Update with full URL including the origin for CORS
-      const response = await fetch('http://localhost:3001/api/events', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Process the data to ensure dates are properly formatted
-      const processedData = data.map((event: any) => ({
-        ...event,
-        // Convert date strings to Date objects if they're not already
-        date: event.date instanceof Date ? event.date : event.date,
-        time: event.time instanceof Date ? event.time : event.time,
-        // Keep startTime and endTime as they are
-        startTime: event.startTime,
-        endTime: event.endTime,
-        // Add attendees field if not present
-        attendees: event.attendees || 1,
-        isRSVPed: event.isRSVPed || false,
-        // Map the name field to title for frontend consistency
-        title: event.name || event.title,
-        // Map categories to category for frontend consistency
-        category: event.categories || event.category || [],
-        // Handle images array or create from single image
-        images: event.images || (event.image ? [event.image] : []),
-        // Ensure groupImage is available if provided
-        groupImage: event.groupImage || null,
-      }));
-      
-      // For events with groupId but no groupImage, fetch group information
-      const eventsNeedingGroupData = processedData.filter(
-        (event: Event) => event.groupId && !event.groupImage
-      );
-      
-      // If there are events needing group data, fetch it
-      if (eventsNeedingGroupData.length > 0) {
-        try {
-          // Get unique group IDs to minimize API calls
-          const uniqueGroupIds = [...new Set(eventsNeedingGroupData.map((event: Event) => event.groupId))];
-          
-          // Fetch group data for each unique group ID
-          const groupDataPromises = uniqueGroupIds.map(groupId => 
-            fetch(`http://localhost:3001/api/groups/${groupId}`, {
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              }
-            }).then(res => res.json())
-          );
-          
-          // Wait for all group data to be fetched
-          const groupsData = await Promise.all(groupDataPromises);
-          
-          // Create a map of group ID to group image
-          const groupImageMap = groupsData.reduce((map: Record<number, string>, group: any) => {
-            if (group && group.image) {
-              map[group.id] = group.image;
-            }
-            return map;
-          }, {});
-          
-          // Update the events with group images
-          const updatedEvents = processedData.map((event: Event) => {
-            if (event.groupId && !event.groupImage && groupImageMap[event.groupId]) {
-              return { ...event, groupImage: groupImageMap[event.groupId] };
-            }
-            return event;
-          });
-          
-          setEvents(updatedEvents);
-        } catch (error) {
-          console.error('Error fetching group data:', error);
-          // Fall back to using the events without group images
-          setEvents(processedData);
-        }
-      } else {
-        // If no events need group data, just set the events
-        setEvents(processedData);
-      }
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  };
+  // Use Tanstack Query to fetch events
+  const {
+    data: eventsResponse,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => getEvents(),
+  });
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const events = eventsResponse?.events || [];
 
   useEffect(() => {
     if (showHelper) {
@@ -257,7 +196,7 @@ export default function Events() {
     // Filter by search query
     if (searchQuery) {
       tempEvents = tempEvents.filter(event =>
-        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -377,18 +316,12 @@ export default function Events() {
       const createdEvent = await response.json();
       console.log('Event created successfully:', createdEvent);
       
-      // Refresh the events list
-      fetchEvents();
+      // Refresh the events list using refetch
+      refetch();
       
     } catch (error) {
       console.error('Error creating event:', error);
-      
-      // Fall back to local state update if API call fails
-      setEvents(prevEvents => {
-        const maxId = prevEvents.length > 0 ? Math.max(...prevEvents.map(event => event.id)) : 0;
-        const newId = maxId + 1;
-        return [{...eventData, id: newId, attendees: 1, isRSVPed: true }, ...prevEvents];
-      });
+      // For now, just show an error - in a real app you might show a toast
     }
     
     setShowCreateModal(false);
@@ -401,14 +334,6 @@ export default function Events() {
       if (!currentEvent) return;
       
       const newRSVPStatus = !currentEvent.isRSVPed;
-      
-      // Optimistically update UI
-      setEvents(prevEvents =>
-        prevEvents.map(event => event.id === eventId ? 
-          {...event, isRSVPed: newRSVPStatus, attendees: event.isRSVPed ? event.attendees - 1 : event.attendees + 1} : 
-          event
-        )
-      );
       
       // Send update to backend
       const response = await fetch(`http://localhost:3001/api/events/${eventId}/rsvp`, {
@@ -426,10 +351,13 @@ export default function Events() {
       
       console.log(`Successfully ${newRSVPStatus ? 'RSVP\'d to' : 'cancelled RSVP for'} event ${eventId}`);
       
+      // Refresh events after successful RSVP
+      refetch();
+      
     } catch (error) {
       console.error('Error updating RSVP:', error);
-      // Revert the optimistic update on error
-      fetchEvents();
+      // Refresh events to revert any potential state inconsistency
+      refetch();
     }
   };
 
@@ -576,146 +504,138 @@ export default function Events() {
           </View>
         </Modal>
 
-        <Animated.ScrollView 
-          style={styles.eventsList} 
-          contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
-          showsVerticalScrollIndicator={false}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
-          )}
-          scrollEventThrottle={16}
-        >
-            {filteredEvents.map((event) => {
-                // Format dates and times for rendering
-                const formattedDate = formatEventDate(event.date);
-                const formattedTime = formatEventTime(event.time);
-                
-                // Get all available images - event images or group image as fallback
-                const eventImages = event.images && event.images.length > 0 
-                  ? event.images 
-                  : event.image ? [event.image] : [];
-                
-                // Add group image to the end if available and not already included
-                if (event.groupImage && !eventImages.includes(event.groupImage)) {
-                  eventImages.push(event.groupImage);
-                }
-                
-                const hasMultipleImages = eventImages.length > 1;
-                const activeImageIndex = activeImageIndexes[event.id] || 0;
-                
-                return (
-                <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
-                    <View style={styles.eventImageContainer}>
-                        {!hasMultipleImages ? (
-                          // Single image display (original behavior)
+        {/* Show loading state */}
+        {isLoading ? (
+          <View style={styles.section}>
+            <Text style={styles.loadingText}>Loading events...</Text>
+          </View>
+        ) : error ? (
+          /* Show error state */
+          <View style={styles.section}>
+            <Text style={styles.errorText}>Failed to load events</Text>
+          </View>
+        ) : (
+          <Animated.ScrollView 
+            style={styles.eventsList} 
+            contentContainerStyle={{paddingHorizontal: 20, paddingTop: 8}} 
+            showsVerticalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false }
+            )}
+            scrollEventThrottle={16}
+          >
+              {filteredEvents.map((event) => {
+                  // Get event time data
+                  const eventTime = event.eventTimes?.[0];
+                  const formattedDate = eventTime ? formatDate(eventTime.startTime) : 'TBA';
+                  const formattedTime = eventTime ? formatTime(eventTime.startTime) : 'TBA';
+                  
+                  // Use imageUrl from API response or fallback to placeholder
+                  const eventImageUrl = event.imageUrl || placeholderImg;
+                  
+                  // Static data for UI (since not in API response yet)
+                  const attendees = event.attendees || Math.floor(Math.random() * 50) + 1; // Random for demo
+                  const isRSVPed = event.isRSVPed || false;
+                  
+                  return (
+                  <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => router.push(`/event/${event.id}`)}>
+                      <View style={styles.eventImageContainer}>
                           <Image 
-                            source={{ uri: eventImages[0] || undefined }} 
-                            defaultSource={placeholderImg} 
+                            source={event.imageUrl ? { uri: event.imageUrl } : placeholderImg} 
                             style={styles.eventImage} 
                           />
-                        ) : (
-                          // Multiple images carousel
-                          <FlatList
-                            data={eventImages}
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={false}
-                            keyExtractor={(item, index) => `image-${index}`}
-                            renderItem={({item}) => (
-                              <Image 
-                                source={{ uri: item }} 
-                                defaultSource={placeholderImg}
-                                style={styles.eventImage} 
+                          <View style={styles.eventActions}>
+                              <ShareButton
+                                  title={`${event.name} - Culture Connect`}
+                                  message={`Join me at ${event.name}!\n\n📅 ${formattedDate} at ${formattedTime}\n📍 ${event.location}\n\nDiscover amazing cultural events on Culture Connect!`}
+                                  url={`https://cultureconnect.app/event/${event.id}`}
+                                  size={16}
+                                  color={theme.white}
+                                  style={styles.shareButton}
                               />
-                            )}
-                            onScroll={(e) => {
-                              // Update active image index based on scroll position
-                              const contentOffset = e.nativeEvent.contentOffset.x;
-                              const viewSize = e.nativeEvent.layoutMeasurement.width;
-                              const index = Math.floor(contentOffset / viewSize);
-                              
-                              if (index !== activeImageIndexes[event.id]) {
-                                setActiveImageIndexes(prev => ({
-                                  ...prev,
-                                  [event.id]: index
-                                }));
-                              }
-                            }}
-                            scrollEventThrottle={16}
-                          />
-                        )}
-                        <View style={styles.eventActions}>
-                            <ShareButton
-                                {...generateEventShareContent(event)}
-                                size={16}
-                                color={theme.white}
-                                style={styles.shareButton}
-                            />
-                        </View>
-                        {hasMultipleImages && (
-                          <View style={styles.imagePagination}>
-                            {eventImages.map((_, index) => (
-                              <View 
-                                key={`dot-${index}`} 
-                                style={[
-                                  styles.paginationDot, 
-                                  index === activeImageIndex && styles.activePaginationDot
-                                ]} 
-                              />
-                            ))}
                           </View>
-                        )}
-                    </View>
-                    <View style={styles.eventContent}>
-                        <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
-                        <View style={styles.eventMeta}>
-                            <Calendar size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{formattedDate}</Text>
-                        </View>
-                        <View style={styles.eventMeta}>
-                            <Clock size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText}>{formattedTime}</Text>
-                        </View>
-                        <View style={styles.eventMeta}>
-                            <MapPin size={12} color={theme.gray500} />
-                            <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
-                        </View>
-                        {/* Move attendees count here */}
-                        <View style={styles.eventAttendeesRow}>
-                            <Users size={12} color={theme.gray500} />
-                            <Text style={styles.eventAttendeesText}>{event.attendees} going</Text>
-                        </View>
-                        {/* Only RSVP button in footer */}
-                        <View style={styles.eventFooter}>
-                            <TouchableOpacity
-                            style={[
-                                styles.rsvpButton,
-                                event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton
-                            ]}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                handleRSVP(event.id);
-                            }}
-                            >
-                            <Text style={[
-                                styles.rsvpButtonText,
-                                event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText
-                            ]}>
-                                {event.isRSVPed ? "RSVP'd" : 'RSVP'}
-                            </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            )})}
-        </Animated.ScrollView>
+                      </View>
+                      <View style={styles.eventContent}>
+                          <Text style={styles.eventTitle} numberOfLines={2}>{event.name}</Text>
+                          <View style={styles.eventMeta}>
+                              <Calendar size={12} color={theme.gray500} />
+                              <Text style={styles.eventMetaText}>{formattedDate}</Text>
+                          </View>
+                          <View style={styles.eventMeta}>
+                              <Clock size={12} color={theme.gray500} />
+                              <Text style={styles.eventMetaText}>{formattedTime}</Text>
+                          </View>
+                          <View style={styles.eventMeta}>
+                              <MapPin size={12} color={theme.gray500} />
+                              <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
+                          </View>
+                          {/* Organizer info */}
+                          <View style={styles.eventMeta}>
+                              <Users size={12} color={theme.gray500} />
+                              <Text style={styles.eventMetaText} numberOfLines={1}>by {event.user?.name}</Text>
+                          </View>
+                          {/* Attendees count (static for now) */}
+                          {/* <View style={styles.eventAttendeesRow}>
+                              <Users size={12} color={theme.gray500} />
+                              <Text style={styles.eventAttendeesText}>{attendees} going</Text>
+                          </View> */}
+                          {/* RSVP button (static for now) */}
+                          <View style={styles.eventFooter}>
+                              <TouchableOpacity
+                              style={[
+                                  styles.rsvpButton,
+                                  isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton
+                              ]}
+                              onPress={(e) => {
+                                  e.stopPropagation();
+                                  // For now just toggle local state since RSVP not implemented in API
+                                  console.log('RSVP clicked for event:', event.id);
+                              }}
+                              >
+                              <Text style={[
+                                  styles.rsvpButtonText,
+                                  isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText
+                              ]}>
+                                  {isRSVPed ? "RSVP'd" : 'RSVP'}
+                              </Text>
+                              </TouchableOpacity>
+                          </View>
+                      </View>
+                  </TouchableOpacity>
+              )})}
+          </Animated.ScrollView>
+        )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
+  section: {
+    marginBottom: spacing.lg,
+    backgroundColor: neomorphColors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 20,
+    width: '100%',
+    // Light inner border
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  loadingText: {
+    fontSize: typography.fontSize.md,
+    color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
+  },
+  errorText: {
+    fontSize: typography.fontSize.md,
+    color: theme.error,
+    fontFamily: typography.fontFamily.regular,
+  },
   stickyHeader: { 
     backgroundColor: theme.background,
     zIndex: 1000,
@@ -776,7 +696,7 @@ const styles = StyleSheet.create({
   },
   eventImageContainer: {
     width: 120,
-    height: 120,
+    height: '100%',
     position: 'relative',
   },
   eventImage: {

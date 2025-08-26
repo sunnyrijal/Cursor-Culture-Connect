@@ -1,7 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const API_URL = "http://10.0.2.2:3001/api"; // use LAN IP / 10.0.2.2 for Android
+export const API_URL = "http://localhost:3000/api"; 
 
 const api = axios.create({
   baseURL: API_URL,
