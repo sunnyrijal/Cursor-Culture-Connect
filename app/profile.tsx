@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+"use client"
+
+import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   View,
   Text,
@@ -11,11 +14,11 @@ import {
   Modal,
   TextInput,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import BottomNavigation from '@/components/BottomNavigation';
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { router } from "expo-router"
+import { LinearGradient } from "expo-linear-gradient"
+import BottomNavigation from "@/components/BottomNavigation"
 import {
   ArrowLeft,
   Edit,
@@ -23,168 +26,183 @@ import {
   Bell,
   Shield,
   HelpCircle,
-  User,
-  Calendar,
-  Users,
   MapPin,
   Mail,
-  Phone,
   Globe,
   GraduationCap,
   CheckCircle,
   Heart,
-  BookOpen,
-  Activity,
   MessageSquare,
   LogOut,
   X,
-} from 'lucide-react-native';
-import { theme, spacing, borderRadius, typography } from '@/components/theme';
+  Phone,
+} from "lucide-react-native"
+import { theme } from "@/components/theme"
 
 // Directly import the image without type checking
-const placeholderImg = require('@/assets/images/icon.png');
-import { API_URL } from '@/contexts/api';
+const placeholderImg = require("@/assets/images/icon.png")
+import { getMyData } from "@/contexts/user.api"
+import { useAuth } from "@/contexts/AuthContext"
 
 // Enhanced theme with neumorphism colors
 const neumorphTheme = {
   ...theme,
-  background: '#F0F0F3',
-  cardBackground: '#F0F0F3',
-  shadowLight: '#FFFFFF',
-  shadowDark: '#D1D9E6',
-  primary: '#667eea',
-  accent: '#764ba2',
-  success: '#4ecdc4',
-  error: '#ff6b6b',
-  warning: '#feca57',
-  gradientPrimary: ['#667eea', '#764ba2'],
-  gradientSecondary: ['#f093fb', '#f5576c'],
-  gradientSuccess: ['#4ecdc4', '#44a08d'],
-};
+  background: "#F0F0F3",
+  cardBackground: "#F0F0F3",
+  shadowLight: "#FFFFFF",
+  shadowDark: "#D1D9E6",
+  primary: "#667eea",
+  accent: "#764ba2",
+  success: "#4ecdc4",
+  error: "#ff6b6b",
+  warning: "#feca57",
+  gradientPrimary: ["#667eea", "#764ba2"],
+  gradientSecondary: ["#f093fb", "#f5576c"],
+  gradientSuccess: ["#4ecdc4", "#44a08d"],
+}
 
 // Interface for the user profile data
 interface UserProfile {
-  id: number;
-  email: string;
-  fullName?: string;
-  university?: string;
-  major?: string;
-  year?: string;
-  state?: string;
-  city?: string;
-  bio?: string;
-  linkedin?: string;
-  heritage?: string[];
-  languages?: string[];
-  profile_image?: string;
-  createdAt?: string;
-  mobileNumber?: string;
+  id: number
+  email: string
+  fullName?: string
+  university?: string
+  major?: string
+  year?: string
+  state?: string
+  city?: string
+  bio?: string
+  linkedin?: string
+  heritage?: string[]
+  languages?: string[]
+  profile_image?: string
+  createdAt?: string
+  mobileNumber?: string
+  avatar?: string
+  website?: string
+  phone?: string
+  company?: string
+  role?: string
+  followers?: number
+  following?: number
+  posts?: number
 }
 
-// Mock data fallback
 const mockUserData: UserProfile = {
   id: 1,
-  email: 'alex.chen@stanford.edu',
-  fullName: 'Alex Chen',
-  university: 'Stanford University',
-  major: 'Computer Science',
-  year: 'Junior',
-  state: 'California',
-  city: 'Palo Alto',
-  bio: 'Passionate about technology and preserving cultural traditions. Love connecting with fellow students from around the world! 🌍✨',
-  linkedin: 'linkedin.com/in/alexchen',
-  heritage: ['Chinese', 'Taiwanese'],
-  languages: ['English', 'Mandarin', 'Cantonese'],
-  profile_image:
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-  createdAt: '2024-01-15',
-  mobileNumber: '+1 (555) 123-4567',
-};
+  email: "alex.chen@stanford.edu",
+  fullName: "Alex Chen",
+  university: "Stanford University",
+  major: "Computer Science",
+  year: "Junior",
+  state: "California",
+  city: "Palo Alto",
+  bio: "Passionate about technology and preserving cultural traditions. Love connecting with fellow students from around the world! 🌍✨",
+  linkedin: "linkedin.com/in/alexchen",
+  heritage: ["Chinese", "Taiwanese"],
+  languages: ["English", "Mandarin", "Cantonese"],
+  profile_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  createdAt: "2024-01-15",
+  mobileNumber: "+1 (555) 123-4567",
+  avatar: "https://example.com/avatar.png",
+  website: "https://example.com",
+  phone: "+1 (555) 987-6543",
+  company: "Tech Innovations Inc.",
+  role: "Software Engineer",
+  followers: 100,
+  following: 50,
+  posts: 20,
+}
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState('about');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("about")
 
   // State for profile completion modal
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({});
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({})
+  const [loading, setLoading] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
-  // Fetch user profile data
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  const { logout } = useAuth()
 
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const {
+    data: fetchedUserProfile,
+    isLoading: queryLoading,
+    error,
+    isError,
+  } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
       // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Use a default user ID for now (in a real app, this would come from auth context)
-      const userId = 1;
+      try {
+        const response = await getMyData()
+        console.log(response)
 
-      // Comment out the real API call and use mock data
-      // const response = await fetch(`${API_URL}/users/${userId}`);
-      // if (!response.ok) {
-      //   throw new Error('Failed to fetch user profile');
-      // }
-      // const data = await response.json();
+        const data = {
+          id: response.user.id,
+          email: response.user.email,
+          fullName: response.user.name,
+          university: response.user.university?.name || null,
+          major: null, // Not provided in API response
+          year: null, // Not provided in API response
+          state: response.user.state,
+          city: response.user.city,
+          bio: null, // Not provided in API response
+          linkedin: null, // Not provided in API response
+          heritage: null, // Not provided in API response
+          languages: null, // Not provided in API response
+          profile_image: response.user.avatar,
+          createdAt: response.user.createdAt,
+          mobileNumber: response.user.phone,
+          avatar: response.user.avatar,
+          website: null, // Not provided in API response
+          phone: response.user.phone,
+          company: null, // Not provided in API response
+          role: null, // Not provided in API response
+          followers: 0, // Default value
+          following: 0, // Default value
+          posts: 0, // Default value
+        }
 
-      // Use mock data instead
-      const data = mockUserData;
-      setUserProfile(data);
+        return data
+      } catch (error) {
+        console.error("Error fetching user profile:", error)
+        // Fallback to mock data on error
+        return mockUserData
+      }
+    },
 
-      // Check if important profile fields are missing
-      checkProfileCompletion(data);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setError('Failed to load profile data');
+  })
 
-      // Always fallback to mock data
-      setUserProfile(mockUserData);
-      checkProfileCompletion(mockUserData);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (fetchedUserProfile) {
+      setUserProfile(fetchedUserProfile)
+      // checkProfileCompletion(fetchedUserProfile)
     }
-  };
+  }, [fetchedUserProfile])
 
   // Check if important profile fields are missing
-  const checkProfileCompletion = (profile: UserProfile) => {
-    const requiredFields = [
-      'fullName',
-      'university',
-      'major',
-      'year',
-      'city',
-      'state',
-    ];
-    const missingFields = requiredFields.filter(
-      (field) => !profile[field as keyof UserProfile]
-    );
+  // const checkProfileCompletion = (profile: UserProfile) => {
+  //   const requiredFields = ["fullName", "university", "major", "year", "city", "state"]
+  //   const missingFields = requiredFields.filter((field) => !profile[field as keyof UserProfile])
 
-    if (missingFields.length > 0) {
-      // Initialize the edited profile with current values
-      setEditedProfile({
-        ...profile,
-        // Set missing fields to empty strings for the form
-        ...Object.fromEntries(missingFields.map((field) => [field, ''])),
-      });
-      // Don't auto-show modal for demo purposes
-      // setShowCompletionModal(true);
-    }
-  };
+  //   if (missingFields.length > 0) {
+  //     setEditedProfile({
+  //       ...profile,
+  //       ...Object.fromEntries(missingFields.map((field) => [field, ""])),
+  //     })
+  //     setShowCompletionModal(true)
+  //   }
+  // }
 
-  // Save the updated profile
   const saveUpdatedProfile = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
       // const response = await fetch(`${API_URL}/users/profile`, {
       //   method: 'PUT',
@@ -200,52 +218,53 @@ export default function Profile() {
       // }
 
       // const updatedProfile = await response.json();
-      const updatedProfile = editedProfile;
-      setUserProfile({ ...userProfile, ...updatedProfile });
-      setShowCompletionModal(false);
+      const updatedProfile = editedProfile
+      // setUserProfile({ ...userProfile, ...updatedProfile })
+      setShowCompletionModal(false)
 
-      Alert.alert('Success', 'Your profile has been updated!');
+      Alert.alert("Success", "Your profile has been updated!")
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      console.error("Error updating profile:", error)
+      Alert.alert("Error", "Failed to update profile. Please try again.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: () => router.push('/login'),
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await logout() // Call the auth context logout function
+          router.push("/login")
+        },
       },
-    ]);
-  };
+    ])
+  }
 
   const handleEditProfile = () => {
-    router.push('/profile/edit');
-  };
+    router.push("/profile/edit")
+  }
 
   const handleStatsClick = () => {
-    router.push('/my-hub');
-  };
+    router.push("/my-hub")
+  }
 
   // Render different tab content
   const renderTabContent = () => {
-    if (!userProfile) return null;
+    if (!userProfile) return null
 
     switch (activeTab) {
-      case 'about':
+      case "about":
         return (
           <View style={styles.tabContent}>
             <View style={styles.bioSection}>
               <Text style={styles.bioTitle}>Bio</Text>
               <View style={styles.bioCard}>
-                <Text style={styles.bioText}>
-                  {userProfile.bio || 'No bio added yet.'}
-                </Text>
+                <Text style={styles.bioText}>{userProfile.bio || "No bio added yet."}</Text>
               </View>
             </View>
 
@@ -262,17 +281,12 @@ export default function Profile() {
                 <View style={styles.badgeContainer}>
                   {userProfile.heritage && userProfile.heritage.length > 0 ? (
                     userProfile.heritage.map((heritage, index) => (
-                      <View
-                        key={`heritage-${index}`}
-                        style={[styles.badge, styles.heritageBadge]}
-                      >
+                      <View key={`heritage-${index}`} style={[styles.badge, styles.heritageBadge]}>
                         <Text style={styles.badgeText}>{heritage}</Text>
                       </View>
                     ))
                   ) : (
-                    <Text style={styles.emptyText}>
-                      No heritage information added
-                    </Text>
+                    <Text style={styles.emptyText}>No heritage information added</Text>
                   )}
                 </View>
 
@@ -285,63 +299,48 @@ export default function Profile() {
                 <View style={styles.badgeContainer}>
                   {userProfile.languages && userProfile.languages.length > 0 ? (
                     userProfile.languages.map((language, index) => (
-                      <View
-                        key={`language-${index}`}
-                        style={[styles.badge, styles.languageBadge]}
-                      >
+                      <View key={`language-${index}`} style={[styles.badge, styles.languageBadge]}>
                         <Text style={styles.badgeText}>{language}</Text>
                       </View>
                     ))
                   ) : (
-                    <Text style={styles.emptyText}>
-                      No languages information added
-                    </Text>
+                    <Text style={styles.emptyText}>No languages information added</Text>
                   )}
                 </View>
               </View>
             </View>
           </View>
-        );
-      case 'activity-buddy':
+        )
+      case "activity-buddy":
         return (
           <View style={styles.tabContent}>
             <View style={styles.emptyStateCard}>
               <Text style={styles.emptyStateEmoji}>🤝</Text>
-              <Text style={styles.emptyStateTitle}>
-                No Activity Preferences Set
-              </Text>
+              <Text style={styles.emptyStateTitle}>No Activity Preferences Set</Text>
               <Text style={styles.emptyStateSubtitle}>
                 Let others know what activities you're open to doing together
               </Text>
               <TouchableOpacity style={styles.setupButton}>
-                <LinearGradient
-                  colors={neumorphTheme.gradientPrimary}
-                  style={styles.setupButtonGradient}
-                >
-                  <Text style={styles.setupButtonText}>
-                    + Set Up Activity Buddy
-                  </Text>
+                <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.setupButtonGradient}>
+                  <Text style={styles.setupButtonText}>+ Set Up Activity Buddy</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
-        );
-      case 'stories':
+        )
+      case "stories":
         return (
           <View style={styles.tabContent}>
             <View style={styles.storyCard}>
               <View style={styles.storyHeader}>
-                <Text style={styles.storyTitle}>
-                  Mid-Autumn Festival Memories
-                </Text>
+                <Text style={styles.storyTitle}>Mid-Autumn Festival Memories</Text>
                 <View style={styles.storyIconContainer}>
                   <Heart size={16} color={neumorphTheme.accent} />
                 </View>
               </View>
               <Text style={styles.storyDescription}>
-                Growing up, the Mid-Autumn Festival was always a special time
-                for our family to gather under the full moon, sharing mooncakes
-                and stories passed down through generations...
+                Growing up, the Mid-Autumn Festival was always a special time for our family to gather under the full
+                moon, sharing mooncakes and stories passed down through generations...
               </Text>
               <View style={styles.storyMeta}>
                 <Text style={styles.storyTimestamp}>2 days ago</Text>
@@ -359,9 +358,8 @@ export default function Profile() {
                 </View>
               </View>
               <Text style={styles.storyDescription}>
-                Learning the art of Chinese tea ceremony from my grandmother has
-                been one of the most meaningful experiences. Each movement
-                carries centuries of tradition...
+                Learning the art of Chinese tea ceremony from my grandmother has been one of the most meaningful
+                experiences. Each movement carries centuries of tradition...
               </Text>
               <View style={styles.storyMeta}>
                 <Text style={styles.storyTimestamp}>1 week ago</Text>
@@ -371,41 +369,32 @@ export default function Profile() {
               </View>
             </View>
           </View>
-        );
+        )
 
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft size={24} color={neumorphTheme.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={() => router.push('/settings')}
-              style={styles.headerActionButton}
-            >
+            <TouchableOpacity onPress={() => router.push("/settings")} style={styles.headerActionButton}>
               <Settings size={20} color={neumorphTheme.textPrimary} />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={styles.headerActionButton}
-            >
+            <TouchableOpacity onPress={handleLogout} style={styles.headerActionButton}>
               <LogOut size={20} color={neumorphTheme.error} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {loading ? (
+        {queryLoading ? (
           <View style={styles.loadingContainer}>
             <View style={styles.loadingCard}>
               <ActivityIndicator size="large" color={neumorphTheme.primary} />
@@ -413,10 +402,7 @@ export default function Profile() {
             </View>
           </View>
         ) : (
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.profileSection}>
               <View style={styles.profileImageContainer}>
                 <View style={styles.profileImageWrapper}>
@@ -440,38 +426,32 @@ export default function Profile() {
               </View>
 
               <View style={styles.userInfoSection}>
-                <Text style={styles.userName}>
-                  {userProfile?.fullName || 'Complete your profile'}
-                </Text>
+                <Text style={styles.userName}>{userProfile?.fullName || "Complete your profile"}</Text>
 
                 <View style={styles.userDetailsCard}>
                   <View style={styles.userDetail}>
                     <View style={styles.detailIcon}>
                       <Mail size={16} color={neumorphTheme.primary} />
                     </View>
-                    <Text style={styles.userDetailText}>
-                      {userProfile?.email}
-                    </Text>
+                    <Text style={styles.userDetailText}>{userProfile?.email}</Text>
                   </View>
 
-                  <View style={styles.userDetail}>
+                  {/* <View style={styles.userDetail}>
                     <View style={styles.detailIcon}>
                       <GraduationCap size={16} color={neumorphTheme.accent} />
                     </View>
                     <Text style={styles.userDetailText}>
                       {userProfile?.major && userProfile?.year
                         ? `${userProfile.major} • ${userProfile.year}`
-                        : 'Add education details'}
+                        : "Add education details"}
                     </Text>
-                  </View>
+                  </View> */}
 
                   <View style={styles.userDetail}>
                     <View style={styles.detailIcon}>
                       <MapPin size={16} color={neumorphTheme.success} />
                     </View>
-                    <Text style={styles.userDetailText}>
-                      {userProfile?.university || 'Add university'}
-                    </Text>
+                    <Text style={styles.userDetailText}>{userProfile?.university || "Add university"}</Text>
                   </View>
 
                   <View style={styles.userDetail}>
@@ -481,27 +461,32 @@ export default function Profile() {
                     <Text style={styles.userDetailText}>
                       {userProfile?.city && userProfile?.state
                         ? `${userProfile.city}, ${userProfile.state}`
-                        : 'Add location'}
+                        : userProfile?.city || userProfile?.state
+                        ? `${userProfile.city || ""}, ${userProfile.state || ""}`
+                        : "-"}
+                    </Text>
+                  </View>
+
+                  <View style={styles.userDetail}>
+                    <View style={styles.detailIcon}>
+                      <Phone size={16} color={neumorphTheme.primary} />
+                    </View>
+                    <Text style={styles.userDetailText}>
+                      {userProfile?.phone || "-"}
                     </Text>
                   </View>
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.editProfileButton}
-                onPress={handleEditProfile}
-              >
-                <LinearGradient
-                  colors={neumorphTheme.gradientPrimary}
-                  style={styles.editProfileGradient}
-                >
+              <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+                <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.editProfileGradient}>
                   <Edit size={18} color="white" />
                   <Text style={styles.editProfileText}>Edit Profile</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.statsCard}
               onPress={handleStatsClick}
             >
@@ -526,9 +511,9 @@ export default function Profile() {
                 <Text style={styles.statNumber}>2</Text>
                 <Text style={styles.statLabel}>Events</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <View style={styles.tabsContainer}>
+            {/* <View style={styles.tabsContainer}>
               <TouchableOpacity
                 style={[styles.tab, activeTab === 'about' && styles.activeTab]}
                 onPress={() => setActiveTab('about')}
@@ -582,26 +567,20 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
 
-            {renderTabContent()}
+            {renderTabContent()} */}
 
             <View style={styles.settingsSection}>
               <Text style={styles.sectionTitle}>Settings</Text>
 
               <View style={styles.settingsCard}>
-                <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={() => router.push('/settings')}
-                >
+                <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/settings")}>
                   <View style={styles.settingIcon}>
                     <Settings size={20} color={neumorphTheme.primary} />
                   </View>
                   <Text style={styles.settingText}>General Settings</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={() => router.push('/notifications')}
-                >
+                <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/notifications")}>
                   <View style={styles.settingIcon}>
                     <Bell size={20} color={neumorphTheme.accent} />
                   </View>
@@ -615,9 +594,7 @@ export default function Profile() {
                   <Text style={styles.settingText}>Privacy & Security</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.settingItem, { borderBottomWidth: 0 }]}
-                >
+                <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
                   <View style={styles.settingIcon}>
                     <HelpCircle size={20} color={neumorphTheme.warning} />
                   </View>
@@ -626,10 +603,7 @@ export default function Profile() {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.logoutButtonContainer}
-              onPress={handleLogout}
-            >
+            <TouchableOpacity style={styles.logoutButtonContainer} onPress={handleLogout}>
               <View style={styles.logoutIcon}>
                 <LogOut size={20} color={neumorphTheme.error} />
               </View>
@@ -651,17 +625,12 @@ export default function Profile() {
             <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Complete Your Profile</Text>
-                <TouchableOpacity
-                  onPress={() => setShowCompletionModal(false)}
-                  style={styles.modalCloseButton}
-                >
+                <TouchableOpacity onPress={() => setShowCompletionModal(false)} style={styles.modalCloseButton}>
                   <X size={20} color={neumorphTheme.textSecondary} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.modalSubtitle}>
-                Please fill in the missing information to complete your profile.
-              </Text>
+              <Text style={styles.modalSubtitle}>Please fill in the missing information to complete your profile.</Text>
 
               <ScrollView style={styles.modalScrollView}>
                 {!userProfile?.fullName && (
@@ -670,10 +639,8 @@ export default function Profile() {
                     <View style={styles.modalInputContainer}>
                       <TextInput
                         style={styles.modalInput}
-                        value={editedProfile.fullName || ''}
-                        onChangeText={(text) =>
-                          setEditedProfile({ ...editedProfile, fullName: text })
-                        }
+                        value={editedProfile.fullName || ""}
+                        onChangeText={(text) => setEditedProfile({ ...editedProfile, fullName: text })}
                         placeholder="Enter your full name"
                       />
                     </View>
@@ -686,7 +653,7 @@ export default function Profile() {
                     <View style={styles.modalInputContainer}>
                       <TextInput
                         style={styles.modalInput}
-                        value={editedProfile.university || ''}
+                        value={editedProfile.university || ""}
                         onChangeText={(text) =>
                           setEditedProfile({
                             ...editedProfile,
@@ -703,24 +670,13 @@ export default function Profile() {
               </ScrollView>
 
               <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.modalSecondaryButton}
-                  onPress={() => setShowCompletionModal(false)}
-                >
+                <TouchableOpacity style={styles.modalSecondaryButton} onPress={() => setShowCompletionModal(false)}>
                   <Text style={styles.modalSecondaryButtonText}>Later</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.modalPrimaryButton}
-                  onPress={saveUpdatedProfile}
-                >
-                  <LinearGradient
-                    colors={neumorphTheme.gradientPrimary}
-                    style={styles.modalPrimaryGradient}
-                  >
-                    <Text style={styles.modalPrimaryButtonText}>
-                      Save Profile
-                    </Text>
+                <TouchableOpacity style={styles.modalPrimaryButton} onPress={saveUpdatedProfile}>
+                  <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.modalPrimaryGradient}>
+                    <Text style={styles.modalPrimaryButtonText}>Save Profile</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -730,7 +686,7 @@ export default function Profile() {
       </SafeAreaView>
       <BottomNavigation />
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -742,9 +698,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: neumorphTheme.cardBackground,
@@ -761,8 +717,8 @@ const styles = StyleSheet.create({
     }),
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   backButton: {
@@ -770,8 +726,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -784,9 +740,13 @@ const styles = StyleSheet.create({
       },
     }),
   },
+
+  tabContent:{
+
+  },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: neumorphTheme.textPrimary,
   },
   headerActionButton: {
@@ -794,8 +754,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -813,15 +773,15 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   loadingCard: {
     backgroundColor: neumorphTheme.cardBackground,
     padding: 40,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -838,19 +798,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 18,
     color: neumorphTheme.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   profileSection: {
     paddingHorizontal: 20,
     paddingVertical: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   profileImageContainer: {
     marginBottom: 24,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   profileImageWrapper: {
-    position: 'relative',
+    position: "relative",
     backgroundColor: neumorphTheme.cardBackground,
     padding: 8,
     borderRadius: 60,
@@ -872,15 +832,15 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   verificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 8,
     backgroundColor: neumorphTheme.cardBackground,
     borderRadius: 16,
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -894,36 +854,36 @@ const styles = StyleSheet.create({
     }),
   },
   editImageButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 40,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   editImageGradient: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   userInfoSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
-    width: '100%',
+    width: "100%",
   },
   userName: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: neumorphTheme.textPrimary,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   userDetailsCard: {
     backgroundColor: neumorphTheme.cardBackground,
     borderRadius: 20,
     padding: 20,
-    width: '100%',
+    width: "100%",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -937,8 +897,8 @@ const styles = StyleSheet.create({
     }),
   },
   userDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
     paddingVertical: 4,
   },
@@ -947,8 +907,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
     ...Platform.select({
       ios: {
@@ -965,12 +925,12 @@ const styles = StyleSheet.create({
   userDetailText: {
     fontSize: 16,
     color: neumorphTheme.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
     flex: 1,
   },
   editProfileButton: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.primary,
@@ -984,21 +944,21 @@ const styles = StyleSheet.create({
     }),
   },
   editProfileGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 32,
     paddingVertical: 16,
     gap: 8,
   },
   editProfileText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: 'white',
+    fontWeight: "700",
+    color: "white",
   },
   statsCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     backgroundColor: neumorphTheme.cardBackground,
     marginHorizontal: 20,
     marginBottom: 24,
@@ -1017,15 +977,15 @@ const styles = StyleSheet.create({
     }),
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statIconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
     ...Platform.select({
       ios: {
@@ -1041,7 +1001,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: neumorphTheme.textPrimary,
     marginTop: 4,
   },
@@ -1049,10 +1009,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: neumorphTheme.textSecondary,
     marginTop: 4,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   tabsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: 20,
     marginBottom: 24,
     backgroundColor: neumorphTheme.cardBackground,
@@ -1073,38 +1033,38 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1, // ensures equal space
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
   activeTab: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   activeTabGradient: {
     ...StyleSheet.absoluteFillObject, // fill the whole tab
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: neumorphTheme.textSecondary,
   },
   activeTabText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: 'white',
+    fontWeight: "700",
+    color: "white",
   },
 
   bioSection: {
     marginBottom: 20,
-    marginHorizontal:20
+    marginHorizontal: 20,
   },
   bioTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: neumorphTheme.textPrimary,
     marginBottom: 12,
   },
@@ -1128,12 +1088,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: neumorphTheme.textSecondary,
     lineHeight: 24,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   culturalIdentitySection: {
     marginBottom: 20,
-    marginHorizontal:20
-
+    marginHorizontal: 20,
   },
   identityCard: {
     backgroundColor: neumorphTheme.cardBackground,
@@ -1153,13 +1112,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: neumorphTheme.textPrimary,
     marginBottom: 16,
   },
   identityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   iconContainer: {
@@ -1167,8 +1126,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
     ...Platform.select({
       ios: {
@@ -1184,12 +1143,12 @@ const styles = StyleSheet.create({
   },
   identityLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: neumorphTheme.textPrimary,
   },
   badgeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 8,
     marginLeft: 48,
@@ -1218,11 +1177,11 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: 'white',
+    fontWeight: "600",
+    color: "white",
   },
   emptyStateCard: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 48,
     paddingHorizontal: 24,
     backgroundColor: neumorphTheme.cardBackground,
@@ -1245,20 +1204,20 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: neumorphTheme.textPrimary,
     marginBottom: 12,
   },
   emptyStateSubtitle: {
     fontSize: 16,
     color: neumorphTheme.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 32,
     lineHeight: 22,
   },
   setupButton: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.primary,
@@ -1277,8 +1236,8 @@ const styles = StyleSheet.create({
   },
   setupButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: 'white',
+    fontWeight: "700",
+    color: "white",
   },
   storyCard: {
     backgroundColor: neumorphTheme.cardBackground,
@@ -1298,14 +1257,14 @@ const styles = StyleSheet.create({
     }),
   },
   storyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   storyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: neumorphTheme.textPrimary,
     flex: 1,
   },
@@ -1314,8 +1273,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -1335,14 +1294,14 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   storyMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   storyTimestamp: {
     fontSize: 13,
     color: neumorphTheme.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   storyEngagement: {
     backgroundColor: neumorphTheme.cardBackground,
@@ -1364,7 +1323,7 @@ const styles = StyleSheet.create({
   storyEngagementText: {
     fontSize: 13,
     color: neumorphTheme.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   settingsSection: {
     paddingHorizontal: 20,
@@ -1387,20 +1346,20 @@ const styles = StyleSheet.create({
     }),
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: neumorphTheme.shadowDark + '20',
+    borderBottomColor: neumorphTheme.shadowDark + "20",
   },
   settingIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
     ...Platform.select({
       ios: {
@@ -1417,12 +1376,12 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 16,
     color: neumorphTheme.textPrimary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   logoutButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     marginHorizontal: 16,
     marginTop: 12,
@@ -1430,7 +1389,7 @@ const styles = StyleSheet.create({
     backgroundColor: neumorphTheme.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: neumorphTheme.error + '30',
+    borderColor: neumorphTheme.error + "30",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.error,
@@ -1448,8 +1407,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
     ...Platform.select({
       ios: {
@@ -1465,24 +1424,24 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: neumorphTheme.error,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   modalContainer: {
     backgroundColor: neumorphTheme.cardBackground,
-    width: '100%',
+    width: "100%",
     maxWidth: 500,
     borderRadius: 24,
     padding: 24,
-    maxHeight: '80%',
+    maxHeight: "80%",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -1496,14 +1455,14 @@ const styles = StyleSheet.create({
     }),
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: neumorphTheme.textPrimary,
   },
   modalCloseButton: {
@@ -1511,8 +1470,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: neumorphTheme.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.shadowDark,
@@ -1539,7 +1498,7 @@ const styles = StyleSheet.create({
   },
   modalLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: neumorphTheme.textPrimary,
     marginBottom: 12,
   },
@@ -1563,11 +1522,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: neumorphTheme.textPrimary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     marginTop: 32,
     gap: 16,
   },
@@ -1590,12 +1549,12 @@ const styles = StyleSheet.create({
   },
   modalSecondaryButtonText: {
     color: neumorphTheme.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 16,
   },
   modalPrimaryButton: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: neumorphTheme.primary,
@@ -1613,14 +1572,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   modalPrimaryButtonText: {
-    color: 'white',
-    fontWeight: '700',
+    color: "white",
+    fontWeight: "700",
     fontSize: 16,
   },
   emptyText: {
     color: neumorphTheme.textSecondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     fontSize: 14,
     marginLeft: 48,
   },
-});
+})

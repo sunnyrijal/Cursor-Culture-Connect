@@ -2,6 +2,8 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logout as storeLogout } from '@/data/store';
 import { apiClient, API_URL } from './api';
+import { Alert } from 'react-native';
+import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
 
 type AuthState = {
   authenticated: boolean;
@@ -23,7 +25,7 @@ interface SignupData {
 type AuthContextType = {
   authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (name:string, email: string, password: string, confirmPassword:string, university:string, state:string, city:string, mobileNumber:string  ) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -99,15 +101,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const response = await apiClient.login(email, password);
-      const { token, id } = response;
-      
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userId', id.toString());
+      const { accessToken, user } = response.data;
+        console.log(response)
+      await AsyncStorage.setItem('token', accessToken);
+      await AsyncStorage.setItem('userId', user?.id.toString());
       
       setAuthState({
         authenticated: true,
-        token,
-        userId: id.toString(),
+        token:accessToken,
+        userId: user.id.toString(),
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -115,11 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (name:string, email: string, password: string, confirmPassword:string, state:string, city:string, university:string, mobileNumber:string   ) => {
     try {
-      await apiClient.signup(email, password);
+       const response = await apiClient.signup(name, email, password, confirmPassword, state, city, university, mobileNumber);
       // After successful signup, log the user in
-      await login(email, password);
+      // await login(email, password);
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -127,19 +129,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      // Call server logout endpoint to destroy session
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (error) {
-      console.error('Server logout error:', error);
-      // Continue with client-side logout even if server logout fails
-    }
+    // try {
+    //   // Call server logout endpoint to destroy session
+    //   await fetch(`${API_URL}/auth/logout`, {
+    //     method: 'POST',
+    //     credentials: 'include',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //   });
+    // } catch (error) {
+    //   console.error('Server logout error:', error);
+    //   // Continue with client-side logout even if server logout fails
+    // }
     
     // Clear local storage
     await AsyncStorage.removeItem('token');

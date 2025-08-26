@@ -1,0 +1,173 @@
+import api from './axiosConfig'; // adjust path as needed
+import { AxiosResponse } from 'axios';
+
+export interface EventTime {
+  startTime: string;
+  endTime: string;
+}
+
+export interface Event {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  eventTimes: EventTime[];
+  location: string;
+  imageurl?: string;
+  groupId: string;
+  isPublic: boolean;
+  universityOnly: boolean;
+  organizerId: string;
+  organizerName?: string;
+  maxAttendees?: number;
+  currentAttendees?: number;
+  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventData {
+  name: string;
+  description: string;
+  date: string;
+  eventTimes: EventTime[];
+  location: string;
+  imageurl?: string | null;
+  // groupId: string | null;
+  // isPublic: boolean;
+  UniversityOnly: boolean;
+}
+
+export interface UpdateEventData {
+  name?: string;
+  description?: string;
+  date?: string;
+  eventTimes?: EventTime[];
+  location?: string;
+  imageurl?: string;
+  groupId?: string;
+  isPublic?: boolean;
+  universityOnly?: boolean;
+  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+}
+
+export interface GetEventsParams {
+  page?: number;
+  limit?: number;
+  groupId?: string;
+  location?: string;
+  status?: string;
+  search?: string;
+  isPublic?: boolean;
+  universityOnly?: boolean;
+  sortBy?: 'date' | 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  itemsPerPage: number;
+}
+
+const convertTimeStringToDate = (timeString: string, eventDate: string): Date => {
+  // Parse the time string (e.g., "5:30", "14:45")
+  const [hours, minutes] = timeString.split(':').map(num => parseInt(num, 10));
+  
+  // Create a new Date object from the event date
+  const date = new Date(eventDate);
+  
+  // Set the hours and minutes
+  date.setHours(hours, minutes, 0, 0); // hours, minutes, seconds, milliseconds
+  
+  return date;
+};
+
+// Helper function to process event times array
+const processEventTimes = (eventTimes: Array<{startTime: string, endTime: string}>, eventDate: string) => {
+  return eventTimes.map(timeSlot => ({
+    startTime: convertTimeStringToDate(timeSlot.startTime, eventDate),
+    endTime: convertTimeStringToDate(timeSlot.endTime, eventDate)
+  }));
+};
+
+export const createEvent = async (eventData: CreateEventData) => {
+  console.log("Original eventTimes:", eventData.eventTimes, "Date:", eventData.date);
+  
+  try {
+    const processedEventTimes = processEventTimes(eventData.eventTimes, eventData.date);
+    
+    const processedEventData = {
+      ...eventData,
+      eventTimes: processedEventTimes
+    };
+    
+    console.log("Event API Call - Data being sent:", {
+      name: processedEventData.name,
+      description: processedEventData.description,
+      eventTimes: processedEventData.eventTimes,
+      imageurl: processedEventData.imageurl,
+      location: processedEventData.location,
+      date: processedEventData.date,
+    });
+    
+    const response = await api.post('/event/create', processedEventData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating event:', error);
+    throw error;
+  }
+};
+
+
+export const getEvents = async (params?: GetEventsParams) => {
+  try {
+    const response = await api.get('/event/all', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    throw error;
+  }
+};
+
+export const getEvent = async (eventId: string | null ) => {
+  try {
+    const response = await api.get(`/event/${eventId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching event:', error);
+    throw error;
+  }
+};
+
+
+
+// Update an event
+export const updateEvent = async (eventId: string, eventData: UpdateEventData) => {
+  try {
+    const response = await api.put(`/events/${eventId}`, eventData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating event:', error);
+    throw error;
+  }
+};
+
+// Delete an event
+export const deleteEvent = async (eventId: string) => {
+  try {
+    const response = await api.delete(`/events/${eventId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    throw error;
+  }
+};

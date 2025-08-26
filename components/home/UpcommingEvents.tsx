@@ -8,19 +8,76 @@ import {
 } from 'react-native';
 import React, { useState } from 'react';
 import { LayoutGrid, List as ListIcon } from 'lucide-react-native';
-import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme'; // adjust if needed
+import {
+  theme,
+  spacing,
+  typography,
+  borderRadius,
+  neomorphColors,
+} from '../theme'; // adjust if needed
 import { router } from 'expo-router'; // or your navigation lib
-import { upcomingEvents } from '@/data/upcommingEvents';
-import { mockEvents } from '@/data/mockData';
-import { Event } from '@/types/event'; // Import the Event interface
+import { useQuery } from '@tanstack/react-query';
+import { getEvents } from '@/contexts/event.api';
 
 const placeholderImg = 'https://via.placeholder.com/150';
+
+// Helper function to format date
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+// Helper function to format time
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 const UpcomingEvents = () => {
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
 
-  // Use the same data source for consistency - you can choose either mockEvents or upcomingEvents
-  const eventsData: Event[] = mockEvents; // or upcomingEvents, depending on your preference
+  // Use Tanstack Query to fetch events
+  const {
+    data: eventsResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => getEvents(),
+  });
+
+  const eventsData = eventsResponse?.events || [];
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        </View>
+        <Text style={styles.loadingText}>Loading events...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        </View>
+        <Text style={styles.errorText}>Failed to load events</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.section}>
@@ -66,91 +123,101 @@ const UpcomingEvents = () => {
             { paddingHorizontal: 0, justifyContent: 'space-between' },
           ]}
         >
-          {eventsData.map((event: Event, idx: number) => (
-            <TouchableOpacity
-              key={event.id}
-              style={[
-                styles.eventGridCard,
-                { width: '48%', marginRight: idx % 2 === 0 ? '4%' : 0 },
-              ]}
-              onPress={() => router.push(`/event/${event.id}`)}
-              activeOpacity={0.7}
-            >
-              <Image
-                source={{ uri: event.image || placeholderImg }}
-                style={styles.eventGridImage}
-              />
-              <View style={styles.eventGridDetails}>
-                <Text style={styles.eventGridTitle} numberOfLines={2}>
-                  {event.name}
-                </Text>
-                <Text style={styles.eventGridMeta}>
-                  {event.date} • {event.time}
-                </Text>
-                <Text style={styles.eventGridMeta} numberOfLines={1}>
-                  {event.location}
-                </Text>
-                {event.price && (
-                  <Text style={styles.eventGridPrice}>
-                    {event.price}
+          {eventsData.map((event: any, idx: number) => {
+            const eventTime = event.eventTimes?.[0];
+            const date = eventTime ? formatDate(eventTime.startTime) : 'TBA';
+            const time = eventTime ? formatTime(eventTime.startTime) : 'TBA';
+
+            return (
+              <TouchableOpacity
+                key={event.id}
+                style={[
+                  styles.eventGridCard,
+                  { width: '48%', marginRight: idx % 2 === 0 ? '4%' : 0 },
+                ]}
+                onPress={() => router.push(`/event/${event.id}`)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: event.imageUrl || placeholderImg }}
+                  style={styles.eventGridImage}
+                />
+                <View style={styles.eventGridDetails}>
+                  <Text style={styles.eventGridTitle} numberOfLines={2}>
+                    {event.name}
                   </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+                  <Text style={styles.eventGridMeta}>
+                    {date} • {time}
+                  </Text>
+                  <Text style={styles.eventGridMeta} numberOfLines={1}>
+                    {event.location}
+                  </Text>
+                  <Text style={styles.eventGridMeta} numberOfLines={1}>
+                    by {event.user?.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       ) : (
         <View style={styles.eventsList}>
-          {eventsData.map((event: Event) => (
-            <TouchableOpacity
-              key={event.id}
-              style={styles.eventListCard}
-              onPress={() => router.push(`/event/${event.id}`)}
-              activeOpacity={0.7}
-            >
-              <Image
-                source={{ uri: event.image || placeholderImg }}
-                style={styles.eventListImage}
-              />
-              <View style={styles.eventListDetails}>
-                <Text style={styles.eventListTitle} numberOfLines={2}>
-                  {event.name}
-                </Text>
-                <Text style={styles.eventListMeta}>
-                  {event.date} • {event.time}
-                </Text>
-                <Text style={styles.eventListMeta} numberOfLines={1}>
-                  {event.location}
-                </Text>
-                <View style={styles.eventListFooter}>
-                  {event.price && (
-                    <Text style={styles.eventListPrice}>
-                      {event.price}
-                    </Text>
-                  )}
-                  <Text style={styles.eventListDistance}>
-                    {event.distance}
+          {eventsData.map((event: any) => {
+            const eventTime = event.eventTimes?.[0];
+            const date = eventTime ? formatDate(eventTime.startTime) : 'TBA';
+            const time = eventTime ? formatTime(eventTime.startTime) : 'TBA';
+
+            return (
+              <TouchableOpacity
+                key={event.id}
+                style={styles.eventListCard}
+                onPress={() => router.push(`/event/${event.id}`)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: event.imageUrl || placeholderImg }}
+                  style={styles.eventListImage}
+                />
+                <View style={styles.eventListDetails}>
+                  <Text style={styles.eventListTitle} numberOfLines={2}>
+                    {event.name}
                   </Text>
+                  <Text style={styles.eventListMeta}>
+                    {date} • {time}
+                  </Text>
+                  <Text style={styles.eventListMeta} numberOfLines={1}>
+                    {event.location}
+                  </Text>
+                  <View style={styles.eventListFooter}>
+                    <Text style={styles.eventListPrice}>
+                      by {event.user?.name}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
     </View>
   );
 };
-
 export default UpcomingEvents;
 
 const styles = StyleSheet.create({
+  loadingText: {
+    fontSize: typography.fontSize.md,
+  },
+  errorText:{
+
+  },
   section: {
     marginBottom: spacing.lg,
     backgroundColor: neomorphColors.background,
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 20,
-    width:'100%',
+    width: '100%',
     // Cross-platform neumorphic outer shadow
     // ...Platform.select({
     //   ios: {

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -37,11 +39,11 @@ import Animated, {
   withSpring,
   withSequence,
   withDelay,
-  interpolate,
   Easing,
-  runOnJS,
 } from 'react-native-reanimated';
-import { rgbaColor } from 'react-native-reanimated/lib/typescript/Colors';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { getUniversities } from '@/contexts/university.api';
+import UniversityDropdown from './UniversityDropdown';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,6 +61,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [city, setCity] = useState<string>('');
   const [mobileNumber, setMobileNumber] = useState<string>('');
   const [dateOfBirth, setDateOfBirth] = useState<string>('');
+
+  const { data: universities } = useQuery({
+    queryKey: ['universities'],
+    queryFn: getUniversities,
+  });
+
+  console.log(universities)
 
   const [isSignup, setIsSignup] = useState<boolean>(initialMode === 'signup');
   const [error, setError] = useState<string>('');
@@ -124,8 +133,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     switch (field) {
       case 'email':
         isValid =
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.endsWith('.edu');
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.includes('.edu');
         break;
+
       case 'password':
         isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/.test(
           value
@@ -135,9 +145,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
         isValid = value.trim().length >= 2;
         break;
       case 'mobileNumber':
-        isValid = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(
-          value
-        );
+        isValid = /^([0-9]{3})[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(value);
         break;
       default:
         isValid = value.trim().length > 0;
@@ -158,10 +166,38 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); 
+      if (isSignup) {
+        // Prepare signup data
+        const signupData = {
+          email,
+          password,
+          confirmPassword,
+          fullName,
+          university,
+          state,
+          city,
+          mobileNumber,
+          // dateOfBirth,
+        };
+
+        console.log('Signup data:', signupData);
+        await signup(fullName, email, password, confirmPassword, state, city, university, mobileNumber);
+      } else {
+        // Prepare login data
+        const loginData = {
+          email,
+          password,
+        };
+
+        console.log('Login data:', loginData);
+        await login(email, password);
+      }
+
       router.replace('/(tabs)');
-    } catch (err) {
-      setError('Authentication failed. Please try again.');
+    } catch (err: any) {
+      console.log(err);
+
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -414,10 +450,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
           <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
             <BlurView intensity={20} style={styles.blurView}>
               <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 1)',
-                  'rgba(248, 250, 252, 1)',
-                ]}
+                colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.formGradient}
@@ -430,7 +463,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                     setFullName,
                     'Enter your full name',
                     'fullName',
-                    { autoCapitalize: 'words', autoComplete: 'name' }
+                    {
+                      autoCapitalize: 'words',
+                      autoComplete: 'name',
+                    }
                   )}
 
                 {renderAnimatedInput(
@@ -478,15 +514,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       }
                     )}
 
-                    {renderAnimatedInput(
-                      GraduationCap,
-                      'University',
-                      university,
-                      setUniversity,
-                      'Enter your university name',
-                      'university',
-                      { autoCapitalize: 'words' }
-                    )}
+                    <Animated.View style={[{ opacity: formOpacity, zIndex:100 }]}>
+                      <UniversityDropdown
+                        universities={universities?.data}
+                        value={university}
+                        onValueChange={setUniversity}
+                        label="University"
+                        placeholder="Search or enter your university name"
+                        isValid={fieldValidation['university']}
+                        isFocused={focusedInput === 'university'}
+                        onFocus={() => setFocusedInput('university')}
+                        onBlur={() => {
+                          setFocusedInput('');
+                          if (university) validateField('university', university);
+                        }}
+                        loading={loading}
+                      />
+                    </Animated.View>
 
                     <View style={styles.rowContainer}>
                       <View style={styles.halfWidth}>
@@ -497,7 +541,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                           setState,
                           'State',
                           'state',
-                          { autoCapitalize: 'words' }
+                          {
+                            autoCapitalize: 'words',
+                          }
                         )}
                       </View>
                       <View style={styles.halfWidth}>
@@ -508,7 +554,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                           setCity,
                           'City',
                           'city',
-                          { autoCapitalize: 'words' }
+                          {
+                            autoCapitalize: 'words',
+                          }
                         )}
                       </View>
                     </View>
@@ -523,7 +571,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       { keyboardType: 'phone-pad', maxLength: 14 }
                     )}
 
-                    {renderAnimatedInput(
+                    {/* {renderAnimatedInput(
                       Calendar,
                       'Date of Birth',
                       dateOfBirth,
@@ -547,7 +595,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       'YYYY-MM-DD',
                       'dateOfBirth',
                       { keyboardType: 'numeric', maxLength: 10 }
-                    )}
+                    )} */}
                   </>
                 )}
               </LinearGradient>
@@ -840,13 +888,11 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontWeight: '500',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-
   },
   eyeIcon: {
     padding: 8,
     marginLeft: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-
   },
   validIcon: {
     marginLeft: 8,

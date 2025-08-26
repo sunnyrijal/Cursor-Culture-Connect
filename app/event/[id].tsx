@@ -1,9 +1,10 @@
 "use client"
 
 import React from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { router, useLocalSearchParams } from "expo-router"
+import { useQuery } from "@tanstack/react-query"
 import { ShareButton } from "@/components/ui/ShareButton"
 import { theme, spacing, typography, borderRadius } from "@/components/theme"
 import {
@@ -19,8 +20,7 @@ import {
   Gift,
   Navigation,
 } from "lucide-react-native"
-import placeholderImg from "@/assets/images/icon.png"
-import { store } from "@/data/store"
+import { getEvent } from "@/contexts/event.api"
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -40,17 +40,79 @@ const extendedTheme = {
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams()
-  const [event, setEvent] = React.useState(() => store.getEventById(Number(id)))
   const [isLiked, setIsLiked] = React.useState(false)
   const [isBookmarked, setIsBookmarked] = React.useState(false)
 
-  if (!event) {
+    const eventId = Array.isArray(id) ? id[0] : (id ?? null)
+  
+    const { data: eventResponse, isLoading, isError, error } = useQuery({
+      queryKey: ['event', eventId],
+      queryFn: () => getEvent(eventId as string),
+      enabled: !!eventId, // Only run query if eventId exists
+    })
+  
+    const event = eventResponse?.event
+
+  // Helper function to format date
+  const formatDate = (dateString:string) => {
+    if (!dateString) return "TBD"
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  // Helper function to format time
+  const formatTime = (startTime:string, endTime:string) => {
+    if (!startTime) return "TBD"
+    const start = new Date(startTime)
+    const end = endTime ? new Date(endTime) : null
+    
+    const startTimeStr = start.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+    
+    if (end) {
+      const endTimeStr = end.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+      return `${startTimeStr} - ${endTimeStr}`
+    }
+    
+    return startTimeStr
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.loadingText}>Loading event details...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Error state
+  if (isError || !event) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
-            <Text style={styles.errorText}>Event Not Found</Text>
-            <Text style={styles.errorSubtext}>Sorry, we couldn't find this event.</Text>
+            <Text style={styles.errorText}>
+              {isError ? "Failed to load event" : "Event Not Found"}
+            </Text>
+            <Text style={styles.errorSubtext}>
+              {isError ? error?.message || "Please try again later" : "Sorry, we couldn't find this event."}
+            </Text>
             <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
               <Text style={styles.backLinkText}>← Go Back</Text>
             </TouchableOpacity>
@@ -60,17 +122,24 @@ export default function EventDetail() {
     )
   }
 
+  // Extract dynamic data from response
+  const eventTime = event.eventTimes?.[0] // Get first event time
+  const eventDate = formatDate(eventTime?.startTime)
+  const eventTimeFormatted = formatTime(eventTime?.startTime, eventTime?.endTime)
+  const organizer = event.user?.name || "Unknown Organizer"
+  const organizerEmail = event.user?.email
+
   const generateEventShareContent = () => {
     return {
       title: `${event.name} - Culture Connect`,
-      message: `Join me at ${event.name}!\n\n📅 ${event.date} at ${event.time}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
+      message: `Join me at ${event.name}!\n\n📅 ${eventDate} at ${eventTimeFormatted}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
       url: `https://cultureconnect.app/event/${event.id}`,
     }
   }
 
   const handleRSVP = () => {
-    store.toggleRsvp(store.getState().currentUser.id, event.id)
-    setEvent(store.getEventById(event.id))
+    // For now, just toggle local state since we don't have RSVP mutation
+    setIsLiked(!isLiked)
   }
 
   const handleBookmark = () => {
@@ -83,8 +152,7 @@ export default function EventDetail() {
         {/* Hero Image Section */}
         <View style={styles.heroContainer}>
           <Image
-            source={{ uri: event.image || undefined }}
-            defaultSource={placeholderImg}
+            source={{ uri: event.imageUrl }}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -128,7 +196,7 @@ export default function EventDetail() {
               </View>
             </View>
             <View style={styles.heroMetaContainer}>
-              <Text style={styles.heroSubtitle}>{event.attendees} people attending</Text>
+              <Text style={styles.heroSubtitle}>Organized by {organizer}</Text>
               <View style={styles.heroStatusBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.heroStatusText}>Booking Open</Text>
@@ -139,10 +207,10 @@ export default function EventDetail() {
 
         {/* Content Container */}
         <View style={styles.contentContainer}>
-          {/* Categories */}
+          {/* Categories - Static for now as requested */}
           <View style={styles.tagsSection}>
             <View style={styles.tagsContainer}>
-              {event.category.map((cat, index) => (
+              {["Cultural", "Music", "Live"].map((cat, index) => (
                 <View key={`${cat}-${index}`} style={styles.categoryTag}>
                   <Text style={styles.categoryText}>{cat}</Text>
                 </View>
@@ -163,7 +231,7 @@ export default function EventDetail() {
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Date</Text>
-                    <Text style={styles.infoValue}>{event.date}</Text>
+                    <Text style={styles.infoValue}>{eventDate}</Text>
                   </View>
                 </View>
 
@@ -173,7 +241,7 @@ export default function EventDetail() {
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Time</Text>
-                    <Text style={styles.infoValue}>{event.time}</Text>
+                    <Text style={styles.infoValue}>{eventTimeFormatted}</Text>
                   </View>
                 </View>
 
@@ -196,8 +264,8 @@ export default function EventDetail() {
                     <Users size={24} color={extendedTheme.warning} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Attendees</Text>
-                    <Text style={styles.infoValue}>{event.attendees} going</Text>
+                    <Text style={styles.infoLabel}>Organizer</Text>
+                    <Text style={styles.infoValue}>{organizer}</Text>
                   </View>
                 </View>
               </View>
@@ -239,13 +307,12 @@ export default function EventDetail() {
       <View style={styles.footer}>
         <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
           <View style={styles.rsvpContent}>
-            <Text style={styles.rsvpButtonText}>{event.isRSVPed ? "Cancel RSVP" : "RSVP Now"}</Text>
+            <Text style={styles.rsvpButtonText}>{isLiked ? "Cancel RSVP" : "RSVP Now"}</Text>
             <View style={styles.rsvpIcon}>
               <Text style={styles.rsvpIconText}>→</Text>
             </View>
           </View>
         </TouchableOpacity>
-        {/* <Text style={styles.rsvpSubtext}>🔒 Secure booking • ⚡ Instant confirmation</Text> */}
       </View>
     </SafeAreaView>
   )
