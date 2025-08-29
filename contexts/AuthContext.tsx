@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logout as storeLogout } from '@/data/store';
-import { apiClient, API_URL } from './api';
+import { apiClient } from './api';
 import { Alert } from 'react-native';
 import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
+import { API_URL } from './axiosConfig';
 
 type AuthState = {
   authenticated: boolean;

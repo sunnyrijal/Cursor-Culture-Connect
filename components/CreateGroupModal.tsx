@@ -1,10 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Switch, Platform } from 'react-native';
-import { X, Globe, Lock, GraduationCap, ChevronDown, Check, AlertCircle, Calendar, Clock, MapPin, PlusCircle, MinusCircle, Sparkles } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Modal,
+  Switch,
+  Platform,
+} from 'react-native';
+import {
+  X,
+  Globe,
+  Lock,
+  GraduationCap,
+  ChevronDown,
+  Check,
+  AlertCircle,
+  Calendar,
+  Clock,
+  MapPin,
+  PlusCircle,
+  MinusCircle,
+  Sparkles,
+  Image,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Button } from '@/components/ui/Button';
 import { Meeting } from '@/types/group';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createGroup } from '@/contexts/group.api';
 
 interface CreateGroupModalProps {
   visible: boolean;
@@ -12,7 +40,11 @@ interface CreateGroupModalProps {
   onSubmit: (groupData: any) => void;
 }
 
-export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModalProps) {
+export function CreateGroupModal({
+  visible,
+  onClose,
+  onSubmit,
+}: CreateGroupModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -21,53 +53,90 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
     universityOnly: false,
     allowedUniversity: '',
   });
-  
-  const [meetings, setMeetings] = useState<Meeting[]>([{ date: '', time: '', location: ''}]);
+  const queryClient = useQueryClient();
+
+  // const [meetings, setMeetings] = useState<Meeting[]>([{ date: '', time: '', location: ''}]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [useLocation, setUseLocation] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
 
-  const handleAddMeeting = () => {
-    setMeetings([...meetings, { date: '', time: '', location: '' }]);
-  };
-  
-  const handleRemoveMeeting = (index: number) => {
-    const newMeetings = meetings.filter((_, i) => i !== index);
-    setMeetings(newMeetings);
-  };
+  // const handleAddMeeting = () => {
+  //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
+  // };
 
-  const handleMeetingChange = (index: number, field: keyof Meeting, value: string) => {
-    const newMeetings = [...meetings];
-    newMeetings[index][field] = value;
-    setMeetings(newMeetings);
-  };
+  // const handleRemoveMeeting = (index: number) => {
+  //   const newMeetings = meetings.filter((_, i) => i !== index);
+  //   setMeetings(newMeetings);
+  // };
+
+  // const handleMeetingChange = (index: number, field: keyof Meeting, value: string) => {
+  //   const newMeetings = [...meetings];
+  //   newMeetings[index][field] = value;
+  //   setMeetings(newMeetings);
+  // };
+
+  const createGroupMutation = useMutation({
+    mutationFn: createGroup,
+    onSuccess: (data, variables) => {
+      console.log('Group created successfully:', data);
+
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+
+      Alert.alert('Success', 'Group created successfully!');
+
+      onSubmit(variables);
+
+      // Close modal
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error creating Group:', error);
+
+      // Show user-friendly error message
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to create event. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
 
   const handleSubmit = async () => {
-    if (!formData.name.trim() || !formData.description.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields.');
-      return;
-    }
+    // Alert.alert('Error', 'Please fill in all required fields.');
+    // return;
 
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (!useLocation && (!city || !state)) {
-      Alert.alert('Error', 'Please enter both city and state, or enable location.');
-      setIsSubmitting(false);
-      return;
-    }
-    
     const groupData = {
-      ...formData,
-      meetings,
-      location: useLocation ? 'Current Location' : `${city}, ${state}`,
+      name: formData.name,
+      description: formData.description,
+      isPrivate: !formData.isPublic,
+      imageUrl: imageUrl,
     };
-    
-    onSubmit(groupData);
-    setIsSubmitting(false);
-    onClose();
+    console.log(groupData);
+    createGroupMutation.mutate(groupData);
+    return;
+
+    // setIsSubmitting(true);
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // if (!useLocation && (!city || !state)) {
+    //   Alert.alert('Error', 'Please enter both city and state, or enable location.');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // const groupData = {
+    //   ...formData,
+    //   // meetings,
+    //   imageUrl,
+    //   location: useLocation ? 'Current Location' : `${city}, ${state}`,
+    // };
+
+    // onSubmit(groupData);
+    // setIsSubmitting(false);
+    // onClose();
   };
 
   const renderInput = (
@@ -88,11 +157,13 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
         <Text style={styles.inputLabel}>
           {label} {required && <Text style={{ color: '#EF4444' }}>*</Text>}
         </Text>
-        <View style={[
-          styles.inputWrapper,
-          isFocused && styles.inputWrapperFocused,
-          hasValue && styles.inputWrapperValid,
-        ]}>
+        <View
+          style={[
+            styles.inputWrapper,
+            isFocused && styles.inputWrapperFocused,
+            hasValue && styles.inputWrapperValid,
+          ]}
+        >
           {icon && <View style={styles.inputIcon}>{icon}</View>}
           <TextInput
             style={[styles.inputText, multiline && styles.textArea]}
@@ -124,7 +195,7 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <ScrollView 
+        <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -144,14 +215,17 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
           <View style={styles.formContainer}>
             <BlurView intensity={20} style={styles.blurView}>
               <LinearGradient
-                colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
+                colors={[
+                  'rgba(255, 255, 255, 0.9)',
+                  'rgba(248, 250, 252, 0.8)',
+                ]}
                 style={styles.formGradient}
               >
                 {/* Basic Info */}
                 {renderInput(
                   'Group Name',
                   formData.name,
-                  (text) => setFormData({...formData, name: text}),
+                  (text) => setFormData({ ...formData, name: text }),
                   'Enter a catchy group name',
                   <Sparkles size={16} color="#6366F1" />,
                   false,
@@ -161,11 +235,21 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                 {renderInput(
                   'Description',
                   formData.description,
-                  (text) => setFormData({...formData, description: text}),
+                  (text) => setFormData({ ...formData, description: text }),
                   'Tell people what your group is about...',
                   <GraduationCap size={16} color="#6366F1" />,
                   true,
                   true
+                )}
+
+                {renderInput(
+                  'Image URL',
+                  imageUrl,
+                  setImageUrl,
+                  'Enter image URL for group cover (optional)',
+                  <Image size={16} color="#6366F1" />,
+                  false,
+                  false
                 )}
 
                 {/* Visibility Settings */}
@@ -177,20 +261,32 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                         styles.visibilityButton,
                         formData.isPublic && styles.visibilityButtonActive,
                       ]}
-                      onPress={() => setFormData({...formData, isPublic: true})}
+                      onPress={() =>
+                        setFormData({ ...formData, isPublic: true })
+                      }
                     >
                       <LinearGradient
-                        colors={formData.isPublic 
-                          ? ['#6366F1', '#8B5CF6'] 
-                          : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                        colors={
+                          formData.isPublic
+                            ? ['#6366F1', '#8B5CF6']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.visibilityButtonGradient}
                       >
-                        <Globe size={16} color={formData.isPublic ? '#FFFFFF' : '#374151'} />
-                        <Text style={[
-                          styles.visibilityButtonText,
-                          formData.isPublic && styles.visibilityButtonTextActive,
-                        ]}>
+                        <Globe
+                          size={16}
+                          color={formData.isPublic ? '#FFFFFF' : '#374151'}
+                        />
+                        <Text
+                          style={[
+                            styles.visibilityButtonText,
+                            formData.isPublic &&
+                              styles.visibilityButtonTextActive,
+                          ]}
+                        >
                           Public
                         </Text>
                       </LinearGradient>
@@ -201,20 +297,32 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                         styles.visibilityButton,
                         !formData.isPublic && styles.visibilityButtonActive,
                       ]}
-                      onPress={() => setFormData({...formData, isPublic: false})}
+                      onPress={() =>
+                        setFormData({ ...formData, isPublic: false })
+                      }
                     >
                       <LinearGradient
-                        colors={!formData.isPublic 
-                          ? ['#6366F1', '#8B5CF6'] 
-                          : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                        colors={
+                          !formData.isPublic
+                            ? ['#6366F1', '#8B5CF6']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.visibilityButtonGradient}
                       >
-                        <Lock size={16} color={!formData.isPublic ? '#FFFFFF' : '#374151'} />
-                        <Text style={[
-                          styles.visibilityButtonText,
-                          !formData.isPublic && styles.visibilityButtonTextActive,
-                        ]}>
+                        <Lock
+                          size={16}
+                          color={!formData.isPublic ? '#FFFFFF' : '#374151'}
+                        />
+                        <Text
+                          style={[
+                            styles.visibilityButtonText,
+                            !formData.isPublic &&
+                              styles.visibilityButtonTextActive,
+                          ]}
+                        >
                           Private
                         </Text>
                       </LinearGradient>
@@ -226,15 +334,17 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Location</Text>
                   <View style={styles.locationToggle}>
-                    <Switch 
-                      value={useLocation} 
+                    <Switch
+                      value={useLocation}
                       onValueChange={setUseLocation}
                       trackColor={{ false: '#E2E8F0', true: '#6366F1' }}
                       thumbColor={useLocation ? '#FFFFFF' : '#94A3B8'}
                     />
-                    <Text style={styles.locationToggleText}>Use my current location</Text>
+                    <Text style={styles.locationToggleText}>
+                      Use my current location
+                    </Text>
                   </View>
-                  
+
                   {!useLocation && (
                     <View style={styles.rowContainer}>
                       {renderInput(
@@ -255,8 +365,8 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                   )}
                 </View>
 
-                {/* Meeting Details */}
-                <View style={styles.sectionDivider} />
+                {/* Meeting Details - Commented Out */}
+                {/* <View style={styles.sectionDivider} />
                 <Text style={styles.sectionTitle}>Meeting Schedule (Optional)</Text>
                 
                 {meetings.map((meeting, index) => (
@@ -307,7 +417,7 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
                     <PlusCircle color="#FFFFFF" size={20} />
                     <Text style={styles.addMeetingText}>Add Another Meeting Time</Text>
                   </LinearGradient>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </LinearGradient>
             </BlurView>
           </View>
@@ -315,28 +425,36 @@ export function CreateGroupModal({ visible, onClose, onSubmit }: CreateGroupModa
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.cancelButton} 
+          <TouchableOpacity
+            style={styles.cancelButton}
             onPress={onClose}
             disabled={isSubmitting}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.primaryButton} 
+
+          <TouchableOpacity
+            style={styles.primaryButton}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
             <LinearGradient
-              colors={isSubmitting ? ['#94A3B8', '#64748B'] : ['#6366F1', '#8B5CF6']}
+              colors={
+                isSubmitting ? ['#94A3B8', '#64748B'] : ['#6366F1', '#8B5CF6']
+              }
               style={styles.buttonGradient}
             >
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
                   {isSubmitting ? 'Creating...' : 'Create Group'}
                 </Text>
-                {!isSubmitting && <Sparkles size={16} color="#FFFFFF" style={styles.buttonIcon} />}
+                {!isSubmitting && (
+                  <Sparkles
+                    size={16}
+                    color="#FFFFFF"
+                    style={styles.buttonIcon}
+                  />
+                )}
               </View>
             </LinearGradient>
           </TouchableOpacity>

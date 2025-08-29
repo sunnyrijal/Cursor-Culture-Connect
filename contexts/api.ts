@@ -1,8 +1,7 @@
-import { getPathWithConventionsCollapsed } from "expo-router/build/fork/getPathFromState-forks";
-import { University } from "lucide-react-native";
 
-// API base URL
-export const API_URL = "http://localhost:3000/api";
+
+import { API_URL } from "./axiosConfig";
+
 
 // Helper function to check if a string is a valid .edu email
 export const isValidEduEmail = (email:string) => {
