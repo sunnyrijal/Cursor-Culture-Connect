@@ -319,6 +319,8 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer:{},
+  loadingText:{},
   container: {
     flex: 1,
     backgroundColor: neomorphColors.background,

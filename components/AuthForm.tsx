@@ -40,6 +40,7 @@ import Animated, {
   withSequence,
   withDelay,
   Easing,
+  withRepeat,
 } from 'react-native-reanimated';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { getUniversities } from '@/contexts/university.api';
@@ -67,7 +68,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     queryFn: getUniversities,
   });
 
-  console.log(universities)
+  console.log(universities);
 
   const [isSignup, setIsSignup] = useState<boolean>(initialMode === 'signup');
   const [error, setError] = useState<string>('');
@@ -114,10 +115,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }));
 
     // Continuous background rotation
-    backgroundRotation.value = withTiming(360, {
-      duration: 60000,
-      easing: Easing.linear,
-    });
+    backgroundRotation.value = withRepeat(
+      withTiming(360, { duration: 60000, easing: Easing.linear }),
+      -1, // infinite repeat
+      false
+    );
   }, []);
 
   useEffect(() => {
@@ -181,7 +183,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
         };
 
         console.log('Signup data:', signupData);
-        await signup(fullName, email, password, confirmPassword, state, city, university, mobileNumber);
+        await signup(
+          fullName,
+          email,
+          password,
+          confirmPassword,
+          state,
+          city,
+          university,
+          mobileNumber
+        );
       } else {
         // Prepare login data
         const loginData = {
@@ -514,9 +525,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       }
                     )}
 
-                    <Animated.View style={[{ opacity: formOpacity, zIndex:100 }]}>
+                    <Animated.View
+                      style={[{ opacity: formOpacity, zIndex: 100 }]}
+                    >
                       <UniversityDropdown
-                        universities={universities?.data}
+                        universities={universities?.data || []}
                         value={university}
                         onValueChange={setUniversity}
                         label="University"
@@ -526,7 +539,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                         onFocus={() => setFocusedInput('university')}
                         onBlur={() => {
                           setFocusedInput('');
-                          if (university) validateField('university', university);
+                          if (university)
+                            validateField('university', university);
                         }}
                         loading={loading}
                       />
