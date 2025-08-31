@@ -1,7 +1,8 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const API_URL = "https://4bhw4zcd-3000.inc1.devtunnels.ms/api"; 
+export const API_URL = "https://culture-connect-be.onrender.com/api"; 
+// export const API_URL = "http://localhost:3005/api"; 
 
 const api = axios.create({
   baseURL: API_URL,
@@ -10,7 +11,6 @@ const api = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // needed if your backend uses cookies
 });
 
 // Attach token automatically

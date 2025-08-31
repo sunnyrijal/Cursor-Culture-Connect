@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       // Validate email domain
-      if (!email.endsWith('.edu')) {
+      if (!email.includes('.edu')) {
         throw new Error('Only .edu email addresses are allowed');
       }
       

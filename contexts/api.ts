@@ -86,7 +86,7 @@ export const apiClient = {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for session cookies
+        // credentials: 'include', // Important for session cookies
         body: JSON.stringify({ email, password }),
       });
       
