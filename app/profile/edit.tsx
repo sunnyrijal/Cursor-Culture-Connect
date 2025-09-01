@@ -1,21 +1,12 @@
-'use client';
+"use client"
 
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { router } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SearchableSelector } from '@/components/ui/SearchableSelector';
+import React, { useState } from "react"
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { LinearGradient } from "expo-linear-gradient"
+import { BlurView } from "expo-blur"
+import { router } from "expo-router"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Save,
@@ -27,174 +18,176 @@ import {
   CheckCircle,
   AlertCircle,
   MapPin,
-  Phone,
-} from 'lucide-react-native';
-import { heritageOptions, languageOptions } from '@/data/heritageLanguageData';
-import type { UserProfile } from '@/types/user';
-import { getMyData, updateProfile } from '@/contexts/user.api';
-import Animated from 'react-native-reanimated';
-import UniversityDropdown from '@/components/UniversityDropdown';
-import { getUniversities } from '@/contexts/university.api';
+} from "lucide-react-native"
+import type { UserProfile } from "@/types/user"
+import { getMyData, updateProfile } from "@/contexts/user.api"
+import Animated from "react-native-reanimated"
+import UniversityDropdown from "@/components/UniversityDropdown"
+import { getUniversities } from "@/contexts/university.api"
 
 const privacyOptions = [
   {
-    label: 'Public',
-    value: 'public',
+    label: "Public",
+    value: "public",
     icon: Globe2,
-    description: 'Visible to everyone',
+    description: "Visible to everyone",
   },
   {
-    label: 'Group-Only',
-    value: 'group',
+    label: "Group-Only",
+    value: "group",
     icon: Users,
-    description: 'Only group members',
+    description: "Only group members",
   },
   {
-    label: 'Connections Only',
-    value: 'connections',
+    label: "Connections Only",
+    value: "connections",
     icon: Lock,
-    description: 'Only your connections',
+    description: "Only your connections",
   },
-];
+]
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({
-    name: '',
-    bio: '',
-    city: '',
-    state: '',
-    phone: '',
+    name: "",
+    bio: "",
+    city: "",
+    state: "",
+    phone: "",
+    classYear: "", // Added classYear to profile state
     // linkedIn: "",
     // major: "",
     // year: "",
     // heritage: [],
     // languages: [],
     // privacy: "public",
-  });
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [focusedInput, setFocusedInput] = useState<string>('');
+  })
+  const [focusedField, setFocusedField] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [focusedInput, setFocusedInput] = useState<string>("")
   const [fieldValidation, setFieldValidation] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const [loading, setLoading] = useState<boolean>(false);
+    [key: string]: boolean
+  }>({})
+  const [loading, setLoading] = useState<boolean>(false)
 
-  const [university, setUniversity] = useState<string>('');
+  const [university, setUniversity] = useState<string>("")
 
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const { data: universities } = useQuery({
-    queryKey: ['universities'],
+    queryKey: ["universities"],
     queryFn: getUniversities,
-  });
+  })
 
-  console.log(universities);
+  console.log(universities)
 
   const validateField = (fieldName: string, value: string) => {
     setFieldValidation((prev) => ({
       ...prev,
       [fieldName]: value.trim().length > 0,
-    }));
-  };
+    }))
+  }
 
   const { isLoading } = useQuery({
-    queryKey: ['userProfile'],
+    queryKey: ["userProfile"],
     queryFn: async () => {
-      console.log('[v0] Fetching user data...');
-      const response = await getMyData();
-      console.log('[v0] User data response:', response);
+      console.log("[v0] Fetching user data...")
+      const response = await getMyData()
+      console.log("[v0] User data response:", response)
 
       if (response.success && response.user) {
-        const userData = response.user;
+        const userData = response.user
         setProfile({
-          name: userData.name || '',
-          bio: userData.bio || '',
-          city: userData.city || '',
-          state: userData.state || '',
-          phone: userData.phone || '',
+          name: userData.name || "",
+          bio: userData.bio || "",
+          city: userData.city || "",
+          state: userData.state || "",
+          phone: userData.phone || "",
+          classYear: userData.classYear || "", // Added classYear to profile initialization
           // linkedIn: userData.linkedin || "",
           // major: userData.major || "",
           // year: userData.year || "",
           // heritage: userData.heritage || [],
           // languages: userData.languages || [],
           // privacy: userData.privacy || "public",
-        });
-
+        })
+        console.log(userData)
         // Set university if available
         if (userData.university) {
-          setUniversity(userData.university.name || '');
+          setUniversity(userData.university.name || "")
         }
 
-        console.log('[v0] Profile data populated:', userData);
-        return userData;
+        console.log("[v0] Profile data populated:", userData)
+        return userData
       }
-      throw new Error('Failed to load profile data');
+      throw new Error("Failed to load profile data")
     },
     //@ts-ignore
     onError: (error: any) => {
-      console.error('[v0] Error fetching user data:', error);
-      setError('Failed to load profile data');
+      console.error("[v0] Error fetching user data:", error)
+      setError("Failed to load profile data")
     },
-  });
+  })
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: {
-      name: string;
-      bio?: string;
-      city?: string;
-      state?: string;
-      phone?: string;
-      university?: string;
+      name: string
+      bio?: string
+      city?: string
+      state?: string
+      phone?: string
+      university?: string
+      classYear?: string // Added classYear to mutation type
     }) => {
-      const res = await updateProfile(profileData);
-      console.log(res);
+      const res = await updateProfile(profileData)
+      console.log(res)
       if (!res.success) {
-        throw new Error('Failed to update profile');
+        throw new Error("Failed to update profile")
       }
-      return res;
+      return res
     },
     onSuccess: () => {
-      setSuccess('Profile updated successfully');
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      setSuccess("Profile updated successfully")
+      setError(null)
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] })
       setTimeout(() => {
-        router.back();
-      }, 2000);
+        router.back()
+      }, 2000)
     },
     onError: (error) => {
-      console.error('Error updating profile:', error);
-      setError('Failed to update profile');
-      setSuccess(null);
+      console.error("Error updating profile:", error)
+      setError("Failed to update profile")
+      setSuccess(null)
     },
-  });
+  })
 
   const handleSave = async () => {
     if (!profile.name?.trim()) {
-      setError('Name is required');
-      setSuccess(null);
-      return;
+      setError("Name is required")
+      setSuccess(null)
+      return
     }
 
-    setError(null);
-    setSuccess(null);
+    setError(null)
+    setSuccess(null)
 
     const updateData: any = {
       name: profile.name,
-    };
+    }
 
-    if (profile.bio) updateData.bio = profile.bio;
-    if (profile.city) updateData.city = profile.city;
-    if (profile.state) updateData.state = profile.state;
-    if (profile.phone) updateData.phone = profile.phone;
-    if (university) updateData.university = university;
+    if (profile.bio) updateData.bio = profile.bio
+    if (profile.city) updateData.city = profile.city
+    if (profile.state) updateData.state = profile.state
+    if (profile.phone) updateData.phone = profile.phone
+    if (university) updateData.university = university
+    if (profile.classYear) updateData.classYear = profile.classYear // Added classYear to save data
 
-    updateProfileMutation.mutate(updateData);
-  };
+    updateProfileMutation.mutate(updateData)
+  }
 
   const updateProfileValue = (key: keyof UserProfile, value: any) => {
-    setProfile((prev) => ({ ...prev, [key]: value }));
-  };
+    setProfile((prev) => ({ ...prev, [key]: value }))
+  }
 
   const renderInputField = (
     key: string,
@@ -202,7 +195,7 @@ export default function EditProfile() {
     value: string | undefined,
     placeholder: string,
     multiline = false,
-    required = false
+    required = false,
   ) => (
     <View style={styles.field}>
       <Text style={styles.label}>
@@ -213,47 +206,38 @@ export default function EditProfile() {
           <LinearGradient
             colors={
               focusedField === key
-                ? ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.9)']
-                : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.9)']
+                ? ["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.9)"]
+                : ["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.9)"]
             }
             style={[styles.inputGradient, multiline && styles.textAreaGradient]}
           >
             <TextInput
-              style={[
-                styles.neomorphicInput,
-                multiline && styles.textAreaInput,
-              ]}
+              style={[styles.neomorphicInput, multiline && styles.textAreaInput]}
               value={value}
               placeholder={placeholder}
               placeholderTextColor="#94A3B8"
-              onChangeText={(text) =>
-                updateProfileValue(key as keyof UserProfile, text)
-              }
+              onChangeText={(text) => updateProfileValue(key as keyof UserProfile, text)}
               onFocus={() => setFocusedField(key)}
               onBlur={() => setFocusedField(null)}
               multiline={multiline}
-              textAlignVertical={multiline ? 'top' : 'center'}
-              keyboardType={key === 'phone' ? 'phone-pad' : 'default'}
+              textAlignVertical={multiline ? "top" : "center"}
+              keyboardType={key === "phone" ? "phone-pad" : "default"}
             />
           </LinearGradient>
         </BlurView>
       </View>
     </View>
-  );
+  )
 
-  const renderSection = (
-    title: string,
-    icon: any,
-    children: React.ReactNode
-  ) => (
+  const renderSection = (title: string, icon: any, children: React.ReactNode) => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionIconContainer}>
           <LinearGradient
-            colors={['rgba(99, 102, 241, 0.15)', 'rgba(99, 102, 241, 0.1)']}
+            colors={["rgba(99, 102, 241, 0.15)", "rgba(99, 102, 241, 0.1)"]}
             style={styles.sectionIconGradient}
           >
-            {React.createElement(icon, { size: 20, color: '#6366F1' })}
+            {React.createElement(icon, { size: 20, color: "#6366F1" })}
           </LinearGradient>
         </View>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -261,7 +245,7 @@ export default function EditProfile() {
       <View style={styles.neomorphicCard}>
         <BlurView intensity={20} tint="light" style={styles.cardBlur}>
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.95)', 'rgba(248, 250, 252, 0.8)']}
+            colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.8)"]}
             style={styles.cardGradient}
           >
             {children}
@@ -269,47 +253,32 @@ export default function EditProfile() {
         </BlurView>
       </View>
     </View>
-  );
+  )
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#F8FAFC', '#E2E8F0', '#F1F5F9']}
-        style={styles.gradientBackground}
-      />
+      <LinearGradient colors={["#F8FAFC", "#E2E8F0", "#F1F5F9"]} style={styles.gradientBackground} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerContainer}>
           <BlurView intensity={30} tint="light" style={styles.headerBlur}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+              colors={["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0.9)"]}
               style={styles.headerGradient}
             >
               <View style={styles.header}>
-                <TouchableOpacity
-                  onPress={() => router.back()}
-                  style={styles.neomorphicButton}
-                >
+                <TouchableOpacity onPress={() => router.back()} style={styles.neomorphicButton}>
                   <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.9)',
-                      'rgba(241, 245, 249, 0.8)',
-                    ]}
+                    colors={["rgba(255, 255, 255, 0.9)", "rgba(241, 245, 249, 0.8)"]}
                     style={styles.buttonGradient}
                   >
                     <ArrowLeft size={20} color="#475569" />
                   </LinearGradient>
                 </TouchableOpacity>
                 <Text style={styles.title}>Edit Profile</Text>
-                <TouchableOpacity
-                  onPress={handleSave}
-                  style={styles.neomorphicSaveButton}
-                >
+                <TouchableOpacity onPress={handleSave} style={styles.neomorphicSaveButton}>
                   <LinearGradient
-                    colors={[
-                      'rgba(99, 102, 241, 0.9)',
-                      'rgba(99, 102, 241, 0.8)',
-                    ]}
+                    colors={["rgba(99, 102, 241, 0.9)", "rgba(99, 102, 241, 0.8)"]}
                     style={styles.saveButtonGradient}
                   >
                     <Save size={18} color="#FFFFFF" />
@@ -328,7 +297,7 @@ export default function EditProfile() {
           {success ? (
             <Animated.View style={styles.successContainer}>
               <LinearGradient
-                colors={['rgba(34, 197, 94, 0.1)', 'rgba(34, 197, 94, 0.05)']}
+                colors={["rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.05)"]}
                 style={styles.successGradient}
               >
                 <CheckCircle size={20} color="#22C55E" />
@@ -340,7 +309,7 @@ export default function EditProfile() {
           {error ? (
             <Animated.View style={styles.errorContainer}>
               <LinearGradient
-                colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
+                colors={["rgba(239, 68, 68, 0.1)", "rgba(239, 68, 68, 0.05)"]}
                 style={styles.errorGradient}
               >
                 <AlertCircle size={20} color="#EF4444" />
@@ -350,25 +319,11 @@ export default function EditProfile() {
           ) : null}
 
           {renderSection(
-            'Basic Information',
+            "Basic Information",
             User,
             <>
-              {renderInputField(
-                'name',
-                'Full Name',
-                profile.name,
-                'Enter your full name',
-                false,
-                true
-              )}
-              {renderInputField(
-                'bio',
-                'Bio',
-                profile.bio,
-                'Tell others about yourself...',
-                true,
-                false
-              )}
+              {renderInputField("name", "Full Name", profile.name, "Enter your full name", false, true)}
+              {renderInputField("bio", "Bio", profile.bio, "Tell others about yourself...", true, false)}
 
               {/* {renderInputField("linkedIn", "LinkedIn Profile", profile.linkedIn, "https://linkedin.com/in/username")} */}
 
@@ -426,7 +381,7 @@ export default function EditProfile() {
                   ))}
                 </View>
               </View> */}
-            </>
+            </>,
           )}
 
           <Animated.View style={[{ zIndex: 10001 }]}>
@@ -436,59 +391,50 @@ export default function EditProfile() {
               onValueChange={setUniversity}
               label="University"
               placeholder="Search or enter your university name"
-              isValid={fieldValidation['university']}
-              isFocused={focusedInput === 'university'}
-              onFocus={() => setFocusedInput('university')}
+              isValid={fieldValidation["university"]}
+              isFocused={focusedInput === "university"}
+              onFocus={() => setFocusedInput("university")}
               onBlur={() => {
-                setFocusedInput('');
-                if (university) validateField('university', university);
+                setFocusedInput("")
+                if (university) validateField("university", university)
               }}
               loading={loading}
             />
           </Animated.View>
 
           {renderSection(
-            'Contact Information',
+            "Contact Information",
             MapPin,
             <>
               <View style={styles.row}>
                 <View style={styles.halfField}>
-                  {renderInputField(
-                    'city',
-                    'City',
-                    profile.city,
-                    'Enter your city'
-                  )}
+                  {renderInputField("city", "City", profile.city, "Enter your city")}
                 </View>
                 <View style={styles.halfField}>
-                  {renderInputField(
-                    'state',
-                    'State/Province',
-                    profile.state,
-                    'Enter your state'
-                  )}
+                  {renderInputField("state", "State/Province", profile.state, "Enter your state")}
                 </View>
               </View>
+              {renderInputField("phone", "Phone Number", profile.phone, "Enter your phone number")}
+            </>,
+          )}
+
+          {renderSection(
+            "Academic Information",
+            GraduationCap,
+            <>
               {renderInputField(
-                'phone',
-                'Phone Number',
-                profile.phone,
-                'Enter your phone number'
+                "classYear",
+                "Class Year",
+                profile.classYear,
+                "Enter your graduation year (e.g., 2025)",
+                false,
+                false,
               )}
-            </>
+            </>,
           )}
 
           {/* 
           {renderSection(
-            "Academic Information",
-            GraduationCap,
-            <View style={styles.row}>
-              <View style={styles.halfField}>{renderInputField("major", "Major", profile.major, "Your major")}</View>
-              <View style={styles.halfField}>{renderInputField("year", "Year", profile.year, "Your year")}</View>
-            </View>,
-          )} */}
-
-          {/* {renderSection(
             "Cultural Identity",
             Globe2,
             <>
@@ -521,27 +467,14 @@ export default function EditProfile() {
         <View style={styles.fixedSaveSection}>
           <BlurView intensity={25} tint="light" style={styles.fixedSaveBlur}>
             <LinearGradient
-              colors={[
-                'rgba(248, 250, 252, 0.98)',
-                'rgba(248, 250, 252, 0.95)',
-              ]}
+              colors={["rgba(248, 250, 252, 0.98)", "rgba(248, 250, 252, 0.95)"]}
               style={styles.fixedSaveGradient}
             >
               <View style={styles.saveButtonsContainer}>
-                <TouchableOpacity
-                  onPress={() => router.back()}
-                  style={styles.secondarySaveButton}
-                >
-                  <BlurView
-                    intensity={15}
-                    tint="light"
-                    style={styles.saveButtonBlur}
-                  >
+                <TouchableOpacity onPress={() => router.back()} style={styles.secondarySaveButton}>
+                  <BlurView intensity={15} tint="light" style={styles.saveButtonBlur}>
                     <LinearGradient
-                      colors={[
-                        'rgba(255, 255, 255, 0.9)',
-                        'rgba(248, 250, 252, 0.8)',
-                      ]}
+                      colors={["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.8)"]}
                       style={styles.secondarySaveGradient}
                     >
                       <Text style={styles.secondarySaveText}>Cancel</Text>
@@ -549,28 +482,16 @@ export default function EditProfile() {
                   </BlurView>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={handleSave}
-                  style={styles.primarySaveButton}
-                >
-                  <BlurView
-                    intensity={20}
-                    tint="light"
-                    style={styles.saveButtonBlur}
-                  >
+                <TouchableOpacity onPress={handleSave} style={styles.primarySaveButton}>
+                  <BlurView intensity={20} tint="light" style={styles.saveButtonBlur}>
                     <LinearGradient
-                      colors={[
-                        'rgba(99, 102, 241, 0.95)',
-                        'rgba(99, 102, 241, 0.85)',
-                      ]}
+                      colors={["rgba(99, 102, 241, 0.95)", "rgba(99, 102, 241, 0.85)"]}
                       style={styles.primarySaveGradient}
                     >
                       <View style={styles.saveButtonContent}>
                         <Save size={20} color="#FFFFFF" />
                         <Text style={styles.primarySaveText}>
-                          {updateProfileMutation.isPending
-                            ? 'Saving...'
-                            : 'Save Changes'}
+                          {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                         </Text>
                       </View>
                     </LinearGradient>
@@ -582,20 +503,20 @@ export default function EditProfile() {
         </View>
       </SafeAreaView>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
   },
   city: {},
   state: {},
   phone: {},
 
   gradientBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -609,10 +530,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -629,9 +550,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
@@ -639,10 +560,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#CBD5E1',
+        shadowColor: "#CBD5E1",
         shadowOffset: { width: -2, height: -2 },
         shadowOpacity: 0.6,
         shadowRadius: 6,
@@ -654,17 +575,17 @@ const styles = StyleSheet.create({
   },
   buttonGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   neomorphicSaveButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#6366F1',
+        shadowColor: "#6366F1",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -676,13 +597,13 @@ const styles = StyleSheet.create({
   },
   saveButtonGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
-    color: '#1E293B',
+    fontWeight: "800",
+    color: "#1E293B",
     letterSpacing: -0.5,
   },
   content: {
@@ -696,8 +617,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   sectionIconContainer: {
@@ -705,25 +626,25 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     marginRight: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sectionIconGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '800',
-    color: '#1E293B',
+    fontWeight: "800",
+    color: "#1E293B",
     letterSpacing: -0.3,
   },
   neomorphicCard: {
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.08,
         shadowRadius: 18,
@@ -739,13 +660,13 @@ const styles = StyleSheet.create({
   cardGradient: {
     padding: 20,
     borderRadius: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   field: {
     marginBottom: 20,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
   },
   halfField: {
@@ -753,20 +674,20 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: "700",
+    color: "#1E293B",
     marginBottom: 10,
     letterSpacing: -0.2,
   },
   required: {
-    color: '#EF4444',
+    color: "#EF4444",
   },
   neomorphicInputContainer: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#CBD5E1',
+        shadowColor: "#CBD5E1",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -788,16 +709,16 @@ const styles = StyleSheet.create({
   },
   neomorphicInput: {
     fontSize: 16,
-    color: '#1E293B',
-    fontWeight: '500',
+    color: "#1E293B",
+    fontWeight: "500",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     minHeight: 48,
   },
   textAreaInput: {
     minHeight: 96,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     paddingTop: 14,
   },
   privacyContainer: {
@@ -808,11 +729,11 @@ const styles = StyleSheet.create({
   },
   neomorphicPrivacyButton: {
     borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: 'white',
+    overflow: "hidden",
+    backgroundColor: "white",
     ...Platform.select({
       ios: {
-        shadowColor: '#CBD5E1',
+        shadowColor: "#CBD5E1",
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.25,
         shadowRadius: 6,
@@ -830,16 +751,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   privacyContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   privacyIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   privacyTextContainer: {
@@ -847,32 +768,32 @@ const styles = StyleSheet.create({
   },
   privacyLabel: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: "700",
+    color: "#1E293B",
     marginBottom: 2,
   },
   privacyLabelActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   privacyDescription: {
     fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
+    color: "#64748B",
+    fontWeight: "500",
   },
   privacyDescriptionActive: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
   },
   selectorContainer: {
     marginBottom: 16,
   },
   fixedSaveSection: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -887,21 +808,21 @@ const styles = StyleSheet.create({
   },
   fixedSaveGradient: {
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+    paddingBottom: Platform.OS === "ios" ? 20 : 16,
     paddingHorizontal: 20,
   },
   saveButtonsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   primarySaveButton: {
     flex: 2,
     height: 56,
     borderRadius: 18,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#6366F1',
+        shadowColor: "#6366F1",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 16,
@@ -915,10 +836,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#CBD5E1',
+        shadowColor: "#CBD5E1",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -934,64 +855,64 @@ const styles = StyleSheet.create({
   },
   primarySaveGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 18,
   },
   secondarySaveGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 16,
   },
   saveButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   primarySaveText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
     letterSpacing: -0.2,
   },
   secondarySaveText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#64748B',
+    fontWeight: "600",
+    color: "#64748B",
   },
   successContainer: {
     marginBottom: 16,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   successGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     gap: 8,
   },
   successText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#22C55E',
+    fontWeight: "600",
+    color: "#22C55E",
     flex: 1,
   },
   errorContainer: {
     marginBottom: 16,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   errorGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     gap: 8,
   },
   errorText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontWeight: "600",
+    color: "#EF4444",
     flex: 1,
   },
-});
+})

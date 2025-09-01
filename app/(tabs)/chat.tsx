@@ -1,73 +1,156 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
+'use client';
+
+import { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Search, MessageCircle, Users, Sparkles, ArrowRight } from 'lucide-react-native';
+import {
+  Search,
+  MessageCircle,
+  Users,
+  Sparkles,
+  ArrowRight,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { mockConversations, mockGroupConversations } from '@/data/mockData';
+import { theme } from '@/components/theme';
+import { useQuery } from '@tanstack/react-query';
+import { getUserChats } from '@/contexts/chat.api';
+import getDecodedToken from '@/utils/getMyData';
 
-type FilterType = 'personal' | 'groups';
+type FilterType = 'DIRECT' | 'GROUP';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Participant {
+  id: string;
+  chatId: string;
+  userId: string;
+  user: User;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  chatId: string;
+  senderId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+}
+
+interface Chat {
+  id: string;
+  type: 'DIRECT' | 'GROUP';
+  name: string | null;
+  createdAt: string;
+  updatedAt: string;
+  groupId: string | null;
+  participants: Participant[];
+  group: Group | null;
+  messages: Message[];
+}
 
 export default function ChatListScreen() {
-  const [filter, setFilter] = useState<FilterType>('personal');
+  const [filter, setFilter] = useState<FilterType>('DIRECT');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const filteredPersonal = mockConversations.filter(c => 
-    c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  const {
+    data: chatResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['chats', filter],
+    queryFn: () => getUserChats(),
+  });
+
+  console.log(chatResponse);
+  const processedChats = useMemo(() => {
+    if (!chatResponse?.data || !myData?.userId) return [];
+
+    return chatResponse.data
+      .filter((chat: Chat) => chat.type === filter)
+      .map((chat: Chat) => {
+        if (chat.type === 'GROUP') {
+          return {
+            id: chat.id,
+            name: chat.group?.name || 'Unnamed Group',
+            image: chat.group?.imageUrl || 'https://via.placeholder.com/56',
+            lastMessage: chat.messages[0]?.content || 'No messages yet',
+            lastMessageTime: chat.messages[0]
+              ? new Date(chat.messages[0].createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '',
+            unreadCount: 0, // You can implement unread logic here
+            type: 'GROUP' as const,
+          };
+        } else {
+          // For DIRECT chats, find the other participant
+          const otherParticipant = chat.participants.find(
+            (p) => p.userId !== myData.userId
+          );
+          return {
+            id: chat.id,
+            name: otherParticipant?.user.name || 'Unknown User',
+            image: 'https://via.placeholder.com/56', // You can add user images later
+            lastMessage: chat.messages[0]?.content || 'No messages yet',
+            lastMessageTime: chat.messages[0]
+              ? new Date(chat.messages[0].createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '',
+            unreadCount: 0, // You can implement unread logic here
+            type: 'DIRECT' as const,
+          };
+        }
+      });
+  }, [chatResponse, myData, filter]);
+
+  const filteredChats = processedChats.filter((chat: any) =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredGroups = mockGroupConversations.filter(gc =>
-    gc.group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const renderPersonalItem = ({ item, index }: { item: typeof mockConversations[0], index: number }) => (
-    <TouchableOpacity 
-      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]} 
-      onPress={() => router.push(`/chat/${item.user.id}`)}
-      activeOpacity={0.7}
-    >
-      <BlurView intensity={10} style={styles.chatItemBlur}>
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
-          style={styles.chatItemGradient}
-        >
-          <View style={styles.avatarContainer}>
-            <Image source={{ uri: item.user.image }} style={styles.avatar} />
-            <View style={styles.onlineIndicator} />
-          </View>
-          
-          <View style={styles.chatContent}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{item.user.name}</Text>
-              <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
-            </View>
-            <View style={styles.chatMessage}>
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
-              {item.unreadCount > 0 && (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.unreadBadge}
-                >
-                  <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                </LinearGradient>
-              )}
-            </View>
-          </View>
-          
-          <View style={styles.chatArrow}>
-            <ArrowRight size={16} color="#94A3B8" />
-          </View>
-        </LinearGradient>
-      </BlurView>
-    </TouchableOpacity>
-  );
-
-  const renderGroupItem = ({ item, index }: { item: typeof mockGroupConversations[0], index: number }) => (
-    <TouchableOpacity 
-      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]} 
+  const renderChatItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof processedChats)[0];
+    index: number;
+  }) => (
+    <TouchableOpacity
+      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]}
       onPress={() => router.push(`/chat/${item.id}`)}
       activeOpacity={0.7}
     >
@@ -77,19 +160,33 @@ export default function ChatListScreen() {
           style={styles.chatItemGradient}
         >
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: item.group.image }} style={styles.avatar} />
-            <View style={styles.groupBadge}>
-              <Users size={12} color="#FFFFFF" />
-            </View>
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require('../../assets/user.png')
+              }
+              style={styles.avatar}
+            />
+
+            {item.type === 'GROUP' ? (
+              <View style={styles.groupBadge}>
+                <Users size={12} color="#FFFFFF" />
+              </View>
+            ) : (
+              <View style={styles.onlineIndicator} />
+            )}
           </View>
-          
+
           <View style={styles.chatContent}>
             <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{item.group.name}</Text>
+              <Text style={styles.chatName}>{item.name}</Text>
               <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
             </View>
             <View style={styles.chatMessage}>
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
+              <Text style={styles.lastMessage} numberOfLines={1}>
+                {item.lastMessage}
+              </Text>
               {item.unreadCount > 0 && (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
@@ -100,7 +197,7 @@ export default function ChatListScreen() {
               )}
             </View>
           </View>
-          
+
           <View style={styles.chatArrow}>
             <ArrowRight size={16} color="#94A3B8" />
           </View>
@@ -109,35 +206,43 @@ export default function ChatListScreen() {
     </TouchableOpacity>
   );
 
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#6366F1" />
+      <Text style={styles.loadingText}>Loading chats...</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          {/* <LinearGradient
-            colors={['#6366F1', '#8B5CF6']}
-            style={styles.headerGradient}
-          > */}
-            <View style={styles.headerContent}>
-              <View style={styles.headerLeft}>
-                <MessageCircle size={28}  color={theme.primary}/>
-                <Text style={styles.headerTitle}>Messages</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <Sparkles size={24}  color={theme.primary}/>
-              </View>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <MessageCircle size={28} color={theme.primary} />
+              <Text style={styles.headerTitle}>Messages</Text>
             </View>
-          {/* </LinearGradient> */}
+            <View style={styles.headerRight}>
+              <Sparkles size={24} color={theme.primary} />
+            </View>
+          </View>
         </View>
 
         {/* Search Container */}
         <View style={styles.searchWrapper}>
           <BlurView intensity={20} style={styles.searchBlur}>
-            <View style={[
-              styles.searchContainer,
-              searchFocused && styles.searchContainerFocused
-            ]}>
-              <Search size={20} color={searchFocused ? "#6366F1" : "#94A3B8"} style={styles.searchIcon} />
+            <View
+              style={[
+                styles.searchContainer,
+                searchFocused && styles.searchContainerFocused,
+              ]}
+            >
+              <Search
+                size={20}
+                color={searchFocused ? '#6366F1' : '#94A3B8'}
+                style={styles.searchIcon}
+              />
               <TextInput
                 placeholder="Search conversations..."
                 placeholderTextColor="#94A3B8"
@@ -159,45 +264,49 @@ export default function ChatListScreen() {
         {/* Filter Container */}
         <View style={styles.filterWrapper}>
           <View style={styles.filterContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.filterButton, 
-                filter === 'personal' && styles.activeFilter
+                styles.filterButton,
+                filter === 'DIRECT' && styles.activeFilter,
               ]}
-              onPress={() => setFilter('personal')}
+              onPress={() => setFilter('DIRECT')}
               activeOpacity={0.8}
             >
-              {filter === 'personal' ? (
+              {filter === 'DIRECT' ? (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
                   style={styles.filterButtonGradient}
                 >
                   <MessageCircle size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>Personal</Text>
+                  <Text style={[styles.filterText, styles.activeFilterText]}>
+                    Direct
+                  </Text>
                 </LinearGradient>
               ) : (
                 <View style={styles.filterButtonContent}>
                   <MessageCircle size={16} color="#64748B" />
-                  <Text style={styles.filterText}>Personal</Text>
+                  <Text style={styles.filterText}>Direct</Text>
                 </View>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.filterButton, 
-                filter === 'groups' && styles.activeFilter
+                styles.filterButton,
+                filter === 'GROUP' && styles.activeFilter,
               ]}
-              onPress={() => setFilter('groups')}
+              onPress={() => setFilter('GROUP')}
               activeOpacity={0.8}
             >
-              {filter === 'groups' ? (
+              {filter === 'GROUP' ? (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
                   style={styles.filterButtonGradient}
                 >
                   <Users size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>Groups</Text>
+                  <Text style={[styles.filterText, styles.activeFilterText]}>
+                    Groups
+                  </Text>
                 </LinearGradient>
               ) : (
                 <View style={styles.filterButtonContent}>
@@ -208,23 +317,16 @@ export default function ChatListScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* Chat List */}
         <View style={styles.listContainer}>
-          {filter === 'personal' ? (
-            <FlatList
-              data={filteredPersonal}
-              renderItem={renderPersonalItem}
-              keyExtractor={item => item.id}
-              style={styles.list}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-            />
+          {isLoading ? (
+            renderLoading()
           ) : (
             <FlatList
-              data={filteredGroups}
-              renderItem={renderGroupItem}
-              keyExtractor={item => item.id}
+              data={filteredChats}
+              renderItem={renderChatItem}
+              keyExtractor={(item) => item.id}
               style={styles.list}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
@@ -250,17 +352,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 20,
     overflow: 'hidden',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#6366F1',
-    //     shadowOffset: { width: 0, height: 8 },
-    //     shadowOpacity: 0.3,
-    //     shadowRadius: 16,
-    //   },
-    //   android: {
-    //     elevation: 12,
-    //   },
-    // }),
   },
   headerGradient: {
     padding: 20,
@@ -281,7 +372,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    // color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   searchWrapper: {
@@ -370,7 +460,7 @@ const styles = StyleSheet.create({
   filterButton: {
     flex: 1,
     borderRadius: 12,
-    backgroundColor:'white',
+    backgroundColor: 'white',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -417,7 +507,6 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    // backgroundColor:'white',
     color: '#64748B',
   },
   activeFilterText: {
@@ -435,12 +524,11 @@ const styles = StyleSheet.create({
   },
   chatItem: {
     marginBottom: 4,
-    padding:4,
-
+    padding: 4,
   },
   chatItemBlur: {
     borderRadius: 20,
-    backgroundColor:'white',
+    backgroundColor: 'white',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -462,7 +550,6 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: 'relative',
     marginRight: 16,
-
   },
   avatar: {
     width: 56,
@@ -555,5 +642,17 @@ const styles = StyleSheet.create({
   chatArrow: {
     marginLeft: 12,
     padding: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
   },
 });

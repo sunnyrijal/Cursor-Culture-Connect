@@ -68,7 +68,7 @@ export default function Discover() {
 
   const generateUserShareContent = (user: MockUser) => {
     return {
-      title: `${user.name} - Culture Connect`,
+      title: `${user.name} - TRiVO`,
       message: `Connect with ${user.name} on Culture Connect!\n\n🎓 ${user.major} at ${user.university}\n🌍 Heritage: ${user.heritage.join(', ')}\n\nDiscover amazing people from diverse cultures!`,
       url: `https://cultureconnect.app/profile/${user.id}`
     };

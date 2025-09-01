@@ -36,6 +36,8 @@ import {
   LogOut,
   X,
   Phone,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react-native"
 import { theme } from "@/components/theme"
 
@@ -88,54 +90,23 @@ interface UserProfile {
   posts?: number
 }
 
-const mockUserData: UserProfile = {
-  id: 1,
-  email: "alex.chen@stanford.edu",
-  fullName: "Alex Chen",
-  university: "Stanford University",
-  major: "Computer Science",
-  year: "Junior",
-  state: "California",
-  city: "Palo Alto",
-  bio: "Passionate about technology and preserving cultural traditions. Love connecting with fellow students from around the world! 🌍✨",
-  linkedin: "linkedin.com/in/alexchen",
-  heritage: ["Chinese", "Taiwanese"],
-  languages: ["English", "Mandarin", "Cantonese"],
-  profile_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-  createdAt: "2024-01-15",
-  mobileNumber: "+1 (555) 123-4567",
-  avatar: "https://example.com/avatar.png",
-  website: "https://example.com",
-  phone: "+1 (555) 987-6543",
-  company: "Tech Innovations Inc.",
-  role: "Software Engineer",
-  followers: 100,
-  following: 50,
-  posts: 20,
-}
-
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState("about")
-
   // State for profile completion modal
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({})
   const [loading, setLoading] = useState(false)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   const { logout } = useAuth()
 
   const {
-    data: fetchedUserProfile,
+    data: userProfile,
     isLoading: queryLoading,
     error,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
       try {
         const response = await getMyData()
         console.log(response)
@@ -145,57 +116,26 @@ export default function Profile() {
           email: response.user.email,
           fullName: response.user.name,
           university: response.user.university?.name || null,
-          major: null, // Not provided in API response
           year: null, // Not provided in API response
           state: response.user.state,
           city: response.user.city,
           bio: null, // Not provided in API response
-          linkedin: null, // Not provided in API response
-          heritage: null, // Not provided in API response
-          languages: null, // Not provided in API response
           profile_image: response.user.avatar,
           createdAt: response.user.createdAt,
           mobileNumber: response.user.phone,
           avatar: response.user.avatar,
-          website: null, // Not provided in API response
           phone: response.user.phone,
-          company: null, // Not provided in API response
-          role: null, // Not provided in API response
-          followers: 0, // Default value
-          following: 0, // Default value
-          posts: 0, // Default value
         }
 
         return data
       } catch (error) {
         console.error("Error fetching user profile:", error)
-        // Fallback to mock data on error
-        return mockUserData
+        throw error // Let React Query handle the error
       }
     },
-
+    retry: 2, // Retry failed requests twice
+    retryDelay: 1000, // Wait 1 second between retries
   })
-
-  useEffect(() => {
-    if (fetchedUserProfile) {
-      setUserProfile(fetchedUserProfile)
-      // checkProfileCompletion(fetchedUserProfile)
-    }
-  }, [fetchedUserProfile])
-
-  // Check if important profile fields are missing
-  // const checkProfileCompletion = (profile: UserProfile) => {
-  //   const requiredFields = ["fullName", "university", "major", "year", "city", "state"]
-  //   const missingFields = requiredFields.filter((field) => !profile[field as keyof UserProfile])
-
-  //   if (missingFields.length > 0) {
-  //     setEditedProfile({
-  //       ...profile,
-  //       ...Object.fromEntries(missingFields.map((field) => [field, ""])),
-  //     })
-  //     setShowCompletionModal(true)
-  //   }
-  // }
 
   const saveUpdatedProfile = async () => {
     try {
@@ -219,7 +159,6 @@ export default function Profile() {
 
       // const updatedProfile = await response.json();
       const updatedProfile = editedProfile
-      // setUserProfile({ ...userProfile, ...updatedProfile })
       setShowCompletionModal(false)
 
       Alert.alert("Success", "Your profile has been updated!")
@@ -253,127 +192,83 @@ export default function Profile() {
     router.push("/my-hub")
   }
 
-  // Render different tab content
-  const renderTabContent = () => {
-    if (!userProfile) return null
+  const handleRetry = () => {
+    refetch()
+  }
 
-    switch (activeTab) {
-      case "about":
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.bioSection}>
-              <Text style={styles.bioTitle}>Bio</Text>
-              <View style={styles.bioCard}>
-                <Text style={styles.bioText}>{userProfile.bio || "No bio added yet."}</Text>
-              </View>
-            </View>
-
-            <View style={styles.culturalIdentitySection}>
-              <Text style={styles.sectionTitle}>Cultural Identity</Text>
-
-              <View style={styles.identityCard}>
-                <View style={styles.identityItem}>
-                  <View style={styles.iconContainer}>
-                    <Globe size={18} color={neumorphTheme.primary} />
-                  </View>
-                  <Text style={styles.identityLabel}>Heritage</Text>
-                </View>
-                <View style={styles.badgeContainer}>
-                  {userProfile.heritage && userProfile.heritage.length > 0 ? (
-                    userProfile.heritage.map((heritage, index) => (
-                      <View key={`heritage-${index}`} style={[styles.badge, styles.heritageBadge]}>
-                        <Text style={styles.badgeText}>{heritage}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.emptyText}>No heritage information added</Text>
-                  )}
-                </View>
-
-                <View style={[styles.identityItem, { marginTop: 20 }]}>
-                  <View style={styles.iconContainer}>
-                    <MessageSquare size={18} color={neumorphTheme.accent} />
-                  </View>
-                  <Text style={styles.identityLabel}>Languages</Text>
-                </View>
-                <View style={styles.badgeContainer}>
-                  {userProfile.languages && userProfile.languages.length > 0 ? (
-                    userProfile.languages.map((language, index) => (
-                      <View key={`language-${index}`} style={[styles.badge, styles.languageBadge]}>
-                        <Text style={styles.badgeText}>{language}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.emptyText}>No languages information added</Text>
-                  )}
-                </View>
-              </View>
+  // Loading state
+  if (queryLoading) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ArrowLeft size={24} color={neumorphTheme.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={() => router.push("/settings")} style={styles.headerActionButton}>
+                <Settings size={20} color={neumorphTheme.textPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.headerActionButton}>
+                <LogOut size={20} color={neumorphTheme.error} />
+              </TouchableOpacity>
             </View>
           </View>
-        )
-      case "activity-buddy":
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.emptyStateCard}>
-              <Text style={styles.emptyStateEmoji}>🤝</Text>
-              <Text style={styles.emptyStateTitle}>No Activity Preferences Set</Text>
-              <Text style={styles.emptyStateSubtitle}>
-                Let others know what activities you're open to doing together
+
+          <View style={styles.loadingContainer}>
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="large" color={neumorphTheme.primary} />
+              <Text style={styles.loadingText}>Loading your profile...</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+        <BottomNavigation />
+      </View>
+    )
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ArrowLeft size={24} color={neumorphTheme.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={() => router.push("/settings")} style={styles.headerActionButton}>
+                <Settings size={20} color={neumorphTheme.textPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.headerActionButton}>
+                <LogOut size={20} color={neumorphTheme.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.errorContainer}>
+            <View style={styles.errorCard}>
+              <View style={styles.errorIconContainer}>
+                <AlertCircle size={48} color={neumorphTheme.error} />
+              </View>
+              <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+              <Text style={styles.errorMessage}>
+                We couldn't load your profile right now. Please check your internet connection and try again.
               </Text>
-              <TouchableOpacity style={styles.setupButton}>
-                <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.setupButtonGradient}>
-                  <Text style={styles.setupButtonText}>+ Set Up Activity Buddy</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+                <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.retryButtonGradient}>
+                  <RefreshCw size={18} color="white" />
+                  <Text style={styles.retryButtonText}>Try Again</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
-        )
-      case "stories":
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.storyCard}>
-              <View style={styles.storyHeader}>
-                <Text style={styles.storyTitle}>Mid-Autumn Festival Memories</Text>
-                <View style={styles.storyIconContainer}>
-                  <Heart size={16} color={neumorphTheme.accent} />
-                </View>
-              </View>
-              <Text style={styles.storyDescription}>
-                Growing up, the Mid-Autumn Festival was always a special time for our family to gather under the full
-                moon, sharing mooncakes and stories passed down through generations...
-              </Text>
-              <View style={styles.storyMeta}>
-                <Text style={styles.storyTimestamp}>2 days ago</Text>
-                <View style={styles.storyEngagement}>
-                  <Text style={styles.storyEngagementText}>45 ❤️ 8 💬</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.storyCard}>
-              <View style={styles.storyHeader}>
-                <Text style={styles.storyTitle}>Traditional Tea Ceremony</Text>
-                <View style={styles.storyIconContainer}>
-                  <Heart size={16} color={neumorphTheme.success} />
-                </View>
-              </View>
-              <Text style={styles.storyDescription}>
-                Learning the art of Chinese tea ceremony from my grandmother has been one of the most meaningful
-                experiences. Each movement carries centuries of tradition...
-              </Text>
-              <View style={styles.storyMeta}>
-                <Text style={styles.storyTimestamp}>1 week ago</Text>
-                <View style={styles.storyEngagement}>
-                  <Text style={styles.storyEngagementText}>32 ❤️ 5 💬</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )
-
-      default:
-        return null
-    }
+        </SafeAreaView>
+        <BottomNavigation />
+      </View>
+    )
   }
 
   return (
@@ -394,225 +289,112 @@ export default function Profile() {
           </View>
         </View>
 
-        {queryLoading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={neumorphTheme.primary} />
-              <Text style={styles.loadingText}>Loading profile...</Text>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileImageContainer}>
+              <View style={styles.profileImageWrapper}>
+                <Image
+                  source={{ uri: userProfile?.profile_image || undefined }}
+                  defaultSource={placeholderImg}
+                  style={styles.profileImage}
+                />
+                <View style={styles.verificationBadge}>
+                  <CheckCircle size={18} color={neumorphTheme.success} />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.userInfoSection}>
+              <Text style={styles.userName}>{userProfile?.fullName || "Complete your profile"}</Text>
+
+              <View style={styles.userDetailsCard}>
+                <View style={styles.userDetail}>
+                  <View style={styles.detailIcon}>
+                    <Mail size={16} color={neumorphTheme.primary} />
+                  </View>
+                  <Text style={styles.userDetailText}>{userProfile?.email}</Text>
+                </View>
+
+                <View style={styles.userDetail}>
+                  <View style={styles.detailIcon}>
+                    <MapPin size={16} color={neumorphTheme.success} />
+                  </View>
+                  <Text style={styles.userDetailText}>{userProfile?.university || "Add university"}</Text>
+                </View>
+
+                <View style={styles.userDetail}>
+                  <View style={styles.detailIcon}>
+                    <MapPin size={16} color={neumorphTheme.warning} />
+                  </View>
+                  <Text style={styles.userDetailText}>
+                    {userProfile?.city && userProfile?.state
+                      ? `${userProfile.city}, ${userProfile.state}`
+                      : userProfile?.city || userProfile?.state
+                      ? `${userProfile.city || ""}, ${userProfile.state || ""}`
+                      : "-"}
+                  </Text>
+                </View>
+
+                <View style={styles.userDetail}>
+                  <View style={styles.detailIcon}>
+                    <Phone size={16} color={neumorphTheme.primary} />
+                  </View>
+                  <Text style={styles.userDetailText}>{userProfile?.phone || "-"}</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+              <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.editProfileGradient}>
+                <Edit size={18} color="white" />
+                <Text style={styles.editProfileText}>Edit Profile</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingsSection}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+
+            <View style={styles.settingsCard}>
+              <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/settings")}>
+                <View style={styles.settingIcon}>
+                  <Settings size={20} color={neumorphTheme.primary} />
+                </View>
+                <Text style={styles.settingText}>General Settings</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/notifications")}>
+                <View style={styles.settingIcon}>
+                  <Bell size={20} color={neumorphTheme.accent} />
+                </View>
+                <Text style={styles.settingText}>Notifications</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.settingItem}>
+                <View style={styles.settingIcon}>
+                  <Shield size={20} color={neumorphTheme.success} />
+                </View>
+                <Text style={styles.settingText}>Privacy & Security</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
+                <View style={styles.settingIcon}>
+                  <HelpCircle size={20} color={neumorphTheme.warning} />
+                </View>
+                <Text style={styles.settingText}>Help & Support</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            <View style={styles.profileSection}>
-              <View style={styles.profileImageContainer}>
-                <View style={styles.profileImageWrapper}>
-                  <Image
-                    source={{ uri: userProfile?.profile_image || undefined }}
-                    defaultSource={placeholderImg}
-                    style={styles.profileImage}
-                  />
-                  <View style={styles.verificationBadge}>
-                    <CheckCircle size={18} color={neumorphTheme.success} />
-                  </View>
-                  {/* <TouchableOpacity style={styles.editImageButton}>
-                    <LinearGradient
-                      colors={neumorphTheme.gradientPrimary}
-                      style={styles.editImageGradient}
-                    >
-                      <Edit size={16} color="white" />
-                    </LinearGradient>
-                  </TouchableOpacity> */}
-                </View>
-              </View>
 
-              <View style={styles.userInfoSection}>
-                <Text style={styles.userName}>{userProfile?.fullName || "Complete your profile"}</Text>
-
-                <View style={styles.userDetailsCard}>
-                  <View style={styles.userDetail}>
-                    <View style={styles.detailIcon}>
-                      <Mail size={16} color={neumorphTheme.primary} />
-                    </View>
-                    <Text style={styles.userDetailText}>{userProfile?.email}</Text>
-                  </View>
-
-                  {/* <View style={styles.userDetail}>
-                    <View style={styles.detailIcon}>
-                      <GraduationCap size={16} color={neumorphTheme.accent} />
-                    </View>
-                    <Text style={styles.userDetailText}>
-                      {userProfile?.major && userProfile?.year
-                        ? `${userProfile.major} • ${userProfile.year}`
-                        : "Add education details"}
-                    </Text>
-                  </View> */}
-
-                  <View style={styles.userDetail}>
-                    <View style={styles.detailIcon}>
-                      <MapPin size={16} color={neumorphTheme.success} />
-                    </View>
-                    <Text style={styles.userDetailText}>{userProfile?.university || "Add university"}</Text>
-                  </View>
-
-                  <View style={styles.userDetail}>
-                    <View style={styles.detailIcon}>
-                      <MapPin size={16} color={neumorphTheme.warning} />
-                    </View>
-                    <Text style={styles.userDetailText}>
-                      {userProfile?.city && userProfile?.state
-                        ? `${userProfile.city}, ${userProfile.state}`
-                        : userProfile?.city || userProfile?.state
-                        ? `${userProfile.city || ""}, ${userProfile.state || ""}`
-                        : "-"}
-                    </Text>
-                  </View>
-
-                  <View style={styles.userDetail}>
-                    <View style={styles.detailIcon}>
-                      <Phone size={16} color={neumorphTheme.primary} />
-                    </View>
-                    <Text style={styles.userDetailText}>
-                      {userProfile?.phone || "-"}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-                <LinearGradient colors={neumorphTheme.gradientPrimary} style={styles.editProfileGradient}>
-                  <Edit size={18} color="white" />
-                  <Text style={styles.editProfileText}>Edit Profile</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButtonContainer} onPress={handleLogout}>
+            <View style={styles.logoutIcon}>
+              <LogOut size={20} color={neumorphTheme.error} />
             </View>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
 
-            {/* <TouchableOpacity
-              style={styles.statsCard}
-              onPress={handleStatsClick}
-            >
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <Users size={24} color={neumorphTheme.primary} />
-                </View>
-                <Text style={styles.statNumber}>2</Text>
-                <Text style={styles.statLabel}>Groups</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <User size={24} color={neumorphTheme.accent} />
-                </View>
-                <Text style={styles.statNumber}>3</Text>
-                <Text style={styles.statLabel}>Connections</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <Calendar size={24} color={neumorphTheme.success} />
-                </View>
-                <Text style={styles.statNumber}>2</Text>
-                <Text style={styles.statLabel}>Events</Text>
-              </View>
-            </TouchableOpacity> */}
-
-            {/* <View style={styles.tabsContainer}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'about' && styles.activeTab]}
-                onPress={() => setActiveTab('about')}
-              >
-                {activeTab === 'about' ? (
-                  <LinearGradient
-                    colors={neumorphTheme.gradientPrimary}
-                    style={styles.activeTabGradient}
-                  >
-                    <Text style={styles.activeTabText}>About</Text>
-                  </LinearGradient>
-                ) : (
-                  <Text style={styles.tabText}>About</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === 'activity-buddy' && styles.activeTab,
-                ]}
-                onPress={() => setActiveTab('activity-buddy')}
-              >
-                {activeTab === 'activity-buddy' ? (
-                  <LinearGradient
-                    colors={neumorphTheme.gradientPrimary}
-                    style={styles.activeTabGradient}
-                  >
-                    <Text style={styles.activeTabText}>Activity Buddy</Text>
-                  </LinearGradient>
-                ) : (
-                  <Text style={styles.tabText}>Activity Buddy</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === 'stories' && styles.activeTab,
-                ]}
-                onPress={() => setActiveTab('stories')}
-              >
-                {activeTab === 'stories' ? (
-                  <LinearGradient
-                    colors={neumorphTheme.gradientPrimary}
-                    style={styles.activeTabGradient}
-                  >
-                    <Text style={styles.activeTabText}>Stories</Text>
-                  </LinearGradient>
-                ) : (
-                  <Text style={styles.tabText}>Stories</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {renderTabContent()} */}
-
-            <View style={styles.settingsSection}>
-              <Text style={styles.sectionTitle}>Settings</Text>
-
-              <View style={styles.settingsCard}>
-                <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/settings")}>
-                  <View style={styles.settingIcon}>
-                    <Settings size={20} color={neumorphTheme.primary} />
-                  </View>
-                  <Text style={styles.settingText}>General Settings</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/notifications")}>
-                  <View style={styles.settingIcon}>
-                    <Bell size={20} color={neumorphTheme.accent} />
-                  </View>
-                  <Text style={styles.settingText}>Notifications</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.settingItem}>
-                  <View style={styles.settingIcon}>
-                    <Shield size={20} color={neumorphTheme.success} />
-                  </View>
-                  <Text style={styles.settingText}>Privacy & Security</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
-                  <View style={styles.settingIcon}>
-                    <HelpCircle size={20} color={neumorphTheme.warning} />
-                  </View>
-                  <Text style={styles.settingText}>Help & Support</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.logoutButtonContainer} onPress={handleLogout}>
-              <View style={styles.logoutIcon}>
-                <LogOut size={20} color={neumorphTheme.error} />
-              </View>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-
-            <View style={{ height: 100 }} />
-          </ScrollView>
-        )}
+          <View style={{ height: 100 }} />
+        </ScrollView>
 
         {/* Profile Completion Modal */}
         <Modal
@@ -697,6 +479,41 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+
+  errorIconContainer: {
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: neumorphTheme.textPrimary,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: neumorphTheme.textSecondary,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  retryButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  retryButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -770,6 +587,25 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+   errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  errorCard: {
+    backgroundColor: neumorphTheme.cardBackground,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    shadowColor: neumorphTheme.shadowDark,
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: neumorphTheme.shadowLight,
   },
   loadingContainer: {
     flex: 1,

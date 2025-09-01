@@ -404,7 +404,7 @@ export default function Events() {
               },
             ]}
           >
-            <Text style={styles.title}>Culture Connect</Text>
+            <Text style={styles.title}>TRiVO</Text>
             <Text style={styles.subtitle}>Discover and participate in cultural celebrations</Text>
           </Animated.View>
 

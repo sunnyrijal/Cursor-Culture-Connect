@@ -102,7 +102,7 @@ export const apiClient = {
     }
   },
 
-  async signup(name:string, email: string, password: string, confirmPassword:string,  state:string, city:string,university:string, mobileNumber:string ) {
+  async signup(name:string, email: string, password: string, confirmPassword:string,  state:string, city:string,university:string, mobileNumber:string, classYear:string ) {
     try {
       // // Validate email domain
       // if (!isValidEduEmail(email)) {
@@ -124,6 +124,7 @@ export const apiClient = {
           city:city,
           phone:mobileNumber,
           confirmPassword,
+          classYear
         }),
       });
       

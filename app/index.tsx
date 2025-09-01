@@ -198,7 +198,7 @@ export default function Index() {
           {/* Text content */}
           <View style={styles.textContainer}>
             <Animated.View style={titleAnimatedStyle}>
-              <Text style={styles.title}>Culture Connect</Text>
+              <Text style={styles.title}>TRiVO</Text>
               <View style={styles.titleUnderline} />
             </Animated.View>
 
