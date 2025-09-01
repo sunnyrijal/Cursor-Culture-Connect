@@ -66,7 +66,7 @@ const Header = ({
           </TouchableOpacity>
 
           <View style={styles.appTitleContainer}>
-            <Text style={styles.appTitle}>Culture Connect App</Text>
+            <Text style={styles.appTitle}>TRiVO</Text>
             {/* <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>

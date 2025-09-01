@@ -26,7 +26,7 @@ interface SignupData {
 type AuthContextType = {
   authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name:string, email: string, password: string, confirmPassword:string, university:string, state:string, city:string, mobileNumber:string  ) => Promise<void>;
+  signup: (name:string, email: string, password: string, confirmPassword:string, university:string, state:string, city:string, mobileNumber:string, classYear:string ) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -118,9 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (name:string, email: string, password: string, confirmPassword:string, state:string, city:string, university:string, mobileNumber:string   ) => {
+  const signup = async (name:string, email: string, password: string, confirmPassword:string, state:string, city:string, university:string, mobileNumber:string, classYear:string) => {
     try {
-       const response = await apiClient.signup(name, email, password, confirmPassword, state, city, university, mobileNumber);
+       const response = await apiClient.signup(name, email, password, confirmPassword, state, city, university, mobileNumber, classYear);
       // After successful signup, log the user in
       // await login(email, password);
     } catch (error) {
