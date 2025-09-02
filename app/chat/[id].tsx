@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,25 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  ArrowLeft,
-  Send,
-  MoreVertical,
-  Phone,
-  Video,
-} from 'lucide-react-native';
+import { ArrowLeft, Send, MoreVertical } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import {
-  mockConversations,
-  mockGroupConversations,
-  findUserById,
-  Message,
-  currentUser,
-} from '@/data/mockData';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import getDecodedToken from '@/utils/getMyData';
 import { getChatDetails, sendMessage } from '@/contexts/chat.api';
+import useSocket from '@/hooks/useSocket';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
@@ -41,6 +30,48 @@ export default function ChatScreen() {
     queryKey: ['myData', id],
     queryFn: () => getDecodedToken(),
   });
+
+  const {
+    isConnected,
+    joinChat,
+    leaveChat,
+    onNewMessage,
+    removeNewMessageListener,
+  } = useSocket();
+
+  // Handle new message received via socket
+  const handleNewMessage = useCallback(
+    (message: any) => {
+      refetch();
+    },
+    [id]
+  );
+
+  // Set up message listener for this screen
+  useEffect(() => {
+    onNewMessage(handleNewMessage);
+
+    return () => {
+      removeNewMessageListener();
+    };
+  }, [onNewMessage, removeNewMessageListener, handleNewMessage]);
+
+  // Join chat when component mounts
+  useEffect(() => {
+    if (isConnected && id) {
+      console.log('🏠 Joining chat:', id);
+      joinChat(id as string);
+      // loadChatMessages();
+    }
+
+    // Leave chat when component unmounts
+    return () => {
+      if (id) {
+        console.log('🚪 Leaving chat:', id);
+        leaveChat(id as string);
+      }
+    };
+  }, [id, isConnected, joinChat, leaveChat]);
 
   const {
     data: chatResponse,
@@ -67,7 +98,7 @@ export default function ChatScreen() {
 
   const handleSend = () => {
     if (newMessage.trim() === '' || !id) return;
-    
+
     sendMessageMutation.mutate({
       chatId: id as string,
       content: newMessage.trim(),
@@ -95,20 +126,24 @@ export default function ChatScreen() {
 
   const chat = chatResponse.data;
   const isGroupChat = chat.type === 'GROUP';
-  
+
   // Get the other participant for direct chats
-  const otherParticipant = !isGroupChat 
-    ? chat.participants.find((p:any) => p.userId !== myData?.userId)?.user
+  const otherParticipant = !isGroupChat
+    ? chat.participants.find((p: any) => p.userId !== myData?.userId)?.user
     : null;
 
-  const chatName = isGroupChat ? chat.name || 'Group Chat' : otherParticipant?.name || 'Unknown User';
-  const chatImage = isGroupChat 
+  const chatName = isGroupChat
+    ? chat.name || 'Group Chat'
+    : otherParticipant?.name || 'Unknown User';
+  const chatImage = isGroupChat
     ? chat.group?.image || 'https://via.placeholder.com/150'
     : otherParticipant?.image || 'https://via.placeholder.com/150';
 
   const renderMessage = ({ item }: { item: any }) => {
     const isMyMessage = item.senderId === myData?.userId;
-    const sender = chat.participants.find((p:any) => p.userId === item.senderId)?.user;
+    const sender = chat.participants.find(
+      (p: any) => p.userId === item.senderId
+    )?.user;
 
     return (
       <View
@@ -119,9 +154,11 @@ export default function ChatScreen() {
       >
         {!isMyMessage && (
           <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: sender?.image || 'https://via.placeholder.com/150' }} 
-              style={styles.avatar} 
+            <Image
+              source={{
+                uri: sender?.image || 'https://via.placeholder.com/150',
+              }}
+              style={styles.avatar}
             />
           </View>
         )}
@@ -250,7 +287,9 @@ export default function ChatScreen() {
                       styles.sendButton,
                       newMessage.trim() && styles.sendButtonActive,
                     ]}
-                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                    disabled={
+                      !newMessage.trim() || sendMessageMutation.isPending
+                    }
                   >
                     {newMessage.trim() ? (
                       <LinearGradient

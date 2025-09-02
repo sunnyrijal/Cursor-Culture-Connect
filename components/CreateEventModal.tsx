@@ -554,7 +554,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                 </View>
 
                 {/* Associated Group */}
-                <View style={styles.inputContainer}>
+                {/* <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
                   <TouchableOpacity onPress={() => setShowGroupPicker(true)} disabled={createEventMutation.isPending}>
                     <View style={styles.inputWrapper}>
@@ -572,7 +572,7 @@ export function CreateEventModal({ visible, onClose, onSubmit }: CreateEventModa
                       You are not an admin of this group. The event will be sent for approval.
                     </Text>
                   )}
-                </View>
+                </View> */}
 
                 {/* Event Visibility */}
                 <View style={styles.inputContainer}>

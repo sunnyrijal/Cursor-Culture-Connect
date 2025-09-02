@@ -44,6 +44,7 @@ export interface CreateGroupRequest {
   description?: string;
   imageUrl?: string;
   isPrivate?: boolean;
+  meetingLocation?:string
 }
 
 export interface UpdateGroupRequest {
