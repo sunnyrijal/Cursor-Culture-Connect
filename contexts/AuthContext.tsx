@@ -5,6 +5,7 @@ import { apiClient } from './api';
 import { Alert } from 'react-native';
 import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
 import { API_URL } from './axiosConfig';
+import { router } from 'expo-router';
 
 type AuthState = {
   authenticated: boolean;
@@ -96,11 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      // Validate email domain
-      if (!email.includes('.edu')) {
-        throw new Error('Only .edu email addresses are allowed');
-      }
-      
       const response = await apiClient.login(email, password);
       const { accessToken, user } = response.data;
         console.log(response)
@@ -123,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        const response = await apiClient.signup(name, email, password, confirmPassword, state, city, university, mobileNumber, classYear);
       // After successful signup, log the user in
       // await login(email, password);
+      router.push('/(auth)/verify')
     } catch (error) {
       console.error('Signup error:', error);
       throw error;

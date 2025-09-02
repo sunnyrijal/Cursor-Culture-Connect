@@ -16,16 +16,11 @@ import {
   Globe,
   Lock,
   GraduationCap,
-  ChevronDown,
   Check,
-  AlertCircle,
-  Calendar,
-  Clock,
   MapPin,
-  PlusCircle,
-  MinusCircle,
   Sparkles,
   Image,
+  LocateIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -62,6 +57,7 @@ export function CreateGroupModal({
   const [useLocation, setUseLocation] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
+  const [meetingLocation, setMeetingLocation] = useState('');
 
   // const handleAddMeeting = () => {
   //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
@@ -88,12 +84,13 @@ export function CreateGroupModal({
       Alert.alert('Success', 'Group created successfully!');
 
       onSubmit(variables);
-
+      setIsSubmitting(false);
       // Close modal
       onClose();
     },
     onError: (error: any) => {
       console.error('Error creating Group:', error);
+      setIsSubmitting(false);
 
       // Show user-friendly error message
       const errorMessage =
@@ -107,12 +104,13 @@ export function CreateGroupModal({
   const handleSubmit = async () => {
     // Alert.alert('Error', 'Please fill in all required fields.');
     // return;
-
+    setIsSubmitting(true);
     const groupData = {
       name: formData.name,
       description: formData.description,
       isPrivate: !formData.isPublic,
       imageUrl: imageUrl,
+      meetingLocation: meetingLocation,
     };
     console.log(groupData);
     createGroupMutation.mutate(groupData);
@@ -252,6 +250,16 @@ export function CreateGroupModal({
                   false
                 )}
 
+                {renderInput(
+                  'Meeting Location (optional)',
+                  meetingLocation,
+                  setMeetingLocation,
+                  'Enter meeting Location',
+                  <LocateIcon size={16} color="#6366F1" />,
+                  false,
+                  false
+                )}
+
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Group Visibility</Text>
@@ -330,8 +338,7 @@ export function CreateGroupModal({
                   </View>
                 </View>
 
-                {/* Location Section */}
-                <View style={styles.inputContainer}>
+                {/* <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Location</Text>
                   <View style={styles.locationToggle}>
                     <Switch
@@ -363,7 +370,7 @@ export function CreateGroupModal({
                       )}
                     </View>
                   )}
-                </View>
+                </View> */}
 
                 {/* Meeting Details - Commented Out */}
                 {/* <View style={styles.sectionDivider} />

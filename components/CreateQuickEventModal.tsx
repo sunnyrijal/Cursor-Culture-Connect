@@ -1,26 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Modal,
-  Platform,
-} from "react-native"
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Platform } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
-import {
-  X,
-  MapPin,
-  Check,
-  Sparkles,
-  Zap,
-} from "lucide-react-native"
+import { X, MapPin, Check, Sparkles, Zap, Clock, Users } from "lucide-react-native"
+import { useMutation } from "@tanstack/react-query"
+import { createQuickEvent } from "@/contexts/quickEvent.api"
 
 interface CreateQuickEventModalProps {
   visible: boolean
@@ -33,10 +19,100 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
     title: "",
     description: "",
     location: "",
+    time: "", // Added time field
+    max: "", // Added max people field
   })
 
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const formatTimeInput = (input: string): string => {
+    // Remove any non-digit or colon characters
+    const cleaned = input.replace(/[^\d:]/g, "")
+
+    if (cleaned.length === 1) {
+      // First digit of hours: only allow 0, 1, 2
+      const firstDigit = cleaned[0]
+      if (firstDigit > "2") {
+        return "" // Don't allow first digit greater than 2
+      }
+      return cleaned
+    } else if (cleaned.length === 2) {
+      // Second digit of hours: if first digit is 2, only allow 0-3
+      const firstDigit = cleaned[0]
+      const secondDigit = cleaned[1]
+      if (firstDigit === "2" && secondDigit > "3") {
+        return cleaned[0] // Don't allow hours > 23
+      }
+      return cleaned
+    } else if (cleaned.length === 3) {
+      // Add colon after 2 digits if not present
+      if (cleaned[2] !== ":") {
+        return cleaned.slice(0, 2) + ":" + cleaned.slice(2)
+      }
+      return cleaned
+    } else if (cleaned.length === 4) {
+      // First digit of minutes: only allow 0-5
+      const parts = cleaned.split(":")
+      if (parts.length === 2) {
+        const minuteFirstDigit = parts[1][0]
+        if (minuteFirstDigit > "5") {
+          return parts[0] + ":" // Don't allow minutes > 59
+        }
+      }
+      return cleaned
+    } else if (cleaned.length <= 5) {
+      // Ensure colon is in the right place and validate complete time
+      const parts = cleaned.split(":")
+      if (parts.length === 1) {
+        const formatted = parts[0].slice(0, 2) + ":" + parts[0].slice(2, 4)
+        const minutePart = parts[0].slice(2, 4)
+        if (minutePart.length > 0 && minutePart[0] > "5") {
+          return parts[0].slice(0, 2) + ":" // Don't allow minutes > 59
+        }
+        return formatted
+      }
+
+      // Validate minutes don't exceed 59
+      if (parts[1] && parts[1].length === 2) {
+        const minutes = Number.parseInt(parts[1])
+        if (minutes > 59) {
+          return parts[0] + ":" + parts[1][0] // Keep only first digit of minutes
+        }
+      }
+
+      return parts[0].slice(0, 2) + ":" + parts[1].slice(0, 2)
+    }
+
+    // Limit to 5 characters (HH:MM)
+    return cleaned.slice(0, 5)
+  }
+
+  const validateTimeFormat = (time: string): boolean => {
+    // Allow formats like 5:30, 05:30, 15:45, etc.
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/
+    return timeRegex.test(time)
+  }
+
+  const validateTime = (time: string): { isValid: boolean; error?: string } => {
+    if (!time) return { isValid: true } // Empty is allowed during typing
+
+    if (!validateTimeFormat(time)) {
+      return { isValid: false, error: "Use HH:MM format (24-hour)" }
+    }
+
+    const [hours, minutes] = time.split(":").map(Number)
+
+    if (hours > 23) {
+      return { isValid: false, error: "Hours must be 00-23" }
+    }
+
+    if (minutes > 59) {
+      return { isValid: false, error: "Minutes must be 00-59" }
+    }
+
+    return { isValid: true }
+  }
 
   useEffect(() => {
     if (!visible) {
@@ -44,16 +120,52 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
         title: "",
         description: "",
         location: "",
+        time: "", // Reset time field
+        max: "", // Reset max field
       })
       setFocusedField(null)
       setIsSubmitting(false)
     }
   }, [visible])
 
+
+    const createEventMutation = useMutation({
+    mutationFn: createQuickEvent,
+    onSuccess: (data, variables) => {
+      console.log("Quick Event created successfully:", data)
+
+      // queryClient.invalidateQueries({ queryKey: ["events"] })
+
+      Alert.alert("Success", "Quick Event created successfully!")
+
+      onSubmit(variables)
+
+      // Close modal
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error("Error creating event:", error)
+
+      // Show user-friendly error message
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "Failed to create event. Please try again."
+      Alert.alert("Error", errorMessage)
+    },
+  })
+
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!formData.title.trim() || !formData.description.trim() || !formData.location.trim()) {
+    if (!formData.title.trim() || !formData.location.trim()) {
       Alert.alert("Missing Fields", "Please fill in all required fields.")
+      return
+    }
+
+    if (formData.time && !validateTime(formData.time).isValid) {
+      Alert.alert("Invalid Time", validateTime(formData.time).error)
+      return
+    }
+
+    if (formData.max && (isNaN(Number(formData.max)) || Number(formData.max) <= 0)) {
+      Alert.alert("Invalid Max People", "Please enter a valid number for max people.")
       return
     }
 
@@ -63,21 +175,12 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
       name: formData.title.trim(),
       description: formData.description.trim(),
       location: formData.location.trim(),
-      isQuickEvent: true,
-      createdAt: new Date().toISOString(),
+      time: formData.time ,
+      max: formData.max 
     }
 
-    try {
-      const response = await createQuickEventAPI(eventData)
-      console.log("Quick event created successfully:", response)
-      onSubmit(eventData)
-      onClose()
-    } catch (error) {
-      Alert.alert("Error", "Failed to create quick event. Please try again.")
-      console.error("Error creating quick event:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
+       createEventMutation.mutate(eventData)
+
   }
 
   if (!visible) return null
@@ -87,11 +190,6 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
       <View style={styles.container}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.headerContainer}>
-            {/* <View style={styles.iconContainer}>
-              <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.iconGradient}>
-                <Zap size={24} color="#FFFFFF" />
-              </LinearGradient>
-            </View> */}
             <Text style={styles.title}>Quick Event</Text>
             <Text style={styles.subtitle}>Create an event in seconds</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -132,7 +230,7 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
 
                 {/* Description */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Description *</Text>
+                  <Text style={styles.inputLabel}>Description</Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -181,9 +279,73 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
                   </View>
                 </View>
 
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Time</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "time" && styles.inputWrapperFocused,
+                      formData.time && validateTime(formData.time).isValid && styles.inputWrapperValid,
+                      formData.time && !validateTime(formData.time).isValid && styles.inputWrapperError,
+                    ]}
+                  >
+                    <Clock size={20} color="#6366F1" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      value={formData.time}
+                      onChangeText={(text) => setFormData({ ...formData, time: formatTimeInput(text) })}
+                      placeholder="e.g., 09:30 or 21:45"
+                      onFocus={() => setFocusedField("time")}
+                      onBlur={() => setFocusedField(null)}
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      maxLength={5}
+                    />
+                    {formData.time && validateTime(formData.time).isValid && (
+                      <Check size={20} color="#10B981" style={styles.validIcon} />
+                    )}
+                  </View>
+                  {formData.time && !validateTime(formData.time).isValid && (
+                    <Text style={styles.errorText}>{validateTime(formData.time).error}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Max People</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "max" && styles.inputWrapperFocused,
+                      formData.max &&
+                        !isNaN(Number(formData.max)) &&
+                        Number(formData.max) > 0 &&
+                        styles.inputWrapperValid,
+                    ]}
+                  >
+                    <Users size={20} color="#6366F1" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      value={formData.max}
+                      onChangeText={(text) => setFormData({ ...formData, max: text.replace(/[^0-9]/g, "") })}
+                      placeholder="e.g., 10"
+                      onFocus={() => setFocusedField("max")}
+                      onBlur={() => setFocusedField(null)}
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      maxLength={4}
+                    />
+                    {formData.max && !isNaN(Number(formData.max)) && Number(formData.max) > 0 && (
+                      <Check size={20} color="#10B981" style={styles.validIcon} />
+                    )}
+                  </View>
+                </View>
+
                 {/* Quick Event Info */}
                 <View style={styles.infoContainer}>
-                  <LinearGradient colors={["rgba(99, 102, 241, 0.1)", "rgba(139, 92, 246, 0.1)"]} style={styles.infoGradient}>
+                  <LinearGradient
+                    colors={["rgba(99, 102, 241, 0.1)", "rgba(139, 92, 246, 0.1)"]}
+                    style={styles.infoGradient}
+                  >
                     <Zap size={16} color="#6366F1" />
                     <Text style={styles.infoText}>
                       Quick events are created instantly and visible to everyone immediately!
@@ -197,24 +359,18 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.cancelButton} 
-            onPress={onClose}
-            disabled={isSubmitting}
-          >
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={isSubmitting}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
             <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.buttonGradient}>
               <View style={styles.buttonContent}>
-                <Text style={styles.primaryButtonText}>
-                  {isSubmitting ? "Creating..." : "Create Quick Event"}
-                </Text>
+                <Text style={styles.primaryButtonText}>{isSubmitting ? "Creating..." : "Create Quick Event"}</Text>
                 {!isSubmitting && <Zap size={20} color="#FFFFFF" style={styles.buttonIcon} />}
               </View>
             </LinearGradient>
@@ -223,30 +379,6 @@ export function CreateQuickEventModal({ visible, onClose, onSubmit }: CreateQuic
       </View>
     </Modal>
   )
-}
-
-const createQuickEventAPI = async (eventData: any) => {
-  await new Promise((resolve) => setTimeout(resolve, 1500))
-
-  console.log("Quick Event API Call - Data being sent:", {
-    name: eventData.name,
-    description: eventData.description,
-    location: eventData.location,
-    isQuickEvent: eventData.isQuickEvent,
-    createdAt: eventData.createdAt,
-  })
-
-  if (Math.random() < 0.9) {
-    return {
-      success: true,
-      eventId: Math.floor(Math.random() * 10000),
-      message: "Quick event created successfully",
-      data: eventData,
-      createdAt: new Date().toISOString(),
-    }
-  } else {
-    throw new Error("Network error - please try again")
-  }
 }
 
 const styles = StyleSheet.create({
@@ -368,6 +500,10 @@ const styles = StyleSheet.create({
     borderColor: "#10B981",
     backgroundColor: "#FFFFFF",
   },
+  inputWrapperError: {
+    borderColor: "#EF4444",
+    backgroundColor: "#FFFFFF",
+  },
   inputIcon: {
     marginRight: 12,
   },
@@ -385,6 +521,12 @@ const styles = StyleSheet.create({
   },
   validIcon: {
     marginLeft: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 4,
+    marginLeft: 4,
   },
   characterCount: {
     fontSize: 12,

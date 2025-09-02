@@ -11,6 +11,9 @@ import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
 
+import { Image } from 'react-native';
+import logo from '../../assets/logo.png';
+
 export const clayColors = {
   background: '#F0F3F7',
   lightShadow: '#FFFFFF',
@@ -61,7 +64,10 @@ const Header = ({
               {/* <Text style={styles.avatarText}>
                 {currentUser.name.charAt(0)}
               </Text> */}
-              <GraduationCap size={24} color="#7C3AED" />
+
+              <View style={styles.avatarContainer}>
+                <Image source={logo} style={styles.logo} resizeMode="contain" />
+              </View>
             </View>
           </TouchableOpacity>
 
@@ -156,12 +162,15 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#fadaffff', // Pink gradient simulation
     justifyContent: 'center',
     alignItems: 'center',
     // Inner shadow effect
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logo: {
+    width: 48,
+    height: 48,
   },
 
   // Commented out avatar text style

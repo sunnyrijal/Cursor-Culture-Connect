@@ -35,8 +35,10 @@ import {
   updateMemberRoleApi,
   joinGroup,
   leaveGroup,
+  addMember,
+  addMultipleMembers,
 } from '@/contexts/group.api';
-import { getAllUsers } from '@/contexts/user.api';
+import { getAllUsers, getUsers } from '@/contexts/user.api';
 import getDecodedToken from '@/utils/getMyData';
 import { GroupRole } from '@/types/group.types';
 
@@ -108,7 +110,7 @@ export default function GroupDetailEnhanced() {
   const [selectedRole, setSelectedRole] = useState<GroupRole | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [searchEmail, setSearchEmail] = useState('');
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const {
     data: groupResponse,
@@ -122,7 +124,7 @@ export default function GroupDetailEnhanced() {
   console.log(id);
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
-    queryFn: () => getAllUsers(),
+    queryFn: () => getUsers(),
   });
 
   const group = groupResponse?.group;
@@ -172,7 +174,7 @@ export default function GroupDetailEnhanced() {
     setShowLeaveModal(true);
   };
 
-  const { mutate: kickMembersMutate } = useMutation({
+  const { mutate: kickMembersMutate, isPending:kickMemberPending } = useMutation({
     mutationFn: (userId: string) => removeMember(id as string, userId),
     onSuccess: (data) => {
       console.log('✅ Members kicked:', data);
@@ -184,7 +186,7 @@ export default function GroupDetailEnhanced() {
     },
   });
 
-  const { mutate: updateRoleMutate } = useMutation({
+  const { mutate: updateRoleMutate, isPending:updateRolePending } = useMutation({
     mutationFn: ({
       userId,
       newRole,
@@ -205,8 +207,6 @@ export default function GroupDetailEnhanced() {
       console.error('❌ Error updating role:', error);
     },
   });
-
-
 
   const { mutate: joinGroupMutate } = useMutation({
     mutationFn: () => joinGroup(id as string),
@@ -241,8 +241,9 @@ export default function GroupDetailEnhanced() {
     mutationFn: () => leaveGroup(id as string),
     onSuccess: (data) => {
       console.log('✅ Group Leaved', data);
-      queryClient.invalidateQueries({queryKey:['groups']})
-      router.push('/(tabs)/groups')
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+
+      router.push('/(tabs)/groups');
       setShowLeaveModal(false);
       refetch();
     },
@@ -252,9 +253,26 @@ export default function GroupDetailEnhanced() {
   });
 
   const confirmLeaveGroup = () => {
-    leaveGroupMutate()
+    leaveGroupMutate();
     console.log('leave group');
   };
+
+  const { mutate: addMembers, isPending: isAddMemberPending } = useMutation({
+    mutationFn: () => addMultipleMembers(id as string, selectedUserIds),
+    onSuccess: (data) => {
+      console.log('✅ Members Added to the Group', data);
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      setShowAddMembersModal(false);
+      setSelectedUserIds([]);
+      setSearchEmail('');
+      setShowLeaveModal(false);
+      refetch();
+    },
+    onError: (error) => {
+      console.error('❌ Error Adding Memmbers to the Group Group', error);
+    },
+  });
 
   const handleModalOverlayPress = (modalSetter: (value: boolean) => void) => {
     modalSetter(false);
@@ -265,11 +283,9 @@ export default function GroupDetailEnhanced() {
     setSelectedRole(null);
   };
 
-  const handleAddMembers = () => {
-    console.log('Adding members:', selectedUserIds);
-    setShowAddMembersModal(false);
-    setSelectedUserIds([]);
-    setSearchEmail('');
+  const handleAddMembers = async () => {
+    console.log(selectedUserIds);
+    addMembers();
   };
 
   if (isLoading) {
@@ -646,8 +662,9 @@ export default function GroupDetailEnhanced() {
             style={styles.modalContent}
             activeOpacity={1}
             onPress={() => {}}
+            disabled={isAddMemberPending}
           >
-            <Text style={styles.modalTitle}>Add Members</Text>
+            <Text style={styles.modalTitle}>{isAddMemberPending?"Adding...":"Add Members"}</Text>
 
             <View style={styles.searchContainer}>
               <TextInput
@@ -707,6 +724,7 @@ export default function GroupDetailEnhanced() {
                 }`}
                 onPress={handleAddMembers}
                 disabled={selectedUserIds.length === 0}
+                //@ts-ignore
                 style={[
                   styles.addButton,
                   selectedUserIds.length === 0 && styles.disabledButton,
@@ -745,9 +763,10 @@ export default function GroupDetailEnhanced() {
                 style={styles.cancelButton}
               />
               <Button
-                title="Kick"
+                title={kickMemberPending?"Kicking...":"Kick"}
                 onPress={() => memberToKick && kickMember(memberToKick.userId)}
                 style={styles.kickConfirmButton}
+                disabled={kickMemberPending}
               />
             </View>
           </TouchableOpacity>
@@ -828,11 +847,12 @@ export default function GroupDetailEnhanced() {
                 style={styles.cancelButton}
               />
               <Button
-                title="Update"
+                title={updateRolePending?"Updaing...":"Update"}
                 onPress={() => selectedRole && updateMemberRole(selectedRole)}
                 disabled={
-                  !selectedRole || selectedRole === memberToUpdate?.role
+                  !selectedRole || selectedRole === memberToUpdate?.role || updateRolePending
                 }
+                //@ts-ignore
                 style={[
                   styles.updateButton,
                   (!selectedRole || selectedRole === memberToUpdate?.role) &&
