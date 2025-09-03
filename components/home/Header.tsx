@@ -6,7 +6,8 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Bell, GraduationCap } from 'lucide-react-native';
+import { Camera, Bell, User, BookOpen } from 'lucide-react-native';
+
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
@@ -85,13 +86,29 @@ const Header = ({
             offset={[4, 4]}
           >
             <TouchableOpacity
+              onPress={() => router.push('/profile')}
+              onPressIn={() => handlePressIn('profile')}
+              onPressOut={handlePressOut}
+              style={[getButtonStyle('profile'), styles.profileButton]}
+              activeOpacity={1}
+            >
+              <User size={20} color="#8B5FBF" />
+            </TouchableOpacity>
+          </Shadow>
+
+          <Shadow
+            distance={8}
+            startColor="rgba(163, 177, 198, 0.15)"
+            offset={[4, 4]}
+          >
+            <TouchableOpacity
               onPress={() => setShowStoriesModal(true)}
               onPressIn={() => handlePressIn('camera')}
               onPressOut={handlePressOut}
               style={[getButtonStyle('camera'), styles.cameraButton]}
               activeOpacity={1}
             >
-              <Camera size={20} color="#EC4899" />
+              <BookOpen size={20} color="#EC4899" />
             </TouchableOpacity>
           </Shadow>
           <Shadow
@@ -211,6 +228,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+
+  profileButton: {
+    backgroundColor: '#F5F3FF', // Light purple background
+    borderWidth: 1,
+    borderColor: 'rgba(139, 95, 191, 0.1)',
   },
 
   actionButton: {

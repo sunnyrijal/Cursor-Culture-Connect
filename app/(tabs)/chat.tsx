@@ -217,6 +217,7 @@ export default function ChatListScreen() {
   useEffect(() => {
     if (!isConnected) {
       console.log('⚠️ Socket not connected, cannot join chats');
+      reconnect()
       return;
     }
 
@@ -253,7 +254,7 @@ export default function ChatListScreen() {
         });
       }
     };
-  }, [isConnected, processedChats, joinChat, leaveChat]);
+  }, [isConnected, processedChats, joinChat, leaveChat, reconnect]);
 
   const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
     useMutation({

@@ -26,7 +26,7 @@ export default function RootLayout() {
 }
 
 function AppContent() {
-  const serverUrl = 'http://localhost:4000';
+  const serverUrl = 'https://4bhw4zcd-4000.inc1.devtunnels.ms';
 
   // Socket event handlers
   const handleConnect = useCallback(() => {

@@ -122,36 +122,36 @@ export default function Index() {
     );
   }, [authState.authenticated]);
 
-  // useEffect(() => {
-  //   const handleAuthCheck = async () => {
-  //     try {
-  //       const isAuthenticated = await checkAuthStatus()
+  useEffect(() => {
+    const handleAuthCheck = async () => {
+      try {
+        const isAuthenticated = await checkAuthStatus()
 
-  //       // Navigate after animation delay
-  //       const timer = setTimeout(() => {
-  //         backgroundOpacity.value = withTiming(0, { duration: 600, easing: Easing.in(Easing.cubic) }, () => {
-  //           runOnJS(() => {
-  //             if (isAuthenticated) {
-  //               router.replace("/(tabs)")
-  //             } else {
-  //               router.replace("/(auth)/login")
-  //             }
-  //           })()
-  //         })
-  //       }, 2500)
+        // Navigate after animation delay
+        const timer = setTimeout(() => {
+          backgroundOpacity.value = withTiming(0, { duration: 600, easing: Easing.in(Easing.cubic) }, () => {
+            runOnJS(() => {
+              if (isAuthenticated) {
+                router.replace("/(tabs)")
+              } else {
+                router.replace("/(auth)/login")
+              }
+            })()
+          })
+        }, 2500)
 
-  //       return () => clearTimeout(timer)
-  //     } catch (error) {
-  //       console.error("Auth check failed:", error)
-  //       // Default to login on error
-  //       setTimeout(() => {
-  //         router.replace("/(auth)/login")
-  //       }, 2500)
-  //     }
-  //   }
+        return () => clearTimeout(timer)
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        // Default to login on error
+        setTimeout(() => {
+          router.replace("/(auth)/login")
+        }, 2500)
+      }
+    }
 
-  //   handleAuthCheck()
-  // }, [])
+    handleAuthCheck()
+  }, [])
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [

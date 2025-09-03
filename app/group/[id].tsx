@@ -27,6 +27,9 @@ import {
   Calendar,
   Star,
   LogOut,
+  LocateIcon,
+  LocateFixedIcon,
+  MapPin,
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -492,6 +495,15 @@ export default function GroupDetailEnhanced() {
                       Active community with {group.members.length} members
                     </Text>
                   </View>
+
+                  {group.meetingLocation!=null && <View style={styles.highlightItem}>
+                    <View style={styles.highlightIconWrapper}>
+                      <MapPin size={16} color={theme.primary} />
+                    </View>
+                    <Text style={styles.highlightText}>
+                      Meeting Location: {group.meetingLocation}
+                    </Text>
+                  </View>}
 
                   <View style={styles.highlightItem}>
                     <View style={styles.highlightIconWrapper}>

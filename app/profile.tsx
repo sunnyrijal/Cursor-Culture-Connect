@@ -466,7 +466,7 @@ export default function Profile() {
           </View>
         </Modal>
       </SafeAreaView>
-      <BottomNavigation />
+      {/* <BottomNavigation /> */}
     </View>
   )
 }
