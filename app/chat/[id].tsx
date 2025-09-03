@@ -26,6 +26,8 @@ export default function ChatScreen() {
   const [newMessage, setNewMessage] = useState('');
   const queryClient = useQueryClient();
 
+  const [isSending, setIsSending] = useState(false)
+
   const { data: myData } = useQuery({
     queryKey: ['myData', id],
     queryFn: () => getDecodedToken(),
@@ -87,18 +89,19 @@ export default function ChatScreen() {
     mutationFn: sendMessage,
     onSuccess: (data, variables) => {
       console.log('Message sent successfully:', data);
-      // Refetch chat data to get the latest messages
       refetch();
       setNewMessage('');
+      setIsSending(false)
     },
     onError: (error: any) => {
+      setIsSending(false)
       console.error('Error sending message:', error);
     },
   });
 
   const handleSend = () => {
     if (newMessage.trim() === '' || !id) return;
-
+    setIsSending(true)
     sendMessageMutation.mutate({
       chatId: id as string,
       content: newMessage.trim(),
@@ -136,8 +139,8 @@ export default function ChatScreen() {
     ? chat.name || 'Group Chat'
     : otherParticipant?.name || 'Unknown User';
   const chatImage = isGroupChat
-    ? chat.group?.image || 'https://via.placeholder.com/150'
-    : otherParticipant?.image || 'https://via.placeholder.com/150';
+    ? chat.group?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png'
+    : otherParticipant?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png';
 
   const renderMessage = ({ item }: { item: any }) => {
     const isMyMessage = item.senderId === myData?.userId;
@@ -156,7 +159,7 @@ export default function ChatScreen() {
           <View style={styles.avatarContainer}>
             <Image
               source={{
-                uri: sender?.image || 'https://via.placeholder.com/150',
+                uri: sender?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
               }}
               style={styles.avatar}
             />
@@ -246,7 +249,7 @@ export default function ChatScreen() {
 
         <KeyboardAvoidingView
           style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
           {/* Messages */}
@@ -288,13 +291,14 @@ export default function ChatScreen() {
                       newMessage.trim() && styles.sendButtonActive,
                     ]}
                     disabled={
-                      !newMessage.trim() || sendMessageMutation.isPending
+                      !newMessage.trim() || sendMessageMutation.isPending || isSending
                     }
                   >
                     {newMessage.trim() ? (
                       <LinearGradient
                         colors={[theme.primary, '#8B5CF6']}
                         style={styles.sendButtonGradient}
+                        
                       >
                         <Send size={20} color={theme.white} />
                       </LinearGradient>

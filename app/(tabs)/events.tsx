@@ -15,7 +15,7 @@ import {
 // import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from "react-native-safe-area-context"
 import { router } from "expo-router"
-import { Search, Plus, MapPin, Calendar, Users, Clock, PlusCircle } from "lucide-react-native"
+import { Search, MapPin, Calendar, Users, Clock, PlusCircle } from "lucide-react-native"
 import { ShareButton } from "@/components/ui/ShareButton"
 import { CreateEventModal } from "@/components/CreateEventModal"
 const placeholderImg = require("@/assets/images/icon.png")
@@ -93,6 +93,19 @@ interface Event {
   category?: string[]
 }
 
+interface QuickEvent {
+  id: string
+  name: string
+  description: string
+  max: string
+  time: string
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+}
+
 // Helper function to format dates
 const formatEventDate = (date: string | Date): string => {
   if (date instanceof Date) {
@@ -130,6 +143,8 @@ export default function Events() {
   const [selectedCity, setSelectedCity] = useState("")
   const [selectedUniversity, setSelectedUniversity] = useState("")
   const [selectedHeritage, setSelectedHeritage] = useState("")
+
+  const [activeTab, setActiveTab] = useState<"events" | "quickEvents">("events")
 
   // Add local state for pending filter selections
   const [pendingCategory, setPendingCategory] = useState("all")
@@ -193,15 +208,17 @@ export default function Events() {
 
   const events = eventsResponse?.events || []
 
-    const {
-    data: quickEventsReponse,
+  const {
+    data: quickEventsResponse,
+    isLoading: isLoadingQuickEvents,
+    error: quickEventsError,
+    refetch: refetchQuickEvents,
   } = useQuery({
     queryKey: ["quick-events"],
     queryFn: () => getQuickEvents(),
   })
 
-  const quickEvents = quickEventsReponse?.data || []
-
+  const quickEvents = quickEventsResponse?.data || []
 
   useEffect(() => {
     if (showHelper) {
@@ -296,6 +313,22 @@ export default function Events() {
     return tempEvents
   }, [events, searchQuery, activeFilter, filters])
 
+  const filteredQuickEvents = useMemo(() => {
+    let tempQuickEvents = [...quickEvents]
+
+    // Filter by search query
+    if (searchQuery) {
+      tempQuickEvents = tempQuickEvents.filter(
+        (event: QuickEvent) =>
+          event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.user.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    }
+
+    return tempQuickEvents
+  }, [quickEvents, searchQuery])
+
   const handleCreateEvent = async (eventData: any) => {
     console.log("New Event Data:", eventData)
 
@@ -347,55 +380,60 @@ export default function Events() {
     setShowCreateModal(false)
   }
 
-  const handleRSVP = async (eventId: number) => {
-    try {
-      // Get current RSVP status for the event
-      const currentEvent = events.find((event: any) => event.id === eventId)
-      if (!currentEvent) return
+  // const handleRSVP = async (eventId: number) => {
+  //   try {
+  //     // Get current RSVP status for the event
+  //     const currentEvent = events.find((event: any) => event.id === eventId)
+  //     if (!currentEvent) return
 
-      const newRSVPStatus = !currentEvent.isRSVPed
+  //     const newRSVPStatus = !currentEvent.isRSVPed
 
-      // Send update to backend
-      const response = await fetch(`http://localhost:3001/api/events/${eventId}/rsvp`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ isRSVPed: newRSVPStatus }),
-      })
+  //     // Send update to backend
+  //     const response = await fetch(`http://localhost:3001/api/events/${eventId}/rsvp`, {
+  //       method: "PATCH",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Accept: "application/json",
+  //       },
+  //       body: JSON.stringify({ isRSVPed: newRSVPStatus }),
+  //     })
 
-      if (!response.ok) {
-        throw new Error(`Failed to update RSVP: ${response.statusText}`)
-      }
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to update RSVP: ${response.statusText}`)
+  //     }
 
-      console.log(`Successfully ${newRSVPStatus ? "RSVP'd to" : "cancelled RSVP for"} event ${eventId}`)
+  //     console.log(`Successfully ${newRSVPStatus ? "RSVP'd to" : "cancelled RSVP for"} event ${eventId}`)
 
-      // Refresh events after successful RSVP
-      refetch()
-    } catch (error) {
-      console.error("Error updating RSVP:", error)
-      // Refresh events to revert any potential state inconsistency
-      refetch()
-    }
-  }
+  //     // Refresh events after successful RSVP
+  //     refetch()
+  //   } catch (error) {
+  //     console.error("Error updating RSVP:", error)
+  //     // Refresh events to revert any potential state inconsistency
+  //     refetch()
+  //   }
+  // }
 
-
-  const handleFiltersChange = (newFilters: FilterOptions) => {
-    setFilters(newFilters)
-  }
+  // const handleFiltersChange = (newFilters: FilterOptions) => {
+  //   setFilters(newFilters)
+  // }
 
   // Add state for tracking active image indexes for each event
   const [activeImageIndexes, setActiveImageIndexes] = useState<Record<number, number>>({})
 
-  if (isLoading) {
+  if ((activeTab === "events" && isLoading) || (activeTab === "quickEvents" && isLoadingQuickEvents)) {
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.loadingContainer}>
             <View style={styles.loadingCard}>
-              <Text style={styles.loadingText}>Discovering Events...</Text>
-              <Text style={styles.loadingSubtext}>Finding amazing cultural celebrations for you</Text>
+              <Text style={styles.loadingText}>
+                {activeTab === "events" ? "Discovering Events..." : "Loading Quick Events..."}
+              </Text>
+              <Text style={styles.loadingSubtext}>
+                {activeTab === "events"
+                  ? "Finding amazing cultural celebrations for you"
+                  : "Finding quick meetups and activities"}
+              </Text>
             </View>
           </View>
         </SafeAreaView>
@@ -403,14 +441,22 @@ export default function Events() {
     )
   }
 
-  if (error) {
+  if ((activeTab === "events" && error) || (activeTab === "quickEvents" && quickEventsError)) {
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.errorContainer}>
             <View style={styles.errorCard}>
               <Text style={styles.errorText}>Oops! Something went wrong</Text>
-              <Text style={styles.errorSubtext}>Unable to load events right now</Text>
+              <Text style={styles.errorSubtext}>
+                {activeTab === "events" ? "Unable to load events right now" : "Unable to load quick events right now"}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => (activeTab === "events" ? refetch() : refetchQuickEvents())}
+              >
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
@@ -444,12 +490,29 @@ export default function Events() {
         </View>
       </View>
 
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "events" && styles.activeTabButton]}
+          onPress={() => setActiveTab("events")}
+        >
+          <Text style={[styles.tabButtonText, activeTab === "events" && styles.activeTabButtonText]}>Events</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "quickEvents" && styles.activeTabButton]}
+          onPress={() => setActiveTab("quickEvents")}
+        >
+          <Text style={[styles.tabButtonText, activeTab === "quickEvents" && styles.activeTabButtonText]}>
+            Quick Events
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.searchWrapper}>
         <View style={styles.searchContainer}>
           <Search size={20} color="#64748B" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search events..."
+            placeholder={activeTab === "events" ? "Search events..." : "Search quick events..."}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#64748B"
@@ -473,21 +536,23 @@ export default function Events() {
           />
         </View> */}
 
-      <View style={styles.filterWrapper}>
-        <View style={styles.filterContainer}>
-          {quickFilters.map((f) => (
-            <TouchableOpacity
-              key={f.key}
-              style={[styles.filterButton, quickFilter === f.key && styles.activeFilter]}
-              onPress={() => setQuickFilter(f.key)}
-            >
-              <View style={styles.filterButtonContent}>
-                <Text style={[styles.filterText, quickFilter === f.key && styles.activeFilterText]}>{f.label}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+      {/* {activeTab === "events" && (
+        <View style={styles.filterWrapper}>
+          <View style={styles.filterContainer}>
+            {quickFilters.map((f) => (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.filterButton, quickFilter === f.key && styles.activeFilter]}
+                onPress={() => setQuickFilter(f.key)}
+              >
+                <View style={styles.filterButtonContent}>
+                  <Text style={[styles.filterText, quickFilter === f.key && styles.activeFilterText]}>{f.label}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
+      )} */}
 
       {/* <Modal visible={showCategoryModal} animationType="slide" transparent onRequestClose={() => setShowCategoryModal(false)}>
           <View style={styles.modalOverlay}>
@@ -527,120 +592,187 @@ export default function Events() {
         // onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         // scrollEventThrottle={16}
       >
-        {filteredEvents.map((event: Event, index: number) => (
-          <TouchableOpacity
-            key={event.id}
-            style={[
-              styles.eventCard,
-              index === 0 && styles.firstCard,
-              index === filteredEvents.length - 1 && styles.lastCard,
-            ]}
-            onPress={() => router.push(`/event/${event.id}`)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.eventImageContainer}>
-              <Image
-                source={{
-                  uri: event.imageUrl || "https://via.placeholder.com/150",
-                }}
-                style={styles.eventImage}
-              />
-              <View style={styles.imageOverlay} />
+        {activeTab === "events" ? (
+          // Regular Events
+          <>
+            {filteredEvents.map((event: Event, index: number) => (
+              <TouchableOpacity
+                key={event.id}
+                style={[
+                  styles.eventCard,
+                  index === 0 && styles.firstCard,
+                  index === filteredEvents.length - 1 && styles.lastCard,
+                ]}
+                onPress={() => router.push(`/event/${event.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.eventImageContainer}>
+                  <Image
+                    source={{
+                      uri: event.imageUrl || "https://via.placeholder.com/150",
+                    }}
+                    style={styles.eventImage}
+                  />
+                  <View style={styles.imageOverlay} />
 
-              <View style={styles.eventActions}>
-                <ShareButton eventId={event.id} eventName={event.name} style={styles.shareButton} />
-              </View>
-            </View>
-
-            <View style={styles.eventContent}>
-              <View style={styles.eventHeader}>
-                <Text style={styles.eventTitle} numberOfLines={2}>
-                  {event.name}
-                </Text>
-              </View>
-
-              <View style={styles.eventMeta}>
-                <MapPin size={16} color="#64748B" />
-                <Text style={styles.eventMetaText} numberOfLines={1}>
-                  {event.location}
-                </Text>
-              </View>
-
-              {event.eventTimes && event.eventTimes.length > 0 && (
-                <View style={styles.eventMeta}>
-                  <Calendar size={16} color="#6366F1" />
-                  <Text style={styles.eventMetaText}>
-                    {formatDate(event.eventTimes[0].startTime)} at {formatTime(event.eventTimes[0].startTime)}
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.creatorSection}>
-                <View style={styles.creatorInfo}>
-                  <View style={styles.creatorAvatar}>
-                    <Text style={styles.creatorInitial}>{event.user.name.charAt(0).toUpperCase()}</Text>
-                  </View>
-                  <View style={styles.creatorDetails}>
-                    <Text style={styles.creatorName}>{event.user.name}</Text>
-                    <Text style={styles.creatorRole}>Event Organizer</Text>
+                  <View style={styles.eventActions}>
+                    <ShareButton eventId={event.id} eventName={event.name} style={styles.shareButton} />
                   </View>
                 </View>
-              </View>
 
-              <View style={styles.statsSection}>
-                <View style={styles.statCard}>
-                  <Users size={16} color="#6366F1" />
-                  <Text style={styles.statText}>{event.attendees || 0} attending</Text>
-                </View>
-
-                <View style={styles.statCard}>
-                  <Clock size={16} color="#F59E0B" />
-                  <Text style={styles.statText}>
-                    {event.eventTimes && event.eventTimes.length > 0
-                      ? formatTime(event.eventTimes[0].startTime)
-                      : "TBA"}
-                  </Text>
-                </View>
-              </View>
-
-              {/* <View style={styles.eventFooter}>
-                  <View style={styles.eventAttendees}>
-                    <Users size={16} color="#64748B" />
-                    <Text style={styles.eventAttendeesText}>
-                      {event.attendees || 0} attending
+                <View style={styles.eventContent}>
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventTitle} numberOfLines={2}>
+                      {event.name}
                     </Text>
                   </View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.rsvpButton,
-                      event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton,
-                    ]}
-                    onPress={() => handleRSVP(event.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.rsvpButtonText,
-                        event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText,
-                      ]}
-                    >
-                      {event.isRSVPed ? 'Going' : 'RSVP'}
+                  <View style={styles.eventMeta}>
+                    <MapPin size={16} color="#64748B" />
+                    <Text style={styles.eventMetaText} numberOfLines={1}>
+                      {event.location}
                     </Text>
-                  </TouchableOpacity>
-                </View> */}
-            </View>
-          </TouchableOpacity>
-        ))}
+                  </View>
 
-        {filteredEvents.length === 0 && (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No Events Found</Text>
-              <Text style={styles.emptyText}>
-                Be the first to create a cultural event and start building your community!
-              </Text>
-            </View>
-          </View>
+                  {event.eventTimes && event.eventTimes.length > 0 && (
+                    <View style={styles.eventMeta}>
+                      <Calendar size={16} color="#6366F1" />
+                      <Text style={styles.eventMetaText}>
+                        {formatDate(event.eventTimes[0].startTime)} at {formatTime(event.eventTimes[0].startTime)}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.creatorSection}>
+                    <View style={styles.creatorInfo}>
+                      <View style={styles.creatorAvatar}>
+                        <Text style={styles.creatorInitial}>{event.user.name.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <View style={styles.creatorDetails}>
+                        <Text style={styles.creatorName}>{event.user.name}</Text>
+                        <Text style={styles.creatorRole}>Event Organizer</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.statsSection}>
+                    <View style={styles.statCard}>
+                      <Users size={16} color="#6366F1" />
+                      <Text style={styles.statText}>{event.attendees || 0} attending</Text>
+                    </View>
+
+                    <View style={styles.statCard}>
+                      <Clock size={16} color="#F59E0B" />
+                      <Text style={styles.statText}>
+                        {event.eventTimes && event.eventTimes.length > 0
+                          ? formatTime(event.eventTimes[0].startTime)
+                          : "TBA"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* <View style={styles.eventFooter}>
+                      <View style={styles.eventAttendees}>
+                        <Users size={16} color="#64748B" />
+                        <Text style={styles.eventAttendeesText}>
+                          {event.attendees || 0} attending
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.rsvpButton,
+                          event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton,
+                        ]}
+                        onPress={() => handleRSVP(event.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.rsvpButtonText,
+                            event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText,
+                          ]}
+                        >
+                          {event.isRSVPed ? 'Going' : 'RSVP'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View> */}
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            {filteredEvents.length === 0 && (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyTitle}>No Events Found</Text>
+                  <Text style={styles.emptyText}>
+                    Be the first to create a cultural event and start building your community!
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
+        ) : (
+          // Quick Events
+          <>
+            {filteredQuickEvents.map((quickEvent: QuickEvent, index: number) => (
+              <TouchableOpacity
+                key={quickEvent.id}
+                style={[
+                  styles.quickEventCard,
+                  index === 0 && styles.firstCard,
+                  index === filteredQuickEvents.length - 1 && styles.lastCard,
+                ]}
+                onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.quickEventContent}>
+                  <View style={styles.quickEventHeader}>
+                    <Text style={styles.quickEventTitle} numberOfLines={2}>
+                      {quickEvent.name}
+                    </Text>
+                    <View style={styles.quickEventBadge}>
+                      <Text style={styles.quickEventBadgeText}>Quick</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.quickEventDescription} numberOfLines={2}>
+                    {quickEvent.description}
+                  </Text>
+
+                  <View style={styles.quickEventMeta}>
+                    <Clock size={16} color="#F59E0B" />
+                    <Text style={styles.quickEventMetaText}>{quickEvent.time}</Text>
+                  </View>
+
+                  <View style={styles.quickEventMeta}>
+                    <Users size={16} color="#6366F1" />
+                    <Text style={styles.quickEventMetaText}>Max {quickEvent.max} people</Text>
+                  </View>
+
+                  <View style={styles.quickEventCreator}>
+                    <View style={styles.creatorAvatar}>
+                      <Text style={styles.creatorInitial}>{quickEvent.user.name.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.creatorDetails}>
+                      <Text style={styles.creatorName}>{quickEvent.user.name}</Text>
+                      <Text style={styles.creatorRole}>Host</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            {filteredQuickEvents.length === 0 && (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyTitle}>No Quick Events Found</Text>
+                  <Text style={styles.emptyText}>
+                    Quick events are spontaneous meetups and activities. Check back soon for new opportunities!
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
 
         <View style={styles.bottomSpacing} />
@@ -723,6 +855,56 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
     }),
+  },
+
+  tabContainer: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 16,
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#CDD2D8",
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeTabButton: {
+    backgroundColor: "#6366F1",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#6366F1",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  tabButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  activeTabButtonText: {
+    color: "#FFFFFF",
   },
 
   searchWrapper: {
@@ -858,6 +1040,82 @@ const styles = StyleSheet.create({
       },
     }),
   },
+
+  quickEventCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    marginBottom: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderLeftWidth: 4,
+    borderLeftColor: "#F59E0B",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#CDD2D8",
+        shadowOffset: { width: 3, height: 3 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  quickEventContent: {
+    padding: 20,
+  },
+  quickEventHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  quickEventTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    flex: 1,
+    marginRight: 12,
+    lineHeight: 22,
+  },
+  quickEventBadge: {
+    backgroundColor: "#F59E0B",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  quickEventBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  quickEventDescription: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  quickEventMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  quickEventMetaText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  quickEventCreator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+  },
+
   firstCard: {
     marginTop: 0,
   },
@@ -988,7 +1246,7 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    // marginBottom: 16,
     gap: 8,
   },
   statCard: {
@@ -1034,17 +1292,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#CDD2D8",
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    // ...Platform.select({
+    //   ios: {
+    //     shadowColor: "#CDD2D8",
+    //     shadowOffset: { width: 4, height: 4 },
+    //     shadowOpacity: 1,
+    //     shadowRadius: 16,
+    //   },
+    //   android: {
+    //     elevation: 8,
+    //   },
+    // }),
   },
   loadingText: {
     fontSize: 20,
@@ -1097,6 +1355,29 @@ const styles = StyleSheet.create({
     color: "#64748B",
     textAlign: "center",
     fontWeight: "500",
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#6366F1",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 
   emptyState: {

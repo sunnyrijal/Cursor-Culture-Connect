@@ -24,8 +24,6 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Button } from '@/components/ui/Button';
-import { Meeting } from '@/types/group';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createGroup } from '@/contexts/group.api';
 
@@ -237,7 +235,7 @@ export function CreateGroupModal({
                   'Tell people what your group is about...',
                   <GraduationCap size={16} color="#6366F1" />,
                   true,
-                  true
+                  false
                 )}
 
                 {renderInput(
@@ -257,12 +255,11 @@ export function CreateGroupModal({
                   'Enter meeting Location',
                   <LocateIcon size={16} color="#6366F1" />,
                   false,
-                  false
                 )}
 
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Group Visibility</Text>
+                  <Text style={styles.inputLabel}>Group Visibility <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   <View style={styles.rowContainer}>
                     <TouchableOpacity
                       style={[

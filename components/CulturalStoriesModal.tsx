@@ -208,7 +208,7 @@ export function CulturalStoriesModal({ visible, onClose, onPostStory }: Cultural
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <BookOpen size={24} color={theme.primary} />
-            <Text style={styles.headerTitle}>Cultural Stories</Text>
+            <Text style={styles.headerTitle}> Stories</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity 
@@ -217,7 +217,7 @@ export function CulturalStoriesModal({ visible, onClose, onPostStory }: Cultural
               activeOpacity={0.8}
             >
               <PenTool size={18} color={theme.white} />
-              <Text style={styles.postButtonText}>Post Story</Text>
+              <Text style={styles.postButtonText}>Post</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color={theme.gray500} />
@@ -247,7 +247,7 @@ export function CulturalStoriesModal({ visible, onClose, onPostStory }: Cultural
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.tab, activeTab === 'categories' && styles.activeTab]}
             onPress={() => setActiveTab('categories')}
           >
@@ -255,7 +255,7 @@ export function CulturalStoriesModal({ visible, onClose, onPostStory }: Cultural
             <Text style={[styles.tabText, activeTab === 'categories' && styles.activeTabText]}>
               By Culture
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Category Filter (when categories tab is active) */}

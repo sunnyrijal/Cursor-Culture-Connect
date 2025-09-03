@@ -213,10 +213,9 @@ export default function Groups() {
                     </Text>
                   </View>
 
-                  <Text style={styles.groupDescription} numberOfLines={3}>
-                    {group.description ||
-                      'Join this amazing community and connect with like-minded people.'}
-                  </Text>
+                 {group.description && group.description!=='' &&  <Text style={styles.groupDescription} numberOfLines={3}>
+                    {group.description}
+                  </Text>}
 
                   <View style={styles.creatorSection}>
                     <View style={styles.creatorInfo}>

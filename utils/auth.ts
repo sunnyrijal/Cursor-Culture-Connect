@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-
+import { Platform } from "react-native"
 interface DecodedToken {
   exp: number
   iat: number
@@ -35,15 +35,26 @@ export const isTokenExpired = (token: string): boolean => {
 
 export const checkAuthStatus = async (): Promise<boolean> => {
   try {
-    const token = await AsyncStorage.getItem("token")
-    console.log(token)
+    let token: string | null
+
+    if (Platform.OS === "web") {
+      token = localStorage.getItem("token")
+    } else {
+      token = await AsyncStorage.getItem("token")
+    }
+
+    console.log("Token:", token)
+
     if (!token) {
       return false
     }
 
     if (isTokenExpired(token)) {
-      // Remove expired token
-      await AsyncStorage.removeItem("token")
+      if (Platform.OS === "web") {
+        localStorage.removeItem("token")
+      } else {
+        await AsyncStorage.removeItem("token")
+      }
       return false
     }
 
