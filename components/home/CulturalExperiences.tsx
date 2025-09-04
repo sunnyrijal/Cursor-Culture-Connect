@@ -42,7 +42,6 @@ const CulturalExperiences = () => {
     { id: 'Retail', label: 'Retail' },
     { id: 'Food', label: 'Food' },
     { id: 'Other', label: 'Other' }
-
   ];
 
   const {

@@ -126,7 +126,7 @@ const Location: React.FC<LocationProps> = ({
     <View style={styles.container}>
       {/* State Dropdown */}
       <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>State</Text>
+        <Text style={styles.inputLabel}>State (Optional)</Text>
         <TouchableOpacity
           style={[
             styles.inputWrapper,
@@ -185,7 +185,7 @@ const Location: React.FC<LocationProps> = ({
 
       {/* City Dropdown */}
       <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>City</Text>
+        <Text style={styles.inputLabel}>City (Optional)</Text>
         <TouchableOpacity
           style={[
             styles.inputWrapper,
@@ -253,8 +253,7 @@ const Location: React.FC<LocationProps> = ({
 }
 
 const styles = StyleSheet.create({
-  container: {
-  },
+  container: {},
   inputContainer: {
     marginBottom: 12,
     position: "relative",
