@@ -6,6 +6,7 @@ import { Alert } from 'react-native';
 import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
 import { API_URL } from './axiosConfig';
 import { router } from 'expo-router';
+import { SignupData } from '@/types/user';
 
 type AuthState = {
   authenticated: boolean;
@@ -13,21 +14,11 @@ type AuthState = {
   userId: string | null;
 };
 
-interface SignupData {
-  email: string;
-  password: string;
-  fullName?: string;
-  university?: string;
-  state?: string;
-  city?: string;
-  mobileNumber?: string;
-  dateOfBirth?: Date;
-}
 
 type AuthContextType = {
   authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name:string, email: string, password: string, confirmPassword:string, university:string, state:string, city:string, mobileNumber:string, classYear:string ) => Promise<void>;
+  signup: (signupData: SignupData ) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -114,17 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (name:string, email: string, password: string, confirmPassword:string, state:string, city:string, university:string, mobileNumber:string, classYear:string) => {
-    try {
-       const response = await apiClient.signup(name, email, password, confirmPassword, state, city, university, mobileNumber, classYear);
-      // After successful signup, log the user in
-      // await login(email, password);
-      router.push('/(auth)/verify')
-    } catch (error) {
-      console.error('Signup error:', error);
-      throw error;
-    }
-  };
+const signup = async (signupData:SignupData) => {
+  try {
+    const response = await apiClient.signup(signupData);
+    // After successful signup, log the user in
+    // await login(email, password);
+    router.push(`/(auth)/verify?email=${signupData.email}`)
+  } catch (error) {
+    console.error('Signup error:', error);
+    throw error;
+  }
+};
 
   const logout = async () => {
     // try {
