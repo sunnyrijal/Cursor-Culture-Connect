@@ -10,6 +10,7 @@ import {
   Modal,
   Switch,
   Platform,
+  Image,
 } from 'react-native';
 import {
   X,
@@ -19,13 +20,17 @@ import {
   Check,
   MapPin,
   Sparkles,
-  Image,
   LocateIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createGroup } from '@/contexts/group.api';
+
+import * as ImagePicker from 'expo-image-picker';
+import { ActivityIndicator } from 'react-native';
+import { Plus, ImageIcon } from 'lucide-react-native'; // Add ImageIcon if not imported
+import { uploadFile } from '@/contexts/file.api';
 
 interface CreateGroupModalProps {
   visible: boolean;
@@ -56,6 +61,7 @@ export function CreateGroupModal({
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [meetingLocation, setMeetingLocation] = useState('');
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   // const handleAddMeeting = () => {
   //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
@@ -71,6 +77,69 @@ export function CreateGroupModal({
   //   newMeetings[index][field] = value;
   //   setMeetings(newMeetings);
   // };
+
+  const uploadFileMutation = useMutation({
+    mutationFn: uploadFile, // Make sure you import uploadFile function
+    onSuccess: (data) => {
+      console.log('File uploaded successfully:', data);
+      // Set the uploaded image URL
+      setImageUrl(data.url);
+    },
+    onError: (error) => {
+      console.error('Error uploading file:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+    },
+  });
+
+  // 4. ADD THESE FUNCTIONS after your handleSubmit function
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission needed',
+          'Sorry, we need camera roll permissions to make this work!'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+
+        console.log('Asset details:', asset);
+
+        uploadFileMutation.mutate({
+          uri: asset.uri,
+          type: asset.type,
+          mimeType: asset.mimeType,
+          fileName: asset.fileName || 'image.jpg',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+    }
+  };
+
+  const addImageUrl = () => {
+    if (currentImageUrl.trim()) {
+      setImageUrl(currentImageUrl.trim());
+      setCurrentImageUrl('');
+    }
+  };
+
+  const removeImage = () => {
+    setImageUrl('');
+  };
 
   const createGroupMutation = useMutation({
     mutationFn: createGroup,
@@ -238,7 +307,7 @@ export function CreateGroupModal({
                   false
                 )}
 
-                {renderInput(
+                {/* {renderInput(
                   'Image URL',
                   imageUrl,
                   setImageUrl,
@@ -246,7 +315,119 @@ export function CreateGroupModal({
                   <Image size={16} color="#6366F1" />,
                   false,
                   false
-                )}
+                )} */}
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Group Image</Text>
+
+                  {!imageUrl && (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.uploadButton,
+                          uploadFileMutation.isPending &&
+                            styles.uploadButtonDisabled,
+                        ]}
+                        onPress={pickImage}
+                        disabled={isSubmitting || uploadFileMutation.isPending}
+                      >
+                        <LinearGradient
+                          colors={
+                            uploadFileMutation.isPending
+                              ? ['#9CA3AF', '#6B7280']
+                              : ['#6366F1', '#8B5CF6']
+                          }
+                          style={styles.uploadButtonGradient}
+                        >
+                          {uploadFileMutation.isPending ? (
+                            <>
+                              <ActivityIndicator size="small" color="#FFFFFF" />
+                              <Text style={styles.uploadButtonText}>
+                                Uploading...
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon size={20} color="#FFFFFF" />
+                              <Text style={styles.uploadButtonText}>
+                                Upload Image
+                              </Text>
+                            </>
+                          )}
+                        </LinearGradient>
+                      </TouchableOpacity>
+
+                      <View style={styles.imageInputContainer}>
+                        <View style={[styles.inputWrapper, { flex: 1 }]}>
+                          <ImageIcon
+                            size={20}
+                            color="#6366F1"
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            style={styles.input}
+                            value={currentImageUrl}
+                            onChangeText={setCurrentImageUrl}
+                            placeholder="Or enter image URL manually"
+                            placeholderTextColor="#9CA3AF"
+                            editable={
+                              !isSubmitting && !uploadFileMutation.isPending
+                            }
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={styles.addImageButton}
+                          onPress={addImageUrl}
+                          disabled={
+                            isSubmitting || uploadFileMutation.isPending
+                          }
+                        >
+                          <LinearGradient
+                            colors={['#6366F1', '#8B5CF6']}
+                            style={styles.addImageButtonGradient}
+                          >
+                            <Plus size={20} color="#FFFFFF" />
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+
+                  {/* Image Preview */}
+                  {(imageUrl || uploadFileMutation.isPending) && (
+                    <View style={styles.imagePreviewContainer}>
+                      {uploadFileMutation.isPending ? (
+                        <View
+                          style={[
+                            styles.imagePreview,
+                            styles.imagePreviewLoading,
+                          ]}
+                        >
+                          <ActivityIndicator size="small" color="#6366F1" />
+                          <Text style={styles.loadingImageText}>
+                            Uploading...
+                          </Text>
+                        </View>
+                      ) : (
+                        <>
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={styles.imagePreview}
+                          />
+                          <TouchableOpacity
+                            style={styles.removeImageButton}
+                            onPress={removeImage}
+                            disabled={
+                              isSubmitting || uploadFileMutation.isPending
+                            }
+                          >
+                            <X size={16} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </View>
 
                 {renderInput(
                   'Meeting Location (optional)',
@@ -254,12 +435,14 @@ export function CreateGroupModal({
                   setMeetingLocation,
                   'Enter meeting Location',
                   <LocateIcon size={16} color="#6366F1" />,
-                  false,
+                  false
                 )}
 
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Group Visibility <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                  <Text style={styles.inputLabel}>
+                    Group Visibility <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
                   <View style={styles.rowContainer}>
                     <TouchableOpacity
                       style={[
@@ -469,6 +652,77 @@ export function CreateGroupModal({
 }
 
 const styles = StyleSheet.create({
+  uploadButton: {
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  uploadButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  uploadButtonDisabled: {
+    opacity: 0.7,
+  },
+  imageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  addImageButton: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  addImageButtonGradient: {
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginTop: 12,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  imagePreviewLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingImageText: {
+    marginTop: 8,
+    color: '#6366F1',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    borderRadius: 20,
+    padding: 6,
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',

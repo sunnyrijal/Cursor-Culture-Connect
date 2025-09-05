@@ -31,6 +31,7 @@ import UpcommingEvents from '@/components/home/UpcommingEvents';
 import QuickActions from '@/components/home/QuickActions';
 import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
+import AutoplayVideo from '@/components/home/VideoCard';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -602,12 +603,14 @@ export default function Dashboard() {
       >
         <Header setShowStoriesModal={setShowStoriesModal} />
 
-        <WelcomeCenter
+        {/* <WelcomeCenter
           welcomeMessages={welcomeMessages}
           welcomeIndex={welcomeIndex}
-        />
+        /> */}
 
         <UserStat currentUser={currentUser} />
+
+    <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
 
         <QuickActions
           setShowCreateEventModal={setShowCreateEventModal}
