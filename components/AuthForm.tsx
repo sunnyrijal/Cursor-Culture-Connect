@@ -54,8 +54,6 @@ import { Image } from "react-native"
 //@ts-ignore
 import logo from "../assets/logo.png"
 
-const { width, height } = Dimensions.get("window")
-
 const ETHNICITY_OPTIONS = [
   "American Indian or Alaska Native",
   "Asian",
@@ -349,7 +347,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = "login" }) => {
               onChangeText(text)
               if (text) validateField(inputKey, text)
             }}
-            onFocus={() => setFocusedInput(inputKey)}
+            // onFocus={() => setFocusedInput(inputKey)}
             onBlur={() => {
               setFocusedInput("")
               if (value) validateField(inputKey, value)
@@ -638,7 +636,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = "login" }) => {
                         universities={universities?.data || []}
                         value={university}
                         onValueChange={setUniversity}
-                        label="University"
+                        label="College / University"
                         placeholder="Search or enter your university name"
                         isValid={fieldValidation["university"]}
                         isFocused={focusedInput === "university"}

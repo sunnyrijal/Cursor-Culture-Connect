@@ -1,8 +1,10 @@
 "use client"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { ArrowLeft, Mail, Phone, MapPin, GraduationCap, CheckCircle, Calendar, Users, Pencil } from "lucide-react-native"
+import { ArrowLeft, Mail, Phone, MapPin, GraduationCap, CheckCircle, Calendar, Users, Pencil, LogOut } from "lucide-react-native"
 import { router } from "expo-router"
+import { red } from "react-native-reanimated/lib/typescript/Colors"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const clayTheme = {
   background: "#E8E8E8",
@@ -15,6 +17,7 @@ const clayTheme = {
   textPrimary: "#1F2937",
   textSecondary: "#6B7280",
   textMuted: "#9CA3AF",
+  red: "#EF4444",
 }
 
 const userData = {
@@ -66,6 +69,11 @@ export default function Profile() {
       age--
     }
     return age
+  }
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    router.replace("/(auth)/login")
   }
 
   return (
@@ -220,6 +228,15 @@ export default function Profile() {
             </View>
           </View>
 
+          <View style={styles.logoutSection}>
+            <Text style={styles.logoutSectionTitle}>Logout</Text>
+            <TouchableOpacity style={[styles.backButton, { backgroundColor: '#EF4444' }]} onPress={async () => {
+              handleLogout()
+            }}>
+              <LogOut size={20} color={"white"} />
+            </TouchableOpacity>
+          </View>
+
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
@@ -365,6 +382,17 @@ const styles = StyleSheet.create({
   infoSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
+  },
+  logoutSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  logoutSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: clayTheme.red,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
