@@ -5,6 +5,7 @@ import CulturalExperienceCard from './CulturalExperienceCard';
 import { getAnalytics } from '@/contexts/analytics';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { getAdvertisements, recordAdClick, recordAdImpression } from '@/contexts/ad.api';
+import { useRouter } from 'expo-router';
 
 interface Advertisement {
   id: string;
@@ -24,6 +25,12 @@ interface Advertisement {
     id: string;
     name: string;
   };
+  metrics?: {
+    id: number;
+    advertisementId: string;
+    views: number;
+    clicks: number;
+  };
 }
 
 interface AdResponse {
@@ -33,7 +40,8 @@ interface AdResponse {
 
 const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
-  const [viewedAds, setViewedAds] = useState<Set<string>>(new Set()); // Track viewed ads
+  const [viewedAds, setViewedAds] = useState<Set<string>>(new Set());
+  const router = useRouter();
   
   // Define categories
   const categories = [
@@ -59,7 +67,7 @@ const CulturalExperiences = () => {
     },
   });
 
-  console.log('Ad Response:', adResponse);
+  console.log(adResponse)
 
   // Ad Impression Mutation
   const { mutate: recordAdImpressionMutate } = useMutation({
@@ -118,6 +126,10 @@ const CulturalExperiences = () => {
       location: ad.location?.address || 'Location not specified',
       author: ad.user?.name || 'Unknown',
       createdAt: ad.createdAt,
+      metrics: ad.metrics,
+      category: ad.category,
+      // Add all the original ad data for the card component
+      originalAd: ad
     }));
   };
 
@@ -147,12 +159,23 @@ const CulturalExperiences = () => {
       // Record the click
       recordAdClickMutate(content.id);
       
-      // Check if URL can be opened
-      const supported = await Linking.canOpenURL(content.link);
-      if (supported) {
-        await Linking.openURL(content.link);
-      } else {
-        Alert.alert("Error", `Don't know how to open this URL: ${content.link}`);
+      // Try to open the link first, then fallback to contact
+      if (content.link && content.link.startsWith('http')) {
+        const supported = await Linking.canOpenURL(content.link);
+        if (supported) {
+          await Linking.openURL(content.link);
+        } else {
+          Alert.alert("Error", `Don't know how to open this URL: ${content.link}`);
+        }
+      } else if (content.contactInfo) {
+        // Handle contact info (phone number)
+        const phoneUrl = `tel:${content.contactInfo}`;
+        const supported = await Linking.canOpenURL(phoneUrl);
+        if (supported) {
+          await Linking.openURL(phoneUrl);
+        } else {
+          Alert.alert("Contact", `Contact: ${content.contactInfo}`);
+        }
       }
     } catch (error) {
       console.error("Failed to open URL:", error);
@@ -178,14 +201,18 @@ const CulturalExperiences = () => {
     setViewedAds(new Set());
   };
 
+  const handleViewAll = () => {
+    router.push('/');
+  };
+
   const renderErrorState = () => (
     <View style={styles.errorContainer}>
       <Text style={styles.errorTitle}>Unable to load experiences</Text>
       <Text style={styles.errorText}>
         {error?.message || 'Something went wrong while fetching data'}
       </Text>
-      <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-        <Text style={styles.retryButtonText}>Try Again</Text>
+      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+        <Text style={styles.viewAllButtonText}>View All</Text>
       </TouchableOpacity>
     </View>
   );
@@ -203,10 +230,13 @@ const CulturalExperiences = () => {
       <Text style={styles.emptyText}>
         Try selecting a different category or check back later.
       </Text>
+      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+        <Text style={styles.viewAllButtonText}>View All</Text>
+      </TouchableOpacity>
     </View>
   );
 
-  // Render individual ad item
+  // Render individual ad item using the original card component
   const renderAdItem = ({ item, index }: any) => (
     <CulturalExperienceCard 
       key={`${item.id}-${activeSponsoredCategory}-${index}`}
@@ -221,31 +251,14 @@ const CulturalExperiences = () => {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Discover Experiences</Text>
-        {/* Refresh button */}
+        {/* View All button instead of refresh */}
         <TouchableOpacity 
-          onPress={handleRefresh} 
-          style={styles.refreshBtn}
-          disabled={isLoading}
+          onPress={handleViewAll} 
+          style={styles.viewAllBtn}
         >
-          <Text style={styles.refreshBtnText}>
-            {isLoading ? '⟳' : '↻'}
-          </Text>
+          <Text style={styles.viewAllBtnText}>View all</Text>
         </TouchableOpacity>
-        {/* Debug button - uncomment to test analytics API */}
-        {/* <TouchableOpacity onPress={showAnalytics} style={styles.debugBtn}>
-          <Text>📊</Text>
-        </TouchableOpacity> */}
       </View>
-
-      {/* API Status Indicator */}
-      {/* {adResponse?.success && (
-        <View style={styles.statusIndicator}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>
-            Live data • {adResponse.data?.length || 0} ads loaded • {viewedAds.size} viewed
-          </Text>
-        </View>
-      )} */}
 
       {/* Category Tabs */}
       <View style={styles.categoryRow}>
@@ -277,7 +290,7 @@ const CulturalExperiences = () => {
         />
       </View>
 
-      {/* Content Area */}
+      {/* Content Area - keeping original horizontal scroll layout */}
       {error && !adResponse ? (
         renderErrorState()
       ) : isLoading && !adResponse ? (
@@ -333,41 +346,15 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
     fontFamily: typography.fontFamily.bold,
   },
-  refreshBtn: {
-    padding: 10,
-    backgroundColor: neomorphColors.background,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
-    minWidth: 40,
-    alignItems: 'center',
+  viewAllBtn: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
-  refreshBtnText: {
-    fontSize: 18,
+  viewAllBtnText: {
     color: theme.primary,
-  },
-  debugBtn: {
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-  },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    color: theme.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   categoryRow: {
     paddingLeft: 20,
@@ -420,13 +407,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
-  retryButton: {
+  viewAllButton: {
     backgroundColor: theme.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
   },
-  retryButtonText: {
+  viewAllButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: typography.fontSize.sm,
@@ -460,5 +447,6 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 20,
   },
 });

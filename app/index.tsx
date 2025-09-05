@@ -30,7 +30,6 @@ import { checkAuthStatus } from '@/utils/auth';
 import { Image } from 'react-native';
 import logo from '../assets/logo.png'; // adjust path based on your folder structure
 
-
 const { width, height } = Dimensions.get('window');
 
 const theme = {
@@ -125,33 +124,38 @@ export default function Index() {
   useEffect(() => {
     const handleAuthCheck = async () => {
       try {
-        const isAuthenticated = await checkAuthStatus()
-
+        const isAuthenticated = await checkAuthStatus();
+        console.log(isAuthenticated);
         // Navigate after animation delay
         const timer = setTimeout(() => {
-          backgroundOpacity.value = withTiming(0, { duration: 600, easing: Easing.in(Easing.cubic) }, () => {
-            runOnJS(() => {
-              if (isAuthenticated) {
-                router.replace("/(tabs)")
-              } else {
-                router.replace("/(auth)/login")
-              }
-            })()
-          })
-        }, 2500)
+          backgroundOpacity.value = withTiming(
+            0,
+            { duration: 600, easing: Easing.in(Easing.cubic) },
+            () => {
+              runOnJS(() => {
+                if (isAuthenticated) {
+                  router.replace("/(tabs)")
+                  // router.replace('/(auth)/login');
+                } else {
+                  router.replace('/(auth)/login');
+                }
+              })();
+            }
+          );
+        }, 3500);
 
-        return () => clearTimeout(timer)
+        return () => clearTimeout(timer);
       } catch (error) {
-        console.error("Auth check failed:", error)
+        console.error('Auth check failed:', error);
         // Default to login on error
         setTimeout(() => {
-          router.replace("/(auth)/login")
-        }, 2500)
+          router.replace('/(auth)/login');
+        }, 2500);
       }
-    }
+    };
 
-    handleAuthCheck()
-  }, [])
+    handleAuthCheck();
+  }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -234,7 +238,7 @@ export default function Index() {
                 style={styles.logoGradient}
               >
                 <View style={styles.logoInner}>
-                 <Image
+                  <Image
                     source={logo}
                     style={styles.logo}
                     resizeMode="contain"

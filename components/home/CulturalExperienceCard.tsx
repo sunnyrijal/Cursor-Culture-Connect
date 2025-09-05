@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme'; 
-import { Star, MapPin, Clock } from 'lucide-react-native';
+import { theme, spacing, typography, neomorphColors } from '../theme'; 
+import { Star, MapPin, Clock, Phone } from 'lucide-react-native';
 import { trackClick, trackImpression } from '@/contexts/analytics';
 
 const CulturalExperienceCard = ({
@@ -46,12 +46,16 @@ const CulturalExperienceCard = ({
         <View style={styles.overlay} />
 
         {/* Labels */}
-        <View style={styles.sponsoredLabel}>
-          <Text style={styles.sponsoredLabelText}>Sponsored</Text>
-        </View>
-        <View style={[styles.heritageBadge, { backgroundColor: content.color }]}>
-          <Text style={styles.heritageBadgeText}>{content.heritage}</Text>
-        </View>
+        {content.type && (
+          <View style={styles.sponsoredLabel}>
+            <Text style={styles.sponsoredLabelText}>Sponsored</Text>
+          </View>
+        )}
+        {content.category && (
+          <View style={[styles.heritageBadge, { backgroundColor: theme.primary }]}>
+            <Text style={styles.heritageBadgeText}>{content.category}</Text>
+          </View>
+        )}
       </View>
 
       {/* Content */}
@@ -60,26 +64,26 @@ const CulturalExperienceCard = ({
           <Text style={styles.title} numberOfLines={2}>{content.title}</Text>
           <View style={styles.rating}>
             <Star size={12} color={theme.warning} fill={theme.warning} />
-            <Text style={styles.ratingText}>{content.rating}</Text>
+            <Text style={styles.ratingText}>{content.metrics?.views || 'New'}</Text>
           </View>
         </View>
 
-        <Text style={styles.subtitle} numberOfLines={1}>{content.subtitle}</Text>
+        <Text style={styles.subtitle} numberOfLines={2}>{content.description}</Text>
 
         <View style={styles.meta}>
           <View style={styles.metaItem}>
             <MapPin size={11} color={theme.textSecondary} />
             <Text style={styles.metaText}>{content.location}</Text>
           </View>
-          <View style={styles.metaItem}>
-            <Clock size={11} color={theme.textSecondary} />
-            <Text style={styles.metaText}>
-              {content.type === 'restaurant' ? content.hours : content.date}
-            </Text>
-          </View>
-        </View>
+          {content.contactInfo && (
+            <View style={styles.metaItem}>
+              <Phone size={11} color={theme.textSecondary} />
+              <Text style={styles.metaText}>{content.contactInfo}</Text>
+            </View>
+          )}
+      </View>
 
-        {content.offer ? (
+      {content.offer ? (
           <View style={styles.offer}>
             <Text style={styles.offerText}>{content.offer}</Text>
           </View>
@@ -93,7 +97,7 @@ export default CulturalExperienceCard
 
 const styles = StyleSheet.create({
   card: {
-    width: 180,
+    width: 200,
     backgroundColor: neomorphColors.background,
     borderRadius: 14,
     overflow: 'hidden',
@@ -114,7 +118,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 110,
+    height: 120,
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
     overflow: 'hidden',
@@ -205,11 +209,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
-    marginBottom: 7,
+    marginBottom: 8,
   },
   meta: {
-    marginBottom: 8,
-    gap: 3,
+    marginBottom: 10,
+    gap: 4,
   },
   metaItem: {
     flexDirection: 'row',
@@ -231,5 +235,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: theme.primary,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  label: {
+    fontSize: 11,
+    color: theme.textSecondary,
+    fontWeight: '600',
+  },
+  value: {
+    fontSize: 11,
+    color: theme.textPrimary,
   },
 });

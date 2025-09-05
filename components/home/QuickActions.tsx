@@ -81,7 +81,7 @@ const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal, setSho
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
-        <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]}>
+        <View style={[styles.actionIcon, ]}>
           <IconComponent size={24} color={item.iconColor} />
         </View>
         <Text style={[styles.actionTitle, { color: item.iconColor }]}>{item.title}</Text>
@@ -105,115 +105,91 @@ const QuickActions = ({ setShowCreateEventModal, setShowCreateGroupModal, setSho
 export default QuickActions
 
 const styles = StyleSheet.create({
-  quickActions: {
-    marginBottom: spacing.xs,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937', 
-    marginBottom: spacing.md,
-    fontFamily: typography?.fontFamily?.bold || 'System',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
+actionButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  flexWrap: 'nowrap', // single line only
+},
 
-  // Clay shadow effect - normal state
-  actionButton: {
-    width: '48%', // Two cards per row with gap
-    borderRadius: 24, // rounded-3xl equivalent
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    minHeight: 120,
-    // Clay shadow effect
-    ...Platform.select({
-      ios: {
-        shadowColor: '#a3b1c6',
-        shadowOffset: { width: 8, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-        shadowColor: '#a3b1c6',
-      },
-    }),
-    // Additional light shadow for clay effect
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: spacing.sm, // Add space between rows
-  },
+quickActions:{
 
-  // Clay shadow effect - pressed state
-  actionButtonPressed: {
-    width: '48%', // Two cards per row with gap
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    minHeight: 120,
-    // Pressed clay shadow effect (inset-like)
-    ...Platform.select({
-      ios: {
-        shadowColor: '#a3b1c6',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-        shadowColor: '#a3b1c6',
-      },
-    }),
-    borderWidth: 0.5,
-    borderColor: 'rgba(163, 177, 198, 0.15)',
-    marginBottom: spacing.sm, // Add space between rows
-    // transform: [{ scale: 0.98 }], 
-  },
+},
+sectionTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#1E293B',
+},
 
-  actionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  
-  actionTitle: {
-    fontSize: 12,
-    // fontWeight: 'bold',
-    textAlign: 'center',
-    fontFamily: typography?.fontFamily?.bold || 'System',
-    marginBottom: 2,
-  },
+actionButton: {
+  width: '23%', // four per row
+  borderRadius: 16,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: spacing.xs,
+  paddingHorizontal: spacing.xs,
+  minHeight: 90, // smaller height
+  ...Platform.select({
+    ios: {
+      shadowColor: '#a3b1c6',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    },
+    android: {
+      elevation: 4,
+      shadowColor: '#a3b1c6',
+    },
+  }),
+  borderWidth: 0.5,
+  borderColor: 'rgba(255, 255, 255, 0.7)',
+},
 
-  actionDescription: {
-    fontSize: 12,
-    color: '#6b7280', // gray-500
-    textAlign: 'center',
-    fontFamily: typography?.fontFamily?.regular || 'System',
-    lineHeight: 14,
-  },
+actionButtonPressed: {
+  width: '23%',
+  borderRadius: 16,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: spacing.xs,
+  paddingHorizontal: spacing.xs,
+  minHeight: 90,
+  ...Platform.select({
+    ios: {
+      shadowColor: '#a3b1c6',
+      shadowOffset: { width: 1, height: 1 },
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+    },
+    android: {
+      elevation: 2,
+      shadowColor: '#a3b1c6',
+    },
+  }),
+  borderWidth: 0.5,
+  borderColor: 'rgba(163, 177, 198, 0.15)',
+},
+
+actionIcon: {
+  width: 40, // smaller icon box
+  height: 40,
+  borderRadius: 12,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: spacing.xs,
+  // ...Platform.select({
+  //   ios: {
+  //     shadowColor: '#000',
+  //     shadowOffset: { width: 1, height: 1 },
+  //     shadowOpacity: 0.1,
+  //     shadowRadius: 2,
+  //   },
+   
+  // }),
+},
+
+actionTitle: {
+  fontSize: 11, // slightly smaller text
+  textAlign: 'center',
+  fontFamily: typography?.fontFamily?.bold || 'System',
+},
+
 })
