@@ -132,6 +132,7 @@ export default function Profile() {
       {
         text: 'Logout',
         style: 'destructive',
+
         onPress: async () => {
           await logout(); // Call the auth context logout function
           router.replace('/');
@@ -184,11 +185,6 @@ export default function Profile() {
       </View>
     </View>
   );
-
-  const handleLogout = async () => {
-    await AsyncStorage.clear();
-    router.replace("/(auth)/login")
-  }
 
   return (
     <View style={styles.container}>
@@ -685,7 +681,7 @@ const styles = StyleSheet.create({
   logoutSectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: clayTheme.red,
+    color: "red",
     marginBottom: 16,
   },
   sectionTitle: {
