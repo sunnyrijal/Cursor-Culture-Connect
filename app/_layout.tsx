@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 import { SocketProvider } from '@/hooks/useSocket';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
+import { API_URL } from '@/contexts/axiosConfig';
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ export default function RootLayout() {
 }
 
 function AppContent() {
-  const serverUrl = 'https://4bhw4zcd-4000.inc1.devtunnels.ms';
+  const serverUrl = API_URL
 
   // Socket event handlers
   const handleConnect = useCallback(() => {

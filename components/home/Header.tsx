@@ -6,7 +6,7 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Bell, User, BookOpen } from 'lucide-react-native';
+import { Camera, Bell, User, BookOpen, LogIn } from 'lucide-react-native';
 
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
@@ -14,6 +14,10 @@ import { Shadow } from 'react-native-shadow-2';
 
 import { Image } from 'react-native';
 import logo from '../../assets/logo.png';
+import { getMyData } from '@/contexts/user.api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import getDecodedToken from '@/utils/getMyData';
 
 export const clayColors = {
   background: '#F0F3F7',
@@ -52,6 +56,16 @@ const Header = ({
       : styles.actionButton;
   };
 
+  const { authState } = useAuth();
+  console.log('Auth State', authState);
+
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  console.log(myData);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -80,23 +94,44 @@ const Header = ({
         </View>
 
         <View style={styles.headerActions}>
-          <Shadow
-            distance={8}
-            startColor="rgba(163, 177, 198, 0.15)"
-            offset={[4, 4]}
-          >
-            <TouchableOpacity
-              onPress={() => router.push('/profile')}
-              onPressIn={() => handlePressIn('profile')}
-              onPressOut={handlePressOut}
-              style={[getButtonStyle('profile'), styles.profileButton]}
-              activeOpacity={1}
-            >
-              <User size={20} color="#8B5FBF" />
-            </TouchableOpacity>
-          </Shadow>
+          {myData ? (
+            <>
+              <Shadow
+                distance={8}
+                startColor="rgba(163, 177, 198, 0.15)"
+                offset={[4, 4]}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push('/profile')}
+                  onPressIn={() => handlePressIn('profile')}
+                  onPressOut={handlePressOut}
+                  style={[getButtonStyle('profile'), styles.profileButton]}
+                  activeOpacity={1}
+                >
+                  <User size={20} color="#8B5FBF" />
+                </TouchableOpacity>
+              </Shadow>
+            </>
+          ) : (
+            <>
+              <Shadow
+                distance={8}
+                startColor="rgba(163, 177, 198, 0.15)"
+                offset={[4, 4]}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/login')}
+                  onPressOut={handlePressOut}
+                  style={[getButtonStyle('profile'), styles.profileButton]}
+                  activeOpacity={1}
+                >
+                  <LogIn size={20} color="#8B5FBF" />
+                </TouchableOpacity>
+              </Shadow>
+            </>
+          )}
 
-          <Shadow
+          {/* <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
             offset={[4, 4]}
@@ -110,7 +145,7 @@ const Header = ({
             >
               <BookOpen size={20} color="#EC4899" />
             </TouchableOpacity>
-          </Shadow>
+          </Shadow> */}
           <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
