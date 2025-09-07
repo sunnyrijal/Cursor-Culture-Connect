@@ -30,9 +30,9 @@ export default function Settings() {
     try {
       const profileUrl = 'https://cultureconnect.app/profile/priya-sharma';
       await Share.share({
-        message: `Check out my Culture Connect profile! Connect with me to explore our shared cultural heritage: ${profileUrl}`,
+        message: `Check out my TRiVO profile! Connect with me to explore our shared cultural heritage: ${profileUrl}`,
         url: profileUrl,
-        title: 'My Culture Connect Profile'
+        title: 'My TRiVO Profile'
       });
     } catch (error) {
       console.error('Error sharing profile:', error);

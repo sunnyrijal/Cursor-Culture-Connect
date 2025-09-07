@@ -281,7 +281,7 @@ export default function EventDetail() {
               <View style={styles.descriptionCard}>
                 <Text style={styles.description}>{event.description}</Text>
 
-                <View style={styles.highlightsList}>
+                {/* <View style={styles.highlightsList}>
                   <Text style={styles.highlightsTitle}>Event Highlights</Text>
                   {[
                     { icon: Music, text: "Live performances" },
@@ -296,7 +296,7 @@ export default function EventDetail() {
                       <Text style={styles.highlightText}>{item.text}</Text>
                     </View>
                   ))}
-                </View>
+                </View> */}
               </View>
             </View>
           </View>
@@ -319,10 +319,14 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer:{},
+  loadingText:{},
   container: {
     flex: 1,
     backgroundColor: neomorphColors.background,
+    minHeight:'100%'
   },
+  
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 80, // Reduced from 100 to 80

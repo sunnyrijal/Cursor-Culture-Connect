@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,13 +22,16 @@ import {
   Eye,
   EyeOff,
   User,
-  Phone,
-  Calendar,
-  MapPin,
-  GraduationCap,
   Sparkles,
   CheckCircle,
   AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Globe,
+  Camera,
+  Users,
+  Heart,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -40,34 +43,209 @@ import Animated, {
   withSequence,
   withDelay,
   Easing,
+  withRepeat,
 } from 'react-native-reanimated';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getUniversities } from '@/contexts/university.api';
 import UniversityDropdown from './UniversityDropdown';
+import Location from './Location';
+
+import { useMutation } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
+import { Alert, Image } from 'react-native';
+import { Plus, X, ImageIcon } from 'lucide-react-native'; // Add ImageIcon import
+
+//@ts-ignore
+import logo from '../assets/logo.png';
+import { uploadFile } from '@/contexts/file.api';
+import TermsModal from './TermsModal';
 
 const { width, height } = Dimensions.get('window');
+
+const ETHNICITY_OPTIONS = [
+  'American Indian or Alaska Native',
+  'Asian',
+  'Black or African American',
+  'Hispanic or Latino',
+  'Native Hawaiian or Other Pacific Islander',
+  'White',
+  'Middle Eastern or North African',
+  'Mixed Race',
+  'Other',
+  'Prefer not to say',
+];
 
 interface AuthFormProps {
   initialMode?: 'login' | 'signup';
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [fullName, setFullName] = useState<string>('');
+
+  // Step 1 - Required fields
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
   const [university, setUniversity] = useState<string>('');
-  const [state, setState] = useState<string>('');
-  const [city, setCity] = useState<string>('');
-  const [mobileNumber, setMobileNumber] = useState<string>('');
+  const [classYear, setClassYear] = useState<string>('');
   const [dateOfBirth, setDateOfBirth] = useState<string>('');
+
+  // Step 2 - Optional profile fields
+  const [profilePicture, setProfilePicture] = useState<string>('');
+  const [pronouns, setPronouns] = useState<string>('');
+  const [ethnicity, setEthnicity] = useState<string[]>([]);
+  const [countryOfOrigin, setCountryOfOrigin] = useState<string>('');
+  const [location, setLocation] = useState<{ city: string; state: string }>({
+    city: '',
+    state: '',
+  });
+  const [languagesSpoken, setLanguagesSpoken] = useState<string>('');
+  const [interests, setInterests] = useState<string>('');
+
+  // Legal checkboxes
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState<boolean>(false);
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(false);
+
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  const uploadFileMutation = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (data) => {
+      console.log('File uploaded successfully:', data);
+      setProfilePicture(data.url); // Set the uploaded image URL to profilePicture
+    },
+    onError: (error) => {
+      console.error('Error uploading file:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+    },
+  });
+
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission needed',
+          'Sorry, we need camera roll permissions to make this work!'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1], // Square aspect for profile pictures
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+
+        console.log('Asset details:', asset);
+
+        uploadFileMutation.mutate({
+          uri: asset.uri,
+          type: asset.type,
+          mimeType: asset.mimeType,
+          fileName: asset.fileName || 'profile_image.jpg',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+    }
+  };
+
+  const renderProfilePictureInput = () => {
+    console.log(profilePicture)
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <Text style={styles.inputLabel}>Profile Picture</Text>
+
+        {/* Show upload options only if no profile picture is set */}
+        {!profilePicture && !uploadFileMutation.isPending && (
+          <TouchableOpacity
+            style={[
+              styles.uploadButton,
+              uploadFileMutation.isPending && styles.uploadButtonDisabled,
+            ]}
+            onPress={pickImage}
+            disabled={loading || uploadFileMutation.isPending}
+          >
+            <LinearGradient
+              colors={
+                uploadFileMutation.isPending
+                  ? ['#9CA3AF', '#6B7280']
+                  : ['#6366F1', '#8B5CF6']
+              }
+              style={styles.uploadButtonGradient}
+            >
+              <View style={styles.buttonContent}>
+                <ImageIcon size={20} color="#FFFFFF" />
+                <Text style={styles.uploadButtonText}>Upload Image</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Profile Picture Preview */}
+        {(profilePicture || uploadFileMutation.isPending) && (
+          <View style={styles.profilePreview}>
+            {uploadFileMutation.isPending ? (
+              <View style={styles.profilePreviewLoading}>
+                <ActivityIndicator size="small" color="#6366F1" />
+                <Text style={styles.loadingImageText}>Uploading...</Text>
+              </View>
+            ) : (
+              <View style={styles.profileImageContainer}>
+                <Image
+                  source={{ uri: profilePicture }}
+                  style={styles.profileImage}
+                />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={removeProfileImage}
+                  disabled={loading || uploadFileMutation.isPending}
+                >
+                  <X size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+      </Animated.View>
+    );
+  };
+
+  // Add function to remove image
+  const removeProfileImage = () => {
+    setProfilePicture('');
+  };
 
   const { data: universities } = useQuery({
     queryKey: ['universities'],
     queryFn: getUniversities,
   });
 
-  console.log(universities)
+
+    const [showModal, setShowModal] = useState(false)
+  const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
+
+  const openLegalModal = (type: "terms" | "privacy") => {
+    setModalType(type)
+    setShowModal(true)
+  }
+
+  const closeLegalModal = () => {
+    setShowModal(false)
+    setModalType(null)
+  }
 
   const [isSignup, setIsSignup] = useState<boolean>(initialMode === 'signup');
   const [error, setError] = useState<string>('');
@@ -114,10 +292,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }));
 
     // Continuous background rotation
-    backgroundRotation.value = withTiming(360, {
-      duration: 60000,
-      easing: Easing.linear,
-    });
+    backgroundRotation.value = withRepeat(
+      withTiming(360, { duration: 60000, easing: Easing.linear }),
+      -1, // infinite repeat
+      false
+    );
   }, []);
 
   useEffect(() => {
@@ -128,27 +307,37 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
   }, [isSignup]);
 
-  const validateField = (field: string, value: string) => {
+  const validateField = (field: string, value: string | string[] | boolean) => {
     let isValid = false;
+
     switch (field) {
       case 'email':
         isValid =
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.includes('.edu');
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
+          (value as string).includes('.edu'); // College email validation
         break;
-
       case 'password':
-        isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/.test(
-          value
-        );
+        isValid = (value as string).length >= 8;
         break;
-      case 'fullName':
-        isValid = value.trim().length >= 2;
+      case 'confirmPassword':
+        isValid = value === password;
         break;
-      case 'mobileNumber':
-        isValid = /^([0-9]{3})[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(value);
+      case 'firstName':
+      case 'lastName':
+        isValid = (value as string).length >= 2;
+        break;
+      case 'university':
+        isValid = (value as string).length >= 2;
+        break;
+      case 'dateOfBirth':
+        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
+        break;
+      case 'termsAccepted':
+      case 'privacyAccepted':
+        isValid = value === true;
         break;
       default:
-        isValid = value.trim().length > 0;
+        isValid = true;
     }
 
     setFieldValidation((prev) => ({ ...prev, [field]: isValid }));
@@ -156,10 +345,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   };
 
   const handleSubmit = async () => {
+    if (isSignup && currentStep === 1) {
+      // Validate step 1 fields
+      const step1Valid = [
+        validateField('firstName', firstName),
+        validateField('lastName', lastName),
+        validateField('email', email),
+        validateField('password', password),
+        validateField('confirmPassword', confirmPassword),
+        validateField('university', university),
+        validateField('classYear', classYear),
+        validateField('dateOfBirth', dateOfBirth),
+      ].every(Boolean);
+
+      if (step1Valid) {
+        setCurrentStep(2);
+        return;
+      } else {
+        setError('Please fill in all required fields correctly.');
+        return;
+      }
+    }
+
+    if (isSignup && currentStep === 2) {
+      // Validate legal checkboxes
+      if (!termsAccepted || !privacyAccepted) {
+        setError('You must accept the Terms & Conditions and Privacy Policy.');
+        return;
+      }
+    }
+
     setError('');
     setLoading(true);
 
-    // Button press animation
     buttonScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
       withTiming(1, { duration: 100 })
@@ -167,36 +385,44 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
     try {
       if (isSignup) {
-        // Prepare signup data
         const signupData = {
+          firstName,
+          lastName,
           email,
           password,
           confirmPassword,
-          fullName,
+          dateOfBirth,
+          classYear,
           university,
-          state,
-          city,
-          mobileNumber,
-          // dateOfBirth,
+          profilePicture,
+          pronouns,
+          ethnicity,
+          countryOfOrigin,
+          city: location.city,
+          state: location.state,
+          languagesSpoken: languagesSpoken
+            .split(',')
+            .map((lang) => lang.trim())
+            .filter(Boolean),
+          interests: interests
+            .split(',')
+            .map((interest) => interest.trim())
+            .filter(Boolean),
+          termsAccepted,
+          privacyAccepted,
+          marketingOptIn,
         };
 
         console.log('Signup data:', signupData);
-        await signup(fullName, email, password, confirmPassword, state, city, university, mobileNumber);
+        await signup(signupData);
       } else {
-        // Prepare login data
-        const loginData = {
-          email,
-          password,
-        };
-
+        const loginData = { email, password };
         console.log('Login data:', loginData);
         await login(email, password);
+        router.replace('/(tabs)');
       }
-
-      router.replace('/(tabs)');
     } catch (err: any) {
       console.log(err);
-
       setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
@@ -205,63 +431,81 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
   const toggleMode = () => {
     setIsSignup(!isSignup);
+    setCurrentStep(1);
     setError('');
-    // Clear form when switching modes
-    if (!isSignup) {
-      setFullName('');
-      setUniversity('');
-      setState('');
-      setCity('');
-      setMobileNumber('');
-      setDateOfBirth('');
-      setConfirmPassword('');
-    }
+    // Reset all fields
+    setFirstName('');
+    setLastName('');
+    setUniversity('');
+    setClassYear('');
+    setDateOfBirth('');
+    setProfilePicture('');
+    setPronouns('');
+    setEthnicity([]);
+    setCountryOfOrigin('');
+    setLocation({ city: '', state: '' });
+    setLanguagesSpoken('');
+    setInterests('');
+    setConfirmPassword('');
+    setTermsAccepted(false);
+    setPrivacyAccepted(false);
+    setMarketingOptIn(false);
   };
 
-  const renderAnimatedInput = (
-    icon: any,
-    label: string,
-    value: string,
-    onChangeText: (text: string) => void,
-    placeholder: string,
-    inputKey: string,
-    options: any = {}
-  ) => {
-    const isValid = fieldValidation[inputKey];
-    const isFocused = focusedInput === inputKey;
+  const toggleEthnicity = (option: string) => {
+    setEthnicity((prev) => {
+      if (prev.includes(option)) {
+        return prev.filter((item) => item !== option);
+      } else {
+        return [...prev, option];
+      }
+    });
+  };
 
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.inputLabel}>{label}</Text>
-        <View
-          style={[
-            styles.inputWrapper,
-            isFocused && styles.inputWrapperFocused,
-            isValid === true && styles.inputWrapperValid,
-            isValid === false && value && styles.inputWrapperInvalid,
-          ]}
+  const renderAnimatedInput = useCallback(
+    (
+      icon: any,
+      label: string,
+      value: string,
+      onChangeText: (text: string) => void,
+      placeholder: string,
+      inputKey: string,
+      options: any = {}
+    ) => {
+      const isValid = fieldValidation[inputKey];
+      const isFocused = focusedInput === inputKey;
+
+      return (
+        <Animated.View
+          style={[styles.inputContainer, { opacity: formOpacity }]}
         >
-          <View style={styles.inputIcon}>
-            {React.createElement(icon, {
-              size: 20,
-              color: isFocused
-                ? '#6366F1'
-                : isValid === true
-                ? '#10B981'
-                : isValid === false && value
-                ? '#EF4444'
-                : '#9CA3AF',
-            })}
-          </View>
+          <Text style={styles.inputLabel}>{label}</Text>
+          <View
+            style={[
+              styles.inputWrapper,
+              isFocused && styles.inputWrapperFocused,
+              isValid === true && styles.inputWrapperValid,
+              isValid === false && value && styles.inputWrapperInvalid,
+            ]}
+          >
+            <View style={styles.inputIcon}>
+              {React.createElement(icon, {
+                size: 20,
+                color: isFocused
+                  ? '#6366F1'
+                  : isValid === true
+                  ? '#10B981'
+                  : isValid === false && value
+                  ? '#EF4444'
+                  : '#9CA3AF',
+              })}
+            </View>
 
-          <TextInput
+            {/* <TextInput
             style={styles.input}
             placeholder={placeholder}
             value={value}
-            onChangeText={(text) => {
-              onChangeText(text);
-              if (text) validateField(inputKey, text);
-            }}
+              onChangeText={onChangeText}
             onFocus={() => setFocusedInput(inputKey)}
             onBlur={() => {
               setFocusedInput('');
@@ -270,68 +514,210 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
             editable={!loading}
             placeholderTextColor="#9CA3AF"
             {...options}
-          />
+          /> */}
 
-          {inputKey === 'password' && (
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
-              {showPassword ? (
-                <EyeOff size={20} color="#9CA3AF" />
-              ) : (
-                <Eye size={20} color="#9CA3AF" />
-              )}
-            </TouchableOpacity>
-          )}
+            <TextInput
+              style={styles.input}
+              placeholder={placeholder}
+              value={value}
+              onChangeText={onChangeText} // <-- Just this, no validation
+              // onFocus={() => setFocusedInput(inputKey)}
+              // onBlur={() => {
+              //   setFocusedInput('');
+              //   if (value) validateField(inputKey, value); // Validate only when user finishes typing
+              // }}
+              editable={!loading}
+              placeholderTextColor="#9CA3AF"
+              {...options}
+            />
+            {inputKey === 'password' && (
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color="#9CA3AF" />
+                ) : (
+                  <Eye size={20} color="#9CA3AF" />
+                )}
+              </TouchableOpacity>
+            )}
 
-          {inputKey === 'confirmPassword' && (
-            <TouchableOpacity
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              style={styles.eyeIcon}
-            >
-              {showConfirmPassword ? (
-                <EyeOff size={20} color="#9CA3AF" />
-              ) : (
-                <Eye size={20} color="#9CA3AF" />
-              )}
-            </TouchableOpacity>
-          )}
+            {inputKey === 'confirmPassword' && (
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={20} color="#9CA3AF" />
+                ) : (
+                  <Eye size={20} color="#9CA3AF" />
+                )}
+              </TouchableOpacity>
+            )}
 
-          {isValid === true && value && (
-            <View style={styles.validIcon}>
-              <CheckCircle size={16} color="#10B981" />
-            </View>
-          )}
+            {isValid === true && value && (
+              <View style={styles.validIcon}>
+                <CheckCircle size={16} color="#10B981" />
+              </View>
+            )}
+
+            {isValid === false && value && (
+              <View style={styles.validIcon}>
+                <AlertCircle size={16} color="#EF4444" />
+              </View>
+            )}
+          </View>
 
           {isValid === false && value && (
-            <View style={styles.validIcon}>
-              <AlertCircle size={16} color="#EF4444" />
-            </View>
+            <Text style={styles.validationText}>
+              {inputKey === 'email' &&
+                'Please enter a valid college email address (.edu)'}
+              {inputKey === 'password' &&
+                'Password must be at least 8 characters'}
+              {inputKey === 'confirmPassword' && 'Passwords do not match'}
+              {inputKey === 'firstName' &&
+                'First name must be at least 2 characters'}
+              {inputKey === 'lastName' &&
+                'Last name must be at least 2 characters'}
+              {inputKey === 'university' && 'University name is required'}
+              {inputKey === 'dateOfBirth' &&
+                'Please enter date in YYYY-MM-DD format'}
+            </Text>
           )}
-        </View>
+        </Animated.View>
+      );
+    },
+    [
+      fieldValidation,
+      focusedInput,
+      loading,
+      password,
+      showConfirmPassword,
+      showPassword,
+      formOpacity,
+    ]
+  );
 
-        {isValid === false && value && (
-          <Text style={styles.validationText}>
-            {inputKey === 'email' && 'Please enter a valid .edu email address'}
-            {inputKey === 'password' &&
-              'Password must be 8+ chars with uppercase, lowercase & number'}
-            {inputKey === 'fullName' && 'Name must be at least 2 characters'}
-            {inputKey === 'mobileNumber' && 'Please enter a valid phone number'}
-            {inputKey !== 'email' &&
-              inputKey !== 'password' &&
-              inputKey !== 'fullName' &&
-              inputKey !== 'mobileNumber' &&
-              'This field is required'}
+  const renderClassYearInput = () => {
+    return (
+      renderAnimatedInput(
+        Calendar,
+        'Class Year *',
+        classYear,
+        setClassYear,
+        'e.g., Freshman, 2025',
+        'classYear',
+        {
+          keyboardType: 'default',
+        }
+      )
+    );
+  };
+
+  const renderEthnicitySelection = () => {
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <Text style={styles.inputLabel}>Ethnicity (Select all that apply)</Text>
+        <View style={styles.checkboxContainer}>
+          {ETHNICITY_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.checkboxRow}
+              onPress={() => toggleEthnicity(option)}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  ethnicity.includes(option) && styles.checkboxSelected,
+                ]}
+              >
+                {ethnicity.includes(option) && (
+                  <CheckCircle size={16} color="#6366F1" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>{option}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const renderLegalCheckboxes = () => {
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => {
+            setTermsAccepted(!termsAccepted);
+            validateField('termsAccepted', !termsAccepted);
+          }}
+        >
+          <View
+            style={[styles.checkbox, termsAccepted && styles.checkboxSelected]}
+          >
+            {termsAccepted && <CheckCircle size={16} color="#6366F1" />}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            I accept the{' '}
+            <Text
+              style={styles.linkText}
+            onPress={() => openLegalModal("terms")}
+            >
+              Terms & Conditions
+            </Text>{' '}
+            *
           </Text>
-        )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => {
+            setPrivacyAccepted(!privacyAccepted);
+            validateField('privacyAccepted', !privacyAccepted);
+          }}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              privacyAccepted && styles.checkboxSelected,
+            ]}
+          >
+            {privacyAccepted && <CheckCircle size={16} color="#6366F1" />}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            I accept the{' '}
+            <Text
+              style={styles.linkText}
+             onPress={() => openLegalModal("privacy")}
+            >
+              Privacy Policy
+            </Text>{' '}
+            *
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setMarketingOptIn(!marketingOptIn)}
+        >
+          <View
+            style={[styles.checkbox, marketingOptIn && styles.checkboxSelected]}
+          >
+            {marketingOptIn && <CheckCircle size={16} color="#6366F1" />}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            Send me updates about events and news
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
     );
   };
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
     transform: [{ scale: headerScale.value }],
+    opacity: headerOpacity.value,
   }));
 
   const formAnimatedStyle = useAnimatedStyle(() => ({
@@ -357,149 +743,157 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-
-      {/* Animated Background */}
-      <LinearGradient
-        colors={['#F8FAFC', '#F1F5F9', '#E2E8F0']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBackground}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
       />
-
-      {/* Floating Particles */}
-      <Animated.View style={[styles.particleContainer, particleAnimatedStyle]}>
-        <Animated.View style={[styles.backgroundOrb, backgroundAnimatedStyle]}>
-          {[...Array(12)].map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.particle,
-                {
-                  top: `${10 + (index % 4) * 20}%`,
-                  left: `${5 + (index % 3) * 30}%`,
-                  animationDelay: `${index * 200}ms`,
-                },
-              ]}
-            >
-              <Sparkles
-                size={8 + (index % 3) * 2}
-                color="rgba(99, 102, 241, 0.3)"
-              />
-            </View>
-          ))}
-        </Animated.View>
+      {/* Background */}
+      <Animated.View style={[styles.backgroundContainer]}>
+        <View style={styles.backgroundGradient} />
       </Animated.View>
-
       <KeyboardAvoidingView
+        style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          bounces={true}
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
-          <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerGradient}
-            >
-              <View style={styles.headerContent}>
-                <View style={styles.headerIcon}>
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.iconGradient}
-                  >
-                    <GraduationCap size={24} color="white" />
-                  </LinearGradient>
-                </View>
-
-                <Text style={styles.title}>
-                  {isSignup ? 'Join the Community' : 'Welcome Back'}
-                </Text>
-                <Text style={styles.subtitle}>
-                  {isSignup
-                    ? 'Create your account and start connecting with students worldwide'
-                    : 'Sign in to continue your cultural journey'}
-                </Text>
-              </View>
-            </LinearGradient>
+          <Animated.View style={[styles.header, headerAnimatedStyle]}>
+            <View style={styles.logoContainer}>
+              <Image source={logo} style={styles.logo} />
+            </View>
+            <Text style={styles.title}>
+              {isSignup
+                ? currentStep === 1
+                  ? 'Create Account'
+                  : 'Complete Profile'
+                : 'Welcome Back'}
+            </Text>
+            <Text style={styles.subtitle}>
+      {isSignup 
+                ? currentStep === 1
+                  ? 'Step 1 of 2: Basic Information'
+                  : 'Step 2 of 2: Profile Details (Optional)'
+                : 'Sign in to continue'}
+            </Text>
           </Animated.View>
 
           {/* Error Message */}
           {error ? (
             <Animated.View style={styles.errorContainer}>
-              <LinearGradient
-                colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
-                style={styles.errorGradient}
-              >
-                <AlertCircle size={20} color="#EF4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </LinearGradient>
+              <Text style={styles.errorText}>{error}</Text>
             </Animated.View>
           ) : null}
 
-          {/* Form Container */}
+          {/* Form */}
           <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
-            <BlurView intensity={20} style={styles.blurView}>
+            <BlurView intensity={20} style={styles.formBlur}>
               <LinearGradient
-                colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
+                colors={[
+                  'rgba(255, 255, 255, 0.95)',
+                  'rgba(248, 250, 252, 0.9)',
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.formGradient}
               >
-                {isSignup &&
-                  renderAnimatedInput(
-                    User,
-                    'Full Name',
-                    fullName,
-                    setFullName,
-                    'Enter your full name',
-                    'fullName',
-                    {
-                      autoCapitalize: 'words',
-                      autoComplete: 'name',
-                    }
-                  )}
-
-                {renderAnimatedInput(
-                  Mail,
-                  'Email',
-                  email,
-                  setEmail,
-                  'Enter your .edu email',
-                  'email',
-                  {
-                    keyboardType: 'email-address',
-                    autoCapitalize: 'none',
-                    autoComplete: 'email',
-                    autoCorrect: false,
-                  }
-                )}
-
-                {renderAnimatedInput(
-                  Lock,
-                  'Password',
-                  password,
-                  setPassword,
-                  'Enter your password',
-                  'password',
-                  {
-                    secureTextEntry: !showPassword,
-                    autoComplete: 'password',
-                    autoCorrect: false,
-                  }
-                )}
-
-                {isSignup && (
+                {/* Login Form */}
+                {!isSignup && (
                   <>
+                    {renderAnimatedInput(
+                      Mail,
+                      'Email',
+                      email,
+                      setEmail,
+                      'Enter your email',
+                      'email',
+                      {
+                        keyboardType: 'email-address',
+                        autoCapitalize: 'none',
+                        autoComplete: 'email',
+                        autoCorrect: false,
+                      }
+                    )}
+
+                    {renderAnimatedInput(
+                      Lock,
+                      'Password',
+                      password,
+                      setPassword,
+                      'Enter your password',
+                      'password',
+                      {
+                        secureTextEntry: !showPassword,
+                        autoComplete: 'password',
+                        autoCorrect: false,
+                      }
+                    )}
+                  </>
+                )}
+
+                {/* Signup Step 1 */}
+                {isSignup && currentStep === 1 && (
+                  <>
+                    {renderAnimatedInput(
+                      User,
+                      'First Name',
+                      firstName,
+                      setFirstName,
+                      'Enter your first name',
+                      'firstName',
+                      {
+                        autoCapitalize: 'words',
+                        autoComplete: 'given-name',
+                      }
+                    )}
+
+                    {renderAnimatedInput(
+                      User,
+                      'Last Name',
+                      lastName,
+                      setLastName,
+                      'Enter your last name',
+                      'lastName',
+                      {
+                        autoCapitalize: 'words',
+                        autoComplete: 'family-name',
+                      }
+                    )}
+
+                    {renderAnimatedInput(
+                      Mail,
+                      'College Email',
+                      email,
+                      setEmail,
+                      'Enter your college email (.edu)',
+                      'email',
+                      {
+                        keyboardType: 'email-address',
+                        autoCapitalize: 'none',
+                        autoComplete: 'email',
+                        autoCorrect: false,
+                      }
+                    )}
+
+                    {renderAnimatedInput(
+                      Lock,
+                      'Password',
+                      password,
+                      setPassword,
+                      'Enter your password',
+                      'password',
+                      {
+                        secureTextEntry: !showPassword,
+                        autoComplete: 'password',
+                        autoCorrect: false,
+                      }
+                    )}
+
                     {renderAnimatedInput(
                       Lock,
                       'Confirm Password',
@@ -514,9 +908,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       }
                     )}
 
-                    <Animated.View style={[{ opacity: formOpacity, zIndex:100 }]}>
+                    <Animated.View
+                      style={[{ opacity: formOpacity, zIndex: 100 }]}
+                    >
                       <UniversityDropdown
-                        universities={universities?.data}
+                        universities={universities?.data || []}
                         value={university}
                         onValueChange={setUniversity}
                         label="University"
@@ -526,84 +922,126 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                         onFocus={() => setFocusedInput('university')}
                         onBlur={() => {
                           setFocusedInput('');
-                          if (university) validateField('university', university);
+                          if (university)
+                            validateField('university', university);
                         }}
                         loading={loading}
                       />
                     </Animated.View>
 
-                    <View style={styles.rowContainer}>
-                      <View style={styles.halfWidth}>
-                        {renderAnimatedInput(
-                          MapPin,
-                          'State',
-                          state,
-                          setState,
-                          'State',
-                          'state',
-                          {
-                            autoCapitalize: 'words',
-                          }
-                        )}
-                      </View>
-                      <View style={styles.halfWidth}>
-                        {renderAnimatedInput(
-                          MapPin,
-                          'City',
-                          city,
-                          setCity,
-                          'City',
-                          'city',
-                          {
-                            autoCapitalize: 'words',
-                          }
-                        )}
-                      </View>
-                    </View>
+                    {renderClassYearInput()}
 
                     {renderAnimatedInput(
-                      Phone,
-                      'Mobile Number',
-                      mobileNumber,
-                      setMobileNumber,
-                      '(123) 456-7890',
-                      'mobileNumber',
-                      { keyboardType: 'phone-pad', maxLength: 14 }
-                    )}
-
-                    {/* {renderAnimatedInput(
                       Calendar,
                       'Date of Birth',
                       dateOfBirth,
-                      (text) => {
-                        const cleaned = text.replace(/\D/g, '');
-                        let formatted = cleaned;
-                        if (cleaned.length >= 4) {
-                          formatted =
-                            cleaned.slice(0, 4) + '-' + cleaned.slice(4);
-                        }
-                        if (cleaned.length >= 6) {
-                          formatted =
-                            cleaned.slice(0, 4) +
-                            '-' +
-                            cleaned.slice(4, 6) +
-                            '-' +
-                            cleaned.slice(6, 8);
-                        }
-                        setDateOfBirth(formatted);
-                      },
+                      setDateOfBirth,
                       'YYYY-MM-DD',
                       'dateOfBirth',
-                      { keyboardType: 'numeric', maxLength: 10 }
+                      {
+                        placeholder: 'YYYY-MM-DD',
+                        maxLength: 10,
+                      }
+                    )}
+                  </>
+                )}
+
+                {/* Signup Step 2 */}
+                {isSignup && currentStep === 2 && (
+                  <>
+                    {/* {renderAnimatedInput(
+                      Camera,
+                      'Profile Picture URL (Optional)',
+                      profilePicture,
+                      setProfilePicture,
+                      'Enter image URL',
+                      'profilePicture'
                     )} */}
+
+                    {renderProfilePictureInput()}
+
+                    {renderAnimatedInput(
+                      Users,
+                      'Pronouns (Optional)',
+                      pronouns,
+                      setPronouns,
+                      'e.g., he/him, she/her, they/them',
+                      'pronouns'
+                    )}
+
+                    {renderEthnicitySelection()}
+
+                    {renderAnimatedInput(
+                      Globe,
+                      'Country of Origin (Optional)',
+                      countryOfOrigin,
+                      setCountryOfOrigin,
+                      'Enter your country of origin',
+                      'countryOfOrigin'
+                    )}
+
+                    <Location
+                      selectedState={location.state}
+                      selectedCity={location.city}
+                      onStateChange={(state) =>
+                        setLocation((prev) => ({ ...prev, state }))
+                      }
+                      onCityChange={(city) =>
+                        setLocation((prev) => ({ ...prev, city }))
+                      }
+                      isValid={{
+                        state: fieldValidation.state,
+                        city: fieldValidation.city,
+                      }}
+                      isFocused={{
+                        state: focusedInput === 'state',
+                        city: focusedInput === 'city',
+                      }}
+                      onFocus={(field) => setFocusedInput(field)}
+                      onBlur={() => setFocusedInput('')}
+                      loading={loading}
+                    />
+
+                    {renderAnimatedInput(
+                      Globe,
+                      'Languages Spoken (Optional)',
+                      languagesSpoken,
+                      setLanguagesSpoken,
+                      'e.g., English, Spanish, French',
+                      'languagesSpoken'
+                    )}
+
+                    {renderAnimatedInput(
+                      Heart,
+                      'Interests/Hobbies (Optional)',
+                      interests,
+                      setInterests,
+                      'e.g., Music, Sports, Reading',
+                      'interests'
+                    )}
+
+                    {renderLegalCheckboxes()}
                   </>
                 )}
               </LinearGradient>
             </BlurView>
           </Animated.View>
 
-          {/* Primary Button */}
+          {/* Navigation Buttons */}
           <Animated.View style={buttonAnimatedStyle}>
+            {isSignup && currentStep === 2 && (
+              <TouchableOpacity
+                style={[styles.secondaryButton]}
+                onPress={() => setCurrentStep(1)}
+                disabled={loading}
+              >
+                <View style={styles.buttonContent}>
+                  <ArrowLeft size={16} color="#6366F1" />
+                  <Text style={styles.secondaryButtonText}>Back</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={[styles.primaryButton, loading && styles.disabledButton]}
               onPress={handleSubmit}
@@ -628,10 +1066,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 ) : (
                   <View style={styles.buttonContent}>
                     <Text style={styles.primaryButtonText}>
-                      {isSignup ? 'Create Account' : 'Sign In'}
+                      {!isSignup
+                        ? 'Sign In'
+                        : currentStep === 1
+                        ? 'Continue'
+                        : 'Create Account'}
                     </Text>
                     <View style={styles.buttonIcon}>
-                      <Sparkles size={16} color="white" />
+                      {!isSignup || currentStep === 2 ? (
+                        <Sparkles size={16} color="white" />
+                      ) : (
+                        <ArrowRight size={16} color="white" />
+                      )}
                     </View>
                   </View>
                 )}
@@ -674,225 +1120,208 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 </TouchableOpacity>
               </LinearGradient>
             </BlurView>
+           {showModal && (
+        <TermsModal
+          isVisible={showModal}
+          modalType={modalType}
+          onClose={closeLegalModal}
+        />
+      )}
           </Animated.View>
+
         </ScrollView>
       </KeyboardAvoidingView>
+   
     </View>
   );
 };
 
-export default AuthForm;
-
 const styles = StyleSheet.create({
+  uploadButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  // Loading overlay styles
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    borderRadius: 16,
+  },
+  uploadingBlur: {
+    flex: 1,
+    borderRadius: 16,
+  },
+  uploadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+  },
+  uploadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 12,
+  },
+  uploadingSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  // Loading image placeholder styles
+  imagePreviewLoading: {
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+  },
+  loadingImageText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  uploadButton: {
+    marginBottom: 12,
+  },
+  uploadButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#1E1B4B',
   },
-  gradientBackground: {
+  backgroundContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
-  particleContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: 0,
+  backgroundGradient: {
+    flex: 1,
+    backgroundColor: '#FAFAFA', // Light shade of white
   },
-  backgroundOrb: {
-    width: '100%',
-    height: '100%',
-  },
-  particle: {
-    position: 'absolute',
-  },
-  keyboardView: {
+  keyboardContainer: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 40,
-    zIndex: 1,
   },
-  headerContainer: {
-    marginHorizontal: 20,
-    marginTop: 60,
-    marginBottom: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  headerGradient: {
-    padding: 24,
-    borderRadius: 24,
-  },
-  headerContent: {
+  header: {
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    marginBottom: 30,
   },
-  headerIcon: {
-    width: 60,
-    height: 60,
+  logoContainer: {
+    marginBottom: 20,
+  },
+  logo: {
+    width: 80,
+    height: 80,
     borderRadius: 20,
-    marginBottom: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  iconGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'black',
     textAlign: 'center',
-    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 16,
+    color: 'rgba(63, 63, 63, 0.8)',
     textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 300,
-    fontWeight: '500',
   },
   errorContainer: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  errorGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 12,
     padding: 16,
-    gap: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   errorText: {
     color: '#EF4444',
     fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
+    textAlign: 'center',
   },
   formContainer: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 15 },
-        shadowOpacity: 0.1,
-        shadowRadius: 25,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+    marginBottom: 20,
   },
-  blurView: {
-    borderRadius: 24,
+  formBlur: {
+    borderRadius: 20,
     overflow: 'hidden',
   },
   formGradient: {
     padding: 24,
-    borderRadius: 24,
   },
   inputContainer: {
-    marginBottom: 12,
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
-    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    backgroundColor: 'white',
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    height: 56,
   },
   inputWrapperFocused: {
     borderColor: '#6366F1',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inputWrapperValid: {
     borderColor: '#10B981',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
   inputWrapperInvalid: {
     borderColor: '#EF4444',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    height: 48,
     fontSize: 16,
-    color: '#1F2937',
-    fontWeight: '500',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    color: '#111827',
+    paddingVertical: 0,
   },
   eyeIcon: {
-    padding: 8,
+    padding: 4,
     marginLeft: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   validIcon: {
     marginLeft: 8,
@@ -900,62 +1329,78 @@ const styles = StyleSheet.create({
   validationText: {
     fontSize: 12,
     color: '#EF4444',
-    marginTop: 6,
+    marginTop: 4,
     marginLeft: 4,
-    fontWeight: '500',
   },
-  rowContainer: {
+  checkboxContainer: {
+    gap: 12,
+  },
+  checkboxRow: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
+    paddingVertical: 8,
   },
-  halfWidth: {
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#6366F1',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#374151',
     flex: 1,
+  },
+  linkText: {
+    color: '#6366F1',
+    textDecorationLine: 'underline',
   },
   primaryButton: {
-    marginHorizontal: 20,
-    height: 60,
-    borderRadius: 20,
-    marginBottom: 24,
+    borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#6366F1',
+    backgroundColor: 'white',
+    paddingVertical: 16,
+    marginBottom: 12,
   },
   disabledButton: {
-    ...Platform.select({
-      ios: {
-        shadowColor: '#9CA3AF',
-        shadowOpacity: 0.2,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    opacity: 0.6,
   },
   buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    borderRadius: 20,
+    justifyContent: 'center',
   },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginRight: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginLeft: 8,
   },
   buttonIcon: {
     marginLeft: 4,
@@ -963,45 +1408,112 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   loadingText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    color: 'white',
+    marginLeft: 8,
   },
   switchContainer: {
-    marginHorizontal: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
+    marginTop: 20,
   },
   switchBlur: {
-    borderRadius: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   switchGradient: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    gap: 8,
   },
   switchLabel: {
-    fontSize: 16,
-    color: '#64748B',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
   },
   switchButton: {
     borderRadius: 12,
     overflow: 'hidden',
   },
   switchButtonGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
   },
   switchButtonText: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#6366F1',
-    fontWeight: '700',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 0,
+  },
+  textInputError: {
+    borderColor: '#EF4444',
+  },
+  imageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  addImageButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  addImageButtonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profilePreview: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  profilePreviewLoading: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileImageContainer: {
+    position: 'relative',
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#EF4444',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
   },
 });
+
+export default AuthForm;

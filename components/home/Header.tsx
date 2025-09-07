@@ -6,10 +6,19 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Bell, GraduationCap } from 'lucide-react-native';
+import { Camera, Bell, User, BookOpen, LogIn } from 'lucide-react-native';
+
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
+
+import { Image } from 'react-native';
+//@ts-ignore
+import logo from '../../assets/logo.png';
+import { getMyData } from '@/contexts/user.api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import getDecodedToken from '@/utils/getMyData';
 
 export const clayColors = {
   background: '#F0F3F7',
@@ -48,6 +57,15 @@ const Header = ({
       : styles.actionButton;
   };
 
+  const { authState } = useAuth();
+  console.log('Auth State', authState);
+
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -61,19 +79,59 @@ const Header = ({
               {/* <Text style={styles.avatarText}>
                 {currentUser.name.charAt(0)}
               </Text> */}
-              <GraduationCap size={24} color="#7C3AED" />
+
+              <View style={styles.avatarContainer}>
+                <Image source={logo} style={styles.logo} resizeMode="contain" />
+              </View>
             </View>
           </TouchableOpacity>
 
           <View style={styles.appTitleContainer}>
-            <Text style={styles.appTitle}>Culture Connect App</Text>
+            <Text style={styles.appTitle}>TRiVO</Text>
             {/* <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>
         </View>
 
         <View style={styles.headerActions}>
-          <Shadow
+          {myData ? (
+            <>
+              <Shadow
+                distance={8}
+                startColor="rgba(163, 177, 198, 0.15)"
+                offset={[4, 4]}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push('/profile')}
+                  onPressIn={() => handlePressIn('profile')}
+                  onPressOut={handlePressOut}
+                  style={[getButtonStyle('profile'), styles.profileButton]}
+                  activeOpacity={1}
+                >
+                  <User size={20} color="#8B5FBF" />
+                </TouchableOpacity>
+              </Shadow>
+            </>
+          ) : (
+            <>
+              <Shadow
+                distance={8}
+                startColor="rgba(163, 177, 198, 0.15)"
+                offset={[4, 4]}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/login')}
+                  onPressOut={handlePressOut}
+                  style={[getButtonStyle('profile'), styles.profileButton]}
+                  activeOpacity={1}
+                >
+                  <LogIn size={20} color="#8B5FBF" />
+                </TouchableOpacity>
+              </Shadow>
+            </>
+          )}
+
+          {/* <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
             offset={[4, 4]}
@@ -85,9 +143,9 @@ const Header = ({
               style={[getButtonStyle('camera'), styles.cameraButton]}
               activeOpacity={1}
             >
-              <Camera size={20} color="#EC4899" />
+              <BookOpen size={20} color="#EC4899" />
             </TouchableOpacity>
-          </Shadow>
+          </Shadow> */}
           <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
@@ -156,12 +214,15 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#fadaffff', // Pink gradient simulation
     justifyContent: 'center',
     alignItems: 'center',
     // Inner shadow effect
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logo: {
+    width: 48,
+    height: 48,
   },
 
   // Commented out avatar text style
@@ -202,6 +263,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+
+  profileButton: {
+    backgroundColor: '#F5F3FF', // Light purple background
+    borderWidth: 1,
+    borderColor: 'rgba(139, 95, 191, 0.1)',
   },
 
   actionButton: {

@@ -1,23 +1,38 @@
 import { useState, useEffect } from 'react';
 import { ApiGroup } from '@/types/group';
+import { useQuery } from '@tanstack/react-query';
+import { getUserGroups } from '@/contexts/group.api';
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [name, setName] = useState('');
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
 
-  const fetchGroups = async () => {
-    try {
-      const response = await fetch('/api/groups');
-      const data = await response.json();
-      setGroups(data);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-    }
-  };
+    const {
+    data: groupResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => getUserGroups(),
+  });
+
+
+  console.log(groupResponse)
+
+  // useEffect(() => {
+  //   fetchGroups();
+  // }, []);
+
+  // const fetchGroups = async () => {
+  //   try {
+  //     const response = await fetch('/api/groups');
+  //     const data = await response.json();
+  //     setGroups(data);
+  //   } catch (error) {
+  //     console.error('Error fetching groups:', error);
+  //   }
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +46,7 @@ export default function GroupsPage() {
       });
       if (response.ok) {
         setName('');
-        fetchGroups(); // Refresh the list
+        // fetchGroups(); 
       }
     } catch (error) {
       console.error('Error creating group:', error);

@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import {
   View,
@@ -14,20 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {
-  Utensils,
-  Music,
-  Palette,
-  Camera,
-  Bot,
-
-} from 'lucide-react-native';
+import { Utensils, Music, Palette, Camera, Bot } from 'lucide-react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { ShareCultureModal } from '@/components/ShareCultureModal';
 import { CulturalStoriesModal } from '@/components/CulturalStoriesModal';
 import { currentUser } from '@/data/mockData';
-import { theme, spacing} from '@/components/theme';
+import { theme, spacing } from '@/components/theme';
 import { store } from '@/data/store';
 import { useEffect, useRef } from 'react';
 import Header from '@/components/home/Header';
@@ -37,10 +31,12 @@ import UpcommingEvents from '@/components/home/UpcommingEvents';
 import QuickActions from '@/components/home/QuickActions';
 import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
+import AutoplayVideo from '@/components/home/VideoCard';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
-  const [showCreateQuickEventModal, setShowCreateQuickEventModal] = useState(false);
+  const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
+    useState(false);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
@@ -212,23 +208,18 @@ export default function Dashboard() {
   ];
 
   const handleCreateEvent = (eventData: any) => {
-    console.log('Creating event:', eventData);
     setShowCreateEventModal(false);
   };
 
   const handleCreateQuickEvent = (eventData: any) => {
-    console.log('Creating event:', eventData);
     setShowCreateQuickEventModal(false);
   };
 
-
   const handleCreateGroup = (groupData: any) => {
-    console.log('Creating group:', groupData);
     setShowCreateGroupModal(false);
   };
 
   const handleShareStory = (storyData: any) => {
-    console.log('Sharing story:', storyData);
     setShowShareCultureModal(false);
   };
 
@@ -255,7 +246,7 @@ export default function Dashboard() {
 
   const extractLocation = (q: string) => {
     // Try to extract a location from the query (city, university, state, etc.)
-    const user:any = store.getState().currentUser;
+    const user: any = store.getState().currentUser;
 
     // Add null check for user
     if (!user) {
@@ -290,7 +281,7 @@ export default function Dashboard() {
     return null;
   };
 
-  const extractDay = (q:string) => {
+  const extractDay = (q: string) => {
     if (q.includes('today')) return getToday();
     for (const day of knownDays) {
       if (q.includes(day)) return day.charAt(0).toUpperCase() + day.slice(1);
@@ -322,14 +313,14 @@ export default function Dashboard() {
     'Mixed Heritage',
   ];
 
-  function extractHeritage(q:string) {
+  function extractHeritage(q: string) {
     for (const h of heritageList) {
       if (q.includes(h.toLowerCase())) return h;
     }
     return null;
   }
 
-  function extractIntent(q:string) {
+  function extractIntent(q: string) {
     if (q.includes('food') || q.includes('restaurant') || q.includes('eat'))
       return 'food';
     if (
@@ -360,7 +351,7 @@ export default function Dashboard() {
       if (intent === 'food' && heritage) {
         // Find restaurants with highest popularity for that heritage near the user
         let restaurants = sponsoredContent.filter(
-          (c:any) =>
+          (c: any) =>
             c.type === 'restaurant' &&
             c.popularityByHeritage &&
             c.popularityByHeritage[heritage]
@@ -374,7 +365,7 @@ export default function Dashboard() {
 
         // Sort by popularity for that heritage
         restaurants.sort(
-          (a:any, b:any ) =>
+          (a: any, b: any) =>
             b.popularityByHeritage[heritage] - a.popularityByHeritage[heritage]
         );
 
@@ -389,7 +380,7 @@ export default function Dashboard() {
         }
 
         setAIResults(
-          restaurants.map((r:any) => ({
+          restaurants.map((r: any) => ({
             type: 'restaurant',
             name: r.title,
             location: r.location,
@@ -407,11 +398,11 @@ export default function Dashboard() {
 
       // Search events
       let events = storeEvents.filter(
-        (e:any) =>
+        (e: any) =>
           (e.name && normalize(e.name).includes(q)) ||
           (e.description && normalize(e.description).includes(q)) ||
           (Array.isArray(e.category)
-            ? e.category.some((cat:string) => normalize(cat).includes(q))
+            ? e.category.some((cat: string) => normalize(cat).includes(q))
             : e.category && normalize(e.category).includes(q))
       );
 
@@ -425,7 +416,7 @@ export default function Dashboard() {
 
       // Add day filter
       if (day) {
-        events = events.filter((e:any) => {
+        events = events.filter((e: any) => {
           // Try to match day in event.date or event.time or event.name
           if (e.date && normalize(e.date).includes(day.toLowerCase()))
             return true;
@@ -440,10 +431,12 @@ export default function Dashboard() {
       // Outdoor filter
       if (outdoor) {
         events = events.filter(
-          (e:any) =>
+          (e: any) =>
             (e.category &&
               Array.isArray(e.category) &&
-              e.category.some((c:string) => c.toLowerCase().includes('outdoor'))) ||
+              e.category.some((c: string) =>
+                c.toLowerCase().includes('outdoor')
+              )) ||
             (e.name && e.name.toLowerCase().includes('outdoor')) ||
             (e.description && e.description.toLowerCase().includes('outdoor'))
         );
@@ -486,14 +479,16 @@ export default function Dashboard() {
 
       if (outdoor) {
         groups = groups.filter(
-          (g:any) =>
+          (g: any) =>
             (g.name && normalize(g.name).includes('outdoor')) ||
             (g.description && normalize(g.description).includes('outdoor')) ||
             (g.category &&
               (typeof g.category === 'string'
                 ? normalize(g.category).includes('outdoor')
                 : Array.isArray(g.category) &&
-                  g.category.some((cat:string) => normalize(cat).includes('outdoor'))))
+                  g.category.some((cat: string) =>
+                    normalize(cat).includes('outdoor')
+                  )))
         );
       }
 
@@ -515,7 +510,7 @@ export default function Dashboard() {
           description: g.description,
           location: g.location,
         })),
-        ...events.map((e:any) => ({
+        ...events.map((e: any) => ({
           type: 'event',
           name: e.name,
           date: e.date,
@@ -545,28 +540,37 @@ export default function Dashboard() {
   const modalRef = useRef(null);
 
   // Dismiss modal on outside click
+  // Dismiss modal on outside click
   useEffect(() => {
-    if (!showAIModal) return;
-    function handleClick(e:any) {
+    if (!showAIModal || !isWeb) return;
+
+    function handleClick(e: any) {
+      //@ts-ignore
       if (modalRef.current && !modalRef.current.contains(e.target)) {
         setShowAIModal(false);
       }
     }
-    if (isWeb) {
+
+    // Type guard for document
+    if (typeof document !== 'undefined') {
       document.addEventListener('mousedown', handleClick);
       return () => document.removeEventListener('mousedown', handleClick);
     }
-  }, [showAIModal]);
+  }, [showAIModal, isWeb]);
 
-  // Voice command (web only, optional)
   const handleVoice = () => {
-    if (!isWeb || !('webkitSpeechRecognition' in window)) {
-      alert('Voice recognition not supported in this browser.');
+    if (
+      !isWeb ||
+      typeof window === 'undefined' ||
+      !('webkitSpeechRecognition' in window)
+    ) {
+      alert('Voice recognition not supported in this environment.');
       return;
     }
-    const recognition = new window.webkitSpeechRecognition();
+
+    const recognition = new (window as any).webkitSpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.onresult = (event:any) => {
+    recognition.onresult = (event: any) => {
       if (event.results && event.results[0] && event.results[0][0]) {
         setAIQuestion(event.results[0][0].transcript);
       }
@@ -580,13 +584,13 @@ export default function Dashboard() {
     { first: 'Discover new communities', second: 'and friends' },
     { first: 'Explore events from', second: 'every heritage' },
   ];
-  const [welcomeIndex, setWelcomeIndex] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWelcomeIndex((i) => (i + 1) % welcomeMessages.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  // const [welcomeIndex, setWelcomeIndex] = useState(0);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setWelcomeIndex((i) => (i + 1) % welcomeMessages.length);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -596,9 +600,14 @@ export default function Dashboard() {
       >
         <Header setShowStoriesModal={setShowStoriesModal} />
 
-        <WelcomeCenter welcomeMessages={welcomeMessages} welcomeIndex={welcomeIndex}/>
+        {/* <WelcomeCenter
+          welcomeMessages={welcomeMessages}
+          welcomeIndex={welcomeIndex}
+        /> */}
 
         <UserStat currentUser={currentUser} />
+
+    <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
 
         <QuickActions
           setShowCreateEventModal={setShowCreateEventModal}
@@ -618,7 +627,7 @@ export default function Dashboard() {
         onSubmit={handleCreateEvent}
       />
 
-       <CreateQuickEventModal
+      <CreateQuickEventModal
         visible={showCreateQuickEventModal}
         onClose={() => handleCreateQuickEvent(false)}
         onSubmit={handleCreateQuickEvent}
@@ -640,7 +649,7 @@ export default function Dashboard() {
       />
 
       {/* Floating Ask AI Button */}
-      <View
+      {/* <View
         style={{ position: 'absolute', bottom: 20, right: 16, zIndex: 200 }}
       >
         <TouchableOpacity
@@ -663,7 +672,7 @@ export default function Dashboard() {
         >
           <Bot size={20} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </View> */}
       {/* AI Assistant Modal */}
       <Modal
         visible={showAIModal}

@@ -41,7 +41,7 @@ const formatTime = (dateString: string) => {
 };
 
 const UpcomingEvents = () => {
-  const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
+  const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
 
   // Use Tanstack Query to fetch events
   const {
@@ -84,6 +84,19 @@ const UpcomingEvents = () => {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
         <View style={styles.eventsToggleContainer}>
+           <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              eventsView === 'list' && styles.toggleButtonActive,
+            ]}
+            onPress={() => setEventsView('list')}
+            activeOpacity={0.7}
+          >
+            <ListIcon
+              size={18}
+              color={eventsView === 'list' ? theme.white : theme.primary}
+            />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.toggleButton,
@@ -97,19 +110,7 @@ const UpcomingEvents = () => {
               color={eventsView === 'grid' ? theme.white : theme.primary}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              eventsView === 'list' && styles.toggleButtonActive,
-            ]}
-            onPress={() => setEventsView('list')}
-            activeOpacity={0.7}
-          >
-            <ListIcon
-              size={18}
-              color={eventsView === 'list' ? theme.white : theme.primary}
-            />
-          </TouchableOpacity>
+         
         </View>
         <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
           <Text style={styles.viewAllText}>View All</Text>

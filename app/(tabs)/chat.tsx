@@ -1,73 +1,306 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
+'use client';
+
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Platform,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Search, MessageCircle, Users, Sparkles, ArrowRight } from 'lucide-react-native';
+import {
+  Search,
+  MessageCircle,
+  Users,
+  Sparkles,
+  ArrowRight,
+  UserPlus,
+  X,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { mockConversations, mockGroupConversations } from '@/data/mockData';
+import { theme } from '@/components/theme';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { createDirectChat, getUserChats } from '@/contexts/chat.api';
+import getDecodedToken from '@/utils/getMyData';
+import { getAllUsers, getUsers } from '@/contexts/user.api';
+import useSocket from '@/hooks/useSocket';
 
-type FilterType = 'personal' | 'groups';
+type FilterType = 'DIRECT' | 'GROUP';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  profilePicture: string;
+  city: string | null;
+  classYear: string | null;
+  university: {
+    id: string;
+    name: string;
+  };
+}
+
+interface Participant {
+  id: string;
+  chatId: string;
+  userId: string;
+  user: User;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  chatId: string;
+  senderId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+}
+
+interface Chat {
+  id: string;
+  type: 'DIRECT' | 'GROUP';
+  name: string | null;
+  createdAt: string;
+  updatedAt: string;
+  groupId: string | null;
+  participants: Participant[];
+  group: Group | null;
+  messages: Message[];
+}
 
 export default function ChatListScreen() {
-  const [filter, setFilter] = useState<FilterType>('personal');
+  const [filter, setFilter] = useState<FilterType>('DIRECT');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
 
-  const filteredPersonal = mockConversations.filter(c => 
-    c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  const {
+    data: chatResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['chats', filter],
+    queryFn: () => getUserChats(),
+  });
+
+  const { data: usersResponse } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => getUsers(),
+  });
+
+  const users = usersResponse?.users || [];
+
+  // Get socket connection and methods
+  const {
+    isConnected,
+    onNewMessage,
+    removeNewMessageListener,
+    joinChat,
+    leaveChat,
+    reconnect,
+  } = useSocket();
+
+  useEffect(() => {
+    if (!isConnected) reconnect();
+  }, [isConnected]);
+
+  const processedChats = useMemo(() => {
+    if (!chatResponse?.data || !myData?.userId) return [];
+
+    return chatResponse.data
+      .filter((chat: Chat) => chat.type === filter)
+      .map((chat: Chat) => {
+        const lastMessage = chat.messages[0];
+        const isMyMessage = lastMessage?.senderId === myData.userId;
+        const messageContent = lastMessage?.content || 'No messages yet';
+        const displayMessage =
+          lastMessage && isMyMessage
+            ? `You: ${messageContent}`
+            : messageContent;
+
+        if (chat.type === 'GROUP') {
+          return {
+            id: chat.id,
+            name: chat.group?.name || 'Unnamed Group',
+            image:
+              chat.group?.imageUrl ||
+              'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+            lastMessage: displayMessage,
+            lastMessageTime: lastMessage
+              ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '',
+            unreadCount: 0, // You might want to calculate this based on your data
+            type: 'GROUP' as const,
+            isMyLastMessage: isMyMessage,
+          };
+        } else {
+          const otherParticipant = chat.participants.find(
+            (p) => p.userId !== myData.userId
+          );
+          return {
+            id: chat.id,
+            name: otherParticipant?.user.name || 'Unknown User',
+            image:
+              'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+            lastMessage: displayMessage,
+            lastMessageTime: lastMessage
+              ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '',
+            unreadCount: 0, // You might want to calculate this based on your data
+            type: 'DIRECT' as const,
+            isMyLastMessage: isMyMessage,
+          };
+        }
+      });
+  }, [chatResponse, myData, filter]);
+
+  const handleNewMessage = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    if (!isConnected) {
+      return;
+    }
+
+    try {
+      onNewMessage(handleNewMessage);
+      console.log('✅ Message listener set up successfully');
+    } catch (error) {
+      console.error('❌ Error setting up message listener:', error);
+    }
+
+    return () => {
+      console.log('🧹 Removing message listener from chat list');
+      try {
+        removeNewMessageListener();
+        console.log('✅ Message listener removed successfully');
+      } catch (error) {
+        console.error('❌ Error removing message listener:', error);
+      }
+    };
+  }, [isConnected, onNewMessage, removeNewMessageListener, handleNewMessage]);
+
+  // Join all chats when connected and chats are loaded with better error handling
+  useEffect(() => {
+    if (!isConnected) {
+      console.log('⚠️ Socket not connected, cannot join chats');
+      reconnect();
+      return;
+    }
+
+    if (!processedChats.length) {
+      console.log('⚠️ No chats to join');
+      return;
+    }
+
+    console.log('🏠 Joining all chats:', processedChats.length);
+
+    // Loop through all chats and join each one
+    processedChats.forEach((chat: any) => {
+      console.log('🏠 Attempting to join chat:', chat.id);
+      try {
+        joinChat(chat.id);
+        console.log('✅ Successfully joined chat:', chat.id);
+      } catch (error) {
+        console.error('❌ Error joining chat:', chat.id, error);
+      }
+    });
+
+    // Leave all chats when component unmounts or chats change
+    return () => {
+      if (processedChats.length > 0) {
+        console.log('🚪 Leaving all chats...');
+        processedChats.forEach((chat: any) => {
+          console.log('🚪 Attempting to leave chat:', chat.id);
+          try {
+            leaveChat(chat.id);
+            console.log('✅ Successfully left chat:', chat.id);
+          } catch (error) {
+            console.error('❌ Error leaving chat:', chat.id, error);
+          }
+        });
+      }
+    };
+  }, [isConnected, processedChats, joinChat, leaveChat, reconnect]);
+
+  const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
+    useMutation({
+      mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
+      onSuccess: (data) => {
+        console.log('✅ Chat Created:', data);
+        setShowUserModal(false);
+        refetch();
+      },
+      onError: (error) => {
+        console.error('❌ Error creating chat:', error);
+      },
+    });
+
+  const filteredChats = processedChats.filter((chat: any) =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredGroups = mockGroupConversations.filter(gc =>
-    gc.group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const renderPersonalItem = ({ item, index }: { item: typeof mockConversations[0], index: number }) => (
-    <TouchableOpacity 
-      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]} 
-      onPress={() => router.push(`/chat/${item.user.id}`)}
-      activeOpacity={0.7}
-    >
-      <BlurView intensity={10} style={styles.chatItemBlur}>
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
-          style={styles.chatItemGradient}
-        >
-          <View style={styles.avatarContainer}>
-            <Image source={{ uri: item.user.image }} style={styles.avatar} />
-            <View style={styles.onlineIndicator} />
-          </View>
-          
-          <View style={styles.chatContent}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{item.user.name}</Text>
-              <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
-            </View>
-            <View style={styles.chatMessage}>
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
-              {item.unreadCount > 0 && (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.unreadBadge}
-                >
-                  <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                </LinearGradient>
-              )}
-            </View>
-          </View>
-          
-          <View style={styles.chatArrow}>
-            <ArrowRight size={16} color="#94A3B8" />
-          </View>
-        </LinearGradient>
-      </BlurView>
-    </TouchableOpacity>
-  );
+  const filteredUsers = useMemo(() => {
+    if (!users || !myData?.userId) return [];
 
-  const renderGroupItem = ({ item, index }: { item: typeof mockGroupConversations[0], index: number }) => (
-    <TouchableOpacity 
-      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]} 
+    return users
+      .filter((user: User) => user.id !== myData.userId)
+      .filter(
+        (user: User) =>
+          userSearchQuery === '' ||
+          user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+          user.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+          user.university.name
+            .toLowerCase()
+            .includes(userSearchQuery.toLowerCase())
+      );
+  }, [users, myData?.userId, userSearchQuery]);
+
+  const handleUserSelect = (userId: string) => {
+    createDirectChatMutate(userId);
+  };
+
+  const renderChatItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof processedChats)[0];
+    index: number;
+  }) => (
+    <TouchableOpacity
+      style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]}
       onPress={() => router.push(`/chat/${item.id}`)}
       activeOpacity={0.7}
     >
@@ -77,19 +310,36 @@ export default function ChatListScreen() {
           style={styles.chatItemGradient}
         >
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: item.group.image }} style={styles.avatar} />
-            <View style={styles.groupBadge}>
-              <Users size={12} color="#FFFFFF" />
-            </View>
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require('../../assets/user.png')
+              }
+              style={styles.avatar}
+            />
+
+            {item.type === 'GROUP' ? (
+              <View style={styles.groupBadge}>
+                <Users size={12} color="#FFFFFF" />
+              </View>
+            ) : (
+              <></>
+            )}
           </View>
-          
+
           <View style={styles.chatContent}>
             <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{item.group.name}</Text>
+              <Text style={styles.chatName}>{item.name}</Text>
               <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
             </View>
             <View style={styles.chatMessage}>
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
+              <Text
+                style={[styles.lastMessage, { fontWeight: 'bold' }]}
+                numberOfLines={1}
+              >
+                {item.lastMessage}
+              </Text>
               {item.unreadCount > 0 && (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
@@ -100,7 +350,7 @@ export default function ChatListScreen() {
               )}
             </View>
           </View>
-          
+
           <View style={styles.chatArrow}>
             <ArrowRight size={16} color="#94A3B8" />
           </View>
@@ -109,35 +359,139 @@ export default function ChatListScreen() {
     </TouchableOpacity>
   );
 
+  // Rest of your component code remains the same...
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#6366F1" />
+      <Text style={styles.loadingText}>Loading chats...</Text>
+    </View>
+  );
+
+  const renderUserSelectionModal = () => (
+    <Modal
+      visible={showUserModal}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setShowUserModal(false)}
+    >
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Select User to Message</Text>
+          <TouchableOpacity
+            onPress={() => setShowUserModal(false)}
+            style={styles.closeButton}
+          >
+            <X size={24} color="#64748B" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.modalSearchWrapper}>
+          <View style={styles.modalSearchContainer}>
+            <Search size={20} color="#94A3B8" style={styles.searchIcon} />
+            <TextInput
+              placeholder="Search users..."
+              placeholderTextColor="#94A3B8"
+              style={styles.modalSearchInput}
+              value={userSearchQuery}
+              onChangeText={setUserSearchQuery}
+            />
+          </View>
+        </View>
+
+        <ScrollView
+          style={styles.usersList}
+          showsVerticalScrollIndicator={false}
+        >
+          {filteredUsers.map((user: User) => (
+            <TouchableOpacity
+              key={user.id}
+              style={styles.userItem}
+              onPress={() => handleUserSelect(user.id)}
+              disabled={isCreatingChat}
+            >
+              <View style={styles.userAvatarContainer}>
+                <Image
+                  source={{
+                    uri:
+                      user.profilePicture ||
+                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                  }}
+                  style={styles.userAvatar}
+                />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{user.name}</Text>
+                <Text style={styles.userEmail}>{user.email}</Text>
+                <Text style={styles.userUniversity}>
+                  {user.university.name}
+                </Text>
+              </View>
+              <View style={styles.userArrow}>
+                <ArrowRight size={16} color="#94A3B8" />
+              </View>
+            </TouchableOpacity>
+          ))}
+          {filteredUsers.length === 0 && (
+            <Text style={styles.noUsersText}>
+              {userSearchQuery
+                ? 'No users found matching your search'
+                : 'No users available'}
+            </Text>
+          )}
+        </ScrollView>
+
+        {isCreatingChat && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text style={styles.loadingText}>Creating chat...</Text>
+          </View>
+        )}
+      </SafeAreaView>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
-          {/* <LinearGradient
-            colors={['#6366F1', '#8B5CF6']}
-            style={styles.headerGradient}
-          > */}
-            <View style={styles.headerContent}>
-              <View style={styles.headerLeft}>
-                <MessageCircle size={28}  color={theme.primary}/>
-                <Text style={styles.headerTitle}>Messages</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <Sparkles size={24}  color={theme.primary}/>
-              </View>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <MessageCircle size={28} color={theme.primary} />
+              <Text style={styles.headerTitle}>Messages</Text>
+              {/* Connection status indicator dot */}
+              <View
+                style={[
+                  styles.connectionDot,
+                  { backgroundColor: isConnected ? theme.success : "red" },
+                ]}
+              />
             </View>
-          {/* </LinearGradient> */}
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                onPress={() => setShowUserModal(true)}
+                style={styles.userPlusButton}
+                activeOpacity={0.7}
+              >
+                <UserPlus size={24} color={theme.primary} />
+              </TouchableOpacity>
+              <Sparkles size={24} color={theme.primary} />
+            </View>
+          </View>
         </View>
 
-        {/* Search Container */}
         <View style={styles.searchWrapper}>
           <BlurView intensity={20} style={styles.searchBlur}>
-            <View style={[
-              styles.searchContainer,
-              searchFocused && styles.searchContainerFocused
-            ]}>
-              <Search size={20} color={searchFocused ? "#6366F1" : "#94A3B8"} style={styles.searchIcon} />
+            <View
+              style={[
+                styles.searchContainer,
+                searchFocused && styles.searchContainerFocused,
+              ]}
+            >
+              <Search
+                size={20}
+                color={searchFocused ? '#6366F1' : '#94A3B8'}
+                style={styles.searchIcon}
+              />
               <TextInput
                 placeholder="Search conversations..."
                 placeholderTextColor="#94A3B8"
@@ -156,48 +510,51 @@ export default function ChatListScreen() {
           </BlurView>
         </View>
 
-        {/* Filter Container */}
         <View style={styles.filterWrapper}>
           <View style={styles.filterContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.filterButton, 
-                filter === 'personal' && styles.activeFilter
+                styles.filterButton,
+                filter === 'DIRECT' && styles.activeFilter,
               ]}
-              onPress={() => setFilter('personal')}
+              onPress={() => setFilter('DIRECT')}
               activeOpacity={0.8}
             >
-              {filter === 'personal' ? (
+              {filter === 'DIRECT' ? (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
                   style={styles.filterButtonGradient}
                 >
                   <MessageCircle size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>Personal</Text>
+                  <Text style={[styles.filterText, styles.activeFilterText]}>
+                    Direct
+                  </Text>
                 </LinearGradient>
               ) : (
                 <View style={styles.filterButtonContent}>
                   <MessageCircle size={16} color="#64748B" />
-                  <Text style={styles.filterText}>Personal</Text>
+                  <Text style={styles.filterText}>Direct</Text>
                 </View>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.filterButton, 
-                filter === 'groups' && styles.activeFilter
+                styles.filterButton,
+                filter === 'GROUP' && styles.activeFilter,
               ]}
-              onPress={() => setFilter('groups')}
+              onPress={() => setFilter('GROUP')}
               activeOpacity={0.8}
             >
-              {filter === 'groups' ? (
+              {filter === 'GROUP' ? (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
                   style={styles.filterButtonGradient}
                 >
                   <Users size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>Groups</Text>
+                  <Text style={[styles.filterText, styles.activeFilterText]}>
+                    Groups
+                  </Text>
                 </LinearGradient>
               ) : (
                 <View style={styles.filterButtonContent}>
@@ -208,23 +565,15 @@ export default function ChatListScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
-        {/* Chat List */}
+
         <View style={styles.listContainer}>
-          {filter === 'personal' ? (
-            <FlatList
-              data={filteredPersonal}
-              renderItem={renderPersonalItem}
-              keyExtractor={item => item.id}
-              style={styles.list}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-            />
+          {isLoading ? (
+            renderLoading()
           ) : (
             <FlatList
-              data={filteredGroups}
-              renderItem={renderGroupItem}
-              keyExtractor={item => item.id}
+              data={filteredChats}
+              renderItem={renderChatItem}
+              keyExtractor={(item) => item.id}
               style={styles.list}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
@@ -232,6 +581,8 @@ export default function ChatListScreen() {
           )}
         </View>
       </SafeAreaView>
+
+      {renderUserSelectionModal()}
     </View>
   );
 }
@@ -244,26 +595,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  connectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 5,
+  },
   header: {
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 16,
     borderRadius: 20,
     overflow: 'hidden',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#6366F1',
-    //     shadowOffset: { width: 0, height: 8 },
-    //     shadowOpacity: 0.3,
-    //     shadowRadius: 16,
-    //   },
-    //   android: {
-    //     elevation: 12,
-    //   },
-    // }),
-  },
-  headerGradient: {
-    padding: 20,
   },
   headerContent: {
     flexDirection: 'row',
@@ -276,12 +618,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerRight: {
-    padding: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    // color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   searchWrapper: {
@@ -370,7 +713,7 @@ const styles = StyleSheet.create({
   filterButton: {
     flex: 1,
     borderRadius: 12,
-    backgroundColor:'white',
+    backgroundColor: 'white',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -417,7 +760,6 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    // backgroundColor:'white',
     color: '#64748B',
   },
   activeFilterText: {
@@ -435,12 +777,11 @@ const styles = StyleSheet.create({
   },
   chatItem: {
     marginBottom: 4,
-    padding:4,
-
+    padding: 4,
   },
   chatItemBlur: {
     borderRadius: 20,
-    backgroundColor:'white',
+    backgroundColor: 'white',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -462,7 +803,6 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: 'relative',
     marginRight: 16,
-
   },
   avatar: {
     width: 56,
@@ -555,5 +895,137 @@ const styles = StyleSheet.create({
   chatArrow: {
     marginLeft: 12,
     padding: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  userPlusButton: {
+    padding: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F0F3F7',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalSearchWrapper: {
+    marginHorizontal: 20,
+    marginVertical: 16,
+  },
+  modalSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    minHeight: 52,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    fontWeight: '500',
+    paddingVertical: 12,
+  },
+  usersList: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  userItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#CDD2D8',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  userAvatarContainer: {
+    marginRight: 16,
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 2,
+  },
+  userUniversity: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  userArrow: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  noUsersText: {
+    textAlign: 'center',
+    color: '#64748B',
+    fontSize: 16,
+    padding: 32,
+    fontStyle: 'italic',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

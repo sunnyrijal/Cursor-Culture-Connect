@@ -1,92 +1,288 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
-import React, { useState } from 'react';
-import { sponsoredContent, sponsoredCategories } from '@/data/sponsoredContent';
-import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Linking,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Platform,
+} from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  theme,
+  spacing,
+  typography,
+  borderRadius,
+  neomorphColors,
+} from '../theme';
 import CulturalExperienceCard from './CulturalExperienceCard';
-import { getAnalytics } from '@/contexts/analytics';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  getAdvertisements,
+  recordAdClick,
+  recordAdImpression,
+} from '@/contexts/ad.api';
+import { useRouter } from 'expo-router';
+import getDecodedToken from '@/utils/getMyData';
+
+interface Advertisement {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  category: string;
+  contactInfo: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  link: string;
+  location: {
+    address: string;
+  };
+  user: {
+    id: string;
+    name: string;
+  };
+  metrics?: {
+    id: number;
+    advertisementId: string;
+    views: number;
+    clicks: number;
+  };
+}
+
+interface AdResponse {
+  success: boolean;
+  data: Advertisement[];
+}
 
 const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
-  
-  const filteredSponsoredContent = activeSponsoredCategory === 'all'
-    ? sponsoredContent
-    : sponsoredContent.filter(c => c.type === activeSponsoredCategory);
+  const router = useRouter();
 
+  // Define categories
+  const categories = [
+    { id: 'all', label: 'All' },
+    { id: 'Events', label: 'Events' },
+    { id: 'Retail', label: 'Retail' },
+    { id: 'Food', label: 'Food' },
+    { id: 'Other', label: 'Other' },
+  ];
 
-const handleSponsoredContentPress = async (content: any) => {
-  try {
-    const supported = await Linking.canOpenURL(content.link);
-    if (supported) {
-      await Linking.openURL(content.link);
-    } else {
-      Alert.alert("Error", `Don't know how to open this URL: ${content.link}`);
-    }
-  } catch (error) {
-    console.error("Failed to open URL:", error);
-  }
-};
+  const {
+    data: adResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<AdResponse>({
+    queryKey: ['advertisements', activeSponsoredCategory],
+    queryFn: () => {
+      const params =
+        activeSponsoredCategory !== 'all'
+          ? {
+              category:
+                activeSponsoredCategory.charAt(0).toUpperCase() +
+                activeSponsoredCategory.slice(1),
+            }
+          : {};
+      return getAdvertisements(params);
+    },
+  });
 
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
 
-  const showAnalytics = async () => {
-    console.log('📊 Fetching analytics from API...');
-    await getAnalytics();
+  // Transform API data to match your card component format
+  const transformAdData = (ads: Advertisement[]) => {
+    return ads.map((ad) => ({
+      id: ad.id,
+      title: ad.name,
+      description: ad.description,
+      image: ad.imageUrl,
+      type: ad.category.toLowerCase(),
+      link: ad.link,
+      contactInfo: ad.contactInfo,
+      location: ad.location?.address || 'Location not specified',
+      author: ad.user?.name || 'Unknown',
+      createdAt: ad.createdAt,
+      metrics: ad.metrics,
+      category: ad.category,
+      // Add all the original ad data for the card component
+      originalAd: ad,
+    }));
   };
+
+  // Get the data to display (only API data)
+  const getDisplayContent = () => {
+    if (adResponse?.success && adResponse?.data) {
+      const transformedAds = transformAdData(adResponse.data);
+
+      if (activeSponsoredCategory === 'all') {
+        return transformedAds;
+      } else {
+        return transformedAds.filter(
+          (ad) =>
+            ad.type.toLowerCase() === activeSponsoredCategory.toLowerCase()
+        );
+      }
+    }
+    return [];
+  };
+
+  const displayContent = getDisplayContent();
+
+  // Handle ad click with tracking
+  const handleSponsoredContentPress = async (content: any) => {
+      // Try to open the link first, then fallback to contact
+      if (content.link && content.link.startsWith('http')) {
+        const supported = await Linking.canOpenURL(content.link);
+        if (supported) {
+          await Linking.openURL(content.link);
+        } else {
+          Alert.alert(
+            'Error',
+            `Don't know how to open this URL: ${content.link}`
+          );
+        }
+      } else if (content.contactInfo) {
+        // Handle contact info (phone number)
+        const phoneUrl = `tel:${content.contactInfo}`;
+        const supported = await Linking.canOpenURL(phoneUrl);
+        if (supported) {
+          await Linking.openURL(phoneUrl);
+        } else {
+          Alert.alert('Contact', `Contact: ${content.contactInfo}`);
+        }
+      }
+  };
+
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  // Handle category change
+  const handleCategoryChange = (categoryId: string) => {
+    setActiveSponsoredCategory(categoryId);
+  };
+
+  const handleViewAll = () => {
+    router.push('/');
+  };
+
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorTitle}>Unable to load experiences</Text>
+      <Text style={styles.errorText}>
+        {error?.message || 'Something went wrong while fetching data'}
+      </Text>
+      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+        <Text style={styles.viewAllButtonText}>View All</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={theme.primary} />
+      <Text style={styles.loadingText}>Loading experiences...</Text>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyTitle}>No experiences found</Text>
+      <Text style={styles.emptyText}>
+        Try selecting a different category or check back later.
+      </Text>
+      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+        <Text style={styles.viewAllButtonText}>View All</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Render individual ad item using the original card component
+  const renderAdItem = ({ item, index }: any) => (
+    <CulturalExperienceCard
+      key={`${item.id}-${activeSponsoredCategory}-${index}`}
+      content={item}
+      handleSponsoredContentPress={handleSponsoredContentPress}
+      index={index}
+      activeSponsoredCategory={activeSponsoredCategory}
+    />
+  );
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Discover Experiences</Text>
-        {/* Debug button - uncomment to test analytics API */}
-        {/* <TouchableOpacity onPress={showAnalytics} style={styles.debugBtn}>
-          <Text>📊</Text>
-        </TouchableOpacity> */}
+        {/* View All button instead of refresh */}
+        <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
+          <Text style={styles.viewAllBtnText}>View all</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Category Tabs */}
       <View style={styles.categoryRow}>
-        <ScrollView
+        <FlatList
           horizontal
+          data={categories}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ alignItems: 'center' }}
-        >
-          {sponsoredCategories.map((cat: any) => (
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: cat }) => (
             <TouchableOpacity
               key={cat.id}
               style={[
                 styles.categoryTab,
                 activeSponsoredCategory === cat.id && styles.categoryTabActive,
               ]}
-              onPress={() => setActiveSponsoredCategory(cat.id)}
+              onPress={() => handleCategoryChange(cat.id)}
             >
               <Text
                 style={[
                   styles.categoryText,
-                  activeSponsoredCategory === cat.id && styles.categoryTextActive,
+                  activeSponsoredCategory === cat.id &&
+                    styles.categoryTextActive,
                 ]}
               >
                 {cat.label}
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        />
       </View>
 
-      {/* Cards */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {filteredSponsoredContent.map((content, index) => (
-         <CulturalExperienceCard 
-           key={`${content.id}-${activeSponsoredCategory}`}
-           content={content} 
-           handleSponsoredContentPress={handleSponsoredContentPress}  
-           index={index}
-           activeSponsoredCategory={activeSponsoredCategory}
-         />
-        ))}
-      </ScrollView>
+      {/* Content Area - keeping original horizontal scroll layout */}
+      {error && !adResponse ? (
+        renderErrorState()
+      ) : isLoading && !adResponse ? (
+        renderLoadingState()
+      ) : displayContent.length === 0 ? (
+        renderEmptyState()
+      ) : (
+        <FlatList
+          horizontal
+          data={displayContent}
+          renderItem={renderAdItem}
+          keyExtractor={(item, index) =>
+            `${item.id}-${activeSponsoredCategory}-${index}`
+          }
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={handleRefresh}
+              colors={[theme.primary]}
+            />
+          }
+        />
+      )}
     </View>
   );
 };
@@ -115,10 +311,15 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
     fontFamily: typography.fontFamily.bold,
   },
-  debugBtn: {
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
+  viewAllBtn: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  viewAllBtnText: {
+    color: theme.primary,
+    fontWeight: '600',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   categoryRow: {
     paddingLeft: 20,
@@ -150,5 +351,67 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 10,
     paddingBottom: 20,
+  },
+  // Error State Styles
+  errorContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  errorTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: theme.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  viewAllButton: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  viewAllButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: typography.fontSize.sm,
+  },
+  // Loading State Styles
+  loadingContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    marginTop: 16,
+  },
+  // Empty State Styles
+  emptyContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: theme.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
   },
 });
