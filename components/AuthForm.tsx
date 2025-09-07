@@ -308,38 +308,37 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   }, [isSignup]);
 
   const validateField = (field: string, value: string | string[] | boolean) => {
-    let isValid = true;
+    let isValid = false;
 
-
-    // switch (field) {
-    //   case 'email':
-    //     isValid =
-    //       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
-    //       (value as string).includes('.edu'); // College email validation
-    //     break;
-    //   case 'password':
-    //     isValid = (value as string).length >= 8;
-    //     break;
-    //   case 'confirmPassword':
-    //     isValid = value === password;
-    //     break;
-    //   case 'firstName':
-    //   case 'lastName':
-    //     isValid = (value as string).length >= 2;
-    //     break;
-    //   case 'university':
-    //     isValid = (value as string).length >= 2;
-    //     break;
-    //   case 'dateOfBirth':
-    //     isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
-    //     break;
-    //   case 'termsAccepted':
-    //   case 'privacyAccepted':
-    //     isValid = value === true;
-    //     break;
-    //   default:
-    //     isValid = true;
-    // }
+    switch (field) {
+      case 'email':
+        isValid =
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
+          (value as string).includes('.edu'); // College email validation
+        break;
+      case 'password':
+        isValid = (value as string).length >= 8;
+        break;
+      case 'confirmPassword':
+        isValid = value === password;
+        break;
+      case 'firstName':
+      case 'lastName':
+        isValid = (value as string).length >= 2;
+        break;
+      case 'university':
+        isValid = (value as string).length >= 2;
+        break;
+      case 'dateOfBirth':
+        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
+        break;
+      case 'termsAccepted':
+      case 'privacyAccepted':
+        isValid = value === true;
+        break;
+      default:
+        isValid = true;
+    }
 
     setFieldValidation((prev) => ({ ...prev, [field]: isValid }));
     return isValid;
