@@ -2,7 +2,11 @@ import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react
 import React, { useEffect, useState } from 'react'
 import { theme, spacing, typography, neomorphColors } from '../theme'; 
 import { Star, MapPin, Clock, Phone } from 'lucide-react-native';
-import { trackClick, trackImpression } from '@/contexts/analytics';
+import { useMutation } from '@tanstack/react-query';
+import { recordAdClick, recordAdImpression } from '@/contexts/ad.api';
+import { useAuth } from '@/contexts/AuthContext';
+import getDecodedToken from '@/utils/getMyData';
+import { useQuery } from '@tanstack/react-query';
 
 const CulturalExperienceCard = ({
   content,
@@ -15,22 +19,41 @@ const CulturalExperienceCard = ({
   activeSponsoredCategory: string,
   handleSponsoredContentPress: (value: any) => void
 }) => {
-  const [impressionSent, setImpressionSent] = useState(false);
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  const { mutate: recordAdImpressionMutate } = useMutation({
+    mutationFn: (adId: string) => recordAdImpression(adId),
+    onSuccess: (data, adId) => console.log('✅ Ad Impression Recorded for ad:', adId, data),
+    onError: (error, adId) => console.error('❌ Error recording ad impression for ad:', adId, error),
+  });
+
+  const { mutate: recordAdClickMutate } = useMutation({
+    mutationFn: (adId: string) => recordAdClick(adId),
+    onSuccess: (data, adId) => console.log('✅ Ad Click Recorded for ad:', adId, data),
+    onError: (error, adId) => console.error('❌ Error recording ad click for ad:', adId, error),
+  });
 
   useEffect(() => {
-    if (!impressionSent) {
-      setTimeout(() => {
-        // Directly post impression to API
-        trackImpression(content.id, activeSponsoredCategory);
-        setImpressionSent(true);
-      }, 500); // 500ms delay to ensure card is actually visible
+    // Only record impression if user is logged in
+    if (myData) {
+      const timer = setTimeout(() => {
+        console.log('📊 Ad became visible:', content.id);
+        recordAdImpressionMutate(content.id);
+      }, 1000); // 1-second delay to ensure card is actually visible
+
+      return () => clearTimeout(timer);
     }
-  }, [content.id, activeSponsoredCategory, impressionSent]);
+  }, [content.id, myData, recordAdImpressionMutate]);
 
   const handlePress = () => {
-    // Directly post click to API
-    trackClick(content.id, activeSponsoredCategory);
-    
+    // Only record click if user is logged in
+    if (myData) {
+      console.log('🔗 Ad clicked:', content.id);
+      recordAdClickMutate(content.id);
+    }
     handleSponsoredContentPress(content);
   };
 

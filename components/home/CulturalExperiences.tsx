@@ -19,7 +19,6 @@ import {
   neomorphColors,
 } from '../theme';
 import CulturalExperienceCard from './CulturalExperienceCard';
-import { getAnalytics } from '@/contexts/analytics';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   getAdvertisements,
@@ -62,7 +61,6 @@ interface AdResponse {
 
 const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
-  const [viewedAds, setViewedAds] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   // Define categories
@@ -98,59 +96,6 @@ const CulturalExperiences = () => {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
-
-  // Ad Impression Mutation
-  const { mutate: recordAdImpressionMutate } = useMutation({
-    mutationFn: (adId: string) => recordAdImpression(adId),
-    onSuccess: (data, adId) => {
-      console.log('✅ Ad Impression Recorded for ad:', adId, data);
-    },
-    onError: (error, adId) => {
-      console.error('❌ Error recording ad impression for ad:', adId, error);
-    },
-  });
-
-  // Ad Click Mutation
-  const { mutate: recordAdClickMutate } = useMutation({
-    mutationFn: (adId: string) => recordAdClick(adId),
-    onSuccess: (data, adId) => {
-      console.log('✅ Ad Click Recorded for ad:', adId, data);
-    },
-    onError: (error, adId) => {
-      console.error('❌ Error recording ad click for ad:', adId, error);
-    },
-  });
-
-  // Handle ad impression when item becomes visible (only for native platforms)
-  const onViewableItemsChanged =
-    Platform.OS !== 'web'
-      ? useRef(({ viewableItems }: any) => {
-          if (myData == null) return;
-          viewableItems.forEach((viewableItem: any) => {
-            const adId = viewableItem.item.id;
-
-            if (myData == null) return;
-
-            // Only record impression if ad hasn't been viewed before
-            if (!viewedAds.has(adId)) {
-              console.log('📊 Ad became visible:', adId);
-              recordAdImpressionMutate(adId);
-
-              // Mark as viewed
-              setViewedAds((prev) => new Set([...prev, adId]));
-            }
-          });
-        }).current
-      : undefined;
-
-  // Viewability configuration (only for native platforms)
-  const viewabilityConfig =
-    Platform.OS !== 'web'
-      ? useRef({
-          itemVisiblePercentThreshold: 50, // Ad needs to be 50% visible
-          minimumViewTime: 1000, // Ad needs to be visible for 1 second
-        }).current
-      : undefined;
 
   // Transform API data to match your card component format
   const transformAdData = (ads: Advertisement[]) => {
@@ -193,13 +138,6 @@ const CulturalExperiences = () => {
 
   // Handle ad click with tracking
   const handleSponsoredContentPress = async (content: any) => {
-    try {
-      console.log('🔗 Ad clicked:', content.id);
-      if (myData == null) return;
-
-      // Record the click
-      recordAdClickMutate(content.id);
-
       // Try to open the link first, then fallback to contact
       if (content.link && content.link.startsWith('http')) {
         const supported = await Linking.canOpenURL(content.link);
@@ -221,28 +159,15 @@ const CulturalExperiences = () => {
           Alert.alert('Contact', `Contact: ${content.contactInfo}`);
         }
       }
-    } catch (error) {
-      console.error('Failed to open URL:', error);
-      Alert.alert('Error', 'Failed to open the link. Please try again.');
-    }
-  };
-
-  const showAnalytics = async () => {
-    console.log('📊 Fetching analytics from API...');
-    await getAnalytics();
   };
 
   const handleRefresh = () => {
-    // Reset viewed ads when refreshing
-    setViewedAds(new Set());
     refetch();
   };
 
   // Handle category change
   const handleCategoryChange = (categoryId: string) => {
     setActiveSponsoredCategory(categoryId);
-    // Reset viewed ads when changing category
-    setViewedAds(new Set());
   };
 
   const handleViewAll = () => {
@@ -349,10 +274,6 @@ const CulturalExperiences = () => {
           }
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-          {...(Platform.OS !== 'web' && {
-            onViewableItemsChanged: onViewableItemsChanged,
-            viewabilityConfig: viewabilityConfig,
-          })}
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
