@@ -208,22 +208,18 @@ export default function Dashboard() {
   ];
 
   const handleCreateEvent = (eventData: any) => {
-    console.log('Creating event:', eventData);
     setShowCreateEventModal(false);
   };
 
   const handleCreateQuickEvent = (eventData: any) => {
-    console.log('Creating event:', eventData);
     setShowCreateQuickEventModal(false);
   };
 
   const handleCreateGroup = (groupData: any) => {
-    console.log('Creating group:', groupData);
     setShowCreateGroupModal(false);
   };
 
   const handleShareStory = (storyData: any) => {
-    console.log('Sharing story:', storyData);
     setShowShareCultureModal(false);
   };
 
@@ -549,6 +545,7 @@ export default function Dashboard() {
     if (!showAIModal || !isWeb) return;
 
     function handleClick(e: any) {
+      //@ts-ignore
       if (modalRef.current && !modalRef.current.contains(e.target)) {
         setShowAIModal(false);
       }
@@ -587,13 +584,13 @@ export default function Dashboard() {
     { first: 'Discover new communities', second: 'and friends' },
     { first: 'Explore events from', second: 'every heritage' },
   ];
-  const [welcomeIndex, setWelcomeIndex] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWelcomeIndex((i) => (i + 1) % welcomeMessages.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  // const [welcomeIndex, setWelcomeIndex] = useState(0);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setWelcomeIndex((i) => (i + 1) % welcomeMessages.length);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -652,7 +649,7 @@ export default function Dashboard() {
       />
 
       {/* Floating Ask AI Button */}
-      <View
+      {/* <View
         style={{ position: 'absolute', bottom: 20, right: 16, zIndex: 200 }}
       >
         <TouchableOpacity
@@ -675,7 +672,7 @@ export default function Dashboard() {
         >
           <Bot size={20} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </View> */}
       {/* AI Assistant Modal */}
       <Modal
         visible={showAIModal}

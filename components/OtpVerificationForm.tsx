@@ -77,7 +77,7 @@ const OtpVerificationForm: React.FC = () => {
     onSuccess: (data) => {
       console.log('✅ OTP resent successfully:', data);
       setResendCooldown(60);
-      setOtp(['', '', '', '']);
+      setOtp(['', '', '', '', '', '']);
       setError('');
       inputRefs.current[0]?.focus();
       setFocusedInput(0);
@@ -172,7 +172,7 @@ const OtpVerificationForm: React.FC = () => {
     const otpString = currentOtp.join('');
 
   if (otpString.length !== 6) {
-      setError('Please enter all 4 digits');
+      setError('Please enter all 6 digits');
       return;
     }
 

@@ -21,7 +21,6 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
 
   return (
     <TouchableOpacity 
-      onPress={() => router.push('/my-hub')} 
       onPressIn={() => setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}
       style={[
