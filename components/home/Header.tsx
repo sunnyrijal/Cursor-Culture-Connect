@@ -13,6 +13,7 @@ import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
 
 import { Image } from 'react-native';
+//@ts-ignore
 import logo from '../../assets/logo.png';
 import { getMyData } from '@/contexts/user.api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,7 +65,6 @@ const Header = ({
     queryFn: () => getDecodedToken(),
   });
 
-  console.log(myData);
 
   return (
     <View style={styles.container}>

@@ -109,8 +109,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [privacyAccepted, setPrivacyAccepted] = useState<boolean>(false);
   const [marketingOptIn, setMarketingOptIn] = useState<boolean>(false);
 
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>('');
-
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
@@ -164,83 +162,36 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     }
   };
 
-  const addImageUrl = () => {
-    if (currentImageUrl.trim()) {
-      setProfilePicture(currentImageUrl.trim());
-      setCurrentImageUrl('');
-    }
-  };
-
   const renderProfilePictureInput = () => {
+    console.log(profilePicture)
     return (
       <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
         <Text style={styles.inputLabel}>Profile Picture</Text>
 
         {/* Show upload options only if no profile picture is set */}
-        {!profilePicture && (
-          <>
-            <TouchableOpacity
-              style={[
-                styles.uploadButton,
-                uploadFileMutation.isPending && styles.uploadButtonDisabled,
-              ]}
-              onPress={pickImage}
-              disabled={loading || uploadFileMutation.isPending}
+        {!profilePicture && !uploadFileMutation.isPending && (
+          <TouchableOpacity
+            style={[
+              styles.uploadButton,
+              uploadFileMutation.isPending && styles.uploadButtonDisabled,
+            ]}
+            onPress={pickImage}
+            disabled={loading || uploadFileMutation.isPending}
+          >
+            <LinearGradient
+              colors={
+                uploadFileMutation.isPending
+                  ? ['#9CA3AF', '#6B7280']
+                  : ['#6366F1', '#8B5CF6']
+              }
+              style={styles.uploadButtonGradient}
             >
-              <LinearGradient
-                colors={
-                  uploadFileMutation.isPending
-                    ? ['#9CA3AF', '#6B7280']
-                    : ['#6366F1', '#8B5CF6']
-                }
-                style={styles.uploadButtonGradient}
-              >
-                {uploadFileMutation.isPending ? (
-                  <View style={styles.buttonContent}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text style={styles.uploadButtonText}>Uploading...</Text>
-                  </View>
-                ) : (
-                  <View style={styles.buttonContent}>
-                    <ImageIcon size={20} color="#FFFFFF" />
-                    <Text style={styles.uploadButtonText}>Upload Image</Text>
-                  </View>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <View style={styles.imageInputContainer}>
-              <View style={[styles.inputWrapper, { flex: 1 }]}>
-                <View style={styles.inputIcon}>
-                  <ImageIcon size={20} color="#6366F1" />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  value={currentImageUrl}
-                  onChangeText={setCurrentImageUrl}
-                  placeholder="Or enter image URL manually"
-                  placeholderTextColor="#9CA3AF"
-                  editable={!loading && !uploadFileMutation.isPending}
-                />
+              <View style={styles.buttonContent}>
+                <ImageIcon size={20} color="#FFFFFF" />
+                <Text style={styles.uploadButtonText}>Upload Image</Text>
               </View>
-              <TouchableOpacity
-                style={styles.addImageButton}
-                onPress={addImageUrl}
-                disabled={
-                  loading ||
-                  uploadFileMutation.isPending ||
-                  !currentImageUrl.trim()
-                }
-              >
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.addImageButtonGradient}
-                >
-                  <Plus size={20} color="#FFFFFF" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </>
+            </LinearGradient>
+          </TouchableOpacity>
         )}
 
         {/* Profile Picture Preview */}
@@ -357,40 +308,38 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   }, [isSignup]);
 
   const validateField = (field: string, value: string | string[] | boolean) => {
-    let isValid = false;
+    let isValid = true;
 
-    switch (field) {
-      case 'email':
-        isValid =
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
-          (value as string).includes('.edu'); // College email validation
-        break;
-      case 'password':
-        isValid = (value as string).length >= 8;
-        break;
-      case 'confirmPassword':
-        isValid = value === password;
-        break;
-      case 'firstName':
-      case 'lastName':
-        isValid = (value as string).length >= 2;
-        break;
-      case 'university':
-        isValid = (value as string).length >= 2;
-        break;
-      case 'classYear':
-        isValid = /^\d{4}$/.test(value as string);
-        break;
-      case 'dateOfBirth':
-        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
-        break;
-      case 'termsAccepted':
-      case 'privacyAccepted':
-        isValid = value === true;
-        break;
-      default:
-        isValid = true;
-    }
+
+    // switch (field) {
+    //   case 'email':
+    //     isValid =
+    //       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
+    //       (value as string).includes('.edu'); // College email validation
+    //     break;
+    //   case 'password':
+    //     isValid = (value as string).length >= 8;
+    //     break;
+    //   case 'confirmPassword':
+    //     isValid = value === password;
+    //     break;
+    //   case 'firstName':
+    //   case 'lastName':
+    //     isValid = (value as string).length >= 2;
+    //     break;
+    //   case 'university':
+    //     isValid = (value as string).length >= 2;
+    //     break;
+    //   case 'dateOfBirth':
+    //     isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
+    //     break;
+    //   case 'termsAccepted':
+    //   case 'privacyAccepted':
+    //     isValid = value === true;
+    //     break;
+    //   default:
+    //     isValid = true;
+    // }
 
     setFieldValidation((prev) => ({ ...prev, [field]: isValid }));
     return isValid;
@@ -653,24 +602,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
   const renderClassYearInput = () => {
     return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.inputLabel}>Class Year *</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            fieldValidation.classYear === false && styles.textInputError,
-          ]}
-          placeholder="e.g., Freshman, Sophomore, Junior, Senior"
-          placeholderTextColor="#9CA3AF"
-          value={classYear} // Changed
-          onChangeText={setClassYear} // Changed
-          keyboardType="numeric"
-          maxLength={4}
-        />
-        {fieldValidation.classYear === false && (
-          <Text style={styles.errorText}>Invalid class year</Text>
-        )}
-      </Animated.View>
+      renderAnimatedInput(
+        Calendar,
+        'Class Year *',
+        classYear,
+        setClassYear,
+        'e.g., Freshman, 2025',
+        'classYear',
+        {
+          keyboardType: 'default',
+        }
+      )
     );
   };
 
@@ -834,7 +776,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 : 'Welcome Back'}
             </Text>
             <Text style={styles.subtitle}>
-              {isSignup
+      {isSignup 
                 ? currentStep === 1
                   ? 'Step 1 of 2: Basic Information'
                   : 'Step 2 of 2: Profile Details (Optional)'

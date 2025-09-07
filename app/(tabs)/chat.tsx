@@ -40,6 +40,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  profilePicture: string;
   city: string | null;
   classYear: string | null;
   university: {
@@ -121,13 +122,12 @@ export default function ChatListScreen() {
     removeNewMessageListener,
     joinChat,
     leaveChat,
-    reconnect
+    reconnect,
   } = useSocket();
 
-  useEffect(()=>{
-    if(!isConnected)
-      reconnect()
-  },[isConnected])
+  useEffect(() => {
+    if (!isConnected) reconnect();
+  }, [isConnected]);
 
   const processedChats = useMemo(() => {
     if (!chatResponse?.data || !myData?.userId) return [];
@@ -138,7 +138,10 @@ export default function ChatListScreen() {
         const lastMessage = chat.messages[0];
         const isMyMessage = lastMessage?.senderId === myData.userId;
         const messageContent = lastMessage?.content || 'No messages yet';
-        const displayMessage = lastMessage && isMyMessage ? `You: ${messageContent}` : messageContent;
+        const displayMessage =
+          lastMessage && isMyMessage
+            ? `You: ${messageContent}`
+            : messageContent;
 
         if (chat.type === 'GROUP') {
           return {
@@ -182,19 +185,15 @@ export default function ChatListScreen() {
       });
   }, [chatResponse, myData, filter]);
 
-  const handleNewMessage = useCallback(
-    () => {
-      refetch();
-    },
-    [refetch]
-  );
+  const handleNewMessage = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   useEffect(() => {
     if (!isConnected) {
       return;
     }
 
-    
     try {
       onNewMessage(handleNewMessage);
       console.log('✅ Message listener set up successfully');
@@ -217,7 +216,7 @@ export default function ChatListScreen() {
   useEffect(() => {
     if (!isConnected) {
       console.log('⚠️ Socket not connected, cannot join chats');
-      reconnect()
+      reconnect();
       return;
     }
 
@@ -335,7 +334,10 @@ export default function ChatListScreen() {
               <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
             </View>
             <View style={styles.chatMessage}>
-              <Text style={[styles.lastMessage, { fontWeight: 'bold' }]} numberOfLines={1}>
+              <Text
+                style={[styles.lastMessage, { fontWeight: 'bold' }]}
+                numberOfLines={1}
+              >
                 {item.lastMessage}
               </Text>
               {item.unreadCount > 0 && (
@@ -410,7 +412,9 @@ export default function ChatListScreen() {
               <View style={styles.userAvatarContainer}>
                 <Image
                   source={{
-                    uri: 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                    uri:
+                      user.profilePicture ||
+                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
                   }}
                   style={styles.userAvatar}
                 />
@@ -449,29 +453,18 @@ export default function ChatListScreen() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Connection status indicator - Add this visual indicator */}
-        <View style={styles.connectionStatus}>
-          <View
-            style={[
-              styles.connectionDot,
-              { backgroundColor: isConnected ? '#10B981' : '#EF4444' },
-            ]}
-          />
-          <Text
-            style={[
-              styles.connectionText,
-              { color: isConnected ? '#10B981' : '#EF4444' },
-            ]}
-          >
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </Text>
-        </View>
-
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <MessageCircle size={28} color={theme.primary} />
               <Text style={styles.headerTitle}>Messages</Text>
+              {/* Connection status indicator dot */}
+              <View
+                style={[
+                  styles.connectionDot,
+                  { backgroundColor: isConnected ? theme.success : "red" },
+                ]}
+              />
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
@@ -601,6 +594,11 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  connectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 5,
   },
   header: {
     marginHorizontal: 20,

@@ -25,7 +25,6 @@ import {
 } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
-const placeholderImg = require('@/assets/images/icon.png');
 import { useQuery } from '@tanstack/react-query';
 import { getEvents } from '@/contexts/event.api';
 
@@ -691,6 +690,7 @@ export default function Events() {
 
                   <View style={styles.eventActions}>
                     <ShareButton
+                    //@ts-ignore
                       eventId={event.id}
                       eventName={event.name}
                       style={styles.shareButton}

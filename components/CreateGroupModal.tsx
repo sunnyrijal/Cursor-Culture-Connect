@@ -60,8 +60,6 @@ export function CreateGroupModal({
   const [useLocation, setUseLocation] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   // const handleAddMeeting = () => {
   //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
@@ -130,13 +128,6 @@ export function CreateGroupModal({
     }
   };
 
-  const addImageUrl = () => {
-    if (currentImageUrl.trim()) {
-      setImageUrl(currentImageUrl.trim());
-      setCurrentImageUrl('');
-    }
-  };
-
   const removeImage = () => {
     setImageUrl('');
   };
@@ -177,7 +168,6 @@ export function CreateGroupModal({
       description: formData.description,
       isPrivate: !formData.isPublic,
       imageUrl: imageUrl,
-      meetingLocation: meetingLocation,
     };
     console.log(groupData);
     createGroupMutation.mutate(groupData);
@@ -321,76 +311,40 @@ export function CreateGroupModal({
                   <Text style={styles.inputLabel}>Group Image</Text>
 
                   {!imageUrl && (
-                    <>
-                      <TouchableOpacity
-                        style={[
-                          styles.uploadButton,
-                          uploadFileMutation.isPending &&
-                            styles.uploadButtonDisabled,
-                        ]}
-                        onPress={pickImage}
-                        disabled={isSubmitting || uploadFileMutation.isPending}
+                    <TouchableOpacity
+                      style={[
+                        styles.uploadButton,
+                        uploadFileMutation.isPending &&
+                          styles.uploadButtonDisabled,
+                      ]}
+                      onPress={pickImage}
+                      disabled={isSubmitting || uploadFileMutation.isPending}
+                    >
+                      <LinearGradient
+                        colors={
+                          uploadFileMutation.isPending
+                            ? ['#9CA3AF', '#6B7280']
+                            : ['#6366F1', '#8B5CF6']
+                        }
+                        style={styles.uploadButtonGradient}
                       >
-                        <LinearGradient
-                          colors={
-                            uploadFileMutation.isPending
-                              ? ['#9CA3AF', '#6B7280']
-                              : ['#6366F1', '#8B5CF6']
-                          }
-                          style={styles.uploadButtonGradient}
-                        >
-                          {uploadFileMutation.isPending ? (
-                            <>
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                              <Text style={styles.uploadButtonText}>
-                                Uploading...
-                              </Text>
-                            </>
-                          ) : (
-                            <>
-                              <ImageIcon size={20} color="#FFFFFF" />
-                              <Text style={styles.uploadButtonText}>
-                                Upload Image
-                              </Text>
-                            </>
-                          )}
-                        </LinearGradient>
-                      </TouchableOpacity>
-
-                      <View style={styles.imageInputContainer}>
-                        <View style={[styles.inputWrapper, { flex: 1 }]}>
-                          <ImageIcon
-                            size={20}
-                            color="#6366F1"
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={styles.input}
-                            value={currentImageUrl}
-                            onChangeText={setCurrentImageUrl}
-                            placeholder="Or enter image URL manually"
-                            placeholderTextColor="#9CA3AF"
-                            editable={
-                              !isSubmitting && !uploadFileMutation.isPending
-                            }
-                          />
-                        </View>
-                        <TouchableOpacity
-                          style={styles.addImageButton}
-                          onPress={addImageUrl}
-                          disabled={
-                            isSubmitting || uploadFileMutation.isPending
-                          }
-                        >
-                          <LinearGradient
-                            colors={['#6366F1', '#8B5CF6']}
-                            style={styles.addImageButtonGradient}
-                          >
-                            <Plus size={20} color="#FFFFFF" />
-                          </LinearGradient>
-                        </TouchableOpacity>
-                      </View>
-                    </>
+                        {uploadFileMutation.isPending ? (
+                          <>
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <Text style={styles.uploadButtonText}>
+                              Uploading...
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon size={20} color="#FFFFFF" />
+                            <Text style={styles.uploadButtonText}>
+                              Upload Image
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
                   )}
 
                   {/* Image Preview */}
@@ -428,15 +382,6 @@ export function CreateGroupModal({
                     </View>
                   )}
                 </View>
-
-                {renderInput(
-                  'Meeting Location (optional)',
-                  meetingLocation,
-                  setMeetingLocation,
-                  'Enter meeting Location',
-                  <LocateIcon size={16} color="#6366F1" />,
-                  false
-                )}
 
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>

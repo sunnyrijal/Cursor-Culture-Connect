@@ -83,7 +83,6 @@ export function CreateEventModal({
     { id: '3', name: 'Art Community', president_id: '1', is_joined: true },
   ]);
 
-  const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
@@ -184,7 +183,6 @@ const pickImage = async () => {
         isPublic: true,
         universityOnly: false,
       });
-      setCurrentImageUrl('');
       setFocusedField(null);
     }
   }, [visible]);
@@ -197,20 +195,6 @@ const pickImage = async () => {
     if (!group) return false;
     return group.president_id === currentUser.id;
   }, [formData.groupId, groups]);
-
-  const addImageUrl = () => {
-    if (!currentImageUrl.trim()) {
-      Alert.alert('Invalid URL', 'Please enter a valid image URL');
-      return;
-    }
-
-    setFormData({
-      ...formData,
-      images: [...formData.images, currentImageUrl.trim()],
-    });
-
-    setCurrentImageUrl('');
-  };
 
   const removeImage = (index: number) => {
     const newImages = [...formData.images];
@@ -481,83 +465,45 @@ const formatTimeInput = (input: string): string => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Event Images</Text>
 
-                { formData.images.length <1 && 
-                <>
-                <TouchableOpacity
-                    style={[
-                      styles.uploadButton,
-                      uploadFileMutation.isPending &&
-                        styles.uploadButtonDisabled,
-                    ]}
-                    onPress={pickImage}
-                    disabled={
-                      createEventMutation.isPending ||
-                      uploadFileMutation.isPending
-                    }
-                  >
-                    <LinearGradient
-                      colors={
-                        uploadFileMutation.isPending
-                          ? ['#9CA3AF', '#6B7280']
-                          : ['#6366F1', '#8B5CF6']
-                      }
-                      style={styles.uploadButtonGradient}
-                    >
-                      {uploadFileMutation.isPending ? (
-                        <>
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                          <Text style={styles.uploadButtonText}>
-                            Uploading...
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon size={20} color="#FFFFFF" />
-                          <Text style={styles.uploadButtonText}>
-                            Upload Image
-                          </Text>
-                        </>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <View style={styles.imageInputContainer}>
-                    <View style={[styles.inputWrapper, { flex: 1 }]}>
-                      <ImageIcon
-                        size={20}
-                        color="#6366F1"
-                        style={styles.inputIcon}
-                      />
-                      <TextInput
-                        style={styles.input}
-                        value={currentImageUrl}
-                        onChangeText={setCurrentImageUrl}
-                        placeholder="Or enter image URL manually"
-                        placeholderTextColor="#9CA3AF"
-                        editable={
-                          !createEventMutation.isPending &&
-                          !uploadFileMutation.isPending
-                        }
-                      />
-                    </View>
+                  {formData.images.length < 1 && (
                     <TouchableOpacity
-                      style={styles.addImageButton}
-                      onPress={addImageUrl}
+                      style={[
+                        styles.uploadButton,
+                        uploadFileMutation.isPending &&
+                          styles.uploadButtonDisabled,
+                      ]}
+                      onPress={pickImage}
                       disabled={
                         createEventMutation.isPending ||
                         uploadFileMutation.isPending
                       }
                     >
                       <LinearGradient
-                        colors={['#6366F1', '#8B5CF6']}
-                        style={styles.addImageButtonGradient}
+                        colors={
+                          uploadFileMutation.isPending
+                            ? ['#9CA3AF', '#6B7280']
+                            : ['#6366F1', '#8B5CF6']
+                        }
+                        style={styles.uploadButtonGradient}
                       >
-                        <Plus size={20} color="#FFFFFF" />
+                        {uploadFileMutation.isPending ? (
+                          <>
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <Text style={styles.uploadButtonText}>
+                              Uploading...
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon size={20} color="#FFFFFF" />
+                            <Text style={styles.uploadButtonText}>
+                              Upload Image
+                            </Text>
+                          </>
+                        )}
                       </LinearGradient>
                     </TouchableOpacity>
-                  </View>
-                </>
-                  }
+                  )}
 
                   {/* Images Preview (keep existing) */}
                   {/* Images Preview */}

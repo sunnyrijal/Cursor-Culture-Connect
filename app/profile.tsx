@@ -72,7 +72,6 @@ export default function Profile() {
     queryFn: async () => {
       try {
         const response = await getMyData()
-        console.log(response)
         const data = {
           id: response.user.id,
           name: response.user.name,
@@ -115,7 +114,6 @@ export default function Profile() {
     retryDelay: 1000, // Wait 1 second between retries
   })
 
-  console.log(userData)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -195,29 +193,31 @@ export default function Profile() {
           >
             <ArrowLeft size={24} color={clayTheme.textPrimary} />
           </TouchableOpacity>
+
           <Text style={styles.headerTitle}>Profile</Text>
 
-          <>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push('/profile/edit')}
-            disabled={queryLoading || isError}
-          >
-            <Pencil 
-              size={20} 
-              color={queryLoading || isError ? clayTheme.textMuted : clayTheme.textPrimary} 
-            />
-          </TouchableOpacity>
-             <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => handleLogout()}
-          >
-            <LogOutIcon 
-              size={20} 
-              color={queryLoading || isError ? clayTheme.textMuted : clayTheme.textPrimary} 
-            />
-          </TouchableOpacity>
-          </>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/profile/edit')}
+              disabled={queryLoading || isError}
+            >
+              <Pencil 
+                size={20} 
+                color={queryLoading || isError ? clayTheme.textMuted : clayTheme.textPrimary} 
+              />
+            </TouchableOpacity>
+            <View style={styles.actionDivider} />
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleLogout()}
+            >
+              <LogOutIcon 
+                size={20} 
+                color={queryLoading || isError ? clayTheme.textMuted : clayTheme.textPrimary} 
+              />
+            </TouchableOpacity>
+          </View>
 
         </View>
 
@@ -572,6 +572,37 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: clayTheme.textPrimary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: clayTheme.cardBackground,
+    borderRadius: 22,
+    gap:4,
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: clayTheme.shadowDark,
+        shadowOffset: { width: 4, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: clayTheme.shadowDark,
+    opacity: 0.3,
   },
   headerSpacer: {
     width: 44,

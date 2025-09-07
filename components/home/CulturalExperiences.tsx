@@ -1,11 +1,33 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Linking, Alert, ActivityIndicator, RefreshControl, Platform } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Linking,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Platform,
+} from 'react-native';
 import React, { useState, useRef, useCallback } from 'react';
-import { theme, spacing, typography, borderRadius, neomorphColors } from '../theme';
+import {
+  theme,
+  spacing,
+  typography,
+  borderRadius,
+  neomorphColors,
+} from '../theme';
 import CulturalExperienceCard from './CulturalExperienceCard';
 import { getAnalytics } from '@/contexts/analytics';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getAdvertisements, recordAdClick, recordAdImpression } from '@/contexts/ad.api';
+import {
+  getAdvertisements,
+  recordAdClick,
+  recordAdImpression,
+} from '@/contexts/ad.api';
 import { useRouter } from 'expo-router';
+import getDecodedToken from '@/utils/getMyData';
 
 interface Advertisement {
   id: string;
@@ -42,14 +64,14 @@ const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
   const [viewedAds, setViewedAds] = useState<Set<string>>(new Set());
   const router = useRouter();
-  
+
   // Define categories
   const categories = [
     { id: 'all', label: 'All' },
     { id: 'Events', label: 'Events' },
     { id: 'Retail', label: 'Retail' },
     { id: 'Food', label: 'Food' },
-    { id: 'Other', label: 'Other' }
+    { id: 'Other', label: 'Other' },
   ];
 
   const {
@@ -58,16 +80,24 @@ const CulturalExperiences = () => {
     error,
     refetch,
   } = useQuery<AdResponse>({
-    queryKey: ["advertisements", activeSponsoredCategory],
+    queryKey: ['advertisements', activeSponsoredCategory],
     queryFn: () => {
-      const params = activeSponsoredCategory !== 'all' 
-        ? { category: activeSponsoredCategory.charAt(0).toUpperCase() + activeSponsoredCategory.slice(1) }
-        : {};
+      const params =
+        activeSponsoredCategory !== 'all'
+          ? {
+              category:
+                activeSponsoredCategory.charAt(0).toUpperCase() +
+                activeSponsoredCategory.slice(1),
+            }
+          : {};
       return getAdvertisements(params);
     },
   });
 
-  console.log(adResponse)
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
 
   // Ad Impression Mutation
   const { mutate: recordAdImpressionMutate } = useMutation({
@@ -92,30 +122,39 @@ const CulturalExperiences = () => {
   });
 
   // Handle ad impression when item becomes visible (only for native platforms)
-  const onViewableItemsChanged = Platform.OS !== 'web' ? useRef(({ viewableItems }: any) => {
-    viewableItems.forEach((viewableItem: any) => {
-      const adId = viewableItem.item.id;
-      
-      // Only record impression if ad hasn't been viewed before
-      if (!viewedAds.has(adId)) {
-        console.log('📊 Ad became visible:', adId);
-        recordAdImpressionMutate(adId);
-        
-        // Mark as viewed
-        setViewedAds(prev => new Set([...prev, adId]));
-      }
-    });
-  }).current : undefined;
+  const onViewableItemsChanged =
+    Platform.OS !== 'web'
+      ? useRef(({ viewableItems }: any) => {
+          if (myData == null) return;
+          viewableItems.forEach((viewableItem: any) => {
+            const adId = viewableItem.item.id;
+
+            if (myData == null) return;
+
+            // Only record impression if ad hasn't been viewed before
+            if (!viewedAds.has(adId)) {
+              console.log('📊 Ad became visible:', adId);
+              recordAdImpressionMutate(adId);
+
+              // Mark as viewed
+              setViewedAds((prev) => new Set([...prev, adId]));
+            }
+          });
+        }).current
+      : undefined;
 
   // Viewability configuration (only for native platforms)
-  const viewabilityConfig = Platform.OS !== 'web' ? useRef({
-    itemVisiblePercentThreshold: 50, // Ad needs to be 50% visible
-    minimumViewTime: 1000, // Ad needs to be visible for 1 second
-  }).current : undefined;
+  const viewabilityConfig =
+    Platform.OS !== 'web'
+      ? useRef({
+          itemVisiblePercentThreshold: 50, // Ad needs to be 50% visible
+          minimumViewTime: 1000, // Ad needs to be visible for 1 second
+        }).current
+      : undefined;
 
   // Transform API data to match your card component format
   const transformAdData = (ads: Advertisement[]) => {
-    return ads.map(ad => ({
+    return ads.map((ad) => ({
       id: ad.id,
       title: ad.name,
       description: ad.description,
@@ -129,7 +168,7 @@ const CulturalExperiences = () => {
       metrics: ad.metrics,
       category: ad.category,
       // Add all the original ad data for the card component
-      originalAd: ad
+      originalAd: ad,
     }));
   };
 
@@ -137,12 +176,13 @@ const CulturalExperiences = () => {
   const getDisplayContent = () => {
     if (adResponse?.success && adResponse?.data) {
       const transformedAds = transformAdData(adResponse.data);
-      
+
       if (activeSponsoredCategory === 'all') {
         return transformedAds;
       } else {
-        return transformedAds.filter(ad => 
-          ad.type.toLowerCase() === activeSponsoredCategory.toLowerCase()
+        return transformedAds.filter(
+          (ad) =>
+            ad.type.toLowerCase() === activeSponsoredCategory.toLowerCase()
         );
       }
     }
@@ -155,17 +195,21 @@ const CulturalExperiences = () => {
   const handleSponsoredContentPress = async (content: any) => {
     try {
       console.log('🔗 Ad clicked:', content.id);
-      
+      if (myData == null) return;
+
       // Record the click
       recordAdClickMutate(content.id);
-      
+
       // Try to open the link first, then fallback to contact
       if (content.link && content.link.startsWith('http')) {
         const supported = await Linking.canOpenURL(content.link);
         if (supported) {
           await Linking.openURL(content.link);
         } else {
-          Alert.alert("Error", `Don't know how to open this URL: ${content.link}`);
+          Alert.alert(
+            'Error',
+            `Don't know how to open this URL: ${content.link}`
+          );
         }
       } else if (content.contactInfo) {
         // Handle contact info (phone number)
@@ -174,12 +218,12 @@ const CulturalExperiences = () => {
         if (supported) {
           await Linking.openURL(phoneUrl);
         } else {
-          Alert.alert("Contact", `Contact: ${content.contactInfo}`);
+          Alert.alert('Contact', `Contact: ${content.contactInfo}`);
         }
       }
     } catch (error) {
-      console.error("Failed to open URL:", error);
-      Alert.alert("Error", "Failed to open the link. Please try again.");
+      console.error('Failed to open URL:', error);
+      Alert.alert('Error', 'Failed to open the link. Please try again.');
     }
   };
 
@@ -238,10 +282,10 @@ const CulturalExperiences = () => {
 
   // Render individual ad item using the original card component
   const renderAdItem = ({ item, index }: any) => (
-    <CulturalExperienceCard 
+    <CulturalExperienceCard
       key={`${item.id}-${activeSponsoredCategory}-${index}`}
-      content={item} 
-      handleSponsoredContentPress={handleSponsoredContentPress}  
+      content={item}
+      handleSponsoredContentPress={handleSponsoredContentPress}
       index={index}
       activeSponsoredCategory={activeSponsoredCategory}
     />
@@ -252,10 +296,7 @@ const CulturalExperiences = () => {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Discover Experiences</Text>
         {/* View All button instead of refresh */}
-        <TouchableOpacity 
-          onPress={handleViewAll} 
-          style={styles.viewAllBtn}
-        >
+        <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
           <Text style={styles.viewAllBtnText}>View all</Text>
         </TouchableOpacity>
       </View>
@@ -280,7 +321,8 @@ const CulturalExperiences = () => {
               <Text
                 style={[
                   styles.categoryText,
-                  activeSponsoredCategory === cat.id && styles.categoryTextActive,
+                  activeSponsoredCategory === cat.id &&
+                    styles.categoryTextActive,
                 ]}
               >
                 {cat.label}
@@ -302,7 +344,9 @@ const CulturalExperiences = () => {
           horizontal
           data={displayContent}
           renderItem={renderAdItem}
-          keyExtractor={(item, index) => `${item.id}-${activeSponsoredCategory}-${index}`}
+          keyExtractor={(item, index) =>
+            `${item.id}-${activeSponsoredCategory}-${index}`
+          }
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           {...(Platform.OS !== 'web' && {

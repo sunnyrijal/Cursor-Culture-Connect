@@ -2,15 +2,12 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '../contexts/AuthContext';
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { SocketProvider } from '@/hooks/useSocket';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
-import { API_URL } from '@/contexts/axiosConfig';
+import { API_BASE_URL, API_URL } from '@/contexts/axiosConfig';
 
 const queryClient = new QueryClient();
 
@@ -27,7 +24,7 @@ export default function RootLayout() {
 }
 
 function AppContent() {
-  const serverUrl = API_URL
+  const serverUrl = API_BASE_URL;
 
   // Socket event handlers
   const handleConnect = useCallback(() => {
