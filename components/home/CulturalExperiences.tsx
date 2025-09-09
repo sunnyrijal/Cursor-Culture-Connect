@@ -62,6 +62,7 @@ interface AdResponse {
 const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
   const router = useRouter();
+  const flatListRef = useRef(null);
 
   // Define categories
   const categories = [
@@ -180,9 +181,9 @@ const CulturalExperiences = () => {
       <Text style={styles.errorText}>
         {error?.message || 'Something went wrong while fetching data'}
       </Text>
-      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+      {/* <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
         <Text style={styles.viewAllButtonText}>View All</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 
@@ -199,9 +200,9 @@ const CulturalExperiences = () => {
       <Text style={styles.emptyText}>
         Try selecting a different category or check back later.
       </Text>
-      <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+      {/* <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
         <Text style={styles.viewAllButtonText}>View All</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 
@@ -220,10 +221,9 @@ const CulturalExperiences = () => {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Discover Experiences</Text>
-        {/* View All button instead of refresh */}
-        <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
+        {/* <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
           <Text style={styles.viewAllBtnText}>View all</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Category Tabs */}
@@ -257,32 +257,46 @@ const CulturalExperiences = () => {
         />
       </View>
 
-      {/* Content Area - keeping original horizontal scroll layout */}
-      {error && !adResponse ? (
-        renderErrorState()
-      ) : isLoading && !adResponse ? (
-        renderLoadingState()
-      ) : displayContent.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <FlatList
-          horizontal
-          data={displayContent}
-          renderItem={renderAdItem}
-          keyExtractor={(item, index) =>
-            `${item.id}-${activeSponsoredCategory}-${index}`
-          }
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={handleRefresh}
-              colors={[theme.primary]}
-            />
-          }
-        />
-      )}
+      {/* Content Area - Fixed with proper scroll handling */}
+      <View style={styles.contentContainer}>
+        {error && !adResponse ? (
+          renderErrorState()
+        ) : isLoading && !adResponse ? (
+          renderLoadingState()
+        ) : displayContent.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={displayContent}
+            renderItem={renderAdItem}
+            keyExtractor={(item, index) =>
+              `${item.id}-${activeSponsoredCategory}-${index}`
+            }
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.listContent}
+            // KEY FIXES FOR SCROLL BEHAVIOR:
+            nestedScrollEnabled={true}
+            scrollEnabled={true}
+            bounces={Platform.OS === 'ios'}
+            overScrollMode={Platform.OS === 'android' ? 'auto' : undefined}
+            // Ensure proper gesture handling
+            onScrollBeginDrag={() => {
+              // Optional: Add haptic feedback or other scroll start logic
+            }}
+            // Remove refresh control from here and handle it differently if needed
+            // Or keep it but make sure it doesn't interfere
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={handleRefresh}
+                colors={[theme.primary]}
+                tintColor={theme.primary}
+              />
+            }
+          />
+        )}
+      </View>
     </View>
   );
 };
@@ -292,18 +306,20 @@ export default CulturalExperiences;
 const styles = StyleSheet.create({
   section: {
     marginVertical: spacing.lg,
-    backgroundColor: neomorphColors.background,
-    paddingTop: 20,
-    borderRadius: 20,
+    backgroundColor: 'skyblue',
+    paddingTop: 16,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: neomorphColors.lightShadow,
+    // Ensure the container doesn't interfere with touch events
+    overflow: 'hidden',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 15,
+    paddingHorizontal: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -322,15 +338,15 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   categoryRow: {
-    paddingLeft: 20,
-    marginBottom: 15,
+    paddingLeft: 16,
+    marginBottom: 12,
   },
   categoryTab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
     backgroundColor: neomorphColors.background,
-    marginRight: 10,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: neomorphColors.lightShadow,
   },
@@ -339,7 +355,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   categoryText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: theme.textPrimary,
   },
@@ -347,16 +363,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  scrollContent: {
-    paddingLeft: 20,
-    paddingRight: 10,
-    paddingBottom: 20,
+  contentContainer: {
+    height: 280, // Fixed height for the scrollable area
+    paddingHorizontal: 16,
+    // IMPORTANT: Don't add flex: 1 here as it can cause issues
+    // Make sure the container has a defined height
+  },
+  listContent: {
+    paddingBottom: 12,
+    // Ensure there's enough content to scroll
+    flexGrow: 1,
   },
   // Error State Styles
   errorContainer: {
-    paddingHorizontal: 20,
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: 'center', 
+    justifyContent: 'center',
+    flex: 1,
   },
   errorTitle: {
     fontSize: typography.fontSize.md,
@@ -385,9 +408,10 @@ const styles = StyleSheet.create({
   },
   // Loading State Styles
   loadingContainer: {
-    paddingHorizontal: 20,
     paddingVertical: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   loadingText: {
     fontSize: typography.fontSize.sm,
@@ -396,9 +420,10 @@ const styles = StyleSheet.create({
   },
   // Empty State Styles
   emptyContainer: {
-    paddingHorizontal: 20,
     paddingVertical: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   emptyTitle: {
     fontSize: typography.fontSize.md,

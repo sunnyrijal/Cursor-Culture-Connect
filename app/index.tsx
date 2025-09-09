@@ -28,6 +28,7 @@ import Animated, {
 import { checkAuthStatus } from '@/utils/auth';
 
 import { Image } from 'react-native';
+//@ts-ignore
 import logo from '../assets/logo.png'; // adjust path based on your folder structure
 
 const { width, height } = Dimensions.get('window');
@@ -121,41 +122,41 @@ export default function Index() {
     );
   }, [authState.authenticated]);
 
-  useEffect(() => {
-    const handleAuthCheck = async () => {
-      try {
-        const isAuthenticated = await checkAuthStatus();
-        console.log(isAuthenticated);
-        // Navigate after animation delay
-        const timer = setTimeout(() => {
-          backgroundOpacity.value = withTiming(
-            0,
-            { duration: 600, easing: Easing.in(Easing.cubic) },
-            () => {
-              runOnJS(() => {
-                if (isAuthenticated) {
-                  router.replace("/(tabs)")
-                  // router.replace('/(auth)/login');
-                } else {
-                  router.replace('/(auth)/login');
-                }
-              })();
-            }
-          );
-        }, 3500);
+  // useEffect(() => {
+  //   const handleAuthCheck = async () => {
+  //     try {
+  //       const isAuthenticated = await checkAuthStatus();
+  //       console.log(isAuthenticated);
+  //       // Navigate after animation delay
+  //       const timer = setTimeout(() => {
+  //         backgroundOpacity.value = withTiming(
+  //           0,
+  //           { duration: 600, easing: Easing.in(Easing.cubic) },
+  //           () => {
+  //             runOnJS(() => {
+  //               if (isAuthenticated) {
+  //                 router.replace("/(tabs)")
+  //                 // router.replace('/(auth)/login');
+  //               } else {
+  //                 router.replace('/(auth)/login');
+  //               }
+  //             })();
+  //           }
+  //         );
+  //       }, 3500);
 
-        return () => clearTimeout(timer);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        // Default to login on error
-        setTimeout(() => {
-          router.replace('/(auth)/login');
-        }, 2500);
-      }
-    };
+  //       return () => clearTimeout(timer);
+  //     } catch (error) {
+  //       console.error('Auth check failed:', error);
+  //       // Default to login on error
+  //       setTimeout(() => {
+  //         router.replace('/(auth)/login');
+  //       }, 2500);
+  //     }
+  //   };
 
-    handleAuthCheck();
-  }, []);
+  //   handleAuthCheck();
+  // }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [

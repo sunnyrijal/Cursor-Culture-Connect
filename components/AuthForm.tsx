@@ -1052,7 +1052,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                 colors={
                   loading
                     ? ['#CBD5E1', '#94A3B8']
-                    : ['#6366F1', '#8B5CF6', '#EC4899']
+                    : ['#8B5CF6', '#6366F1', '#3B82F6']
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}

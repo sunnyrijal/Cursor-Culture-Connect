@@ -607,13 +607,13 @@ export default function Dashboard() {
 
         <UserStat currentUser={currentUser} />
 
-    <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
 
         <QuickActions
           setShowCreateEventModal={setShowCreateEventModal}
           setShowCreateGroupModal={setShowCreateGroupModal}
           setShowCreateQuickEventModal={setShowCreateQuickEventModal}
         />
+    <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
 
         <CulturalExperiences />
 

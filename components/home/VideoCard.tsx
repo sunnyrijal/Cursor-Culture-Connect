@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 16 / 9,
     backgroundColor: '#000',
-    marginBottom:24,
+    marginVertical:12,
     borderRadius:24,
     overflow:'hidden'
   },

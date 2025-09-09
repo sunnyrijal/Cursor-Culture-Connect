@@ -108,7 +108,9 @@ const Header = ({
                   style={[getButtonStyle('profile'), styles.profileButton]}
                   activeOpacity={1}
                 >
-                  <User size={20} color="#8B5FBF" />
+                  <User size={24} color="#8B5FBF" />
+                  {/* <Image source={require('../../assets/images/user.png')} style={styles.logo} resizeMode="contain" /> */}
+
                 </TouchableOpacity>
               </Shadow>
             </>
@@ -125,7 +127,7 @@ const Header = ({
                   style={[getButtonStyle('profile'), styles.profileButton]}
                   activeOpacity={1}
                 >
-                  <LogIn size={20} color="#8B5FBF" />
+                  <LogIn size={24} color="#8B5FBF" />
                 </TouchableOpacity>
               </Shadow>
             </>
@@ -143,7 +145,7 @@ const Header = ({
               style={[getButtonStyle('camera'), styles.cameraButton]}
               activeOpacity={1}
             >
-              <BookOpen size={20} color="#EC4899" />
+              <BookOpen size={24} color="#EC4899" />
             </TouchableOpacity>
           </Shadow> */}
           <Shadow
@@ -161,7 +163,7 @@ const Header = ({
               ]}
               activeOpacity={1}
             >
-              <Bell size={20} color="#3B82F6" />
+              <Bell size={24} color="#3B82F6" />
             </TouchableOpacity>
           </Shadow>
           {/* <LogoutButton /> */}
@@ -176,15 +178,15 @@ export default Header;
 const styles = StyleSheet.create({
   container: {
     backgroundColor: clayColors.background,
-    paddingTop: 10,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingHorizontal: 20, // Increased from 16
+    paddingVertical: 20, // Increased from 24
     backgroundColor: clayColors.background,
+    minHeight: 80, // Added minimum height
   },
   headerLeft: {
     flexDirection: 'row',
@@ -193,9 +195,9 @@ const styles = StyleSheet.create({
   },
 
   avatarButton: {
-    borderRadius: 16,
-    padding: 4,
-    marginRight: 16,
+    borderRadius: 18, // Increased from 16
+    padding: 6, // Increased from 4
+    marginRight: 20, // Increased from 16
     backgroundColor: clayColors.background,
     ...Platform.select({
       ios: {
@@ -211,9 +213,9 @@ const styles = StyleSheet.create({
   },
 
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 56, // Increased from 48
+    height: 56, // Increased from 48
+    borderRadius: 14, // Increased from 12
     justifyContent: 'center',
     alignItems: 'center',
     // Inner shadow effect
@@ -221,8 +223,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   logo: {
-    width: 48,
-    height: 48,
+    width: 56, // Increased from 48
+    height: 56, // Increased from 48
   },
 
   // Commented out avatar text style
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appTitle: {
-    fontSize: 20,
+    fontSize: 24, // Increased from 20
     fontWeight: '700',
     color: clayColors.textPrimary,
   },
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12, // Increased from 8
   },
 
   profileButton: {
@@ -272,9 +274,9 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56, // Increased from 48
+    height: 56, // Increased from 48
+    borderRadius: 18, // Increased from 16
     backgroundColor: clayColors.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -300,9 +302,9 @@ const styles = StyleSheet.create({
   },
 
   actionButtonPressed: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56, // Increased from 48
+    height: 56, // Increased from 48
+    borderRadius: 18, // Increased from 16
     backgroundColor: '#E5E9F0', // Slightly darker for pressed state
     justifyContent: 'center',
     alignItems: 'center',
