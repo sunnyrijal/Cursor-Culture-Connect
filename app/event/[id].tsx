@@ -319,8 +319,6 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer:{},
-  loadingText:{},
   container: {
     flex: 1,
     backgroundColor: neomorphColors.background,
@@ -330,6 +328,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 80, // Reduced from 100 to 80
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: typography.fontSize.base,
+    color: theme.textSecondary,
   },
 
   // Error States

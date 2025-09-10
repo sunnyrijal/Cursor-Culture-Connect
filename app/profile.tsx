@@ -158,11 +158,9 @@ export default function Profile() {
 
   // Loading Component
   const LoadingScreen = () => (
-    <View style={styles.loadingContainer}>
-      <View style={styles.loadingCard}>
-        <ActivityIndicator size="large" color={clayTheme.primary} />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
-      </View>
+    <View style={styles.centeredContainer}>
+      <ActivityIndicator size="large" color={clayTheme.primary} />
+      <Text style={styles.loadingText}>Loading Profile...</Text>
     </View>
   );
 
@@ -221,13 +219,13 @@ export default function Profile() {
 
         </View>
 
-        {queryLoading && <LoadingScreen />}
+        {queryLoading && <LoadingScreen />} 
         
         {isError && <ErrorScreen />}
 
         {userData && !queryLoading && !isError && (
           <ScrollView
-            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -447,6 +445,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: clayTheme.background,
   },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   safeArea: {
     flex: 1,
   },
@@ -606,9 +613,6 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 44,
-  },
-  scrollView: {
-    flex: 1,
   },
   profileSection: {
     alignItems: 'center',

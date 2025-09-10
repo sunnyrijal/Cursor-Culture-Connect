@@ -13,6 +13,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -294,10 +295,9 @@ export default function GroupDetailEnhanced() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>Loading...</Text>
-          </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.loadingText}>Loading group details...</Text>
         </View>
       </SafeAreaView>
     );
@@ -896,6 +896,17 @@ const styles = StyleSheet.create({
   leaveButton: {
     flex: 1,
     backgroundColor: theme.error,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: typography.fontSize.base,
+    color: theme.textSecondary,
   },
 
   container: {
