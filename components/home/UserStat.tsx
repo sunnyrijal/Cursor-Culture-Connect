@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme, spacing, typography } from '../theme';
+import { useQuery } from '@tanstack/react-query';
+import { getCounts } from '@/contexts/user.api';
 
 export const neomorphColors = {
   background: '#F0F3F7',
@@ -18,6 +20,13 @@ export const neomorphColors = {
 const UserStat = ({ currentUser }: { currentUser: any }) => {
   const router = useRouter();
   const [isPressed, setIsPressed] = useState(false);
+
+  const {data} = useQuery({
+    queryFn: getCounts,
+    queryKey:["counts"]
+  })
+
+  console.log(data)
 
   return (
     <TouchableOpacity 
@@ -57,7 +66,7 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
           > */}
             {/* Header Section */}
             <View style={styles.headerSection}>
-              <Text style={styles.title}>Your Cultural Hub</Text>
+              <Text style={styles.title}>Your Hub</Text>
             </View>
 
             {/* Stats Container */}
@@ -78,8 +87,8 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     end={{ x: 0.8, y: 0.8 }}
                     style={styles.statGradient}
                   >
-                    <Text style={styles.statNumber}>{currentUser.eventsAttended}</Text>
-                    <Text style={styles.statLabel}>Events{"\n"}Attended</Text>
+                    <Text style={styles.statNumber}>{data?.data?.eventsCount || 0}</Text>
+                    <Text style={styles.statLabel}>Events</Text>
                   </LinearGradient>
                 </View>
               </View>
@@ -100,8 +109,8 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     end={{ x: 0.8, y: 0.8 }}
                     style={styles.statGradient}
                   >
-                    <Text style={styles.statNumber}>{currentUser.joinedGroups}</Text>
-                    <Text style={styles.statLabel}>Groups{"\n"}Joined</Text>
+                    <Text style={styles.statNumber}>{data?.data?.groupsCount || 0}</Text>
+                    <Text style={styles.statLabel}>Groups</Text>
                   </LinearGradient>
                 </View>
               </View>
@@ -122,7 +131,7 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     end={{ x: 0.8, y: 0.8 }}
                     style={styles.statGradient}
                   >
-                    <Text style={styles.statNumber}>{currentUser.connections}</Text>
+                    <Text style={styles.statNumber}>{data?.data?.friendsCount || 0}</Text>
                     <Text style={styles.statLabel}>Connections</Text>
                   </LinearGradient>
                 </View>

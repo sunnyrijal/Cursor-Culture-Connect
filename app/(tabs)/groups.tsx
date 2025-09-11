@@ -6,10 +6,18 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Users, Lock, Globe, Star, Calendar } from 'lucide-react-native';
+import {
+  Users,
+  Lock,
+  Globe,
+  Star,
+  Calendar,
+  Search,
+} from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getAllGroups, getUserGroups } from '@/contexts/group.api';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -86,8 +94,16 @@ export default function Groups() {
   });
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const groups = groupResponse?.groups || [];
+  const allGroups = groupResponse?.groups || [];
+
+  const groups = allGroups.filter(
+    (group: ApiGroup) =>
+      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      group.creator.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   console.log(groupResponse);
 
@@ -157,6 +173,18 @@ export default function Groups() {
             </View>
           </View>
 
+          <View style={styles.searchWrapper}>
+            <View style={styles.searchContainer}>
+              <Search size={18} color={theme.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search groups by name, description..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor={theme.textMuted}
+              />
+            </View>
+          </View>
           <ScrollView
             style={styles.list}
             contentContainerStyle={styles.listContent}

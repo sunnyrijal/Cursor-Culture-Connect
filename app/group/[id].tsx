@@ -723,6 +723,7 @@ export default function GroupDetailEnhanced() {
             <View style={styles.modalActions}>
               <Button
                 title="Cancel"
+                variant='secondary'
                 onPress={() => {
                   setShowAddMembersModal(false);
                   setSelectedUserIds([]);
@@ -731,15 +732,17 @@ export default function GroupDetailEnhanced() {
                 style={styles.cancelButton}
               />
               <Button
-                title={`Add ${selectedUserIds.length} Member${
-                  selectedUserIds.length !== 1 ? 's' : ''
-                }`}
+                title={
+                  isAddMemberPending
+                    ? 'Adding...'
+                    : `Add ${selectedUserIds.length} Member${selectedUserIds.length !== 1 ? 's' : ''}`
+                }
                 onPress={handleAddMembers}
-                disabled={selectedUserIds.length === 0}
+                disabled={selectedUserIds.length === 0 || isAddMemberPending}
                 //@ts-ignore
                 style={[
                   styles.addButton,
-                  selectedUserIds.length === 0 && styles.disabledButton,
+                  (selectedUserIds.length === 0 || isAddMemberPending) && styles.disabledButton,
                 ]}
               />
             </View>

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "TRiVO",
-    "slug": "TRiVO",
+    "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",

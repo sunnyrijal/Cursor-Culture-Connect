@@ -1,11 +1,11 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// export const API_URL = "https://4bhw4zcd-4000.inc1.devtunnels.ms/api"; 
-// export const API_BASE_URL = "https://4bhw4zcd-4000.inc1.devtunnels.ms"; 
+export const API_URL = "https://4bhw4zcd-4000.inc1.devtunnels.ms/api"; 
+export const API_BASE_URL = "https://4bhw4zcd-4000.inc1.devtunnels.ms"; 
 
-export const API_URL = "https://culture-connect-be.onrender.com/api"; 
-export const API_BASE_URL = "https://culture-connect-be.onrender.com"; 
+// export const API_URL = "https://secureapi.trivoconnect.com/api"; 
+// export const API_BASE_URL = "https://secureapi.trivoconnect.com"; 
 
 
 const api = axios.create({

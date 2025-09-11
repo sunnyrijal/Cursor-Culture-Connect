@@ -122,41 +122,23 @@ export default function Index() {
     );
   }, [authState.authenticated]);
 
-  // useEffect(() => {
-  //   const handleAuthCheck = async () => {
-  //     try {
-  //       const isAuthenticated = await checkAuthStatus();
-  //       console.log(isAuthenticated);
-  //       // Navigate after animation delay
-  //       const timer = setTimeout(() => {
-  //         backgroundOpacity.value = withTiming(
-  //           0,
-  //           { duration: 600, easing: Easing.in(Easing.cubic) },
-  //           () => {
-  //             runOnJS(() => {
-  //               if (isAuthenticated) {
-  //                 router.replace("/(tabs)")
-  //                 // router.replace('/(auth)/login');
-  //               } else {
-  //                 router.replace('/(auth)/login');
-  //               }
-  //             })();
-  //           }
-  //         );
-  //       }, 3500);
+  useEffect(() => {
+    if (authState.authenticated == false) {
+      return;
+    }
 
-  //       return () => clearTimeout(timer);
-  //     } catch (error) {
-  //       console.error('Auth check failed:', error);
-  //       // Default to login on error
-  //       setTimeout(() => {
-  //         router.replace('/(auth)/login');
-  //       }, 2500);
-  //     }
-  //   };
+    const timer = setTimeout(() => {
+      backgroundOpacity.value = withTiming(
+        0,
+        { duration: 600, easing: Easing.in(Easing.cubic) },
+        () => {
+          runOnJS(router.replace)(authState.authenticated ? '/(tabs)' : '/(auth)/login');
+        }
+      );
+    }, 3500); // Animation delay
 
-  //   handleAuthCheck();
-  // }, []);
+    return () => clearTimeout(timer);
+  }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -196,7 +178,7 @@ export default function Index() {
   return (
     <Animated.View style={[styles.container, backgroundAnimatedStyle]}>
       <LinearGradient
-        colors={['#667eea', '#764ba2', '#f093fb']}
+        colors={['#4F46E5', '#87CEEB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}

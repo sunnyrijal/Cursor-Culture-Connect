@@ -32,6 +32,7 @@ import QuickActions from '@/components/home/QuickActions';
 import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import AutoplayVideo from '@/components/home/VideoCard';
+import { Image } from 'react-native';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -616,6 +617,11 @@ export default function Dashboard() {
     <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
 
         <CulturalExperiences />
+         {/* <Image
+      source={{ uri: "https://trivo-connect-data-01.s3.us-east-1.amazonaws.com/1757236034645-9b9fad2f-8720-4de2-844d-a59d23304c3f.jpeg" }}
+      style={{ width: 200, height: 200 }}
+      resizeMode="cover"
+    /> */}
 
         <UpcommingEvents />
       </ScrollView>
