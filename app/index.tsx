@@ -132,10 +132,12 @@ export default function Index() {
         0,
         { duration: 600, easing: Easing.in(Easing.cubic) },
         () => {
-          runOnJS(router.replace)(authState.authenticated ? '/(tabs)' : '/(auth)/login');
+          runOnJS(router.replace)(
+            authState.authenticated ? '/(tabs)' : '/(auth)/login'
+          );
         }
       );
-    }, 3500); // Animation delay
+    }, 2000); // Animation delay
 
     return () => clearTimeout(timer);
   }, [authState.authenticated]);
@@ -241,14 +243,14 @@ export default function Index() {
 
           {/* Text content */}
           <View style={styles.textContainer}>
-            <Animated.View style={titleAnimatedStyle}>
+            <Animated.View style={[titleAnimatedStyle, styles.textContainer]}>
               <Text style={styles.title}>TRiVO</Text>
               <View style={styles.titleUnderline} />
             </Animated.View>
 
             <Animated.View style={subtitleAnimatedStyle}>
               <Text style={styles.subtitle}>
-                Discover amazing cultures and connect with events around the
+                Discover amazing people and connect with events around the
                 world
               </Text>
               {/* <View style={styles.dots}>
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
     top: -40,
   },
   logo: {
@@ -333,10 +335,10 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 12,
+    // shadowOffset: { width: 0, height: 12 },
+    // shadowOpacity: 0.4,
+    // shadowRadius: 24,
+    // elevation: 12,
   },
   logoGradient: {
     width: '100%',
@@ -349,14 +351,15 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 24,
-    backgroundColor: 'rgba(99, 102, 241, 0.01)',
+    // backgroundColor: 'rgba(99, 102, 241, 0.01)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.15)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(99, 102, 241, 0.15)',
   },
   textContainer: {
     alignItems: 'center',
+    justifyContent:'center',
     width: '100%',
   },
   title: {
