@@ -614,7 +614,7 @@ export default function Dashboard() {
           setShowCreateGroupModal={setShowCreateGroupModal}
           setShowCreateQuickEventModal={setShowCreateQuickEventModal}
         />
-    <AutoplayVideo source={require('../../assets/video.mp4')} style={{}} />
+    <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
 
         <CulturalExperiences />
          {/* <Image

@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 
-const AutoplayVideo = ({ source, style, ...props }:any) => {
+const AutoplayVideo = ({ source, style, ...props }: any) => {
   const videoRef = useRef(null);
 
   return (
@@ -17,6 +17,9 @@ const AutoplayVideo = ({ source, style, ...props }:any) => {
         isMuted={true}
         useNativeControls={false}
         {...props}
+        videoStyle={{
+          width: '100%',
+        }}
       />
     </View>
   );
@@ -27,9 +30,9 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 16 / 9,
     backgroundColor: '#000',
-    marginVertical:12,
-    borderRadius:24,
-    overflow:'hidden'
+    marginVertical: 12,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   video: {
     flex: 1,
