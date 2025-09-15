@@ -26,6 +26,8 @@ import {
   AlertCircle,
   RefreshCw,
   LogOutIcon,
+  Globe,
+  User,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { logout } from '@/data/store';
@@ -35,8 +37,8 @@ import { useQuery } from '@tanstack/react-query';
 const clayTheme = {
   background: '#E8E8E8',
   cardBackground: '#E8E8E8',
-  shadowLight: '#FFFFFF',
-  shadowDark: '#BEBEBE',
+  shadowLight: 'rgba(255, 255, 255, 0.9)',
+  shadowDark: 'rgba(190, 190, 190, 0.4)',
   primary: '#6366F1',
   accent: '#8B5CF6',
   success: '#10B981',
@@ -72,6 +74,7 @@ export default function Profile() {
     queryFn: async () => {
       try {
         const response = await getMyData()
+        console.log(response)
         const data = {
           id: response.user.id,
           name: response.user.name,
@@ -158,11 +161,9 @@ export default function Profile() {
 
   // Loading Component
   const LoadingScreen = () => (
-    <View style={styles.loadingContainer}>
-      <View style={styles.loadingCard}>
-        <ActivityIndicator size="large" color={clayTheme.primary} />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
-      </View>
+    <View style={styles.centeredContainer}>
+      <ActivityIndicator size="large" color={clayTheme.primary} />
+      <Text style={styles.loadingText}>Loading Profile...</Text>
     </View>
   );
 
@@ -172,7 +173,7 @@ export default function Profile() {
       <View style={styles.errorCard}>
         <AlertCircle size={48} color={neumorphTheme.error} />
         <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
-        <Text style={styles.errorMessage}>
+          <Text style={styles.errorMessage} numberOfLines={2}>
           {error?.message || 'Failed to load profile data'}
         </Text>
         <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
@@ -214,20 +215,20 @@ export default function Profile() {
             >
               <LogOutIcon 
                 size={20} 
-                color={queryLoading || isError ? clayTheme.textMuted : clayTheme.textPrimary} 
+                color="#EF4444"
               />
             </TouchableOpacity>
           </View>
 
         </View>
 
-        {queryLoading && <LoadingScreen />}
+        {queryLoading && <LoadingScreen />} 
         
         {isError && <ErrorScreen />}
 
         {userData && !queryLoading && !isError && (
           <ScrollView
-            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -242,7 +243,11 @@ export default function Profile() {
               <View style={styles.profileImageContainer}>
                 <View style={styles.profileImageWrapper}>
                   <Image
-                    source={{ uri: userData.profilePicture }}
+                    source={
+                      userData.profilePicture
+                        ? { uri: userData.profilePicture }
+                        : require('../assets/user.png')
+                    }
                     style={styles.profileImage}
                     defaultSource={require('../assets/user.png')}
                   />
@@ -308,6 +313,20 @@ export default function Profile() {
                     </View>
                   </View>
                 )}
+
+                {userData.countryOfOrigin && (
+                  <View style={styles.infoItem}>
+                    <View style={styles.infoIcon}>
+                      <Globe size={18} color={clayTheme.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Country of Origin</Text>
+                      <Text style={styles.infoValue}>
+                        {userData.countryOfOrigin}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -342,6 +361,24 @@ export default function Profile() {
               </View>
             )}
 
+            {userData.bio && (
+              <View style={styles.infoSection}>
+                <Text style={styles.sectionTitle}>About Me</Text>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoItem}>
+                    <View style={styles.infoIcon}>
+                      <User size={18} color={clayTheme.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Bio</Text>
+                      <Text style={styles.infoValue} style={styles.bioText}>
+                        {userData.bio}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Personal Information</Text>
               <View style={styles.infoCard}>
@@ -363,6 +400,38 @@ export default function Profile() {
                   </View>
                 )}
 
+                {userData.languagesSpoken &&
+                  userData.languagesSpoken.length > 0 && (
+                    <View style={styles.infoItem}>
+                      <View style={styles.infoIcon}>
+                        <Globe size={18} color={clayTheme.accent} />
+                      </View>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Languages</Text>
+                        <View style={styles.badgeContainer}>
+                          {userData.languagesSpoken.map((lang:any, index:number) => (
+                            <View key={index} style={styles.languageBadge}>
+                              <Text style={styles.badgeText}>{lang}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                {userData.interests && userData.interests.length > 0 && (
+                  <View style={styles.infoItem}>
+                    <View style={styles.infoIcon}>
+                      <Users size={18} color={clayTheme.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Interests</Text>
+                      <Text style={styles.infoValue}>
+                        {userData.interests.join(', ')}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <MapPin size={18} color={clayTheme.primary} />
@@ -447,6 +516,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: clayTheme.background,
   },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   safeArea: {
     flex: 1,
   },
@@ -464,11 +542,8 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     shadowColor: clayTheme.shadowDark,
-    shadowOffset: {
-      width: -8,
-      height: -8,
-    },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -491,12 +566,8 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     shadowColor: clayTheme.shadowDark,
-    shadowOffset: {
-      width: -8,
-      height: -8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
     elevation: 8,
     maxWidth: 300,
   },
@@ -513,6 +584,7 @@ const styles = StyleSheet.create({
     color: clayTheme.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+    maxHeight: 60,
   },
 
 
@@ -526,11 +598,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 20,
     shadowColor: clayTheme.shadowDark,
-    shadowOffset: {
-      width: -4,
-      height: -4,
-    },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
   },
@@ -559,7 +628,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 4, height: 4 },
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
       },
@@ -583,7 +652,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 4, height: 4 },
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
       },
@@ -607,9 +676,6 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 44,
   },
-  scrollView: {
-    flex: 1,
-  },
   profileSection: {
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -625,8 +691,8 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 8, height: 8 },
+        shadowColor: 'rgba(0,0,0,0.15)',
+        shadowOffset: { width: 5, height: 5 },
         shadowOpacity: 0.3,
         shadowRadius: 16,
       },
@@ -652,8 +718,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 3, height: 3 },
+        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 6,
       },
@@ -684,8 +750,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 2, height: 2 },
+        shadowColor: 'rgba(0,0,0,0.08)',
+        shadowOffset: { width: 1, height: 1 },
         shadowOpacity: 0.15,
         shadowRadius: 4,
       },
@@ -715,8 +781,8 @@ const styles = StyleSheet.create({
     padding: 20,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 8, height: 8 },
+        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 16,
       },
@@ -740,8 +806,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: -3, height: -3 },
+        shadowColor: 'rgba(0,0,0,0.08)',
+        shadowOffset: { width: -2, height: -2 },
         shadowOpacity: 0.2,
         shadowRadius: 6,
       },
@@ -764,6 +830,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: clayTheme.textPrimary,
   },
+  bioText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: clayTheme.textPrimary,
+    lineHeight: 24,
+  },
   badgeContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -777,13 +849,30 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.primary,
-        shadowOffset: { width: 2, height: 2 },
+        shadowColor: 'rgba(99, 102, 241, 0.4)',
+        shadowOffset: { width: 1, height: 1 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
       },
       android: {
         elevation: 4,
+      },
+    }),
+  },
+  languageBadge: {
+    backgroundColor: clayTheme.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(139, 92, 246, 0.4)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
       },
     }),
   },
@@ -798,8 +887,8 @@ const styles = StyleSheet.create({
     padding: 20,
     ...Platform.select({
       ios: {
-        shadowColor: clayTheme.shadowDark,
-        shadowOffset: { width: 6, height: 6 },
+        shadowColor: 'rgba(0,0,0,0.08)',
+        shadowOffset: { width: 3, height: 3 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
       },
@@ -839,8 +928,8 @@ const styles = StyleSheet.create({
     borderColor: neumorphTheme.error + '30',
     ...Platform.select({
       ios: {
-        shadowColor: neumorphTheme.error,
-        shadowOffset: { width: 3, height: 3 },
+        shadowColor: 'rgba(255, 107, 107, 0.4)',
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.15,
         shadowRadius: 8,
       },
@@ -859,8 +948,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
     ...Platform.select({
       ios: {
-        shadowColor: neumorphTheme.shadowDark,
-        shadowOffset: { width: -2, height: -2 },
+        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowOffset: { width: -1, height: -1 },
         shadowOpacity: 0.15,
         shadowRadius: 4,
       },

@@ -28,6 +28,7 @@ import Animated, {
 import { checkAuthStatus } from '@/utils/auth';
 
 import { Image } from 'react-native';
+//@ts-ignore
 import logo from '../assets/logo.png'; // adjust path based on your folder structure
 
 const { width, height } = Dimensions.get('window');
@@ -122,40 +123,24 @@ export default function Index() {
   }, [authState.authenticated]);
 
   useEffect(() => {
-    const handleAuthCheck = async () => {
-      try {
-        const isAuthenticated = await checkAuthStatus();
-        console.log(isAuthenticated);
-        // Navigate after animation delay
-        const timer = setTimeout(() => {
-          backgroundOpacity.value = withTiming(
-            0,
-            { duration: 600, easing: Easing.in(Easing.cubic) },
-            () => {
-              runOnJS(() => {
-                if (isAuthenticated) {
-                  router.replace("/(tabs)")
-                  // router.replace('/(auth)/login');
-                } else {
-                  router.replace('/(auth)/login');
-                }
-              })();
-            }
+    if (authState.authenticated == false) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      backgroundOpacity.value = withTiming(
+        0,
+        { duration: 600, easing: Easing.in(Easing.cubic) },
+        () => {
+          runOnJS(router.replace)(
+            authState.authenticated ? '/(tabs)' : '/(auth)/login'
           );
-        }, 3500);
+        }
+      );
+    }, 2000); // Animation delay
 
-        return () => clearTimeout(timer);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        // Default to login on error
-        setTimeout(() => {
-          router.replace('/(auth)/login');
-        }, 2500);
-      }
-    };
-
-    handleAuthCheck();
-  }, []);
+    return () => clearTimeout(timer);
+  }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -195,7 +180,7 @@ export default function Index() {
   return (
     <Animated.View style={[styles.container, backgroundAnimatedStyle]}>
       <LinearGradient
-        colors={['#667eea', '#764ba2', '#f093fb']}
+        colors={['#4F46E5', '#87CEEB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
@@ -258,14 +243,14 @@ export default function Index() {
 
           {/* Text content */}
           <View style={styles.textContainer}>
-            <Animated.View style={titleAnimatedStyle}>
+            <Animated.View style={[titleAnimatedStyle, styles.textContainer]}>
               <Text style={styles.title}>TRiVO</Text>
               <View style={styles.titleUnderline} />
             </Animated.View>
 
             <Animated.View style={subtitleAnimatedStyle}>
               <Text style={styles.subtitle}>
-                Discover amazing cultures and connect with events around the
+                Discover amazing people and connect with events around the
                 world
               </Text>
               {/* <View style={styles.dots}>
@@ -342,7 +327,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
     top: -40,
   },
   logo: {
@@ -350,10 +335,10 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 12,
+    // shadowOffset: { width: 0, height: 12 },
+    // shadowOpacity: 0.4,
+    // shadowRadius: 24,
+    // elevation: 12,
   },
   logoGradient: {
     width: '100%',
@@ -366,14 +351,15 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 24,
-    backgroundColor: 'rgba(99, 102, 241, 0.01)',
+    // backgroundColor: 'rgba(99, 102, 241, 0.01)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.15)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(99, 102, 241, 0.15)',
   },
   textContainer: {
     alignItems: 'center',
+    justifyContent:'center',
     width: '100%',
   },
   title: {

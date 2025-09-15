@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { jwtDecode } from "jwt-decode"
 import { Platform } from "react-native"
 interface DecodedToken {
   exp: number
@@ -33,34 +34,31 @@ export const isTokenExpired = (token: string): boolean => {
   return decoded.exp < currentTime
 }
 
-export const checkAuthStatus = async (): Promise<boolean> => {
+export const checkAuthStatus = async () => {
   try {
-    let token: string | null
-
-    if (Platform.OS === "web") {
-      token = localStorage.getItem("token")
-    } else {
-      token = await AsyncStorage.getItem("token")
-    }
-
-    console.log("Token:", token)
-
+    const token = await AsyncStorage.getItem('token');
     if (!token) {
-      return false
+      return false;
     }
 
-    if (isTokenExpired(token)) {
-      if (Platform.OS === "web") {
-        localStorage.removeItem("token")
-      } else {
-        await AsyncStorage.removeItem("token")
+    try {
+      const decodedToken: { exp: number } = jwtDecode(token);
+      const currentTime = Date.now() / 1000; // to get in seconds
+
+      if (decodedToken.exp < currentTime) {
+        // Token is expired
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('userId');
+        return false;
       }
-      return false
+      return true; // Token is valid
+    } catch (e) {
+      console.error('Invalid token:', e);
+      return false;
     }
-
-    return true
+    
   } catch (error) {
-    console.error("Error checking auth status:", error)
-    return false
+    console.error('Error checking auth status:', error);
+    return false;
   }
 }

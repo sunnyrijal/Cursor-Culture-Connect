@@ -18,6 +18,8 @@ export const theme = {
   // Background Colors
   background: "#F8F9FA",
   white: "#FFFFFF",
+  black: "#000000",
+
 
   // Gray Scale
   gray50: "#F9FAFB",

@@ -212,6 +212,9 @@ export default function FriendRequestsScreen() {
             {currentRequests.map((request: any) => {
               const user =
                 activeTab === 'received' ? request.sender : request.receiver;
+
+                const name = user.name || `${user.firstName} ${user.lastName}`;
+
               return (
                 <View key={request.id} style={styles.requestCard}>
                   <Image
@@ -224,7 +227,7 @@ export default function FriendRequestsScreen() {
                     defaultSource={require('../../assets/user.png')}
                   />
                   <View style={styles.requestInfo}>
-                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userName}>{name}</Text>
                     <Text style={styles.userEmail}>{user.email}</Text>
                     {user.city && (
                       <Text style={styles.userLocation}>{user.city}</Text>
@@ -428,7 +431,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '700',
-    color: theme.textPrimary,
+    color: 'black',
     marginBottom: 2,
   },
 

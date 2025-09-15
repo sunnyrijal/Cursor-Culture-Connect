@@ -122,6 +122,7 @@ export const apiClient = {
           state: signupData.state,
           languagesSpoken: signupData.languagesSpoken,
           interests: signupData.interests,
+          bio: signupData.bio,
           termsAccepted: signupData.termsAccepted,
           privacyAccepted: signupData.privacyAccepted,
           marketingOptIn: signupData.marketingOptIn,

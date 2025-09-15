@@ -110,7 +110,7 @@ interface QuickEvent {
   name: string;
   description: string;
   max: string;
-  location:string;
+  location: string;
   time: string;
   user: {
     id: string;
@@ -688,14 +688,14 @@ export default function Events() {
                   />
                   <View style={styles.imageOverlay} />
 
-                  <View style={styles.eventActions}>
+                  {/* <View style={styles.eventActions}>
                     <ShareButton
                     //@ts-ignore
                       eventId={event.id}
                       eventName={event.name}
                       style={styles.shareButton}
                     />
-                  </View>
+                  </View> */}
                 </View>
 
                 <View style={styles.eventContent}>

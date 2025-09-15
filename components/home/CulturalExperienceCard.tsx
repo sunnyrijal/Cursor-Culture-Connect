@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { theme, spacing, typography, neomorphColors } from '../theme'; 
-import { Star, MapPin, Clock, Phone } from 'lucide-react-native';
+import { MapPin, Clock } from 'lucide-react-native';
 import { useMutation } from '@tanstack/react-query';
 import { recordAdClick, recordAdImpression } from '@/contexts/ad.api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,58 +59,59 @@ const CulturalExperienceCard = ({
 
   return (
     <TouchableOpacity
-      style={[styles.card, { marginLeft: index === 0 ? 0 : spacing.md }]}
+      style={styles.card}
       onPress={handlePress}
       activeOpacity={0.9}
     >
-      {/* Image */}
+      {/* Image on left */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: content.image }} style={styles.image} />
-        <View style={styles.overlay} />
-
-        {/* Labels */}
         {content.type && (
           <View style={styles.sponsoredLabel}>
             <Text style={styles.sponsoredLabelText}>Sponsored</Text>
           </View>
         )}
-        {content.category && (
-          <View style={[styles.heritageBadge, { backgroundColor: theme.primary }]}>
-            <Text style={styles.heritageBadgeText}>{content.category}</Text>
-          </View>
-        )}
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Content on right */}
+      <View style={styles.contentContainer}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={2}>{content.title}</Text>
-          <View style={styles.rating}>
-            <Star size={12} color={theme.warning} fill={theme.warning} />
-            <Text style={styles.ratingText}>{content.metrics?.views || 'New'}</Text>
+          <Text style={styles.title} numberOfLines={1}>{content.title}</Text>
+          {content.category && (
+            <View style={[styles.categoryBadge, { backgroundColor: theme.primary }]}>
+              <Text style={styles.categoryBadgeText}>{content.category}</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.description} numberOfLines={2}>{content.description}</Text>
+
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <MapPin size={12} color={theme.textSecondary} />
+            <Text style={styles.metaText} numberOfLines={1}>{content.location}</Text>
           </View>
         </View>
 
-        <Text style={styles.subtitle} numberOfLines={2}>{content.description}</Text>
-
-        <View style={styles.meta}>
-          <View style={styles.metaItem}>
-            <MapPin size={11} color={theme.textSecondary} />
-            <Text style={styles.metaText}>{content.location}</Text>
+        {content.contactInfo && (
+          <View style={styles.metaRow}>
+            <Clock size={12} color={theme.textSecondary} />
+            <Text style={styles.metaText}>{content.contactInfo}</Text>
           </View>
-          {content.contactInfo && (
-            <View style={styles.metaItem}>
-              <Phone size={11} color={theme.textSecondary} />
-              <Text style={styles.metaText}>{content.contactInfo}</Text>
-            </View>
-          )}
-      </View>
+        )}
 
-      {content.offer ? (
-          <View style={styles.offer}>
-            <Text style={styles.offerText}>{content.offer}</Text>
+        {content.metrics && (
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsText}>
+              {content.metrics.views} views
+            </Text>
+            {content.offer && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{content.offer}</Text>
+              </View>
+            )}
           </View>
-        ) : null}
+        )}
       </View>
     </TouchableOpacity>
   )
@@ -120,80 +121,64 @@ export default CulturalExperienceCard
 
 const styles = StyleSheet.create({
   card: {
-    width: 200,
+    flexDirection: 'row',
     backgroundColor: neomorphColors.background,
-    borderRadius: 14,
+    borderRadius: 12,
+    marginBottom: 12,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 2, height: 3 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 3,
+        elevation: 2,
       },
     }),
     borderWidth: 1,
     borderColor: neomorphColors.lightShadow,
   },
   imageContainer: {
+    width: 80,
+    height: 80,
     position: 'relative',
-    width: '100%',
-    height: 120,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
+    margin: 8,
   },
   image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
   sponsoredLabel: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 4,
+    right: 4,
     backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   sponsoredLabelText: {
     color: theme.white,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  heritageBadge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  heritageBadgeText: {
-    color: theme.white,
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
-  content: {
-    padding: 12,
+  contentContainer: {
+    flex: 1,
+    padding: 8,
+    paddingLeft: 0,
+    justifyContent: 'space-between',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   title: {
     flex: 1,
@@ -201,76 +186,62 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.textPrimary,
     fontFamily: typography.fontFamily.bold,
-    marginRight: 5,
+    marginRight: 8,
   },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: neomorphColors.background,
-    borderRadius: 10,
-    paddingHorizontal: 5,
+  categoryBadge: {
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    ...Platform.select({
-      ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: -0.5, height: -0.5 },
-        shadowOpacity: 0.04,
-        shadowRadius: 1,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
+    borderRadius: 8,
   },
-  ratingText: {
-    fontSize: 11,
+  categoryBadgeText: {
+    color: theme.white,
+    fontSize: 9,
     fontWeight: '600',
-    color: theme.textPrimary,
+    textTransform: 'uppercase',
   },
-  subtitle: {
-    fontSize: 12,
+  description: {
+    fontSize: 11,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
-    marginBottom: 8,
+    marginBottom: 6,
+    lineHeight: 16,
   },
-  meta: {
-    marginBottom: 10,
-    gap: 4,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    flex: 1,
   },
   metaText: {
-    fontSize: 11,
+    fontSize: 10,
     color: theme.textSecondary,
+    marginLeft: 4,
+    flex: 1,
   },
-  offer: {
-    backgroundColor: theme.primary + '15',
-    borderRadius: 8,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    alignSelf: 'flex-start',
-  },
-  offerText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.primary,
-  },
-  row: {
+  statsContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
   },
-  label: {
-    fontSize: 11,
+  statsText: {
+    fontSize: 10,
     color: theme.textSecondary,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  value: {
-    fontSize: 11,
-    color: theme.textPrimary,
+  discountBadge: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  discountText: {
+    fontSize: 9,
+    color: '#1976D2',
+    fontWeight: '600',
   },
 });

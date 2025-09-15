@@ -58,7 +58,7 @@ export function FloatingLogoutButton() {
         accessibilityLabel="Logout"
         accessibilityRole="button"
       >
-        <LogOut size={22} color="#4F8EF7" />
+        <LogOut size={22} color="#EF4444" />
       </TouchableOpacity>
     </View>
   );
@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   logoutButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#4F8EF7',
+    borderColor: '#EF4444',
   }
 }); 
