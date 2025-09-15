@@ -44,6 +44,7 @@ export function Button({
           styles.text,
           styles[`${variant}Text`],
           styles[`${size}Text`],
+          
           disabled && styles.disabledText,
           textStyle,
         ]}>
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     color: theme.white,
   },
   secondaryText: {
-    color: theme.white,
+    color: theme.black,
   },
   outlineText: {
     color: theme.primary,

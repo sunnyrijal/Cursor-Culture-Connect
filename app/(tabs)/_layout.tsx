@@ -81,7 +81,7 @@ export default function TabLayout() {
                 <Search color={focused ? '#fff' : '#64748B'} size={22} strokeWidth={2} />
               </View>
               <Text style={[styles.tabLabel, { color: focused ? '#fff' : '#64748B' }]}>
-                Discover
+                People
               </Text>
             </View>
           ),

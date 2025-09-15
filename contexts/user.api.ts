@@ -55,6 +55,18 @@ export const getUsers = async () => {
     throw error;
   }
 };
+
+
+  export const getCounts = async () => {
+  try {
+    const response = await api.get('/user/count');
+    return response.data
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error;
+  }
+};
+
 // Update user profile
 export const updateProfile = async (profileData: UpdateProfileData) => {
   try {

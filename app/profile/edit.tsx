@@ -1,7 +1,20 @@
 "use client"
 
-import React, { useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from "react-native"
+import React, { useState, useEffect, useCallback } from "react"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Dimensions,
+  Platform,
+  KeyboardAvoidingView,
+  Alert,
+  Image,
+} from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
@@ -13,64 +26,90 @@ import {
   User,
   GraduationCap,
   Globe2,
-  Lock,
-  Users,
+  MapPin,
+  Phone,
+  Calendar,
+  Plus,
+  X,
   CheckCircle,
   AlertCircle,
-  MapPin,
+  Sparkles,
 } from "lucide-react-native"
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated"
+import * as ImagePicker from "expo-image-picker"
+
 import type { UserProfile } from "@/types/user"
 import { getMyData, updateProfile } from "@/contexts/user.api"
-import Animated from "react-native-reanimated"
-import UniversityDropdown from "@/components/UniversityDropdown"
 import { getUniversities } from "@/contexts/university.api"
+import { uploadFile } from "@/contexts/file.api"
+import UniversityDropdown from "@/components/UniversityDropdown"
 
-const privacyOptions = [
-  {
-    label: "Public",
-    value: "public",
-    icon: Globe2,
-    description: "Visible to everyone",
-  },
-  {
-    label: "Group-Only",
-    value: "group",
-    icon: Users,
-    description: "Only group members",
-  },
-  {
-    label: "Connections Only",
-    value: "connections",
-    icon: Lock,
-    description: "Only your connections",
-  },
+const { width, height } = Dimensions.get("window")
+
+const INTERESTS_OPTIONS = [
+  "Technology",
+  "Sports",
+  "Music",
+  "Art",
+  "Reading",
+  "Gaming",
+  "Travel",
+  "Cooking",
+  "Photography",
+  "Fitness",
+  "Politics",
+  "Dance",
+  "Movies",
+  "Fashion",
+  "Business",
+  "Science",
+]
+
+const LANGUAGES_OPTIONS = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Italian",
+  "Portuguese",
+  "Chinese",
+  "Japanese",
+  "Korean",
+  "Arabic",
+  "Hindi",
+  "Russian",
+  "Dutch",
+  "Swedish",
+  "Norwegian",
 ]
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({
-    name: "",
+    firstName: "",
+    lastName: "",
     bio: "",
     city: "",
     state: "",
-    phone: "",
-    classYear: "", // Added classYear to profile state
-    // linkedIn: "",
-    // major: "",
-    // year: "",
-    // heritage: [],
-    // languages: [],
-    // privacy: "public",
+    classYear: "",
+    countryOfOrigin: "",
+    dateOfBirth: "",
   })
-  const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  const [focusedInput, setFocusedInput] = useState<string>("")
+  const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({})
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [focusedInput, setFocusedInput] = useState<string>("")
-  const [fieldValidation, setFieldValidation] = useState<{
-    [key: string]: boolean
-  }>({})
   const [loading, setLoading] = useState<boolean>(false)
-
   const [university, setUniversity] = useState<string>("")
+  const [interests, setInterests] = useState<string[]>([])
+  const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([])
+  const [customInterest, setCustomInterest] = useState<string>("")
+  const [newLanguage, setNewLanguage] = useState<string>("")
+  const [profilePicture, setProfilePicture] = useState<string | null>(null)
+
+  // Animation values
+  const formOpacity = useSharedValue(0)
+  const formTranslateY = useSharedValue(30)
 
   const queryClient = useQueryClient()
 
@@ -79,13 +118,36 @@ export default function EditProfile() {
     queryFn: getUniversities,
   })
 
-  console.log(universities)
+  useEffect(() => {
+    formOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) })
+    formTranslateY.value = withSpring(0, { damping: 20, stiffness: 100 })
+  }, [])
+
+  const formAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: formOpacity.value,
+    transform: [{ translateY: formTranslateY.value }],
+  }))
 
   const validateField = (fieldName: string, value: string) => {
-    setFieldValidation((prev) => ({
-      ...prev,
-      [fieldName]: value.trim().length > 0,
-    }))
+    let isValid = false
+
+    switch (fieldName) {
+      case "firstName":
+      case "lastName":
+        isValid = value.trim().length >= 2
+        break
+      case "dateOfBirth":
+        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value)
+        break
+      case "phone":
+        isValid = value.length >= 10
+        break
+      default:
+        isValid = value.trim().length > 0
+    }
+
+    setFieldValidation((prev) => ({ ...prev, [fieldName]: isValid }))
+    return isValid
   }
 
   const { isLoading } = useQuery({
@@ -98,31 +160,33 @@ export default function EditProfile() {
       if (response.success && response.user) {
         const userData = response.user
         setProfile({
-          name: userData.name || "",
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
           bio: userData.bio || "",
           city: userData.city || "",
           state: userData.state || "",
-          phone: userData.phone || "",
-          classYear: userData.classYear || "", // Added classYear to profile initialization
-          // linkedIn: userData.linkedin || "",
-          // major: userData.major || "",
-          // year: userData.year || "",
-          // heritage: userData.heritage || [],
-          // languages: userData.languages || [],
-          // privacy: userData.privacy || "public",
+          classYear: userData.classYear || "",
+          countryOfOrigin: userData.countryOfOrigin || "",
+          dateOfBirth: userData.dateOfBirth || "",
         })
-        console.log(userData)
-        // Set university if available
+
         if (userData.university) {
           setUniversity(userData.university.name || "")
         }
+        if (userData.interests) {
+          setInterests(userData.interests)
+        }
+        if (userData.languagesSpoken) {
+          setLanguagesSpoken(userData.languagesSpoken)
+        }
+        if (userData.profilePicture) {
+          setProfilePicture(userData.profilePicture)
+        }
 
-        console.log("[v0] Profile data populated:", userData)
         return userData
       }
       throw new Error("Failed to load profile data")
     },
-    //@ts-ignore
     onError: (error: any) => {
       console.error("[v0] Error fetching user data:", error)
       setError("Failed to load profile data")
@@ -130,17 +194,8 @@ export default function EditProfile() {
   })
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (profileData: {
-      name: string
-      bio?: string
-      city?: string
-      state?: string
-      phone?: string
-      university?: string
-      classYear?: string // Added classYear to mutation type
-    }) => {
+    mutationFn: async (profileData: any) => {
       const res = await updateProfile(profileData)
-      console.log(res)
       if (!res.success) {
         throw new Error("Failed to update profile")
       }
@@ -161,9 +216,23 @@ export default function EditProfile() {
     },
   })
 
+  const uploadFileMutation = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (data) => {
+      console.log("File uploaded successfully:", data)
+      // Assuming you want to add to the list of pictures.
+      // If you want to replace, it would be `setProfilePicture(data.url)`
+      setProfilePicture(data.url)
+    },
+    onError: (error) => {
+      console.error("Error uploading file:", error)
+      Alert.alert("Upload Error", "Failed to upload image. Please try again.")
+    },
+  })
+
   const handleSave = async () => {
-    if (!profile.name?.trim()) {
-      setError("Name is required")
+    if (!profile.firstName?.trim() || !profile.lastName?.trim()) {
+      setError("First and last name are required")
       setSuccess(null)
       return
     }
@@ -172,94 +241,259 @@ export default function EditProfile() {
     setSuccess(null)
 
     const updateData: any = {
-      name: profile.name,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      name: `${profile.firstName} ${profile.lastName}`,
     }
 
     if (profile.bio) updateData.bio = profile.bio
     if (profile.city) updateData.city = profile.city
     if (profile.state) updateData.state = profile.state
-    if (profile.phone) updateData.phone = profile.phone
+    if (profile.classYear) updateData.classYear = profile.classYear
+    if (profile.countryOfOrigin) updateData.countryOfOrigin = profile.countryOfOrigin
+    if (profile.dateOfBirth) updateData.dateOfBirth = profile.dateOfBirth
     if (university) updateData.university = university
-    if (profile.classYear) updateData.classYear = profile.classYear // Added classYear to save data
+    if (interests.length > 0) updateData.interests = interests
+    if (languagesSpoken.length > 0) updateData.languagesSpoken = languagesSpoken
+    if (profilePicture) updateData.profilePicture = profilePicture
 
     updateProfileMutation.mutate(updateData)
   }
 
   const updateProfileValue = (key: keyof UserProfile, value: any) => {
     setProfile((prev) => ({ ...prev, [key]: value }))
+    validateField(key, value)
   }
 
-  const renderInputField = (
-    key: string,
-    label: string,
-    value: string | undefined,
-    placeholder: string,
-    multiline = false,
-    required = false,
-  ) => (
-    <View style={styles.field}>
-      <Text style={styles.label}>
-        {label} {required && <Text style={styles.required}>*</Text>}
-      </Text>
-      <View style={styles.neomorphicInputContainer}>
-        <BlurView intensity={15} tint="light" style={styles.inputBlur}>
-          <LinearGradient
-            colors={
-              focusedField === key
-                ? ["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.9)"]
-                : ["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.9)"]
-            }
-            style={[styles.inputGradient, multiline && styles.textAreaGradient]}
+  const handleImagePicker = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please grant camera roll permissions to upload images")
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      uploadFileMutation.mutate({
+        uri: asset.uri,
+        // The following might not be available on all platforms, provide fallbacks
+        type: asset.type || 'image',
+        mimeType: asset.mimeType || 'image/jpeg',
+        fileName: asset.fileName || "profile_image.jpg",
+      })
+    }
+  }
+
+  const toggleInterest = (interest: string) => {
+    setInterests((prev) => (prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]))
+  }
+
+  const addCustomInterest = () => {
+    if (customInterest.trim() && !interests.includes(customInterest.trim())) {
+      setInterests((prev) => [...prev, customInterest.trim()])
+      setCustomInterest("")
+    }
+  }
+
+  const addLanguage = () => {
+    if (newLanguage.trim() && !languagesSpoken.includes(newLanguage.trim())) {
+      setLanguagesSpoken((prev) => [...prev, newLanguage.trim()])
+      setNewLanguage("")
+    }
+  }
+
+  const toggleLanguage = (language: string) => {
+    setLanguagesSpoken((prev) => (prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]))
+  }
+
+  const renderAnimatedInput = useCallback(
+    (
+      icon: any,
+      label: string,
+      value: string,
+      onChangeText: (text: string) => void,
+      placeholder: string,
+      inputKey: string,
+      options: any = {},
+      required = false,
+    ) => {
+      const isValid = fieldValidation[inputKey]
+      const isFocused = focusedInput === inputKey
+
+      return (
+        <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+          <Text style={styles.inputLabel}>
+            {label} {required && <Text style={styles.required}>*</Text>}
+          </Text>
+          <View
+            style={[
+              styles.inputWrapper,
+              isFocused && styles.inputWrapperFocused,
+              isValid === true && styles.inputWrapperValid,
+              isValid === false && value && styles.inputWrapperInvalid,
+            ]}
           >
+            <View style={styles.inputIcon}>
+              {React.createElement(icon, {
+                size: 20,
+                color: isFocused
+                  ? "#6366F1"
+                  : isValid === true
+                    ? "#10B981"
+                    : isValid === false && value
+                      ? "#EF4444"
+                      : "#9CA3AF",
+              })}
+            </View>
+
             <TextInput
-              style={[styles.neomorphicInput, multiline && styles.textAreaInput]}
-              value={value}
+              style={[styles.input, options.multiline && styles.textAreaInput]}
               placeholder={placeholder}
-              placeholderTextColor="#94A3B8"
-              onChangeText={(text) => updateProfileValue(key as keyof UserProfile, text)}
-              onFocus={() => setFocusedField(key)}
-              onBlur={() => setFocusedField(null)}
-              multiline={multiline}
-              textAlignVertical={multiline ? "top" : "center"}
-              keyboardType={key === "phone" ? "phone-pad" : "default"}
+              value={value}
+              onChangeText={onChangeText}
+              onFocus={() => setFocusedInput(inputKey)}
+              onBlur={() => {
+                setFocusedInput("")
+                if (value) validateField(inputKey, value)
+              }}
+              editable={!loading}
+              placeholderTextColor="#9CA3AF"
+              {...options}
             />
-          </LinearGradient>
-        </BlurView>
-      </View>
-    </View>
+
+            {isValid === true && value && (
+              <View style={styles.validIcon}>
+                <CheckCircle size={16} color="#10B981" />
+              </View>
+            )}
+
+            {isValid === false && value && (
+              <View style={styles.validIcon}>
+                <AlertCircle size={16} color="#EF4444" />
+              </View>
+            )}
+          </View>
+
+          {isValid === false && value && (
+            <Text style={styles.validationText}>
+              {inputKey === "firstName" && "First name must be at least 2 characters"}
+              {inputKey === "lastName" && "Last name must be at least 2 characters"}
+              {inputKey === "dateOfBirth" && "Please enter date in YYYY-MM-DD format"}
+              {inputKey === "phone" && "Please enter a valid phone number"}
+            </Text>
+          )}
+        </Animated.View>
+      )
+    },
+    [fieldValidation, focusedInput, loading, formOpacity],
   )
 
-  const renderSection = (title: string, icon: any, children: React.ReactNode) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionIconContainer}>
-          <LinearGradient
-            colors={["rgba(99, 102, 241, 0.15)", "rgba(99, 102, 241, 0.1)"]}
-            style={styles.sectionIconGradient}
+  const renderProfilePictureSection = () => (
+    <Animated.View style={[styles.section, { opacity: formOpacity }]}>
+      <Text style={styles.sectionTitle}>Profile Picture</Text>
+      <Text style={styles.sectionSubtitle}>Upload a picture to represent yourself.</Text>
+
+      <View style={styles.imageGrid}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={
+              profilePicture ? { uri: profilePicture } : require("../../assets/user.png")
+            }
+            style={styles.profileImage}
+          />
+          <TouchableOpacity
+            style={styles.editImageButton}
+            onPress={handleImagePicker}
+            disabled={uploadFileMutation.isPending}
           >
-            {React.createElement(icon, { size: 20, color: "#6366F1" })}
-          </LinearGradient>
+            {uploadFileMutation.isPending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Plus size={16} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
         </View>
-        <Text style={styles.sectionTitle}>{title}</Text>
       </View>
-      <View style={styles.neomorphicCard}>
-        <BlurView intensity={20} tint="light" style={styles.cardBlur}>
-          <LinearGradient
-            colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.8)"]}
-            style={styles.cardGradient}
+    </Animated.View>
+  )
+
+  const renderInterestsSection = () => (
+    <Animated.View style={[styles.section, { opacity: formOpacity }]}>
+      <Text style={styles.sectionTitle}>Interests</Text>
+      <Text style={styles.sectionSubtitle}>Select your interests to connect with like-minded people</Text>
+
+      <View style={styles.tagsContainer}>
+        {INTERESTS_OPTIONS.map((interest) => (
+          <TouchableOpacity
+            key={interest}
+            style={[styles.tag, interests.includes(interest) && styles.tagSelected]}
+            onPress={() => toggleInterest(interest)}
           >
-            {children}
-          </LinearGradient>
-        </BlurView>
+            <Text style={[styles.tagText, interests.includes(interest) && styles.tagTextSelected]}>{interest}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-    </View>
+
+      <View style={styles.customInterestContainer}>
+        <TextInput
+          style={styles.customInterestInput}
+          placeholder="Add another interest..."
+          value={customInterest}
+          onChangeText={setCustomInterest}
+          onSubmitEditing={addCustomInterest}
+          placeholderTextColor="#9CA3AF"
+        />
+        <TouchableOpacity style={styles.addInterestButton} onPress={addCustomInterest}>
+          <Text style={styles.addInterestButtonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  )
+
+  const renderLanguagesSection = () => (
+    <Animated.View style={[styles.section, { opacity: formOpacity }]}>
+      <Text style={styles.sectionTitle}>Languages</Text>
+      <Text style={styles.sectionSubtitle}>What languages do you speak?</Text>
+
+      <View style={styles.tagsContainer}>
+        {languagesSpoken.map((language) => (
+          <TouchableOpacity
+            key={language}
+            style={[styles.tag, styles.tagSelected]} // Always selected style for existing
+            onPress={() => toggleLanguage(language)}
+          >
+            <Text style={[styles.tagText, styles.tagTextSelected]}>{language}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.customInterestContainer}>
+        <TextInput
+          style={styles.customInterestInput}
+          placeholder="Add a language..."
+          value={newLanguage}
+          onChangeText={setNewLanguage}
+          onSubmitEditing={addLanguage}
+          placeholderTextColor="#9CA3AF"
+        />
+        <TouchableOpacity style={styles.addInterestButton} onPress={addLanguage}><Text style={styles.addInterestButtonText}>Add</Text></TouchableOpacity>
+      </View>
+    </Animated.View>
   )
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#F8FAFC", "#E2E8F0", "#F1F5F9"]} style={styles.gradientBackground} />
+      <LinearGradient colors={["#F8FAFC", "#E2E8F0", "#F1F5F9"]} style={styles.backgroundGradient} />
 
       <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
         <View style={styles.headerContainer}>
           <BlurView intensity={30} tint="light" style={styles.headerBlur}>
             <LinearGradient
@@ -267,19 +501,21 @@ export default function EditProfile() {
               style={styles.headerGradient}
             >
               <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.neomorphicButton}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                   <LinearGradient
                     colors={["rgba(255, 255, 255, 0.9)", "rgba(241, 245, 249, 0.8)"]}
-                    style={styles.buttonGradient}
+                    style={styles.headerButtonGradient}
                   >
                     <ArrowLeft size={20} color="#475569" />
                   </LinearGradient>
                 </TouchableOpacity>
-                <Text style={styles.title}>Edit Profile</Text>
-                <TouchableOpacity onPress={handleSave} style={styles.neomorphicSaveButton}>
+
+                <Text style={styles.headerTitle}>Edit Profile</Text>
+
+                <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
                   <LinearGradient
                     colors={["rgba(99, 102, 241, 0.9)", "rgba(99, 102, 241, 0.8)"]}
-                    style={styles.saveButtonGradient}
+                    style={styles.headerButtonGradient}
                   >
                     <Save size={18} color="#FFFFFF" />
                   </LinearGradient>
@@ -289,233 +525,273 @@ export default function EditProfile() {
           </BlurView>
         </View>
 
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {success ? (
-            <Animated.View style={styles.successContainer}>
-              <LinearGradient
-                colors={["rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.05)"]}
-                style={styles.successGradient}
-              >
-                <CheckCircle size={20} color="#22C55E" />
-                <Text style={styles.successText}>{success}</Text>
-              </LinearGradient>
+        <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <ScrollView
+            style={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Success/Error Messages */}
+            {success && (
+              <Animated.View style={styles.successContainer}>
+                <LinearGradient
+                  colors={["rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.05)"]}
+                  style={styles.messageGradient}
+                >
+                  <CheckCircle size={20} color="#22C55E" />
+                  <Text style={styles.successText}>{success}</Text>
+                </LinearGradient>
+              </Animated.View>
+            )}
+
+            {error && (
+              <Animated.View style={styles.errorContainer}>
+                <LinearGradient
+                  colors={["rgba(239, 68, 68, 0.1)", "rgba(239, 68, 68, 0.05)"]}
+                  style={styles.messageGradient}
+                >
+                  <AlertCircle size={20} color="#EF4444" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </LinearGradient>
+              </Animated.View>
+            )}
+
+            {/* Profile Pictures */}
+            {renderProfilePictureSection()}
+
+            {/* Basic Information */}
+            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
+              <BlurView intensity={20} style={styles.formBlur}>
+                <LinearGradient
+                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
+                  style={styles.formGradient}
+                >
+                  <View style={styles.sectionHeader}>
+                    <Sparkles size={20} color="#6366F1" />
+                    <Text style={styles.formSectionTitle}>Basic Information</Text>
+                  </View>
+
+                  {renderAnimatedInput(
+                    User,
+                    "First Name",
+                    profile.firstName || "",
+                    (text) => updateProfileValue("firstName", text),
+                    "Enter your first name",
+                    "firstName",
+                    { autoCapitalize: "words" },
+                    true,
+                  )}
+
+                  {renderAnimatedInput(
+                    User,
+                    "Last Name",
+                    profile.lastName || "",
+                    (text) => updateProfileValue("lastName", text),
+                    "Enter your last name",
+                    "lastName",
+                    { autoCapitalize: "words" },
+                    true,
+                  )}
+
+                  {renderAnimatedInput(
+                    Calendar,
+                    "Date of Birth",
+                    profile.dateOfBirth || "",
+                    (text) => updateProfileValue("dateOfBirth", text),
+                    "YYYY-MM-DD",
+                    "dateOfBirth",
+                    { maxLength: 10 },
+                  )}
+
+                  {renderAnimatedInput(
+                    User,
+                    "Bio",
+                    profile.bio || "",
+                    (text) => updateProfileValue("bio", text),
+                    "Tell others about yourself...",
+                    "bio",
+                    {
+                      multiline: true,
+                      numberOfLines: 4,
+                      textAlignVertical: "top",
+                    },
+                  )}
+                </LinearGradient>
+              </BlurView>
             </Animated.View>
-          ) : null}
 
-          {error ? (
-            <Animated.View style={styles.errorContainer}>
-              <LinearGradient
-                colors={["rgba(239, 68, 68, 0.1)", "rgba(239, 68, 68, 0.05)"]}
-                style={styles.errorGradient}
-              >
-                <AlertCircle size={20} color="#EF4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </LinearGradient>
+            {/* University Information */}
+            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
+              <BlurView intensity={20} style={styles.formBlur}>
+                <LinearGradient
+                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
+                  style={styles.formGradient}
+                >
+                  <View style={styles.sectionHeader}>
+                    <GraduationCap size={20} color="#6366F1" />
+                    <Text style={styles.formSectionTitle}>Academic Information</Text>
+                  </View>
+
+                  <Animated.View style={[{ opacity: formOpacity, zIndex: 100 }]}>
+                    <UniversityDropdown
+                      universities={universities?.data || []}
+                      value={university}
+                      onValueChange={setUniversity}
+                      label="University"
+                      placeholder="Search for your university..."
+                      isValid={fieldValidation["university"]}
+                      isFocused={focusedInput === "university"}
+                      onFocus={() => setFocusedInput("university")}
+                      onBlur={() => {
+                        setFocusedInput("")
+                        if (university) validateField("university", university)
+                      }}
+                      loading={loading}
+                    />
+                  </Animated.View>
+
+                  {renderAnimatedInput(
+                    Calendar,
+                    "Class Year",
+                    profile.classYear || "",
+                    (text) => updateProfileValue("classYear", text),
+                    "e.g., 2025",
+                    "classYear",
+                    { keyboardType: "numeric" },
+                  )}
+                </LinearGradient>
+              </BlurView>
             </Animated.View>
-          ) : null}
 
-          {renderSection(
-            "Basic Information",
-            User,
-            <>
-              {renderInputField("name", "Full Name", profile.name, "Enter your full name", false, true)}
-              {renderInputField("bio", "Bio", profile.bio, "Tell others about yourself...", true, false)}
+            {/* Contact Information */}
+            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
+              <BlurView intensity={20} style={styles.formBlur}>
+                <LinearGradient
+                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
+                  style={styles.formGradient}
+                >
+                  <View style={styles.sectionHeader}>
+                    <MapPin size={20} color="#6366F1" />
+                    <Text style={styles.formSectionTitle}>Location & Contact</Text>
+                  </View>
 
-              {/* {renderInputField("linkedIn", "LinkedIn Profile", profile.linkedIn, "https://linkedin.com/in/username")} */}
+                  <View style={styles.row}>
+                    <View style={styles.halfField}>
+                      {renderAnimatedInput(
+                        MapPin,
+                        "City",
+                        profile.city || "",
+                        (text) => updateProfileValue("city", text),
+                        "Enter your city",
+                        "city",
+                      )}
+                    </View>
+                    <View style={styles.halfField}>
+                      {renderAnimatedInput(
+                        MapPin,
+                        "State/Province",
+                        profile.state || "",
+                        (text) => updateProfileValue("state", text),
+                        "Enter your state",
+                        "state",
+                      )}
+                    </View>
+                  </View>
 
-              {/* <View style={styles.field}>
-                <Text style={styles.label}>Profile Privacy</Text>
-                <View style={styles.privacyContainer}>
-                  {privacyOptions.map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={styles.privacyOption}
-                      onPress={() => updateProfileValue("privacy", option.value)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.neomorphicPrivacyButton}>
-                        <BlurView intensity={10} tint="light" style={styles.privacyBlur}>
-                          <LinearGradient
-                            colors={
-                              profile.privacy === option.value
-                                ? ["rgba(99, 102, 241, 0.9)", "rgba(99, 102, 241, 0.8)"]
-                                : ["rgba(255, 255, 255, 0.8)", "rgba(248, 250, 252, 0.6)"]
-                            }
-                            style={styles.privacyGradient}
-                          >
-                            <View style={styles.privacyContent}>
-                              <View style={styles.privacyIconContainer}>
-                                <option.icon
-                                  size={16}
-                                  color={profile.privacy === option.value ? "#FFFFFF" : "#6366F1"}
-                                />
-                              </View>
-                              <View style={styles.privacyTextContainer}>
-                                <Text
-                                  style={[
-                                    styles.privacyLabel,
-                                    profile.privacy === option.value && styles.privacyLabelActive,
-                                  ]}
-                                >
-                                  {option.label}
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.privacyDescription,
-                                    profile.privacy === option.value && styles.privacyDescriptionActive,
-                                  ]}
-                                >
-                                  {option.description}
-                                </Text>
-                              </View>
-                              {profile.privacy === option.value && <CheckCircle size={16} color="#FFFFFF" />}
-                            </View>
-                          </LinearGradient>
-                        </BlurView>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View> */}
-            </>,
-          )}
+                  {renderAnimatedInput(
+                    Globe2,
+                    "Country of Origin",
+                    profile.countryOfOrigin || "",
+                    (text) => updateProfileValue("countryOfOrigin", text),
+                    "e.g., Nepal",
+                    "countryOfOrigin",
+                  )}
 
-          <Animated.View style={[{ zIndex: 10001 }]}>
-            <UniversityDropdown
-              universities={universities?.data}
-              value={university}
-              onValueChange={setUniversity}
-              label="University"
-              placeholder="Search or enter your university name"
-              isValid={fieldValidation["university"]}
-              isFocused={focusedInput === "university"}
-              onFocus={() => setFocusedInput("university")}
-              onBlur={() => {
-                setFocusedInput("")
-                if (university) validateField("university", university)
-              }}
-              loading={loading}
-            />
-          </Animated.View>
+                </LinearGradient>
+              </BlurView>
+            </Animated.View>
 
-          {renderSection(
-            "Contact Information",
-            MapPin,
-            <>
-              <View style={styles.row}>
-                <View style={styles.halfField}>
-                  {renderInputField("city", "City", profile.city, "Enter your city")}
-                </View>
-                <View style={styles.halfField}>
-                  {renderInputField("state", "State/Province", profile.state, "Enter your state")}
-                </View>
-              </View>
-              {renderInputField("phone", "Phone Number", profile.phone, "Enter your phone number")}
-            </>,
-          )}
+            {/* Interests */}
+            {renderInterestsSection()}
 
-          {renderSection(
-            "Academic Information",
-            GraduationCap,
-            <>
-              {renderInputField(
-                "classYear",
-                "Class Year",
-                profile.classYear,
-                "Enter your graduation year (e.g., 2025)",
-                false,
-                false,
-              )}
-            </>,
-          )}
+            {/* Languages */}
+            {renderLanguagesSection()}
 
-          {/* 
-          {renderSection(
-            "Cultural Identity",
-            Globe2,
-            <>
-              <View style={styles.selectorContainer}>
-                <SearchableSelector
-                  title="Heritage"
-                  placeholder="Search for your heritage..."
-                  selectedItems={profile.heritage || []}
-                  availableItems={heritageOptions}
-                  maxItems={5}
-                  onItemsChange={(items) => updateProfileValue("heritage", items)}
-                  variant="primary"
-                />
-              </View>
-              <View style={styles.selectorContainer}>
-                <SearchableSelector
-                  title="Languages"
-                  placeholder="Search for languages..."
-                  selectedItems={profile.languages || []}
-                  availableItems={languageOptions}
-                  maxItems={8}
-                  onItemsChange={(items) => updateProfileValue("languages", items)}
-                  variant="secondary"
-                />
-              </View>
-            </>,
-          )} */}
-        </ScrollView>
-
-        <View style={styles.fixedSaveSection}>
-          <BlurView intensity={25} tint="light" style={styles.fixedSaveBlur}>
-            <LinearGradient
-              colors={["rgba(248, 250, 252, 0.98)", "rgba(248, 250, 252, 0.95)"]}
-              style={styles.fixedSaveGradient}
-            >
-              <View style={styles.saveButtonsContainer}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.secondarySaveButton}>
-                  <BlurView intensity={15} tint="light" style={styles.saveButtonBlur}>
-                    <LinearGradient
-                      colors={["rgba(255, 255, 255, 0.9)", "rgba(248, 250, 252, 0.8)"]}
-                      style={styles.secondarySaveGradient}
-                    >
-                      <Text style={styles.secondarySaveText}>Cancel</Text>
-                    </LinearGradient>
-                  </BlurView>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleSave} style={styles.primarySaveButton}>
-                  <BlurView intensity={20} tint="light" style={styles.saveButtonBlur}>
-                    <LinearGradient
-                      colors={["rgba(99, 102, 241, 0.95)", "rgba(99, 102, 241, 0.85)"]}
-                      style={styles.primarySaveGradient}
-                    >
-                      <View style={styles.saveButtonContent}>
-                        <Save size={20} color="#FFFFFF" />
-                        <Text style={styles.primarySaveText}>
-                          {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
-                        </Text>
-                      </View>
-                    </LinearGradient>
-                  </BlurView>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </BlurView>
-        </View>
+            {/* Save Button */}
+            <Animated.View style={[styles.saveContainer, { opacity: formOpacity }]}>
+              <TouchableOpacity
+                onPress={handleSave}
+                style={styles.saveButton}
+                disabled={updateProfileMutation.isPending || uploadFileMutation.isPending}
+              >
+                <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.saveButtonGradient}>
+                  <View style={styles.saveButtonContent}>
+                    {updateProfileMutation.isPending ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Save size={20} color="#FFFFFF" />
+                    )}
+                    <Text style={styles.saveButtonText}>
+                      {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+
+  
+
+ customInterestContainer: {
+  marginTop:10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  customInterestInput: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#111827",
+    marginRight: 8,
+  },
+  addInterestButton: {
+    backgroundColor: "#F59E0B",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  addInterestButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  addButtonText: {
+    color: "#FFFFFF",
+  },
+
+  // profileImage: {
+  //   width: 120,
+  //   height: 120,
+  //   borderRadius: 60,
+  // },
+
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
-  city: {},
-  state: {},
-  phone: {},
-
-  gradientBackground: {
+  backgroundGradient: {
     position: "absolute",
     top: 0,
     left: 0,
@@ -556,7 +832,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  neomorphicButton: {
+  headerButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
@@ -573,15 +849,215 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  buttonGradient: {
+  headerButtonGradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  neomorphicSaveButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1E293B",
+    letterSpacing: -0.5,
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  successContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  errorContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  messageGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    gap: 8,
+  },
+  successText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#22C55E",
+    flex: 1,
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#EF4444",
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 16,
+  },
+  formContainer: {
+    marginBottom: 20,
+  },
+  formBlur: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  formGradient: {
+    padding: 24,
+    borderRadius: 20,
+    backgroundColor: "white",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 12,
+  },
+  formSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    letterSpacing: -0.2,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  required: {
+    color: "#EF4444",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    minHeight: 56,
+  },
+  inputWrapperFocused: {
+    borderColor: "#6366F1",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputWrapperValid: {
+    borderColor: "#10B981",
+  },
+  inputWrapperInvalid: {
+    borderColor: "#EF4444",
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#111827",
+    paddingVertical: 0,
+  },
+  textAreaInput: {
+    minHeight: 96,
+    textAlignVertical: "top",
+    paddingVertical: 14,
+  },
+  validIcon: {
+    marginLeft: 8,
+  },
+  validationText: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  halfField: {
+    flex: 1,
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  imageContainer: {
+    position: "relative",
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "white",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  editImageButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#6366F1",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  addImageButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     overflow: "hidden",
     ...Platform.select({
       ios: {
@@ -595,230 +1071,52 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  saveButtonGradient: {
+  addImageButtonGradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1E293B",
-    letterSpacing: -0.5,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
+  tagsContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
+    flexWrap: "wrap",
+    gap: 8,
   },
-  sectionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    marginRight: 12,
-    overflow: "hidden",
-  },
-  sectionIconGradient: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1E293B",
-    letterSpacing: -0.3,
-  },
-  neomorphicCard: {
+  tag: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
-    overflow: "hidden",
+    backgroundColor: "white",
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 8,
+        elevation: 2,
       },
     }),
   },
-  cardBlur: {
-    borderRadius: 20,
+  tagSelected: {
+    backgroundColor: "#6366F1",
+    borderColor: "#6366F1",
   },
-  cardGradient: {
-    padding: 20,
-    borderRadius: 20,
-    backgroundColor: "white",
-  },
-  field: {
-    marginBottom: 20,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  halfField: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 10,
-    letterSpacing: -0.2,
-  },
-  required: {
-    color: "#EF4444",
-  },
-  neomorphicInputContainer: {
-    borderRadius: 16,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#CBD5E1",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  inputBlur: {
-    borderRadius: 16,
-  },
-  inputGradient: {
-    borderRadius: 16,
-    padding: 2,
-  },
-  textAreaGradient: {
-    minHeight: 100,
-  },
-  neomorphicInput: {
-    fontSize: 16,
-    color: "#1E293B",
+  tagText: {
+    fontSize: 14,
     fontWeight: "500",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: "transparent",
-    minHeight: 48,
+    color: "#374151",
   },
-  textAreaInput: {
-    minHeight: 96,
-    textAlignVertical: "top",
-    paddingTop: 14,
-  },
-  privacyContainer: {
-    gap: 12,
-  },
-  privacyOption: {
-    marginBottom: 4,
-  },
-  neomorphicPrivacyButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "white",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#CBD5E1",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  privacyBlur: {
-    borderRadius: 16,
-  },
-  privacyGradient: {
-    padding: 16,
-    borderRadius: 16,
-  },
-  privacyContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  privacyIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  privacyTextContainer: {
-    flex: 1,
-  },
-  privacyLabel: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 2,
-  },
-  privacyLabelActive: {
+  tagTextSelected: {
     color: "#FFFFFF",
   },
-  privacyDescription: {
-    fontSize: 13,
-    color: "#64748B",
-    fontWeight: "500",
+  saveContainer: {
+    marginTop: 20,
   },
-  privacyDescriptionActive: {
-    color: "rgba(255, 255, 255, 0.8)",
-  },
-  selectorContainer: {
-    marginBottom: 16,
-  },
-  fixedSaveSection: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  fixedSaveBlur: {
-    flex: 1,
-  },
-  fixedSaveGradient: {
-    paddingTop: 16,
-    paddingBottom: Platform.OS === "ios" ? 20 : 16,
-    paddingHorizontal: 20,
-  },
-  saveButtonsContainer: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  primarySaveButton: {
-    flex: 2,
-    height: 56,
-    borderRadius: 18,
+  saveButton: {
+    borderRadius: 16,
     overflow: "hidden",
     ...Platform.select({
       ios: {
@@ -832,87 +1130,21 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  secondarySaveButton: {
-    flex: 1,
-    height: 56,
-    borderRadius: 16,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#CBD5E1",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  saveButtonBlur: {
-    flex: 1,
-    borderRadius: 18,
-  },
-  primarySaveGradient: {
-    flex: 1,
-    justifyContent: "center",
+  saveButtonGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     alignItems: "center",
-    borderRadius: 18,
-  },
-  secondarySaveGradient: {
-    flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 16,
   },
   saveButtonContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  primarySaveText: {
+  saveButtonText: {
     fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
     letterSpacing: -0.2,
-  },
-  secondarySaveText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#64748B",
-  },
-  successContainer: {
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  successGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    gap: 8,
-  },
-  successText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#22C55E",
-    flex: 1,
-  },
-  errorContainer: {
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  errorGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    gap: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#EF4444",
-    flex: 1,
   },
 })

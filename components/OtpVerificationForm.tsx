@@ -700,12 +700,12 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
+    gap: 4,
     marginBottom: 32,
   },
   otpInputContainer: {
-    width: 56,
-    height: 64,
+    width: 48,
+    height: 60,
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderWidth: 2,

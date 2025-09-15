@@ -116,6 +116,7 @@ quickActions:{
 },
 sectionTitle: {
   fontSize: 18,
+  marginBottom:10,
   fontWeight: '700',
   color: '#1E293B',
 },

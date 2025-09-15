@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
+    "name": "TRiVO",
     "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,13 +14,9 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/logo.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-web-browser"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
     "experiments": {
       "typedRoutes": true
     },

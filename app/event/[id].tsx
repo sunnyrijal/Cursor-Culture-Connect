@@ -190,17 +190,17 @@ export default function EventDetail() {
           <View style={styles.heroBottomInfo}>
             <View style={styles.heroTitleContainer}>
               <Text style={styles.heroTitle}>{event.name}</Text>
-              <View style={styles.heroRating}>
+              {/* <View style={styles.heroRating}>
                 <Star size={16} color="#FFD700" fill="#FFD700" />
                 <Text style={styles.heroRatingText}>4.8</Text>
-              </View>
+              </View> */}
             </View>
             <View style={styles.heroMetaContainer}>
               <Text style={styles.heroSubtitle}>Organized by {organizer}</Text>
-              <View style={styles.heroStatusBadge}>
+              {/* <View style={styles.heroStatusBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.heroStatusText}>Booking Open</Text>
-              </View>
+              </View> */}
             </View>
           </View>
         </View>
@@ -304,7 +304,7 @@ export default function EventDetail() {
       </ScrollView>
 
       {/* Footer RSVP */}
-      <View style={styles.footer}>
+      {/* <View style={styles.footer}>
         <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
           <View style={styles.rsvpContent}>
             <Text style={styles.rsvpButtonText}>{isLiked ? "Cancel RSVP" : "RSVP Now"}</Text>
@@ -313,14 +313,12 @@ export default function EventDetail() {
             </View>
           </View>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  loadingContainer:{},
-  loadingText:{},
   container: {
     flex: 1,
     backgroundColor: neomorphColors.background,
@@ -330,6 +328,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 80, // Reduced from 100 to 80
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: typography.fontSize.base,
+    color: theme.textSecondary,
   },
 
   // Error States

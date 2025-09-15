@@ -177,7 +177,7 @@ export default function QuickEventDetail() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* <View style={styles.footer}>
         <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
           <View style={styles.rsvpContent}>
             <Text style={styles.rsvpButtonText}>{isRSVPed ? "Cancel RSVP" : "Join Quick Event"}</Text>
@@ -186,7 +186,7 @@ export default function QuickEventDetail() {
             </View>
           </View>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   )
 }

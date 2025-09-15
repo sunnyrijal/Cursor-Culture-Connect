@@ -20,9 +20,6 @@ export type User = {
   // linkedIn:string;
 };
 
-export interface UserProfile extends User {
-  // UserProfile is now just an alias for User to maintain compatibility
-}
 
 export interface SignupData {
   firstName: string;
@@ -38,10 +35,15 @@ export interface SignupData {
   ethnicity: string[];
   countryOfOrigin: string;
   city: string;
+  bio?:string;
   state: string;
   languagesSpoken: string[];
   interests: string[];
   termsAccepted: boolean;
   privacyAccepted: boolean;
   marketingOptIn: boolean;
+}
+
+export interface UserProfile extends SignupData {
+  // UserProfile is now just an alias for User to maintain compatibility
 }

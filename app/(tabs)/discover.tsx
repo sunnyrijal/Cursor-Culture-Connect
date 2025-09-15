@@ -3,6 +3,9 @@
 import FriendsListScreen from '@/components/friend/FriendLists';
 import FriendRequestsScreen from '@/components/friend/FriendRequests';
 import SendFriendRequestScreen from '@/components/friend/SendFriendRequest';
+import getDecodedToken from '@/utils/getMyData';
+import { router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   View,
@@ -10,6 +13,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 
 const theme = {
@@ -35,6 +39,41 @@ type TabType = 'friends' | 'discover' | 'requests';
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<TabType>('friends');
+
+  const { data: myData, isLoading: isLoadingMyData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  if (isLoadingMyData) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!myData) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.authContainer}>
+          <Text style={styles.authTitle}>Join the Community</Text>
+          <Text style={styles.authSubtitle}>
+            Log in to connect with friends, discover new people, and manage your
+            requests.
+          </Text>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => router.push('/(auth)/login')}
+          >
+            <Text style={styles.loginButtonText}>Login or Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -133,6 +172,55 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F3F7',
+  },
+  authContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    backgroundColor: theme.background,
+  },
+  authTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  authSubtitle: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  loginButton: {
+    backgroundColor: theme.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  loginButtonText: {
+    color: theme.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 
   heroSection: {

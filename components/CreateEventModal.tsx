@@ -35,6 +35,7 @@ import {
 import { createEvent } from '@/contexts/event.api';
 
 import * as ImagePicker from 'expo-image-picker';
+import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 
@@ -318,6 +319,13 @@ const formatTimeInput = (input: string): string => {
         !validateTime(time.endTime).isValid
     );
 
+    const hasEndTimeBeforeStartTime = formData.eventTimes.some((time) => {
+      if (time.startTime && time.endTime) {
+        return time.endTime <= time.startTime;
+      }
+      return false;
+    });
+
     if (
       !formData.title ||
       !formData.description ||
@@ -335,6 +343,14 @@ const formatTimeInput = (input: string): string => {
       Alert.alert(
         'Invalid Time Format',
         'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).'
+      );
+      return;
+    }
+
+    if (hasEndTimeBeforeStartTime) {
+      Alert.alert(
+        'Invalid Time Slot',
+        'The end time for a time slot must be after its start time.'
       );
       return;
     }
@@ -635,109 +651,25 @@ const formatTimeInput = (input: string): string => {
 
                       <View style={styles.rowContainer}>
                         <View style={styles.halfWidth}>
-                          <Text style={styles.inputLabel}>Start Time *</Text>
-                          <View
-                            style={[
-                              styles.inputWrapper,
-                              focusedField === `startTime-${index}` &&
-                                styles.inputWrapperFocused,
-                              timeSlot.startTime &&
-                                validateTime(timeSlot.startTime).isValid &&
-                                styles.inputWrapperValid,
-                              timeSlot.startTime &&
-                                !validateTime(timeSlot.startTime).isValid &&
-                                styles.inputWrapperError,
-                            ]}
-                          >
-                            <Clock
-                              size={20}
-                              color="#6366F1"
-                              style={styles.inputIcon}
-                            />
-                            <TextInput
-                              style={styles.input}
-                              value={timeSlot.startTime}
-                              onChangeText={(text) =>
-                                updateTimeSlot(index, 'startTime', text)
-                              }
-                              placeholder="e.g., 09:30 or 21:45"
-                              onFocus={() =>
-                                setFocusedField(`startTime-${index}`)
-                              }
-                              onBlur={() => setFocusedField(null)}
-                              placeholderTextColor="#9CA3AF"
-                              editable={!createEventMutation.isPending}
-                              keyboardType="numeric"
-                              maxLength={5}
-                            />
-                            {timeSlot.startTime &&
-                              validateTime(timeSlot.startTime).isValid && (
-                                <Check
-                                  size={20}
-                                  color="#10B981"
-                                  style={styles.validIcon}
-                                />
-                              )}
-                          </View>
-                          {timeSlot.startTime &&
-                            !validateTime(timeSlot.startTime).isValid && (
-                              <Text style={styles.errorText}>
-                                {validateTime(timeSlot.startTime).error}
-                              </Text>
-                            )}
+                          <TimeSelectInput
+                            value={timeSlot.startTime}
+                            onTimeChange={(time) => updateTimeSlot(index, 'startTime', time)}
+                            label="Start Time *"
+                            placeholder="Select start time"
+                            disabled={createEventMutation.isPending}
+                            required
+                          />
                         </View>
 
                         <View style={styles.halfWidth}>
-                          <Text style={styles.inputLabel}>End Time *</Text>
-                          <View
-                            style={[
-                              styles.inputWrapper,
-                              focusedField === `endTime-${index}` &&
-                                styles.inputWrapperFocused,
-                              timeSlot.endTime &&
-                                validateTime(timeSlot.endTime).isValid &&
-                                styles.inputWrapperValid,
-                              timeSlot.endTime &&
-                                !validateTime(timeSlot.endTime).isValid &&
-                                styles.inputWrapperError,
-                            ]}
-                          >
-                            <Clock
-                              size={20}
-                              color="#6366F1"
-                              style={styles.inputIcon}
-                            />
-                            <TextInput
-                              style={styles.input}
-                              value={timeSlot.endTime}
-                              onChangeText={(text) =>
-                                updateTimeSlot(index, 'endTime', text)
-                              }
-                              placeholder="e.g., 12:00 or 23:30"
-                              onFocus={() =>
-                                setFocusedField(`endTime-${index}`)
-                              }
-                              onBlur={() => setFocusedField(null)}
-                              placeholderTextColor="#9CA3AF"
-                              editable={!createEventMutation.isPending}
-                              keyboardType="numeric"
-                              maxLength={5}
-                            />
-                            {timeSlot.endTime &&
-                              validateTime(timeSlot.endTime).isValid && (
-                                <Check
-                                  size={20}
-                                  color="#10B981"
-                                  style={styles.validIcon}
-                                />
-                              )}
-                          </View>
-                          {timeSlot.endTime &&
-                            !validateTime(timeSlot.endTime).isValid && (
-                              <Text style={styles.errorText}>
-                                {validateTime(timeSlot.endTime).error}
-                              </Text>
-                            )}
+                          <TimeSelectInput
+                            value={timeSlot.endTime}
+                            onTimeChange={(time) => updateTimeSlot(index, 'endTime', time)}
+                            label="End Time *"
+                            placeholder="Select end time"
+                            disabled={createEventMutation.isPending}
+                            required
+                          />
                         </View>
                       </View>
                     </View>
@@ -1073,6 +1005,19 @@ const formatTimeInput = (input: string): string => {
 }
 
 const styles = StyleSheet.create({
+
+  // Add this to your CreateEventModal styles
+scrollContainer: {
+  flex: 1,
+  paddingBottom: 40,
+  zIndex: 1, // Add this to lower the scroll container's z-index
+},
+
+formContainer: {
+  marginHorizontal: 20,
+  marginBottom: 24,
+  zIndex: 1, // Add this
+},
   primaryButtonDisabled: {},
   timeSlotsHeader: {
     flexDirection: 'row',
@@ -1179,10 +1124,9 @@ const styles = StyleSheet.create({
   },
   timeSlotContainer: {
     marginBottom: 16,
-    padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 16,
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
   },
   timeSlotHeader: {
@@ -1208,10 +1152,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F3F7',
   },
-  scrollContainer: {
-    flex: 1,
-    paddingBottom: 40,
-  },
+  // scrollContainer: {
+  //   flex: 1,
+  //   paddingBottom: 40,
+  // },
   headerContainer: {
     marginHorizontal: 20,
     marginTop: Platform.OS === 'ios' ? 60 : 40,
@@ -1240,10 +1184,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '500',
   },
-  formContainer: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-  },
+  // formContainer: {
+  //   marginHorizontal: 20,
+  //   marginBottom: 24,
+  // },
   blurView: {
     borderRadius: 24,
     overflow: 'hidden',
