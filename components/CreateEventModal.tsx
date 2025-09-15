@@ -38,6 +38,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface CreateEventModalProps {
   visible: boolean;
@@ -89,60 +90,68 @@ export function CreateEventModal({
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showNativeDatePicker, setShowNativeDatePicker] = useState(false);
 
-const uploadFileMutation = useMutation({
-  mutationFn: uploadFile,
-  onSuccess: (data) => {
-    console.log('File uploaded successfully:', data);
-    // Add the returned URL to formData.images
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, data.url],
-    }));
-  },
-  onError: (error) => {
-    console.error('Error uploading file:', error);
-    Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
-  },
-});
+  const uploadFileMutation = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (data) => {
+      console.log('File uploaded successfully:', data);
+      // Add the returned URL to formData.images
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, data.url],
+      }));
+    },
+    onError: (error) => {
+      console.error('Error uploading file:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+    },
+  });
 
-const pickImage = async () => {
-  try {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'Sorry, we need camera roll permissions to make this work!'
-      );
-      return;
-    }
+  const onNativeDateChange = (event: any, selectedDate: any) => {
+    const currentDate = selectedDate || formData.date;
+    setShowNativeDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    setFormData({ ...formData, date: currentDate });
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      allowsMultipleSelection: false,
-    });
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission needed',
+          'Sorry, we need camera roll permissions to make this work!'
+        );
+        return;
+      }
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      
-      console.log('Asset details:', asset);
-      
-      // Use the mutation instead of direct API call
-      uploadFileMutation.mutate({
-        uri: asset.uri,
-        type: asset.type,
-        mimeType: asset.mimeType,
-        fileName: asset.fileName || 'image.jpg',
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        allowsMultipleSelection: false,
       });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+
+        console.log('Asset details:', asset);
+
+        // Use the mutation instead of direct API call
+        uploadFileMutation.mutate({
+          uri: asset.uri,
+          type: asset.type,
+          mimeType: asset.mimeType,
+          fileName: asset.fileName || 'image.jpg',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', `Failed to pick image: ${error.message}`);
     }
-  } catch (error: any) {
-    console.error('Error picking image:', error);
-    Alert.alert('Error', `Failed to pick image: ${error.message}`);
-  }
-};
+  };
 
   // TanStack Query mutation for creating event
   const createEventMutation = useMutation({
@@ -185,10 +194,11 @@ const pickImage = async () => {
         universityOnly: false,
       });
       setFocusedField(null);
+      setShowNativeDatePicker(false); // Add this line
     }
   }, [visible]);
 
-  console.log(formData.images)
+  console.log(formData.images);
 
   const hasPermission = useMemo(() => {
     if (!formData.groupId) return true;
@@ -223,51 +233,51 @@ const pickImage = async () => {
     }
   };
 
-const formatTimeInput = (input: string): string => {
-  // Remove any non-digit or colon characters
-  const cleaned = input.replace(/[^\d:]/g, '');
+  const formatTimeInput = (input: string): string => {
+    // Remove any non-digit or colon characters
+    const cleaned = input.replace(/[^\d:]/g, '');
 
-  if (cleaned.length === 0) {
-    return '';
-  } else if (cleaned.length === 1) {
-    // First digit of hours: only allow 0, 1, 2
-    const firstDigit = cleaned[0];
-    if (firstDigit > '2') {
-      return ''; // Don't allow first digit greater than 2
-    }
-    return cleaned;
-  } else if (cleaned.length === 2 && !cleaned.includes(':')) {
-    // Two digits without colon - check if valid hour and auto-add colon
-    const firstDigit = cleaned[0];
-    const secondDigit = cleaned[1];
-    if (firstDigit === '2' && secondDigit > '3') {
-      return cleaned[0]; // Don't allow hours > 23
-    }
-    return cleaned + ':';
-  } else if (cleaned.includes(':')) {
-    // Already has colon, validate the format
-    const parts = cleaned.split(':');
-    const hours = parts[0].slice(0, 2);
-    const minutes = parts[1] ? parts[1].slice(0, 2) : '';
-    
-    // Validate hours
-    if (hours.length === 2) {
-      if (hours[0] === '2' && hours[1] > '3') {
-        return hours[0] + ':' + minutes;
+    if (cleaned.length === 0) {
+      return '';
+    } else if (cleaned.length === 1) {
+      // First digit of hours: only allow 0, 1, 2
+      const firstDigit = cleaned[0];
+      if (firstDigit > '2') {
+        return ''; // Don't allow first digit greater than 2
       }
-    }
-    
-    // Validate minutes first digit (0-5)
-    if (minutes.length > 0 && minutes[0] > '5') {
-      return hours + ':';
-    }
-    
-    return hours + ':' + minutes;
-  }
+      return cleaned;
+    } else if (cleaned.length === 2 && !cleaned.includes(':')) {
+      // Two digits without colon - check if valid hour and auto-add colon
+      const firstDigit = cleaned[0];
+      const secondDigit = cleaned[1];
+      if (firstDigit === '2' && secondDigit > '3') {
+        return cleaned[0]; // Don't allow hours > 23
+      }
+      return cleaned + ':';
+    } else if (cleaned.includes(':')) {
+      // Already has colon, validate the format
+      const parts = cleaned.split(':');
+      const hours = parts[0].slice(0, 2);
+      const minutes = parts[1] ? parts[1].slice(0, 2) : '';
 
-  // Limit to 5 characters (HH:MM)
-  return cleaned.slice(0, 5);
-};
+      // Validate hours
+      if (hours.length === 2) {
+        if (hours[0] === '2' && hours[1] > '3') {
+          return hours[0] + ':' + minutes;
+        }
+      }
+
+      // Validate minutes first digit (0-5)
+      if (minutes.length > 0 && minutes[0] > '5') {
+        return hours + ':';
+      }
+
+      return hours + ':' + minutes;
+    }
+
+    // Limit to 5 characters (HH:MM)
+    return cleaned.slice(0, 5);
+  };
 
   const validateTimeFormat = (time: string): boolean => {
     // Allow formats like 5:30, 05:30, 15:45, etc.
@@ -590,7 +600,7 @@ const formatTimeInput = (input: string): string => {
                 )}
 
                 {/* Date */}
-                <View style={styles.inputContainer}>
+                {/* <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
                   <TouchableOpacity
                     onPress={() => setShowDatePicker(true)}
@@ -617,6 +627,46 @@ const formatTimeInput = (input: string): string => {
                       />
                     </View>
                   </TouchableOpacity>
+                </View> */}
+
+                {/* Date */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Date *</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowNativeDatePicker(true)}
+                    disabled={createEventMutation.isPending}
+                  >
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        formData.date && styles.inputWrapperValid,
+                      ]}
+                    >
+                      <Calendar
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
+                      <Text style={styles.inputText}>
+                        {formData.date.toLocaleDateString()}
+                      </Text>
+                      <Check
+                        size={20}
+                        color="#10B981"
+                        style={styles.validIcon}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  {showNativeDatePicker && (
+                    <DateTimePicker
+                      value={formData.date}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={onNativeDateChange}
+                      minimumDate={new Date()} // Prevent past dates for events
+                    />
+                  )}
                 </View>
 
                 <View style={styles.inputContainer}>
@@ -653,7 +703,9 @@ const formatTimeInput = (input: string): string => {
                         <View style={styles.halfWidth}>
                           <TimeSelectInput
                             value={timeSlot.startTime}
-                            onTimeChange={(time) => updateTimeSlot(index, 'startTime', time)}
+                            onTimeChange={(time) =>
+                              updateTimeSlot(index, 'startTime', time)
+                            }
                             label="Start Time *"
                             placeholder="Select start time"
                             disabled={createEventMutation.isPending}
@@ -664,7 +716,9 @@ const formatTimeInput = (input: string): string => {
                         <View style={styles.halfWidth}>
                           <TimeSelectInput
                             value={timeSlot.endTime}
-                            onTimeChange={(time) => updateTimeSlot(index, 'endTime', time)}
+                            onTimeChange={(time) =>
+                              updateTimeSlot(index, 'endTime', time)
+                            }
                             label="End Time *"
                             placeholder="Select end time"
                             disabled={createEventMutation.isPending}
@@ -1005,19 +1059,18 @@ const formatTimeInput = (input: string): string => {
 }
 
 const styles = StyleSheet.create({
-
   // Add this to your CreateEventModal styles
-scrollContainer: {
-  flex: 1,
-  paddingBottom: 40,
-  zIndex: 1, // Add this to lower the scroll container's z-index
-},
+  scrollContainer: {
+    flex: 1,
+    paddingBottom: 40,
+    zIndex: 1, // Add this to lower the scroll container's z-index
+  },
 
-formContainer: {
-  marginHorizontal: 20,
-  marginBottom: 24,
-  zIndex: 1, // Add this
-},
+  formContainer: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    zIndex: 1, // Add this
+  },
   primaryButtonDisabled: {},
   timeSlotsHeader: {
     flexDirection: 'row',
