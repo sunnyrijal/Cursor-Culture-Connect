@@ -319,6 +319,13 @@ const formatTimeInput = (input: string): string => {
         !validateTime(time.endTime).isValid
     );
 
+    const hasEndTimeBeforeStartTime = formData.eventTimes.some((time) => {
+      if (time.startTime && time.endTime) {
+        return time.endTime <= time.startTime;
+      }
+      return false;
+    });
+
     if (
       !formData.title ||
       !formData.description ||
@@ -336,6 +343,14 @@ const formatTimeInput = (input: string): string => {
       Alert.alert(
         'Invalid Time Format',
         'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).'
+      );
+      return;
+    }
+
+    if (hasEndTimeBeforeStartTime) {
+      Alert.alert(
+        'Invalid Time Slot',
+        'The end time for a time slot must be after its start time.'
       );
       return;
     }
