@@ -1,6 +1,6 @@
-# Culture Connect App
+# TRiVO App
 
-This is the frontend mobile application for Culture Connect, built with React Native and Expo.
+This is the frontend mobile application for TRiVO, built with React Native and Expo.
 
 ## 🚀 Getting Started
 
