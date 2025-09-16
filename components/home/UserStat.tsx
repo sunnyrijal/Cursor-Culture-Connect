@@ -252,14 +252,14 @@ const styles = StyleSheet.create({
   },
 
   headerSection: {
-    padding:10
+    padding:10,
+    paddingBottom:0
   },
 
   title: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 4,
     fontFamily: typography.fontFamily.bold,
   },
 

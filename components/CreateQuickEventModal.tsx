@@ -24,7 +24,7 @@ import {
   Clock,
   Users,
 } from 'lucide-react-native';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQuickEvent } from '@/contexts/quickEvent.api';
 import { TimerPicker } from 'react-native-timer-picker';
 import { TimeSelectInput } from './TimeSelectInput'; // Adjust path as needed
@@ -151,12 +151,14 @@ export function CreateQuickEventModal({
     }
   }, [visible]);
 
+  const queryClient = useQueryClient();
+
   const createEventMutation = useMutation({
     mutationFn: createQuickEvent,
     onSuccess: (data, variables) => {
       console.log('Quick Event created successfully:', data);
 
-      // queryClient.invalidateQueries({ queryKey: ["events"] })
+      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
 
       Alert.alert('Success', 'Quick Event created successfully!');
 

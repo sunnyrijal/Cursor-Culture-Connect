@@ -472,6 +472,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 16,
+    minHeight:100
   },
   noResultsText: {
     fontSize: 14,

@@ -22,6 +22,7 @@ import {
   Users,
   Clock,
   PlusCircle,
+  Zap,
 } from 'lucide-react-native';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -32,6 +33,7 @@ import { getEvents } from '@/contexts/event.api';
 import { format } from 'date-fns';
 import { theme } from '@/components/theme';
 import { getQuickEvents } from '@/contexts/quickEvent.api';
+import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 
 // Helper function to format date
 const formatDate = (dateString: string) => {
@@ -160,6 +162,8 @@ export default function Events() {
   const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
     'events'
   );
+  const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
+    useState(false);
 
   // Add local state for pending filter selections
   const [pendingCategory, setPendingCategory] = useState('all');
@@ -415,6 +419,10 @@ export default function Events() {
     setShowCreateModal(false);
   };
 
+  const handleCreateQuickEvent = (eventData: any) => {
+    setShowCreateQuickEventModal(false);
+  };
+
   // const handleRSVP = async (eventId: number) => {
   //   try {
   //     // Get current RSVP status for the event
@@ -521,18 +529,33 @@ export default function Events() {
         onSubmit={handleCreateEvent}
       />
 
+         <CreateQuickEventModal
+              visible={showCreateQuickEventModal}
+              onClose={() => handleCreateQuickEvent(false)}
+              onSubmit={handleCreateQuickEvent}
+            />
+
       <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
             <View style={styles.headerRow}>
-              <Text style={styles.heroTitle}>Events</Text>
-              <TouchableOpacity
-                style={styles.createButtonHero}
-                onPress={() => setShowCreateModal(true)}
-                activeOpacity={0.7}
-              >
-                <PlusCircle size={28} color={theme.primary} />
-              </TouchableOpacity>
+                <Text style={styles.heroTitle}>Discover</Text>
+                <View style={styles.headerActions}>
+                  <TouchableOpacity
+                    style={styles.createButtonHero}
+                    onPress={() => setShowCreateQuickEventModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Zap size={24} color={theme.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.createButtonHero}
+                    onPress={() => setShowCreateModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <PlusCircle size={28} color={theme.primary} />
+                  </TouchableOpacity>
+                </View>
             </View>
             <Text style={styles.heroSubtitle}>
               Discover and participate in cultural celebrations
@@ -921,6 +944,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginBottom: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   heroTitle: {
     fontSize: 32,
