@@ -92,11 +92,11 @@ export default function Groups() {
     queryKey: ['groups'],
     queryFn: () => getUserGroups(),
   });
+  const allGroups = groupResponse?.groups || [];
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const allGroups = groupResponse?.groups || [];
 
   const groups = allGroups.filter(
     (group: ApiGroup) =>
@@ -654,7 +654,6 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
     gap: 8,
   },
   statCard: {

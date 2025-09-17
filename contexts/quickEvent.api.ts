@@ -22,6 +22,7 @@ export interface CreateQuickEventData {
   description?: string;
   max?: string;
   time?: string;
+  isPublic:boolean
 }
 
 export interface UpdateQuickEventData {
@@ -97,6 +98,18 @@ export const deleteQuickEvent = async (id: string) => {
   try {
     const response: AxiosResponse = await api.delete(
       `/quickevents/${id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting quick event:', error);
+    throw error;
+  }
+};
+
+export const addInterestedUser = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(
+      `/quickevents/add-interested-user/${id}`
     );
     return response.data;
   } catch (error) {

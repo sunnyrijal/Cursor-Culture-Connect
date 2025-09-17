@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   View,
   Text,
@@ -38,26 +38,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { getUserGroups } from '@/contexts/group.api';
 
 interface CreateEventModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (eventData: any) => void;
 }
-
-interface Group {
-  id: string;
-  name: string;
-  president_id?: string;
-  is_joined?: boolean;
-}
-
-interface EventTime {
-  startTime: string;
-  endTime: string;
-}
-
-const currentUser = { id: '1' };
 
 export function CreateEventModal({
   visible,
@@ -70,7 +58,7 @@ export function CreateEventModal({
     title: '',
     description: '',
     date: new Date(),
-    eventTimes: [{ startTime: '', endTime: '' }] as EventTime[],
+    eventTimes: [{ startTime: '', endTime: '' }],
     location: '',
     groupId: null as string | null,
     images: [] as string[],
@@ -78,71 +66,84 @@ export function CreateEventModal({
     universityOnly: false,
   });
 
-  const [groups, setGroups] = useState<Group[]>([
-    { id: '1', name: 'Cultural Club', president_id: '1', is_joined: true },
-    { id: '2', name: 'Tech Society', president_id: '2', is_joined: true },
-    { id: '3', name: 'Art Community', president_id: '1', is_joined: true },
-  ]);
+  const {
+    data: groupResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => getUserGroups(),
+  });
+  const groups = groupResponse?.groups || [];
 
+  console.log(groups);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showNativeDatePicker, setShowNativeDatePicker] = useState(false);
 
-const uploadFileMutation = useMutation({
-  mutationFn: uploadFile,
-  onSuccess: (data) => {
-    console.log('File uploaded successfully:', data);
-    // Add the returned URL to formData.images
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, data.url],
-    }));
-  },
-  onError: (error) => {
-    console.error('Error uploading file:', error);
-    Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
-  },
-});
+  const uploadFileMutation = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (data) => {
+      console.log('File uploaded successfully:', data);
+      // Add the returned URL to formData.images
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, data.url],
+      }));
+    },
+    onError: (error) => {
+      console.error('Error uploading file:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+    },
+  });
 
-const pickImage = async () => {
-  try {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'Sorry, we need camera roll permissions to make this work!'
-      );
-      return;
-    }
+  const onNativeDateChange = (event: any, selectedDate: any) => {
+    const currentDate = selectedDate || formData.date;
+    setShowNativeDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    setFormData({ ...formData, date: currentDate });
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      allowsMultipleSelection: false,
-    });
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission needed',
+          'Sorry, we need camera roll permissions to make this work!'
+        );
+        return;
+      }
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      
-      console.log('Asset details:', asset);
-      
-      // Use the mutation instead of direct API call
-      uploadFileMutation.mutate({
-        uri: asset.uri,
-        type: asset.type,
-        mimeType: asset.mimeType,
-        fileName: asset.fileName || 'image.jpg',
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        allowsMultipleSelection: false,
       });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+
+        console.log('Asset details:', asset);
+
+        // Use the mutation instead of direct API call
+        uploadFileMutation.mutate({
+          uri: asset.uri,
+          type: asset.type,
+          mimeType: asset.mimeType,
+          fileName: asset.fileName || 'image.jpg',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', `Failed to pick image: ${error.message}`);
     }
-  } catch (error: any) {
-    console.error('Error picking image:', error);
-    Alert.alert('Error', `Failed to pick image: ${error.message}`);
-  }
-};
+  };
 
   // TanStack Query mutation for creating event
   const createEventMutation = useMutation({
@@ -151,6 +152,7 @@ const pickImage = async () => {
       console.log('Event created successfully:', data);
 
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
 
       Alert.alert('Success', 'Event created successfully!');
 
@@ -185,26 +187,11 @@ const pickImage = async () => {
         universityOnly: false,
       });
       setFocusedField(null);
+      setShowNativeDatePicker(false); // Add this line
     }
   }, [visible]);
 
-  console.log(formData.images)
-
-  const hasPermission = useMemo(() => {
-    if (!formData.groupId) return true;
-    const group = groups.find((g) => g.id === formData.groupId);
-    if (!group) return false;
-    return group.president_id === currentUser.id;
-  }, [formData.groupId, groups]);
-
-  const removeImage = (index: number) => {
-    const newImages = [...formData.images];
-    newImages.splice(index, 1);
-    setFormData({
-      ...formData,
-      images: newImages,
-    });
-  };
+  console.log(formData.images);
 
   const addTimeSlot = () => {
     setFormData({
@@ -223,51 +210,60 @@ const pickImage = async () => {
     }
   };
 
-const formatTimeInput = (input: string): string => {
-  // Remove any non-digit or colon characters
-  const cleaned = input.replace(/[^\d:]/g, '');
+  const removeImage = (index: number) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({
+      ...formData,
+      images: newImages,
+    });
+  };
 
-  if (cleaned.length === 0) {
-    return '';
-  } else if (cleaned.length === 1) {
-    // First digit of hours: only allow 0, 1, 2
-    const firstDigit = cleaned[0];
-    if (firstDigit > '2') {
-      return ''; // Don't allow first digit greater than 2
-    }
-    return cleaned;
-  } else if (cleaned.length === 2 && !cleaned.includes(':')) {
-    // Two digits without colon - check if valid hour and auto-add colon
-    const firstDigit = cleaned[0];
-    const secondDigit = cleaned[1];
-    if (firstDigit === '2' && secondDigit > '3') {
-      return cleaned[0]; // Don't allow hours > 23
-    }
-    return cleaned + ':';
-  } else if (cleaned.includes(':')) {
-    // Already has colon, validate the format
-    const parts = cleaned.split(':');
-    const hours = parts[0].slice(0, 2);
-    const minutes = parts[1] ? parts[1].slice(0, 2) : '';
-    
-    // Validate hours
-    if (hours.length === 2) {
-      if (hours[0] === '2' && hours[1] > '3') {
-        return hours[0] + ':' + minutes;
+  const formatTimeInput = (input: string): string => {
+    // Remove any non-digit or colon characters
+    const cleaned = input.replace(/[^\d:]/g, '');
+
+    if (cleaned.length === 0) {
+      return '';
+    } else if (cleaned.length === 1) {
+      // First digit of hours: only allow 0, 1, 2
+      const firstDigit = cleaned[0];
+      if (firstDigit > '2') {
+        return ''; // Don't allow first digit greater than 2
       }
-    }
-    
-    // Validate minutes first digit (0-5)
-    if (minutes.length > 0 && minutes[0] > '5') {
-      return hours + ':';
-    }
-    
-    return hours + ':' + minutes;
-  }
+      return cleaned;
+    } else if (cleaned.length === 2 && !cleaned.includes(':')) {
+      // Two digits without colon - check if valid hour and auto-add colon
+      const firstDigit = cleaned[0];
+      const secondDigit = cleaned[1];
+      if (firstDigit === '2' && secondDigit > '3') {
+        return cleaned[0]; // Don't allow hours > 23
+      }
+      return cleaned + ':';
+    } else if (cleaned.includes(':')) {
+      // Already has colon, validate the format
+      const parts = cleaned.split(':');
+      const hours = parts[0].slice(0, 2);
+      const minutes = parts[1] ? parts[1].slice(0, 2) : '';
 
-  // Limit to 5 characters (HH:MM)
-  return cleaned.slice(0, 5);
-};
+      // Validate hours
+      if (hours.length === 2) {
+        if (hours[0] === '2' && hours[1] > '3') {
+          return hours[0] + ':' + minutes;
+        }
+      }
+
+      // Validate minutes first digit (0-5)
+      if (minutes.length > 0 && minutes[0] > '5') {
+        return hours + ':';
+      }
+
+      return hours + ':' + minutes;
+    }
+
+    // Limit to 5 characters (HH:MM)
+    return cleaned.slice(0, 5);
+  };
 
   const validateTimeFormat = (time: string): boolean => {
     // Allow formats like 5:30, 05:30, 15:45, etc.
@@ -362,11 +358,10 @@ const formatTimeInput = (input: string): string => {
       imageUrl: formData.images.length > 0 ? formData.images[0] : null,
       location: formData.location,
       date: formData.date.toISOString(),
-      // groupId: formData.groupId,
-      // isPublic: formData.isPublic,
+      ...(formData.groupId && { associatedGroupId: formData.groupId }),
+      isPublic: formData.isPublic,
       UniversityOnly: formData.universityOnly,
     };
-    console.log(eventData);
     // Use the TanStack Query mutation
     createEventMutation.mutate(eventData);
   };
@@ -379,7 +374,6 @@ const formatTimeInput = (input: string): string => {
     'default',
     { month: 'long' }
   );
-  const userGroups = groups.filter((g) => g.is_joined);
 
   return (
     <Modal
@@ -590,7 +584,7 @@ const formatTimeInput = (input: string): string => {
                 )}
 
                 {/* Date */}
-                <View style={styles.inputContainer}>
+                {/* <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
                   <TouchableOpacity
                     onPress={() => setShowDatePicker(true)}
@@ -617,6 +611,46 @@ const formatTimeInput = (input: string): string => {
                       />
                     </View>
                   </TouchableOpacity>
+                </View> */}
+
+                {/* Date */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Date *</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowNativeDatePicker(true)}
+                    disabled={createEventMutation.isPending}
+                  >
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        formData.date && styles.inputWrapperValid,
+                      ]}
+                    >
+                      <Calendar
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
+                      <Text style={styles.inputText}>
+                        {formData.date.toLocaleDateString()}
+                      </Text>
+                      <Check
+                        size={20}
+                        color="#10B981"
+                        style={styles.validIcon}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  {showNativeDatePicker && (
+                    <DateTimePicker
+                      value={formData.date}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={onNativeDateChange}
+                      minimumDate={new Date()} // Prevent past dates for events
+                    />
+                  )}
                 </View>
 
                 <View style={styles.inputContainer}>
@@ -653,7 +687,9 @@ const formatTimeInput = (input: string): string => {
                         <View style={styles.halfWidth}>
                           <TimeSelectInput
                             value={timeSlot.startTime}
-                            onTimeChange={(time) => updateTimeSlot(index, 'startTime', time)}
+                            onTimeChange={(time) =>
+                              updateTimeSlot(index, 'startTime', time)
+                            }
                             label="Start Time *"
                             placeholder="Select start time"
                             disabled={createEventMutation.isPending}
@@ -664,7 +700,9 @@ const formatTimeInput = (input: string): string => {
                         <View style={styles.halfWidth}>
                           <TimeSelectInput
                             value={timeSlot.endTime}
-                            onTimeChange={(time) => updateTimeSlot(index, 'endTime', time)}
+                            onTimeChange={(time) =>
+                              updateTimeSlot(index, 'endTime', time)
+                            }
                             label="End Time *"
                             placeholder="Select end time"
                             disabled={createEventMutation.isPending}
@@ -714,25 +752,33 @@ const formatTimeInput = (input: string): string => {
                 </View>
 
                 {/* Associated Group */}
-                {/* <View style={styles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
-                  <TouchableOpacity onPress={() => setShowGroupPicker(true)} disabled={createEventMutation.isPending}>
+                  <TouchableOpacity
+                    onPress={() => setShowGroupPicker(true)}
+                    disabled={createEventMutation.isPending}
+                  >
                     <View style={styles.inputWrapper}>
-                      <Users size={20} color="#6366F1" style={styles.inputIcon} />
-                      <Text style={[styles.inputText, !formData.groupId && { color: "#9CA3AF" }]}>
+                      <Users
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
+                      <Text
+                        style={[
+                          styles.inputText,
+                          !formData.groupId && { color: '#9CA3AF' },
+                        ]}
+                      >
                         {formData.groupId
-                          ? groups.find((g) => g.id === formData.groupId)?.name
-                          : "Select a group (optional)"}
+                          ? groups.find((g: any) => g.id === formData.groupId)
+                              ?.name
+                          : 'Select a group (optional)'}
                       </Text>
                       <ChevronDown size={20} color="#6366F1" />
                     </View>
                   </TouchableOpacity>
-                  {formData.groupId && !hasPermission && (
-                    <Text style={styles.validationText}>
-                      You are not an admin of this group. The event will be sent for approval.
-                    </Text>
-                  )}
-                </View> */}
+                </View>
 
                 {/* Event Visibility */}
                 <View style={styles.inputContainer}>
@@ -966,8 +1012,11 @@ const formatTimeInput = (input: string): string => {
               <View style={styles.groupPickerContent}>
                 <Text style={styles.groupPickerTitle}>Select Your Group</Text>
 
-                <ScrollView style={styles.groupList}>
-                  {userGroups.map((group) => (
+                <ScrollView
+                  style={styles.groupList}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {groups.map((group: any) => (
                     <TouchableOpacity
                       key={group.id}
                       style={styles.groupItem}
@@ -976,14 +1025,21 @@ const formatTimeInput = (input: string): string => {
                         setShowGroupPicker(false);
                       }}
                     >
-                      <View style={styles.groupItemContent}>
-                        <Users size={20} color="#6366F1" />
-                        <Text style={styles.groupItemText}>{group.name}</Text>
-                        {group.president_id === currentUser.id && (
-                          <View style={styles.adminBadge}>
-                            <Text style={styles.adminBadgeText}>Admin</Text>
-                          </View>
-                        )}
+                      <Image
+                        source={
+                          group.imageUrl
+                            ? { uri: group.imageUrl }
+                            : require('../assets/user.png')
+                        }
+                        style={styles.groupImage}
+                      />
+                      <View style={styles.groupInfo}>
+                        <Text style={styles.groupItemText} numberOfLines={1}>
+                          {group.name}
+                        </Text>
+                        <Text style={styles.groupCreatorText}>
+                          By {group.creator.name}
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -1005,19 +1061,18 @@ const formatTimeInput = (input: string): string => {
 }
 
 const styles = StyleSheet.create({
-
   // Add this to your CreateEventModal styles
-scrollContainer: {
-  flex: 1,
-  paddingBottom: 40,
-  zIndex: 1, // Add this to lower the scroll container's z-index
-},
+  scrollContainer: {
+    flex: 1,
+    paddingBottom: 40,
+    zIndex: 1, // Add this to lower the scroll container's z-index
+  },
 
-formContainer: {
-  marginHorizontal: 20,
-  marginBottom: 24,
-  zIndex: 1, // Add this
-},
+  formContainer: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    zIndex: 1, // Add this
+  },
   primaryButtonDisabled: {},
   timeSlotsHeader: {
     flexDirection: 'row',
@@ -1593,31 +1648,34 @@ formContainer: {
     marginBottom: 24,
   },
   groupList: {
-    flex: 1,
     marginBottom: 24,
+    maxHeight: 400,
   },
   groupItem: {
-    borderRadius: 16,
-    marginBottom: 12,
-    backgroundColor: '#F0F3F7',
-    borderWidth: 1,
-    borderColor: '#CDD2D8',
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  groupItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    borderRadius: 16,
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
   },
+  groupImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    backgroundColor: '#E5E7EB',
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupCreatorText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
   groupItemText: {
     flex: 1,
     fontSize: 16,

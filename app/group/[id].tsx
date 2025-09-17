@@ -28,9 +28,10 @@ import {
   Calendar,
   Star,
   LogOut,
-  LocateIcon,
-  LocateFixedIcon,
+
+  Trash2,
   MapPin,
+  Info,
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -41,6 +42,7 @@ import {
   leaveGroup,
   addMember,
   addMultipleMembers,
+  deleteGroup,
 } from '@/contexts/group.api';
 import { getAllUsers, getUsers } from '@/contexts/user.api';
 import getDecodedToken from '@/utils/getMyData';
@@ -92,6 +94,7 @@ interface GroupResponse {
   creatorId: string;
   creator: User;
   members: Member[];
+  meetingDetails?: string;
 }
 
 export default function GroupDetailEnhanced() {
@@ -132,6 +135,7 @@ export default function GroupDetailEnhanced() {
   });
 
   const group = groupResponse?.group;
+  console.log(group)
   const currentUserMembership = groupResponse?.group?.members?.find(
     (member: any) => member.userId === myData?.userId
   );
@@ -176,6 +180,36 @@ export default function GroupDetailEnhanced() {
 
   const handleLeaveGroup = () => {
     setShowLeaveModal(true);
+  };
+
+  const { mutate: deleteGroupMutation, isPending: isDeletingGroup } = useMutation({
+    mutationFn: (groupIdToDelete: string) => deleteGroup(groupIdToDelete),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+
+      router.back();
+      Alert.alert("Success", "Group deleted successfully.");
+    },
+    onError: (err) => {
+      console.error("Error deleting group:", err);
+      Alert.alert("Error", "Failed to delete group. Please try again.");
+    },
+  });
+
+  const handleDeleteGroup = () => {
+    if (!id) {
+      Alert.alert("Error", "Group ID is missing.");
+      return;
+    }
+    Alert.alert(
+      "Confirm Deletion",
+      `Are you sure you want to delete "${group?.name}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteGroupMutation(id as string) },
+      ]
+    );
   };
 
   const { mutate: kickMembersMutate, isPending:kickMemberPending } = useMutation({
@@ -372,6 +406,14 @@ export default function GroupDetailEnhanced() {
                   <LogOut size={20} color={theme.error} />
                 </TouchableOpacity>
               )}
+              {group?.creatorId === myData?.userId && (
+                <TouchableOpacity
+                  onPress={handleDeleteGroup}
+                  style={styles.headerButton}
+                >
+                  <Trash2 size={20} color={theme.error} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -505,6 +547,16 @@ export default function GroupDetailEnhanced() {
                     </Text>
                   </View>}
 
+                  {group.meetingDetails && (
+                    <View style={styles.highlightItem}>
+                      <View style={styles.highlightIconWrapper}>
+                        <Info size={16} color={theme.primary} />
+                      </View>
+                      <Text style={styles.highlightText}>
+                        Meeting Details: {group.meetingDetails}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.highlightItem}>
                     <View style={styles.highlightIconWrapper}>
                       <Star size={16} color={theme.primary} />

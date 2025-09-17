@@ -30,6 +30,8 @@ import { checkAuthStatus } from '@/utils/auth';
 import { Image } from 'react-native';
 //@ts-ignore
 import logo from '../assets/logo.png'; // adjust path based on your folder structure
+import { useQuery } from '@tanstack/react-query';
+import getDecodedToken from '@/utils/getMyData';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,6 +60,14 @@ export default function Index() {
   const router = useRouter();
 
   const { authState } = useAuth();
+
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  console.log("MYDATA",myData);
+  console.log("AUTH STATE FROM INDEX", authState)
 
   useEffect(() => {
     // Logo animation sequence
@@ -122,25 +132,45 @@ export default function Index() {
     );
   }, [authState.authenticated]);
 
-  useEffect(() => {
-    if (authState.authenticated == false) {
-      return;
-    }
+useEffect(() => {
+  const timer = setTimeout(() => {
+    backgroundOpacity.value = withTiming(
+      0,
+      { duration: 600, easing: Easing.in(Easing.cubic) },
+      () => {
+        // Get fresh auth state at navigation time
+        runOnJS(() => {
+          const isAuthenticated = authState.authenticated;
+          router.replace(isAuthenticated ? '/(tabs)' : '/(auth)/login');
+        })();
+      }
+    );
+  }, 3500);
 
-    const timer = setTimeout(() => {
-      backgroundOpacity.value = withTiming(
-        0,
-        { duration: 600, easing: Easing.in(Easing.cubic) },
-        () => {
-          runOnJS(router.replace)(
-            authState.authenticated ? '/(tabs)' : '/(auth)/login'
-          );
-        }
-      );
-    }, 2000); // Animation delay
+  return () => clearTimeout(timer);
+}, []); 
 
-    return () => clearTimeout(timer);
-  }, [authState.authenticated]);
+
+// useEffect(() => {
+//   const timer = setTimeout(() => {
+//     backgroundOpacity.value = withTiming(
+//       0,
+//       { duration: 600, easing: Easing.in(Easing.cubic) },
+//       () => {
+//         runOnJS(() => {
+//           // Always navigate to login for unauthenticated users
+//           if (authState.authenticated) {
+//             router.replace('/(tabs)');
+//           } else {
+//             router.replace('/(auth)/login');
+//           }
+//         })();
+//       }
+//     );
+//   }, 3500);
+
+//   return () => clearTimeout(timer);
+// }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -250,8 +280,7 @@ export default function Index() {
 
             <Animated.View style={subtitleAnimatedStyle}>
               <Text style={styles.subtitle}>
-                Discover amazing people and connect with events around the
-                world
+                Discover amazing people and connect with events around the world
               </Text>
               {/* <View style={styles.dots}>
                 <View style={[styles.dot, styles.dotActive]} />
@@ -359,7 +388,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
     width: '100%',
   },
   title: {

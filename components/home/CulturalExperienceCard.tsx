@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: 80,
-    height: 80,
+    height: 90,
     position: 'relative',
     borderRadius: 12,
     overflow: 'hidden',

@@ -127,12 +127,27 @@ export default function UserLogsScreen() {
         <View style={styles.logContent}>
           <Text style={styles.logDescription}>{log.description}</Text>
           <Text style={styles.logTimestamp}>{formatTimestamp(log.timestamp)}</Text>
+          {log.action === 'create_group' &&
+            log.metadata.isPrivate !== undefined && (
+              <View
+                style={[
+                  styles.privacyBadge,
+                  log.metadata.isPrivate
+                    ? styles.privateBadge
+                    : styles.publicBadge,
+                ]}
+              >
+                <Text style={styles.privacyBadgeText}>
+                  {log.metadata.isPrivate ? 'Private' : 'Public'}
+                </Text>
+              </View>
+            )}
         </View>
       </View>
 
       {log.metadata && Object.keys(log.metadata).length > 0 && (
         <View style={styles.logMetadata}>
-          {Object.entries(log.metadata).map(([key, value]) => (
+          {Object.entries(log.metadata).filter(([key, value])=> key!='isPrivate').map(([key, value]) => (
             <View key={key} style={styles.metadataItem}>
               <Text style={styles.metadataKey}>{key.replace(/([A-Z])/g, " $1").toLowerCase()}:</Text>
               <Text style={styles.metadataValue}>{String(value)}</Text>
@@ -425,4 +440,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
   },
+  privacyBadge: {
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  publicBadge: {
+    backgroundColor: '#D1FAE5', // green-100
+  },
+  privateBadge: {
+    backgroundColor: '#FEF3C7', // yellow-100
+  },
+  privacyBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // publicBadge .privacyBadgeText {
+  //   color: '#065F46', // green-800
+  // },
+  // privateBadge .privacyBadgeText {
+  //   color: '#92400E', // yellow-800
+  // },
 })

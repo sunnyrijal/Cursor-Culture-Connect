@@ -116,6 +116,7 @@ export const apiClient = {
           university: signupData.university,
           profilePicture: signupData.profilePicture,
           pronouns: signupData.pronouns,
+          major:signupData.major,
           ethnicity: signupData.ethnicity,
           countryOfOrigin: signupData.countryOfOrigin,
           city: signupData.city,

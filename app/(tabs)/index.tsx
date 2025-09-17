@@ -32,12 +32,39 @@ import QuickActions from '@/components/home/QuickActions';
 import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import AutoplayVideo from '@/components/home/VideoCard';
+import { useAuth } from '@/contexts/AuthContext';
 import { Image } from 'react-native';
+import getDecodedToken from '@/utils/getMyData';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
+  const { authState } = useAuth();
+  console.log(authState)
+
+   const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+  console.log(myData)
+  // useEffect(() => {
+  //   // Only check for authentication after the initial loading is complete
+  //   if (authState.isAuthLoading === false && authState.authenticated === false) {
+  //     Alert.alert(
+  //       'Authentication Required',
+  //       'Please login to continue.',
+  //       [
+  //         {
+  //           text: 'OK',
+  //           onPress: () => router.replace('/(auth)/login'),
+  //         },
+  //       ],
+  //       { cancelable: false }
+  //     );
+  //   }
+  // }, [authState.authenticated, authState.isAuthLoading, myData]);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
@@ -601,19 +628,10 @@ export default function Dashboard() {
       >
         <Header setShowStoriesModal={setShowStoriesModal} />
 
-        {/* <WelcomeCenter
-          welcomeMessages={welcomeMessages}
-          welcomeIndex={welcomeIndex}
-        /> */}
-
         <UserStat currentUser={currentUser} />
 
 
-        <QuickActions
-          setShowCreateEventModal={setShowCreateEventModal}
-          setShowCreateGroupModal={setShowCreateGroupModal}
-          setShowCreateQuickEventModal={setShowCreateQuickEventModal}
-        />
+        <QuickActions />
     <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
 
         <CulturalExperiences />
@@ -635,7 +653,7 @@ export default function Dashboard() {
 
       <CreateQuickEventModal
         visible={showCreateQuickEventModal}
-        onClose={() => handleCreateQuickEvent(false)}
+        onClose={() => setShowCreateQuickEventModal(false)}
         onSubmit={handleCreateQuickEvent}
       />
       <CreateGroupModal

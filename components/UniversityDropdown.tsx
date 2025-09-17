@@ -60,12 +60,14 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState(value);
-  const [filteredUniversities, setFilteredUniversities] = useState<University[]>([]);
-  
+  const [filteredUniversities, setFilteredUniversities] = useState<
+    University[]
+  >([]);
+
   const dropdownHeight = useSharedValue(0);
   const dropdownOpacity = useSharedValue(0);
   const rotateAnimation = useSharedValue(0);
-  
+
   const inputRef = useRef<TextInput>(null);
   const dropdownRef = useRef<ScrollView>(null);
 
@@ -86,13 +88,34 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
     setSearchText(value);
   }, [value]);
 
+  const calculateDropdownHeight = (itemsCount: number) => {
+    const baseItemHeight = 56;
+    const minHeight = 100;
+    const maxHeight = 280; // About 5 items
+    const calculatedHeight = itemsCount * baseItemHeight;
+
+    return Math.min(Math.max(calculatedHeight, minHeight), maxHeight);
+  };
+
   const toggleDropdown = () => {
     const newState = !isDropdownOpen;
     setIsDropdownOpen(newState);
-    
+
     if (newState) {
       onFocus();
-      dropdownHeight.value = withSpring(Math.min(filteredUniversities.length * 50, 200), {
+      // Calculate dynamic height based on filtered results
+      const manualEntryCount =
+        searchText &&
+        !filteredUniversities.find(
+          (u) => u.name.toLowerCase() === searchText.toLowerCase()
+        )
+          ? 1
+          : 0;
+      const totalItems = filteredUniversities.length + manualEntryCount;
+      const calculatedHeight =
+        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
+
+      dropdownHeight.value = withSpring(calculatedHeight, {
         damping: 15,
         stiffness: 100,
       });
@@ -112,11 +135,11 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
     onValueChange(university.name);
     setSearchText(university.name);
     setIsDropdownOpen(false);
-    
+
     dropdownHeight.value = withTiming(0, { duration: 200 });
     dropdownOpacity.value = withTiming(0, { duration: 200 });
     rotateAnimation.value = withTiming(0, { duration: 200 });
-    
+
     setTimeout(() => {
       onBlur();
     }, 100);
@@ -125,21 +148,55 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
   const handleTextChange = (text: string) => {
     setSearchText(text);
     onValueChange(text);
-    
-    if (!isDropdownOpen && text.length > 0) {
+
+    if (!isDropdownOpen && text.length > 0 && universities.length > 0) {
       setIsDropdownOpen(true);
       onFocus();
-      dropdownHeight.value = withSpring(Math.min(filteredUniversities.length * 50, 200), {
+
+      // Recalculate height for filtered results
+      const filtered = universities.filter((university) =>
+        university.name.toLowerCase().includes(text.toLowerCase())
+      );
+      const manualEntryCount =
+        text &&
+        !filtered.find((u) => u.name.toLowerCase() === text.toLowerCase())
+          ? 1
+          : 0;
+      const totalItems = filtered.length + manualEntryCount;
+      const calculatedHeight =
+        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
+
+      dropdownHeight.value = withSpring(calculatedHeight, {
         damping: 15,
         stiffness: 100,
       });
       dropdownOpacity.value = withTiming(1, { duration: 200 });
       rotateAnimation.value = withTiming(180, { duration: 200 });
     }
+
+    // Update dropdown height if already open
+    if (isDropdownOpen) {
+      const filtered = universities.filter((university) =>
+        university.name.toLowerCase().includes(text.toLowerCase())
+      );
+      const manualEntryCount =
+        text &&
+        !filtered.find((u) => u.name.toLowerCase() === text.toLowerCase())
+          ? 1
+          : 0;
+      const totalItems = filtered.length + manualEntryCount;
+      const calculatedHeight =
+        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
+
+      dropdownHeight.value = withSpring(calculatedHeight, {
+        damping: 15,
+        stiffness: 100,
+      });
+    }
   };
 
   const dropdownAnimatedStyle = useAnimatedStyle(() => ({
-    height: dropdownHeight.value,
+    maxHeight: dropdownHeight.value, // allow ScrollView to handle real height
     opacity: dropdownOpacity.value,
   }));
 
@@ -150,7 +207,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
   return (
     <View style={styles.container}>
       <Text style={styles.inputLabel}>{label}</Text>
-      
+
       <View
         style={[
           styles.inputWrapper,
@@ -203,6 +260,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
           onPress={toggleDropdown}
           style={styles.dropdownButton}
           disabled={loading}
+          activeOpacity={0.7}
         >
           <Animated.View style={chevronAnimatedStyle}>
             <ChevronDown size={20} color="#9CA3AF" />
@@ -223,85 +281,109 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
       </View>
 
       {/* Dropdown Menu */}
+      {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <View style={styles.dropdownWrapper}>
-          <Animated.View style={[styles.dropdownContainer, dropdownAnimatedStyle]}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
-              style={styles.dropdownGradient}
+        <Animated.View
+          style={[styles.dropdownContainer, dropdownAnimatedStyle]}
+        >
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
+            style={styles.dropdownGradient}
+          >
+            <ScrollView
+              ref={dropdownRef}
+              style={styles.dropdown}
+              contentContainerStyle={styles.dropdownContentContainer}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true} // allow scroll inside dropdown
+              bounces={true}
+              overScrollMode="always"
             >
-              <ScrollView
-                ref={dropdownRef}
-                style={styles.dropdown}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={true}
-                nestedScrollEnabled={true}
-              >
-            {filteredUniversities.length > 0 ? (
-              <>
-                {/* Search suggestion if typing manually */}
-                {searchText && 
-                 !filteredUniversities.find(u => u.name.toLowerCase() === searchText.toLowerCase()) && (
-                  <TouchableOpacity
-                    style={[styles.dropdownItem, styles.manualEntryItem]}
-                    onPress={() => selectUniversity({ id: 'manual', name: searchText })}
-                  >
-                    <View style={styles.dropdownItemContent}>
-                      <Search size={16} color="#6366F1" />
-                      <Text style={[styles.dropdownItemText, styles.manualEntryText]}>
-                        Use "{searchText}"
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-                
-                {/* University options */}
-                {filteredUniversities.map((university) => (
-                  <TouchableOpacity
-                    key={university.id}
-                    style={[
-                      styles.dropdownItem,
-                      searchText === university.name && styles.dropdownItemSelected,
-                    ]}
-                    onPress={() => selectUniversity(university)}
-                  >
-                    <View style={styles.dropdownItemContent}>
-                      <GraduationCap size={16} color="#6366F1" />
-                      <Text
-                        style={[
-                          styles.dropdownItemText,
-                          searchText === university.name && styles.dropdownItemTextSelected,
-                        ]}
+              {filteredUniversities.length > 0 ? (
+                <>
+                  {/* Search suggestion if typing manually */}
+                  {searchText &&
+                    !filteredUniversities.find(
+                      (u) => u.name.toLowerCase() === searchText.toLowerCase()
+                    ) && (
+                      <TouchableOpacity
+                        style={[styles.dropdownItem, styles.manualEntryItem]}
+                        onPress={() =>
+                          selectUniversity({ id: 'manual', name: searchText })
+                        }
+                        activeOpacity={0.8}
                       >
-                        {university.name}
-                      </Text>
-                    </View>
-                    {searchText === university.name && (
-                      <CheckCircle size={16} color="#10B981" />
+                        <View style={styles.dropdownItemContent}>
+                          <Search size={16} color="#6366F1" />
+                          <Text
+                            style={[
+                              styles.dropdownItemText,
+                              styles.manualEntryText,
+                            ]}
+                          >
+                            Use "{searchText}"
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
                     )}
-                  </TouchableOpacity>
-                ))}
-              </>
-            ) : (
-              <View style={styles.noResultsContainer}>
-                <Search size={20} color="#9CA3AF" />
-                <Text style={styles.noResultsText}>No universities found</Text>
-                {searchText && (
-                  <TouchableOpacity
-                    style={styles.manualEntryButton}
-                    onPress={() => selectUniversity({ id: 'manual', name: searchText })}
-                  >
-                    <Text style={styles.manualEntryButtonText}>
-                      Use "{searchText}" anyway
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-              </ScrollView>
-            </LinearGradient>
-          </Animated.View>
-        </View>
+
+                  {/* University options */}
+                  {filteredUniversities.map((university) => (
+                    <TouchableOpacity
+                      key={university.id}
+                      style={[
+                        styles.dropdownItem,
+                        searchText === university.name &&
+                          styles.dropdownItemSelected,
+                      ]}
+                      onPress={() => selectUniversity(university)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropdownItemContent}>
+                        <GraduationCap size={16} color="#6366F1" />
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            searchText === university.name &&
+                              styles.dropdownItemTextSelected,
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {university.name}
+                        </Text>
+                      </View>
+                      {searchText === university.name && (
+                        <CheckCircle size={16} color="#10B981" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </>
+              ) : (
+                <View style={styles.noResultsContainer}>
+                  <Search size={20} color="#9CA3AF" />
+                  <Text style={styles.noResultsText}>
+                    No universities found
+                  </Text>
+                  {searchText && (
+                    <TouchableOpacity
+                      style={styles.manualEntryButton}
+                      onPress={() =>
+                        selectUniversity({ id: 'manual', name: searchText })
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.manualEntryButtonText}>
+                        Use "{searchText}" anyway
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+          </LinearGradient>
+        </Animated.View>
       )}
 
       {isValid === false && value && (
@@ -313,12 +395,13 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
   );
 };
 
+export default UniversityDropdown;
+
 const styles = StyleSheet.create({
   container: {
     marginBottom: 12,
     zIndex: 1001,
     position: 'relative',
-    overflow: 'visible',
   },
   inputLabel: {
     fontSize: 14,
@@ -396,23 +479,14 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: '500',
   },
-  dropdownWrapper: {
+  dropdownContainer: {
     position: 'absolute',
     top: 80,
     left: 0,
     right: 0,
-    bottom: 0,
-    zIndex: 10000,
-    elevation: 25,
-    pointerEvents: 'box-none',
-  },
-  dropdownContainer: {
-    position: 'relative',
-    top: 0,
-    left: 0,
-    right: 0,
     zIndex: 9999,
     borderRadius: 16,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -430,15 +504,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   dropdown: {
-    maxHeight: 200,
+    flex: 1,
+    minHeight: 100,
+  },
+  dropdownContentContainer: {
+    flexGrow: 1,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    minHeight: 56,
+    height:'auto',
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(226, 232, 240, 0.5)',
   },
   dropdownItemSelected: {
@@ -448,12 +528,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 8,
   },
   dropdownItemText: {
     fontSize: 15,
     color: '#374151',
     fontWeight: '500',
     marginLeft: 12,
+    flex: 1,
   },
   dropdownItemTextSelected: {
     color: '#6366F1',
@@ -470,19 +552,22 @@ const styles = StyleSheet.create({
   },
   noResultsContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 24,
     paddingHorizontal: 16,
+    minHeight: 100,
   },
   noResultsText: {
     fontSize: 14,
     color: '#9CA3AF',
     marginTop: 8,
     fontWeight: '500',
+    textAlign: 'center',
   },
   manualEntryButton: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
     borderRadius: 12,
     borderWidth: 1,
@@ -492,7 +577,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '600',
+    textAlign: 'center',
   },
 });
-
-export default UniversityDropdown;

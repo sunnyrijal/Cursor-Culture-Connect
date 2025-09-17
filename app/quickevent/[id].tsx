@@ -1,14 +1,15 @@
 "use client"
 
 import React from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { router, useLocalSearchParams } from "expo-router"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ShareButton } from "@/components/ui/ShareButton"
 import { theme, spacing, typography, borderRadius } from "@/components/theme"
-import { ArrowLeft, Users, Clock, User, Mail } from "lucide-react-native"
-import { getQuickEventById } from "@/contexts/quickEvent.api"
+import { ArrowLeft, Users, Clock, User, Mail, CheckCircle, Trash2 } from "lucide-react-native"
+import { getQuickEventById, addInterestedUser, deleteQuickEvent } from "@/contexts/quickEvent.api"
+import getDecodedToken from "@/utils/getMyData"
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -26,9 +27,27 @@ const extendedTheme = {
   info: "#3B82F6",
 }
 
+// Assuming the QuickEvent type from API response includes interestedUsers and location
+interface QuickEventDetailType {
+  id: string;
+  name: string;
+  description: string;
+  time: string;
+  max: string;
+  isPublic: boolean;
+  location: string; // Assuming location is a string based on generateEventShareContent
+  userId: string; // Assuming userId is present for creator check
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  };
+  interestedUsers?: { id: string; name?: string; }[]; // Assuming interestedUsers has id and name
+}
+
 export default function QuickEventDetail() {
   const { id } = useLocalSearchParams()
-  const [isRSVPed, setIsRSVPed] = React.useState(false)
+  const queryClient = useQueryClient()
 
   const eventId = Array.isArray(id) ? id[0] : (id ?? null)
 
@@ -37,13 +56,69 @@ export default function QuickEventDetail() {
     isLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<any, Error, { data: QuickEventDetailType }>({ // Explicitly type the data for better intellisense
     queryKey: ["quickevent", eventId],
     queryFn: () => getQuickEventById(eventId as string),
     enabled: !!eventId,
   })
 
-  const quickEvent = eventResponse?.data
+  const quickEvent = eventResponse?.data;
+
+  console.log(quickEvent)
+
+   const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  const { mutate: expressInterest, isPending: isExpressingInterest } = useMutation({
+    mutationFn: () => addInterestedUser(eventId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
+    },
+    onError: (error) => {
+      console.error("Error expressing interest:", error);
+    },
+  });
+
+  const isAlreadyInterested = React.useMemo(() => {
+    console.log("Interested users:", quickEvent?.interestedUsers, "My data:", myData)
+    if (!quickEvent?.interestedUsers || !myData?.userId) return false;
+    // Assuming interestedUsers is an array of objects with a userId property
+    return quickEvent.interestedUsers.some((user: any) => user.id === myData.userId);
+  }, [quickEvent, myData]);
+
+  const { mutate: deleteEventMutation, isPending: isDeletingEvent } = useMutation({
+    mutationFn: (eventIdToDelete: string) => deleteQuickEvent(eventIdToDelete),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quick-events"] }); // Invalidate all quick events list
+      router.back(); // Navigate back after successful deletion
+      Alert.alert("Success", "Quick event deleted successfully.");
+    },
+    onError: (error) => {
+      console.error("Error deleting quick event:", error);
+      Alert.alert("Error", "Failed to delete quick event. Please try again.");
+    },
+  });
+
+  const handleDeleteQuickEvent = () => {
+    if (!eventId) {
+      Alert.alert("Error", "Event ID is missing.");
+      return;
+    }
+    Alert.alert(
+      "Confirm Deletion",
+      `Are you sure you want to delete "${quickEvent?.name}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteEventMutation(eventId as string) },
+      ]
+    );
+  };
+
+  const handleNotForMe = () => {
+    router.back();
+  };
 
   // Loading state
   if (isLoading) {
@@ -84,10 +159,6 @@ export default function QuickEventDetail() {
     }
   }
 
-  const handleRSVP = () => {
-    setIsRSVPed(!isRSVPed)
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -103,11 +174,24 @@ export default function QuickEventDetail() {
                 color={theme.textPrimary}
                 style={styles.headerButton}
               />
+              {quickEvent?.userId === myData?.userId && (
+                <TouchableOpacity
+                  onPress={handleDeleteQuickEvent}
+                  style={styles.headerButton}
+                >
+                  <Trash2 size={20} color={extendedTheme.error} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          <View style={styles.quickEventBadge}>
-            <Text style={styles.quickEventBadgeText}>Quick Event</Text>
+          <View style={styles.badgeContainer}>
+            <View style={styles.quickEventBadge}>
+              <Text style={styles.quickEventBadgeText}>Quick Event</Text>
+            </View>
+            <View style={[styles.quickEventBadge, { backgroundColor: quickEvent.isPublic ? extendedTheme.success : extendedTheme.info }]}>
+              <Text style={styles.quickEventBadgeText}>{quickEvent.isPublic ? "Public" : "University Only"}</Text>
+            </View>
           </View>
 
           <View style={styles.titleContainer}>
@@ -138,6 +222,26 @@ export default function QuickEventDetail() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Max Participants</Text>
                     <Text style={styles.infoValue}>{quickEvent.max} people</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconWrapper, { backgroundColor: "#DBEAFE" }]}>
+                    <Users size={24} color={extendedTheme.info} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Interested Users</Text>
+                    {quickEvent?.userId === myData?.userId && quickEvent.interestedUsers && quickEvent.interestedUsers.length > 0 ? (
+                      <View>
+                        {quickEvent.interestedUsers.map((user, index) => (
+                          <Text key={user.id} style={styles.infoValue}>
+                            {user.name || `User ${index + 1}`}
+                          </Text>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.infoValue}>{quickEvent.interestedUsers?.length || 0} interested</Text>
+                    )}
                   </View>
                 </View>
 
@@ -177,21 +281,41 @@ export default function QuickEventDetail() {
         </View>
       </ScrollView>
 
-      {/* <View style={styles.footer}>
-        <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
-          <View style={styles.rsvpContent}>
-            <Text style={styles.rsvpButtonText}>{isRSVPed ? "Cancel RSVP" : "Join Quick Event"}</Text>
-            <View style={styles.rsvpIcon}>
-              <Text style={styles.rsvpIconText}>→</Text>
-            </View>
+      {isAlreadyInterested ? (
+        <View style={styles.footer}>
+          <View style={styles.alreadyInterestedContainer}>
+            <CheckCircle size={20} color={extendedTheme.success} />
+            <Text style={styles.alreadyInterestedText}>You are interested in this event!</Text>
           </View>
-        </TouchableOpacity>
-      </View> */}
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.notForMeButton} onPress={handleNotForMe}>
+            <Text style={styles.notForMeButtonText}>Not For Me</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.interestedButton, (isExpressingInterest || isDeletingEvent) && styles.disabledButton]}
+            onPress={() => expressInterest()} // Ensure this is not called if deleting
+            disabled={isExpressingInterest}
+          >
+            {isExpressingInterest ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.interestedButtonText}>Interested</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -315,7 +439,6 @@ const styles = StyleSheet.create({
   quickEventBadge: {
     alignSelf: "flex-start",
     backgroundColor: theme.primary,
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 20,
     marginBottom: spacing.md,
@@ -324,6 +447,7 @@ const styles = StyleSheet.create({
     color: theme.white,
     fontSize: typography.fontSize.sm,
     fontWeight: "700",
+    paddingHorizontal:10
   },
   titleContainer: {
     marginBottom: spacing.md,
@@ -442,54 +566,72 @@ const styles = StyleSheet.create({
   // Footer RSVP
   footer: {
     position: "absolute",
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? 20 : 10,
     left: 0,
     right: 0,
     padding: spacing.md,
-    backgroundColor: theme.white,
-    borderTopWidth: 1,
-    borderTopColor: neomorphColors.lightShadow,
+    backgroundColor: "transparent",
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  rsvpButton: {
-    width: "100%",
+  notForMeButton: {
+    flex: 1,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.white,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  notForMeButtonText: {
+    fontSize: typography.fontSize.md,
+    color: theme.textSecondary,
+    fontWeight: "700",
+  },
+  interestedButton: {
+    flex: 2,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: theme.primary,
+    borderRadius: 16,
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 8,
+        elevation: 6,
       },
     }),
   },
-  rsvpContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  rsvpButtonText: {
+  interestedButtonText: {
     fontSize: typography.fontSize.md,
     color: theme.white,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-  rsvpIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
+  disabledButton: {
+    backgroundColor: theme.gray400,
   },
-  rsvpIconText: {
-    color: theme.white,
-    fontSize: typography.fontSize.sm,
+  alreadyInterestedContainer: {
+    flex: 1,
+    height: 56,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: extendedTheme.success,
+    gap: spacing.sm,
+  },
+  alreadyInterestedText: {
+    fontSize: typography.fontSize.md,
+    color: extendedTheme.success,
     fontWeight: "700",
   },
 })

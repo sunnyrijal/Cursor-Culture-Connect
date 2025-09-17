@@ -47,9 +47,10 @@ export function CreateGroupModal({
     name: '',
     description: '',
     category: '',
-    isPublic: true,
+    isPrivate: false, // Default to public
     universityOnly: false,
     allowedUniversity: '',
+    meetingDetails: '',
   });
   const queryClient = useQueryClient();
 
@@ -137,6 +138,7 @@ export function CreateGroupModal({
     onSuccess: (data, variables) => {
       console.log('Group created successfully:', data);
 
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
 
       Alert.alert('Success', 'Group created successfully!');
@@ -166,8 +168,9 @@ export function CreateGroupModal({
     const groupData = {
       name: formData.name,
       description: formData.description,
-      isPrivate: !formData.isPublic,
+      isPrivate: formData.isPrivate,
       imageUrl: imageUrl,
+      meetingDetails: formData.meetingDetails,
     };
     console.log(groupData);
     createGroupMutation.mutate(groupData);
@@ -297,6 +300,16 @@ export function CreateGroupModal({
                   false
                 )}
 
+                {renderInput(
+                  'Meeting Details',
+                  formData.meetingDetails,
+                  (text) => setFormData({ ...formData, meetingDetails: text }),
+                  'e.g., Every Tuesday at 7 PM in Room 101',
+                  <LocateIcon size={16} color="#6366F1" />,
+                  true,
+                  false
+                )}
+
                 {/* {renderInput(
                   'Image URL',
                   imageUrl,
@@ -392,15 +405,15 @@ export function CreateGroupModal({
                     <TouchableOpacity
                       style={[
                         styles.visibilityButton,
-                        formData.isPublic && styles.visibilityButtonActive,
+                        !formData.isPrivate && styles.visibilityButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, isPublic: true })
+                        setFormData({ ...formData, isPrivate: false })
                       }
                     >
                       <LinearGradient
                         colors={
-                          formData.isPublic
+                          !formData.isPrivate
                             ? ['#6366F1', '#8B5CF6']
                             : [
                                 'rgba(255, 255, 255, 0.9)',
@@ -411,12 +424,12 @@ export function CreateGroupModal({
                       >
                         <Globe
                           size={16}
-                          color={formData.isPublic ? '#FFFFFF' : '#374151'}
+                          color={!formData.isPrivate ? '#FFFFFF' : '#374151'}
                         />
                         <Text
                           style={[
                             styles.visibilityButtonText,
-                            formData.isPublic &&
+                            !formData.isPrivate &&
                               styles.visibilityButtonTextActive,
                           ]}
                         >
@@ -428,15 +441,15 @@ export function CreateGroupModal({
                     <TouchableOpacity
                       style={[
                         styles.visibilityButton,
-                        !formData.isPublic && styles.visibilityButtonActive,
+                        formData.isPrivate && styles.visibilityButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, isPublic: false })
+                        setFormData({ ...formData, isPrivate: true })
                       }
                     >
                       <LinearGradient
                         colors={
-                          !formData.isPublic
+                          formData.isPrivate
                             ? ['#6366F1', '#8B5CF6']
                             : [
                                 'rgba(255, 255, 255, 0.9)',
@@ -447,12 +460,12 @@ export function CreateGroupModal({
                       >
                         <Lock
                           size={16}
-                          color={!formData.isPublic ? '#FFFFFF' : '#374151'}
+                          color={formData.isPrivate ? '#FFFFFF' : '#374151'}
                         />
                         <Text
                           style={[
                             styles.visibilityButtonText,
-                            !formData.isPublic &&
+                            formData.isPrivate &&
                               styles.visibilityButtonTextActive,
                           ]}
                         >

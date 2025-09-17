@@ -23,10 +23,11 @@ import {
   Zap,
   Clock,
   Users,
+  Globe,
+  GraduationCap,
 } from 'lucide-react-native';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQuickEvent } from '@/contexts/quickEvent.api';
-import { TimerPicker } from 'react-native-timer-picker';
 import { TimeSelectInput } from './TimeSelectInput'; // Adjust path as needed
 
 interface CreateQuickEventModalProps {
@@ -46,6 +47,7 @@ export function CreateQuickEventModal({
     location: '',
     time: '', // Added time field
     max: '', // Added max people field
+    isPublic: true,
   });
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -146,17 +148,20 @@ export function CreateQuickEventModal({
         location: '',
         time: '', // Reset time field
         max: '', // Reset max field
+        isPublic: true,
       });
       setFocusedField(null);
     }
   }, [visible]);
+
+  const queryClient = useQueryClient();
 
   const createEventMutation = useMutation({
     mutationFn: createQuickEvent,
     onSuccess: (data, variables) => {
       console.log('Quick Event created successfully:', data);
 
-      // queryClient.invalidateQueries({ queryKey: ["events"] })
+      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
 
       Alert.alert('Success', 'Quick Event created successfully!');
 
@@ -205,6 +210,7 @@ export function CreateQuickEventModal({
       location: formData.location.trim(),
       time: formData.time,
       max: formData.max,
+      isPublic: formData.isPublic,
     };
 
     createEventMutation.mutate(eventData);
@@ -443,6 +449,82 @@ export function CreateQuickEventModal({
                           style={styles.validIcon}
                         />
                       )}
+                  </View>
+                </View>
+
+                {/* Visibility Settings */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Event Visibility *</Text>
+                  <View style={styles.rowContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.visibilityButton,
+                        formData.isPublic && styles.visibilityButtonActive,
+                      ]}
+                      onPress={() =>
+                        setFormData({ ...formData, isPublic: true })
+                      }
+                    >
+                      <LinearGradient
+                        colors={
+                          formData.isPublic
+                            ? ['#6366F1', '#8B5CF6']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
+                        }
+                        style={styles.visibilityButtonGradient}
+                      >
+                        <Globe
+                          size={16}
+                          color={formData.isPublic ? '#FFFFFF' : '#374151'}
+                        />
+                        <Text
+                          style={[
+                            styles.visibilityButtonText,
+                            formData.isPublic && styles.visibilityButtonTextActive,
+                          ]}
+                        >
+                          Public
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.visibilityButton,
+                        !formData.isPublic && styles.visibilityButtonActive,
+                      ]}
+                      onPress={() =>
+                        setFormData({ ...formData, isPublic: false })
+                      }
+                    >
+                      <LinearGradient
+                        colors={
+                          !formData.isPublic
+                            ? ['#6366F1', '#8B5CF6']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
+                        }
+                        style={styles.visibilityButtonGradient}
+                      >
+                        <GraduationCap
+                          size={16}
+                          color={!formData.isPublic ? '#FFFFFF' : '#374151'}
+                        />
+                        <Text
+                          style={[
+                            styles.visibilityButtonText,
+                            !formData.isPublic && styles.visibilityButtonTextActive,
+                          ]}
+                        >
+                          University Only
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -716,6 +798,59 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     fontWeight: '500',
     lineHeight: 20,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  visibilityButton: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: 'white',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  visibilityButtonActive: {
+    borderColor: '#6366F1',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  visibilityButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  visibilityButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  visibilityButtonTextActive: {
+    color: '#FFFFFF',
   },
   actionsContainer: {
     flexDirection: 'row',

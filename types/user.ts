@@ -34,6 +34,7 @@ export interface SignupData {
   pronouns: string;
   ethnicity: string[];
   countryOfOrigin: string;
+  major:string;
   city: string;
   bio?:string;
   state: string;
