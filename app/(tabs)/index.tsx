@@ -49,22 +49,22 @@ export default function Dashboard() {
     queryFn: () => getDecodedToken(),
   });
   console.log(myData)
-  useEffect(() => {
-    
-    if (authState.authenticated === false) {
-      Alert.alert(
-        'Authentication Required',
-        'Please login to continue.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(auth)/login'),
-          },
-        ],
-        { cancelable: false }
-      );
-    }
-  }, [authState.authenticated]);
+  // useEffect(() => {
+  //   // Only check for authentication after the initial loading is complete
+  //   if (authState.isAuthLoading === false && authState.authenticated === false) {
+  //     Alert.alert(
+  //       'Authentication Required',
+  //       'Please login to continue.',
+  //       [
+  //         {
+  //           text: 'OK',
+  //           onPress: () => router.replace('/(auth)/login'),
+  //         },
+  //       ],
+  //       { cancelable: false }
+  //     );
+  //   }
+  // }, [authState.authenticated, authState.isAuthLoading, myData]);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);

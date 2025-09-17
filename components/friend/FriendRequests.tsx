@@ -18,6 +18,7 @@ import {
   getPendingFriendRequests,
   respondToFriendRequest,
 } from '@/contexts/friend.api';
+import { router } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
 
 const theme = {
@@ -216,7 +217,11 @@ export default function FriendRequestsScreen() {
                 const name = user.name || `${user.firstName} ${user.lastName}`;
 
               return (
-                <View key={request.id} style={styles.requestCard}>
+                <TouchableOpacity
+                  key={request.id}
+                  style={styles.requestCard}
+                  onPress={() => router.push(`/public/profile/${user.id}`)}
+                >
                   <Image
                      source={{
                     uri:
@@ -272,7 +277,7 @@ export default function FriendRequestsScreen() {
                       <Text style={styles.sentStatusText}>Pending</Text>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

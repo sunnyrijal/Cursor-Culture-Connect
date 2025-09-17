@@ -31,6 +31,7 @@ import {
   Globe,
   Camera,
   Heart,
+  GraduationCap,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -49,6 +50,7 @@ import { getUniversities } from '@/contexts/university.api';
 import UniversityDropdown from './UniversityDropdown';
 import Location from './Location';
 
+import { Picker } from '@react-native-picker/picker';
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image } from 'react-native';
@@ -88,42 +90,76 @@ const INTERESTS_OPTIONS = [
   'Dance',
 ];
 
+const MAJOR_OPTIONS = [
+  'Accounting',
+  'Art',
+  'Biology',
+  'Business',
+  'Chemistry',
+  'Communications',
+  'Computer Science',
+  'Economics',
+  'Education',
+  'Engineering',
+  'English',
+  'History',
+  'Law',
+  'Marketing',
+  'Mathematics',
+  'Medicine',
+  'Nursing',
+  'Physics',
+  'Political Science',
+  'Psychology',
+  'Sociology',
+  'Other',
+];
+
+const CLASS_YEAR_OPTIONS = [
+  '2026 Senior',
+  '2027 Junior',
+  '2028 Sophomore',
+  '2029 Freshman',
+  'Graduate',
+];
+
 interface AuthFormProps {
   initialMode?: 'login' | 'signup';
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Step 1 - Basic Information (Required fields)
-  const [firstName, setFirstName] = useState<string>('');
-  const [lastName, setLastName] = useState<string>('');
-  const [dateOfBirth, setDateOfBirth] = useState<string>('');
-  const [university, setUniversity] = useState<string>('');
-  const [countryOfOrigin, setCountryOfOrigin] = useState<string>('');
-  const [classYear, setClassYear] = useState<string>('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [university, setUniversity] = useState('');
+  const [major, setMajor] = useState('');
+  const [countryOfOrigin, setCountryOfOrigin] = useState('');
+  const [classYear, setClassYear] = useState('');
 
   // Step 2 - Profile Information (Optional fields)
-  const [profilePicture, setProfilePicture] = useState<string>('');
-  const [pronouns, setPronouns] = useState<string>('');
+  const [profilePicture, setProfilePicture] = useState('');
+  const [pronouns, setPronouns] = useState('');
   const [ethnicity, setEthnicity] = useState<string[]>([]);
-  const [location, setLocation] = useState<{ city: string; state: string }>({
+  const [location, setLocation] = useState({
     city: '',
     state: '',
   });
   const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [customInterest, setCustomInterest] = useState<string>('');
-  const [bio, setBio] = useState<string>('');
-  const [newLanguage, setNewLanguage] = useState<string>('');
+  const [customInterest, setCustomInterest] = useState('');
+  const [bio, setBio] = useState('');
+  const [newLanguage, setNewLanguage] = useState('');
 
   // Legal checkboxes
-  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState<boolean>(false);
-  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -243,21 +279,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     setShowModal(true);
   };
 
-  const closeLegalModal = () => {
+  const closeLegalModal = (): void => {
     setShowModal(false);
     setModalType(null);
   };
 
-  const [isSignup, setIsSignup] = useState<boolean>(initialMode === 'signup');
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [focusedInput, setFocusedInput] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isSignup, setIsSignup] = useState(initialMode === 'signup');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [focusedInput, setFocusedInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
-  const [fieldValidation, setFieldValidation] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [fieldValidation, setFieldValidation] = useState<
+    Record<string, boolean>
+  >({});
 
   const { login, signup } = useAuth();
   const router = useRouter();
@@ -306,30 +342,33 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
   }, [isSignup]);
 
-  const validateField = (field: string, value: string | string[] | boolean) => {
+  const validateField = (field: string, value: any): boolean => {
     let isValid = false;
 
     switch (field) {
       case 'email':
         isValid =
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) &&
-          (value as string).includes('.edu');
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.includes('.edu');
         break;
       case 'password':
-        isValid = (value as string).length >= 8;
+        isValid = value.length >= 8;
         break;
       case 'confirmPassword':
         isValid = value === password;
         break;
       case 'firstName':
       case 'lastName':
-        isValid = (value as string).length >= 2;
+        isValid = value.length >= 2;
         break;
       case 'university':
-        isValid = (value as string).length >= 2;
+        isValid = value.length >= 2;
+        break;
+      case 'major':
+      case 'classYear':
+        isValid = value.length > 0;
         break;
       case 'dateOfBirth':
-        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value as string);
+        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value);
         break;
       case 'termsAccepted':
       case 'privacyAccepted':
@@ -343,7 +382,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     return isValid;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (isSignup && currentStep === 1) {
       // Validate step 1 fields
       const step1Valid = [
@@ -383,13 +422,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     try {
       if (isSignup) {
         const signupData = {
-          firstName,
-          lastName,
+          firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+          lastName: lastName.charAt(0).toUpperCase() + lastName.slice(1),
           email,
           password,
           confirmPassword,
           dateOfBirth,
           classYear,
+          major,
           university,
           countryOfOrigin,
           profilePicture,
@@ -421,7 +461,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     }
   };
 
-  const toggleMode = () => {
+  const toggleMode = (): void => {
     setIsSignup(!isSignup);
     setCurrentStep(1);
     setError('');
@@ -429,6 +469,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     setFirstName('');
     setLastName('');
     setUniversity('');
+    setMajor('');
     setClassYear('');
     setDateOfBirth('');
     setCountryOfOrigin('');
@@ -446,7 +487,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     setMarketingOptIn(false);
   };
 
-  const toggleEthnicity = (option: string) => {
+  const toggleEthnicity = (option: string): void => {
     setEthnicity((prev) => {
       if (prev.includes(option)) {
         return prev.filter((item) => item !== option);
@@ -456,7 +497,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     });
   };
 
-  const toggleInterest = (interest: string) => {
+  const toggleInterest = (interest: string): void => {
     setSelectedInterests((prev) => {
       if (prev.includes(interest)) {
         return prev.filter((item) => item !== interest);
@@ -466,7 +507,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     });
   };
 
-  const addCustomInterest = () => {
+  const addCustomInterest = (): void => {
     if (
       customInterest.trim() &&
       !selectedInterests.includes(customInterest.trim())
@@ -476,25 +517,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     }
   };
 
-  const addLanguage = (language: string) => {
+  const addLanguage = (language: string): void => {
     if (language.trim() && !languagesSpoken.includes(language.trim())) {
       setLanguagesSpoken((prev) => [...prev, language.trim()]);
     }
   };
 
-  const removeLanguage = (language: string) => {
+  const removeLanguage = (language: string): void => {
     setLanguagesSpoken((prev) => prev.filter((lang) => lang !== language));
   };
 
   const renderAnimatedInput = useCallback(
     (
-      icon: any,
+      icon: React.ElementType,
       label: string,
       value: string,
       onChangeText: (text: string) => void,
       placeholder: string,
       inputKey: string,
-      options: any = {}
+      options: object = {}
     ) => {
       const isValid = fieldValidation[inputKey];
       const isFocused = focusedInput === inputKey;
@@ -601,6 +642,79 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
       showPassword,
       formOpacity,
     ]
+  );
+
+  const renderPickerInput = useCallback(
+    (
+      icon: React.ElementType,
+      label: string,
+      selectedValue: string,
+      onValueChange: (value: string) => void,
+      placeholder: string,
+      items: { label: string; value: string }[],
+      inputKey: string
+    ) => {
+      const isValid = fieldValidation[inputKey];
+      const isFocused = focusedInput === inputKey;
+
+      return (
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>{label}</Text>
+          <View
+            style={[
+              styles.inputWrapper,
+              isFocused && styles.inputWrapperFocused,
+              isValid === true && styles.inputWrapperValid,
+              isValid === false && selectedValue && styles.inputWrapperInvalid,
+              { paddingHorizontal: 0, paddingLeft: 16 },
+            ]}
+          >
+            <View style={styles.inputIcon}>
+              {React.createElement(icon, {
+                size: 20,
+                color: isFocused
+                  ? '#6366F1'
+                  : isValid === true
+                  ? '#10B981'
+                  : isValid === false && selectedValue
+                  ? '#EF4444'
+                  : '#9CA3AF',
+              })}
+            </View>
+            <Picker
+              selectedValue={selectedValue}
+              onValueChange={(itemValue) => {
+                if (itemValue && itemValue !== '') {
+                  // Do not update for placeholder
+                  onValueChange(itemValue);
+                  validateField(inputKey, itemValue);
+                  setFocusedInput(''); // Clear focus after selection
+                }
+              }}
+              style={styles.picker}
+              enabled={!loading}
+              prompt={label}
+              mode="dropdown" // Explicitly set mode for better Android support
+            >
+              <Picker.Item
+                label={placeholder}
+                value=""
+                enabled={false}
+                color="#9CA3AF"
+              />
+              {items.map((item) => (
+                <Picker.Item
+                  key={item.value}
+                  label={item.label}
+                  value={item.value}
+                />
+              ))}
+            </Picker>
+          </View>
+        </View>
+      );
+    },
+    [fieldValidation, focusedInput, loading]
   );
 
   const renderBreadcrumb = () => {
@@ -959,6 +1073,76 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     );
   };
 
+  const renderDateOfBirthPicker = () => {
+    const formatDate = (date: Date): string => {
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    };
+
+    const onDateChange = (event: any, selectedDate?: Date): void => {
+      const currentDate = selectedDate || new Date();
+      setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+      setSelectedDate(currentDate);
+      setDateOfBirth(formatDate(currentDate));
+      validateField('dateOfBirth', formatDate(currentDate));
+    };
+
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <Text style={styles.inputLabel}>Date of Birth *</Text>
+        <TouchableOpacity
+          style={[
+            styles.inputWrapper,
+            fieldValidation['dateOfBirth'] === true && styles.inputWrapperValid,
+            fieldValidation['dateOfBirth'] === false &&
+              dateOfBirth &&
+              styles.inputWrapperInvalid,
+          ]}
+          onPress={() => setShowDatePicker(true)}
+          disabled={loading}
+        >
+          <View style={styles.inputIcon}>
+            <Calendar size={20} color={dateOfBirth ? '#6366F1' : '#9CA3AF'} />
+          </View>
+          <Text
+            style={[
+              styles.input,
+              { color: dateOfBirth ? '#111827' : '#9CA3AF' },
+            ]}
+          >
+            {dateOfBirth || 'Select your date of birth'}
+          </Text>
+          {fieldValidation['dateOfBirth'] === true && dateOfBirth && (
+            <View style={styles.validIcon}>
+              <CheckCircle size={16} color="#10B981" />
+            </View>
+          )}
+          {fieldValidation['dateOfBirth'] === false && dateOfBirth && (
+            <View style={styles.validIcon}>
+              <AlertCircle size={16} color="#EF4444" />
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onDateChange}
+            maximumDate={new Date()} // Prevent future dates
+            minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+          />
+        )}
+
+        {fieldValidation['dateOfBirth'] === false && dateOfBirth && (
+          <Text style={styles.validationText}>
+            Please select a valid date of birth
+          </Text>
+        )}
+      </Animated.View>
+    );
+  };
+
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: headerScale.value }],
     opacity: headerOpacity.value,
@@ -984,69 +1168,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const backgroundAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${backgroundRotation.value}deg` }],
   }));
-
-  const renderDateOfBirthPicker = () => {
-  const formatDate = (date:any) => {
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
-
-  const onDateChange = (event:any, selectedDate:any) => {
-    const currentDate = selectedDate || new Date();
-    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
-    setSelectedDate(currentDate);
-    setDateOfBirth(formatDate(currentDate));
-    validateField("dateOfBirth", formatDate(currentDate));
-  };
-
-  return (
-    <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-      <Text style={styles.inputLabel}>Date of Birth *</Text>
-      <TouchableOpacity
-        style={[
-          styles.inputWrapper,
-          fieldValidation["dateOfBirth"] === true && styles.inputWrapperValid,
-          fieldValidation["dateOfBirth"] === false && dateOfBirth && styles.inputWrapperInvalid,
-        ]}
-        onPress={() => setShowDatePicker(true)}
-        disabled={loading}
-      >
-        <View style={styles.inputIcon}>
-          <Calendar size={20} color={dateOfBirth ? "#6366F1" : "#9CA3AF"} />
-        </View>
-        <Text style={[styles.input, { color: dateOfBirth ? "#111827" : "#9CA3AF" }]}>
-          {dateOfBirth || "Select your date of birth"}
-        </Text>
-        {fieldValidation["dateOfBirth"] === true && dateOfBirth && (
-          <View style={styles.validIcon}>
-            <CheckCircle size={16} color="#10B981" />
-          </View>
-        )}
-        {fieldValidation["dateOfBirth"] === false && dateOfBirth && (
-          <View style={styles.validIcon}>
-            <AlertCircle size={16} color="#EF4444" />
-          </View>
-        )}
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onDateChange}
-          maximumDate={new Date()} // Prevent future dates
-          minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
-        />
-      )}
-
-      {fieldValidation["dateOfBirth"] === false && dateOfBirth && (
-        <Text style={styles.validationText}>
-          Please select a valid date of birth
-        </Text>
-      )}
-    </Animated.View>
-  );
-};
 
   return (
     <View style={styles.container}>
@@ -1135,6 +1256,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                         autoCorrect: false,
                       }
                     )}
+
+                    <View style={styles.extraLinksContainer}>
+                      <TouchableOpacity
+                        onPress={() => router.push(email ? `/(auth)/verify?email=${email}` : '/(auth)/verify')}
+                      >
+                        <Text style={styles.linkText}>Verify Account</Text>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 )}
 
@@ -1183,8 +1312,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
                     {renderDateOfBirthPicker()}
 
-
-
                     {renderAnimatedInput(
                       Mail,
                       'College Email Address *',
@@ -1221,6 +1348,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       />
                     </Animated.View>
 
+                    {renderPickerInput(
+                      GraduationCap,
+                      'Major/Field of Study *',
+                      major,
+                      setMajor,
+                      'Select your major',
+                      MAJOR_OPTIONS.map((m) => ({ label: m, value: m })),
+                      'major'
+                    )}
+
+                    {renderPickerInput(
+                      Calendar,
+                      'Expected Graduation Year *',
+                      classYear,
+                      setClassYear,
+                      'Select your class year',
+                      CLASS_YEAR_OPTIONS.map((y) => ({ label: y, value: y })),
+                      'classYear'
+                    )}
+
                     {renderAnimatedInput(
                       Globe,
                       'Country of Origin',
@@ -1255,18 +1402,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                         secureTextEntry: !showConfirmPassword,
                         autoComplete: 'password',
                         autoCorrect: false,
-                      }
-                    )}
-
-                    {renderAnimatedInput(
-                      Calendar,
-                      'Class Year *',
-                      classYear,
-                      setClassYear,
-                      'e.g., Freshman, 2025',
-                      'classYear',
-                      {
-                        keyboardType: 'default',
                       }
                     )}
                   </>
@@ -1442,6 +1577,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 const styles = StyleSheet.create({
   // ... existing styles ...
 
+  extraLinksContainer: {
+    alignItems: 'flex-end',
+    marginTop: 8,
+  },
+
+  picker: {
+    flex: 1,
+    height: 52,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    ...Platform.select({
+      ios: {
+        // iOS specific styles if needed
+      },
+      android: {
+        color: '#111827',
+        marginVertical: -8, // Adjust vertical alignment on Android
+      },
+    }),
+  },
   breadcrumbContainer: {
     flexDirection: 'row',
     alignItems: 'center',

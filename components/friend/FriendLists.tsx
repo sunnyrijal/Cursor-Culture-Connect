@@ -130,7 +130,11 @@ export default function FriendsListScreen() {
         ) : (
           <View style={styles.friendsList}>
             {friends.map((friend: any) => (
-              <View key={friend.id} style={styles.friendCard}>
+              <TouchableOpacity
+                key={friend.id}
+                style={styles.friendCard}
+                onPress={() => router.push(`/public/profile/${friend.id}`)}
+              >
                 <Image
                   source={{
                     uri:
@@ -165,7 +169,7 @@ export default function FriendsListScreen() {
                     <UserMinus size={18} color={theme.gray500} />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}

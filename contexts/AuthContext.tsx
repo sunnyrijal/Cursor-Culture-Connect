@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logout as storeLogout } from '@/data/store';
 import { apiClient } from './api';
@@ -7,6 +13,7 @@ import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutCon
 import { API_URL } from './axiosConfig';
 import { router } from 'expo-router';
 import { SignupData } from '@/types/user';
+import { checkAuthStatus } from '@/utils/auth';
 
 type AuthState = {
   authenticated: boolean;
@@ -14,12 +21,13 @@ type AuthState = {
   userId: string | null;
 };
 
-
 type AuthContextType = {
   authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  signup: (signupData: SignupData ) => Promise<void>;
+  signup: (signupData: SignupData) => Promise<void>;
   logout: () => Promise<void>;
+  loading:boolean;
+  authenticated:boolean
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -42,13 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.authenticated) {
             // Get token from storage if available
             const token = await AsyncStorage.getItem('token');
-            
+
             setAuthState({
               authenticated: true,
               token,
@@ -57,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
         }
-        
+
         // If no active session, check local storage as fallback
         const token = await AsyncStorage.getItem('token');
         const userId = await AsyncStorage.getItem('userId');
@@ -82,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     };
-    
+
     checkSession();
   }, []);
 
@@ -90,13 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiClient.login(email, password);
       const { accessToken, user } = response.data;
-        console.log(response)
+      console.log(response);
       await AsyncStorage.setItem('token', accessToken);
       await AsyncStorage.setItem('userId', user?.id.toString());
-      
+
       setAuthState({
         authenticated: true,
-        token:accessToken,
+        token: accessToken,
         userId: user.id.toString(),
       });
     } catch (error) {
@@ -105,17 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-const signup = async (signupData:SignupData) => {
-  try {
-    const response = await apiClient.signup(signupData);
-    // After successful signup, log the user in
-    // await login(email, password);
-    router.push(`/(auth)/verify?email=${signupData.email}`)
-  } catch (error) {
-    console.error('Signup error:', error);
-    throw error;
-  }
-};
+  const signup = async (signupData: SignupData) => {
+    try {
+      const response = await apiClient.signup(signupData);
+      // After successful signup, log the user in
+      // await login(email, password);
+      router.push(`/(auth)/verify?email=${signupData.email}`);
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  };
 
   const logout = async () => {
     // try {
@@ -131,14 +139,14 @@ const signup = async (signupData:SignupData) => {
     //   console.error('Server logout error:', error);
     //   // Continue with client-side logout even if server logout fails
     // }
-    
+
     // Clear local storage
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('userId');
-    
+
     // Reset store
     storeLogout();
-    
+
     // Update auth state
     setAuthState({
       authenticated: false,
@@ -147,8 +155,21 @@ const signup = async (signupData:SignupData) => {
     });
   };
 
+  const [loading, setLoading] = useState(true); // ← needed for splash
+
+  const [authenticated, setAuthenticated] = useState(false);
+  useEffect(() => {
+    const initAuth = async () => {
+      const isValid = await checkAuthStatus();
+      setAuthenticated(isValid);
+      setLoading(false); // auth check complete
+    };
+
+    initAuth();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ authState, login, signup, logout }}>
+    <AuthContext.Provider value={{ authState, login, signup, logout, authenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );

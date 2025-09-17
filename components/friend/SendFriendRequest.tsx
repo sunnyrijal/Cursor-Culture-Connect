@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ import {
   UserX,
   MessageCircle,
 } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { getUsers } from '@/contexts/user.api';
 import { sendFriendRequest } from '@/contexts/friend.api';
 
@@ -56,6 +58,10 @@ const FriendshipStatus = {
 export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+  const [message, setMessage] = useState('');
+
 
   const {
     data: usersResponse,
@@ -74,6 +80,8 @@ export default function SendFriendRequestScreen() {
       console.log('Friend request sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+
       Alert.alert('Success', 'Friend request sent successfully!');
     },
     onError: (error: any) => {
@@ -99,17 +107,19 @@ export default function SendFriendRequestScreen() {
   }, [users, searchQuery]);
 
   const handleSendRequest = (userId: string, userName: string) => {
-    Alert.alert(
-      'Send Friend Request',
-      `Send a friend request to ${userName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send',
-          onPress: () => sendRequestMutation.mutate({ receiverId: userId }),
-        },
-      ]
-    );
+    setSelectedUser({ id: userId, name: userName });
+    setModalVisible(true);
+  };
+
+  const handleSendWithMessageHandler = () => {
+    if (!selectedUser) return;
+    sendRequestMutation.mutate({
+      receiverId: selectedUser.id,
+      message: message.trim(),
+    });
+    setModalVisible(false);
+    setMessage('');
+    setSelectedUser(null);
   };
 
 
@@ -185,7 +195,7 @@ export default function SendFriendRequestScreen() {
   };
 
   const getStatusBadge = (friendshipStatus: string) => {
-    if (!friendshipStatus) return null;
+    if (!friendshipStatus || friendshipStatus === FriendshipStatus.ACCEPTED) return null;
 
     const statusConfig = {
       [FriendshipStatus.PENDING]: {
@@ -258,6 +268,36 @@ export default function SendFriendRequestScreen() {
         </View>
       </View>
 
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Send a friend request to {selectedUser?.name}?</Text>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Add an optional message..."
+              placeholderTextColor={theme.gray400}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={() => setModalVisible(false)}>
+                <Text style={[styles.textStyle,{ color:'black'}]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.buttonSend]} onPress={handleSendWithMessageHandler}>
+                <Text style={styles.textStyle}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -275,7 +315,11 @@ export default function SendFriendRequestScreen() {
         ) : (
           <View style={styles.usersList}>
             {filteredUsers.map((user: any) => (
-              <View key={user.id} style={styles.userCard}>
+              <TouchableOpacity
+                key={user.id}
+                style={styles.userCard}
+                onPress={() => router.push(`/public/profile/${user.id}`)}
+              >
                 <Image
                    source={{
                     uri:
@@ -305,7 +349,7 @@ export default function SendFriendRequestScreen() {
                   )}
                 </View>
                 {getActionButton(user)}
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -607,5 +651,71 @@ const styles = StyleSheet.create({
     color: theme.gray500,
     fontWeight: '600',
     fontSize: 13,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '90%',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.textPrimary,
+  },
+  messageInput: {
+    width: '100%',
+    minHeight: 80,
+    maxHeight: 120,
+    backgroundColor: theme.gray50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+    fontSize: 15,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    borderRadius: 10,
+    padding: 12,
+    elevation: 2,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  buttonClose: {
+    backgroundColor: theme.gray200,
+  },
+  buttonSend: {
+    backgroundColor: theme.primary,
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

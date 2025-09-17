@@ -23,6 +23,7 @@ export interface Friendship {
 
 export interface SendFriendRequestData {
   receiverId: string;
+  message?: string;
 }
 
 export interface RespondToFriendRequestData {

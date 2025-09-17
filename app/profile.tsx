@@ -25,14 +25,15 @@ import {
   LogOut,
   AlertCircle,
   RefreshCw,
+  Trash2,
   LogOutIcon,
   Globe,
   User,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { logout } from '@/data/store';
-import { getMyData } from '@/contexts/user.api';
-import { useQuery } from '@tanstack/react-query';
+import { getMyData, deleteMe } from '@/contexts/user.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const clayTheme = {
   background: '#E8E8E8',
@@ -63,6 +64,7 @@ const neumorphTheme = {
 };
 
 export default function Profile() {
+  const { logout: authLogout } = useAuth();
   const {
     data: userData,
     isLoading: queryLoading,
@@ -91,6 +93,7 @@ export default function Profile() {
           countryOfOrigin: response.user.countryOfOrigin,
           university: response.user.university,
           classYear: response.user.classYear,
+          major: response.user.major,
           ethnicity: response.user.ethnicity,
           languagesSpoken: response.user.languagesSpoken,
           interests: response.user.interests,
@@ -127,16 +130,44 @@ export default function Profile() {
     });
   };
 
+  const { mutate: deleteAccountMutation, isPending: isDeleting } = useMutation({
+    mutationFn: deleteMe,
+    onSuccess: async () => {
+      Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+      await authLogout();
+      router.replace('/(auth)/login');
+    },
+    onError: (err: any) => {
+      console.error('Delete account error:', err);
+      Alert.alert('Error', err.message || 'Failed to delete account. Please try again.');
+    },
+  });
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteAccountMutation(),
+        },
+      ]
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: async () => {
-          await logout(); // Call the auth context logout function
-          router.replace('/');
-        },
+        onPress: async () => {          
+          await authLogout();
+          router.replace('/(auth)/login');
+        }
       },
     ]);
   };
@@ -211,6 +242,17 @@ export default function Profile() {
             <View style={styles.actionDivider} />
             <TouchableOpacity
               style={styles.actionButton}
+              onPress={handleDeleteAccount}
+              disabled={isDeleting || queryLoading || isError}
+            >
+              <Trash2 
+                size={20} 
+                color={isDeleting ? clayTheme.textMuted : "#EF4444"}
+              />
+            </TouchableOpacity>
+            <View style={styles.actionDivider} />
+            <TouchableOpacity
+              style={styles.actionButton}
               onPress={() => handleLogout()}
             >
               <LogOutIcon 
@@ -278,7 +320,7 @@ export default function Profile() {
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Contact Information</Text>
               <View style={styles.infoCard}>
-                <View style={styles.infoItem}>
+                {/* <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <Mail size={18} color={clayTheme.primary} />
                   </View>
@@ -286,7 +328,7 @@ export default function Profile() {
                     <Text style={styles.infoLabel}>Email</Text>
                     <Text style={styles.infoValue}>{userData.email}</Text>
                   </View>
-                </View>
+                </View> */}
 
                 <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
@@ -346,13 +388,25 @@ export default function Profile() {
                     </View>
                   </View>
 
+                  {userData.major && (
+                    <View style={styles.infoItem}>
+                      <View style={styles.infoIcon}>
+                        <GraduationCap size={18} color={clayTheme.accent} />
+                      </View>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Major/Field of study</Text>
+                        <Text style={styles.infoValue}>{userData.major}</Text>
+                      </View>
+                    </View>
+                  )}
+
                   {userData.classYear && (
                     <View style={styles.infoItem}>
                       <View style={styles.infoIcon}>
                         <Calendar size={18} color={clayTheme.accent} />
                       </View>
                       <View style={styles.infoContent}>
-                        <Text style={styles.infoLabel}>Class Year</Text>
+                        <Text style={styles.infoLabel}>Expected Year of Graduation</Text>
                         <Text style={styles.infoValue}>{userData.classYear}</Text>
                       </View>
                     </View>

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './axiosConfig';
 import { AxiosResponse } from 'axios';
 
@@ -17,7 +18,10 @@ export interface ResendOTPData {
 // Send OTP to user's email
 export const sendOTP = async (data: SendOTPData) => {
   try {
-    const response: AxiosResponse = await api.post('/email-verify/send-otp', data);
+    const response: AxiosResponse = await api.post(
+      '/email-verify/send-otp',
+      data
+    );
     return response.data;
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -28,7 +32,14 @@ export const sendOTP = async (data: SendOTPData) => {
 // Verify the OTP for the given email
 export const verifyOTP = async (data: VerifyOTPData) => {
   try {
-    const response: AxiosResponse = await api.post('/email-verify/verify-otp', data);
+    const response: AxiosResponse = await api.post(
+      '/email-verify/verify-otp',
+      data
+    );
+    const { accessToken, userId } = response.data;
+    console.log(response);
+    await AsyncStorage.setItem('token', accessToken);
+    await AsyncStorage.setItem('userId', userId.toString());
     return response.data;
   } catch (error) {
     console.error('Error verifying OTP:', error);
@@ -52,7 +63,10 @@ export const getVerificationStatus = async (email: string) => {
 // Resend OTP to user's email
 export const resendOTP = async (data: ResendOTPData) => {
   try {
-    const response: AxiosResponse = await api.post('/email-verify/resend-otp', data);
+    const response: AxiosResponse = await api.post(
+      '/email-verify/resend-otp',
+      data
+    );
     return response.data;
   } catch (error) {
     console.error('Error resending OTP:', error);

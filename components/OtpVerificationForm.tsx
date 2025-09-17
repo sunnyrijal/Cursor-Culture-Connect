@@ -63,7 +63,7 @@ const OtpVerificationForm: React.FC = () => {
     mutationFn: (data: VerifyOTPData) => verifyOTP(data),
     onSuccess: (data) => {
       console.log('✅ OTP verified successfully:', data);
-      router.replace('/(auth)/login');
+      router.replace('/(tabs)');
     },
     onError: (error: any) => {
       console.error('❌ Error verifying OTP:', error);

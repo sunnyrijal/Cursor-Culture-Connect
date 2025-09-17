@@ -78,3 +78,25 @@ export const updateProfile = async (profileData: UpdateProfileData) => {
   }
 };
 
+
+export const getUserById = async (id:string) => {
+  try {
+    const response = await api.get(`/user/${id}` );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+
+export const deleteMe = async (id:string) => {
+  try {
+    const response = await api.delete(`/user/me` );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+
+

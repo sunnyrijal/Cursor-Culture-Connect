@@ -62,6 +62,16 @@ export const updateGroup = async (groupId: string, data: UpdateGroupRequest) => 
   }
 };
 
+export const deleteGroup = async (groupId: string) => {
+  try {
+    const response = await api.delete(`/groups/${groupId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    throw error;
+  }
+};
+
 // Member management
 export const addMember = async (groupId: string, userId: string) => {
   try {
