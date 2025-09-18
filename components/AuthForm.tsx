@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -164,8 +164,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const majorPickerRef = useRef<Picker<string>>(null);
+  const classYearPickerRef = useRef<Picker<string>>(null);
 
   const uploadFileMutation = useMutation({
     mutationFn: uploadFile,
@@ -644,29 +644,56 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     ]
   );
 
-  const renderPickerInput = useCallback(
-    (
-      icon: React.ElementType,
-      label: string,
-      selectedValue: string,
-      onValueChange: (value: string) => void,
-      placeholder: string,
-      items: { label: string; value: string }[],
-      inputKey: string
-    ) => {
-      const isValid = fieldValidation[inputKey];
-      const isFocused = focusedInput === inputKey;
+const renderPickerInput = useCallback(
+  (
+    icon: React.ElementType,
+    label: string,
+    selectedValue: string,
+    onValueChange: (value: string) => void,
+    placeholder: string,
+    items: { label: string; value: string }[],
+    inputKey: string,
+    pickerRef: React.RefObject<Picker<string>>
+  ) => {
+    const isValid = fieldValidation[inputKey];
+    const isFocused = focusedInput === inputKey;
 
-      return (
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>{label}</Text>
-          <View
+    const handleInputPress = () => {
+      if (!loading && pickerRef.current) {
+        setFocusedInput(inputKey);
+        // Focus the picker to trigger it programmatically
+        pickerRef.current.focus();
+      }
+    };
+
+    const handlePickerChange = (itemValue: string) => {
+      if (itemValue && itemValue !== '') {
+        onValueChange(itemValue);
+        validateField(inputKey, itemValue);
+      }
+      setFocusedInput('');
+    };
+
+    const displayValue = selectedValue ? 
+      items.find(item => item.value === selectedValue)?.label || selectedValue 
+      : placeholder;
+
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        
+        <View style={{ position: 'relative' }}>
+          {/* Clickable overlay */}
+          <TouchableOpacity
+            onPress={handleInputPress}
+            disabled={loading}
+            activeOpacity={0.7}
             style={[
               styles.inputWrapper,
               isFocused && styles.inputWrapperFocused,
               isValid === true && styles.inputWrapperValid,
               isValid === false && selectedValue && styles.inputWrapperInvalid,
-              { paddingHorizontal: 0, paddingLeft: 16 },
+              { paddingHorizontal: 0, paddingLeft: 16, paddingRight: 16 },
             ]}
           >
             <View style={styles.inputIcon}>
@@ -681,41 +708,66 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                   : '#9CA3AF',
               })}
             </View>
-            <Picker
-              selectedValue={selectedValue}
-              onValueChange={(itemValue) => {
-                if (itemValue && itemValue !== '') {
-                  // Do not update for placeholder
-                  onValueChange(itemValue);
-                  validateField(inputKey, itemValue);
-                  setFocusedInput(''); // Clear focus after selection
-                }
-              }}
-              style={styles.picker}
-              enabled={!loading}
-              prompt={label}
-              mode="dropdown" // Explicitly set mode for better Android support
-            >
+            
+            {/* Display selected value or placeholder */}
+            <View style={styles.pickerDisplayContainer}>
+              <Text
+                style={[
+                  styles.pickerDisplayText,
+                  !selectedValue && styles.pickerPlaceholderText,
+                ]}
+              >
+                {displayValue}
+              </Text>
+            </View>
+            
+            {/* Dropdown arrow */}
+            <View style={styles.dropdownArrow}>
+              <Text style={styles.dropdownArrowText}>▼</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Hidden Picker - always rendered but invisible */}
+          <Picker
+            ref={pickerRef}
+            selectedValue={selectedValue}
+            onValueChange={handlePickerChange}
+            style={[
+              styles.picker, 
+              { 
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                opacity: 0,
+                zIndex: -1
+              }
+            ]}
+            enabled={!loading}
+            prompt={label}
+            mode="dropdown"
+          >
+            <Picker.Item
+              label={placeholder}
+              value=""
+              enabled={false}
+              color="#9CA3AF"
+            />
+            {items.map((item) => (
               <Picker.Item
-                label={placeholder}
-                value=""
-                enabled={false}
-                color="#9CA3AF"
+                key={item.value}
+                label={item.label}
+                value={item.value}
               />
-              {items.map((item) => (
-                <Picker.Item
-                  key={item.value}
-                  label={item.label}
-                  value={item.value}
-                />
-              ))}
-            </Picker>
-          </View>
+            ))}
+          </Picker>
         </View>
-      );
-    },
-    [fieldValidation, focusedInput, loading]
-  );
+      </View>
+    );
+  },
+  [fieldValidation, focusedInput, loading]
+);
 
   const renderBreadcrumb = () => {
     if (!isSignup) return null;
@@ -1355,7 +1407,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       setMajor,
                       'Select your major',
                       MAJOR_OPTIONS.map((m) => ({ label: m, value: m })),
-                      'major'
+                      'major',
+                      majorPickerRef
                     )}
 
                     {renderPickerInput(
@@ -1365,7 +1418,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
                       setClassYear,
                       'Select your class year',
                       CLASS_YEAR_OPTIONS.map((y) => ({ label: y, value: y })),
-                      'classYear'
+                      'classYear',
+                      classYearPickerRef
                     )}
 
                     {renderAnimatedInput(
@@ -1576,7 +1630,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
 const styles = StyleSheet.create({
   // ... existing styles ...
-
+ pickerDisplayContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+  pickerDisplayText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  pickerPlaceholderText: {
+    color: '#9CA3AF',
+  },
+  dropdownArrow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: 8,
+  },
+  dropdownArrowText: {
+    color: '#9CA3AF',
+    fontSize: 12,
+  },
   extraLinksContainer: {
     alignItems: 'flex-end',
     marginTop: 8,

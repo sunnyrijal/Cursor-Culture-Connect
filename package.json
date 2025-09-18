@@ -7,7 +7,9 @@
     "start": "expo start",
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -21,6 +23,7 @@
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "expo": "^53.0.19",
+    "expo-ads-admob": "^13.0.0",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
     "expo-camera": "~16.1.10",
@@ -42,6 +45,7 @@
     "react-dom": "19.0.0",
     "react-native": "^0.79.5",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-google-mobile-ads": "^15.7.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-neomorph-shadows": "^1.1.2",
     "react-native-neumorphic": "^0.0.0-development",

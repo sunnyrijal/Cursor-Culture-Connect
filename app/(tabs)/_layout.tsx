@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import {
   Home,
@@ -10,7 +10,11 @@ import {
 } from 'lucide-react-native';
 import { View, Platform, StyleSheet, Text } from 'react-native';
 
+
+
 export default function TabLayout() {
+
+
   return (
     <Tabs
       screenOptions={{
@@ -194,15 +198,6 @@ const styles = StyleSheet.create({
         shadowColor: '#CDD2D8',
       },
     }),
-    // Inner shadow effect for iOS
-    ...Platform.select({
-      ios: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: -4, height: -4 },
-        shadowOpacity: 1,
-        shadowRadius: 8,
-      },
-    }),
   },
   activeTab: {
     backgroundColor: '#6366F1',
@@ -218,15 +213,6 @@ const styles = StyleSheet.create({
       android: {
         elevation: 8,
         shadowColor: '#4F46E5',
-      },
-    }),
-    // Additional glow effect
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 16,
       },
     }),
   },

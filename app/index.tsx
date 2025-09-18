@@ -25,7 +25,7 @@ import Animated, {
   runOnJS,
   interpolate,
 } from 'react-native-reanimated';
-import { checkAuthStatus } from '@/utils/auth';
+import mobileAds, { MaxAdContentRating, TestIds } from "react-native-google-mobile-ads";
 
 import { Image } from 'react-native';
 //@ts-ignore
@@ -149,6 +149,43 @@ useEffect(() => {
 
   return () => clearTimeout(timer);
 }, []); 
+
+
+
+     useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        // If you want to request ATT on iOS first, uncomment this block:
+        // if (Platform.OS === "ios") {
+        //   const { status } = await getTrackingPermissionsAsync();
+        //   if (status === PermissionStatus.UNDETERMINED) {
+        //     await requestTrackingPermissionsAsync();
+        //   }
+        // }
+
+        await mobileAds()
+          .setRequestConfiguration({
+            maxAdContentRating: MaxAdContentRating.PG,
+            tagForChildDirectedTreatment: false,
+            tagForUnderAgeOfConsent: false,
+            // Add your device ID here later for realistic test ads
+            testDeviceIdentifiers: ["EMULATOR"],
+          });
+
+        if (!mounted) return;
+        await mobileAds().initialize();
+        console.log('AdMob initialized successfully');
+      } catch (e) {
+        console.warn("AdMob init failed", e);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
 
 // useEffect(() => {
