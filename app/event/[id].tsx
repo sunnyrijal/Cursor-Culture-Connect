@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -27,12 +28,17 @@ import {
   Star,
   Bookmark,
   Music,
-  Gift,
-  Navigation,
   Trash2,
-  Shield,
+  Navigation,
+  CheckCircle,
+  ChevronDown,
 } from 'lucide-react-native';
-import { deleteEvent, getEvent } from '@/contexts/event.api';
+import {
+  deleteEvent,
+  getEvent,
+  joinEvent,
+  leaveEvent,
+} from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
 
 // Enhanced theme for neumorphism
@@ -53,8 +59,8 @@ const extendedTheme = {
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams();
-  const [isLiked, setIsLiked] = React.useState(false);
   const [isBookmarked, setIsBookmarked] = React.useState(false);
+  const [showAttendees, setShowAttendees] = React.useState(false);
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -69,9 +75,9 @@ export default function EventDetail() {
     enabled: !!eventId, // Only run query if eventId exists
   });
 
-  const event = eventResponse?.event;
 
-  console.log(event);
+  const event = eventResponse?.event;
+  console.log(event)
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -111,6 +117,35 @@ export default function EventDetail() {
     );
   };
 
+  const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
+    mutationFn: () => joinEvent(eventId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      console.error('Error joining event:', error);
+      Alert.alert('Error', 'Failed to RSVP for the event.');
+    },
+  });
+
+  const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
+    mutationFn: () => leaveEvent(eventId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      console.error('Error leaving event:', error);
+      Alert.alert('Error', 'Failed to cancel RSVP.');
+    },
+  });
+
+  const isAttending = React.useMemo(() => {
+    return event?.attendingUsers?.some(
+      (attendee: any) => attendee.id === myData?.userId
+    );
+  }, [event, myData]);
   // Helper function to format date
   const formatDate = (dateString: string) => {
     if (!dateString) return 'TBD';
@@ -203,15 +238,6 @@ export default function EventDetail() {
     };
   };
 
-  const handleRSVP = () => {
-    // For now, just toggle local state since we don't have RSVP mutation
-    setIsLiked(!isLiked);
-  };
-
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -237,7 +263,7 @@ export default function EventDetail() {
             </TouchableOpacity>
             <View style={styles.headerRight}>
               <TouchableOpacity
-                onPress={handleBookmark}
+                onPress={() => setIsBookmarked(!isBookmarked)}
                 style={styles.headerButton}
               >
                 <Bookmark
@@ -248,12 +274,6 @@ export default function EventDetail() {
                   fill={isBookmarked ? extendedTheme.accent : 'none'}
                 />
               </TouchableOpacity>
-              {/* <ShareButton
-                {...generateEventShareContent()}
-                size={18}
-                color={theme.textPrimary}
-                style={styles.headerButton}
-              /> */}
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={handleDeleteEvent}
@@ -342,7 +362,6 @@ export default function EventDetail() {
                     <Calendar size={24} color={theme.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Date</Text>
                     <Text style={styles.infoValue}>{eventDate}</Text>
                   </View>
                 </View>
@@ -357,8 +376,9 @@ export default function EventDetail() {
                     <Clock size={24} color={extendedTheme.accent} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Time</Text>
-                    <Text style={styles.infoValue}>{eventTimeFormatted}</Text>
+                    <Text style={styles.infoValue}>
+                      {eventTimeFormatted}
+                    </Text>
                   </View>
                 </View>
 
@@ -372,7 +392,6 @@ export default function EventDetail() {
                     <MapPin size={24} color={extendedTheme.success} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Location</Text>
                     <Text style={styles.infoValue}>{event.location}</Text>
                   </View>
                   <TouchableOpacity style={styles.mapButton}>
@@ -391,10 +410,68 @@ export default function EventDetail() {
                     <Users size={24} color={extendedTheme.warning} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Organizer</Text>
                     <Text style={styles.infoValue}>{organizer}</Text>
                   </View>
                 </View>
+
+                <Pressable
+                      onPress={() => setShowAttendees(!showAttendees)}
+                 style={styles.infoRow}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#DBEAFE' },
+                    ]}
+                  >
+                    <Users size={24} color={extendedTheme.info} />
+                  </View>
+                  <View  
+                  style={styles.infoContent}>
+                    <Text style={styles.infoValue}>
+                      {event.attendingUsers?.length || 0} going
+                    </Text>
+                  </View>
+
+                   {event?.userId === myData?.userId &&  <TouchableOpacity
+                      style={styles.attendeesHeader}
+                    >
+                      <ChevronDown
+                        size={20}
+                        color={theme.primary}
+                        style={{
+                          transform: [{ rotate: showAttendees ? '180deg' : '0deg' }],
+                        }}
+                      />
+                    </TouchableOpacity>}
+                </Pressable>
+
+                {/* Attendee List for Host */}
+                {event?.userId === myData?.userId && (
+                  <>
+                    {showAttendees && (
+                      <View style={styles.attendeesList}>
+                        {event.attendingUsers?.map((attendee: any) => (
+                          <View key={attendee.id} style={styles.attendeeItem}>
+                            <Image
+                              source={
+                                attendee.profilePicture
+                                  ? { uri: attendee.profilePicture }
+                                  : require('../../assets/user.png')
+                              }
+                              style={styles.attendeeImage}
+                            />
+                            <View>
+                              <Text style={styles.attendeeName}>
+                                {attendee.name}
+                              </Text>
+                              <Text style={styles.attendeeEmail}>{attendee.email}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
               </View>
             </View>
           </View>
@@ -450,40 +527,51 @@ export default function EventDetail() {
             <View style={styles.descriptionContainer}>
               <View style={styles.descriptionCard}>
                 <Text style={styles.description}>{event.description}</Text>
-
-                {/* <View style={styles.highlightsList}>
-                  <Text style={styles.highlightsTitle}>Event Highlights</Text>
-                  {[
-                    { icon: Music, text: "Live performances" },
-                    { icon: Gift, text: "Special activities" },
-                    { icon: Users, text: "Networking opportunities" },
-                    { icon: Heart, text: "Cultural experiences" },
-                  ].map((item, index) => (
-                    <View key={index} style={styles.highlightItem}>
-                      <View style={styles.highlightIconWrapper}>
-                        <item.icon size={16} color={theme.primary} />
-                      </View>
-                      <Text style={styles.highlightText}>{item.text}</Text>
-                    </View>
-                  ))}
-                </View> */}
               </View>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer RSVP */}
-      {/* <View style={styles.footer}>
-        <TouchableOpacity onPress={handleRSVP} style={styles.rsvpButton}>
-          <View style={styles.rsvpContent}>
-            <Text style={styles.rsvpButtonText}>{isLiked ? "Cancel RSVP" : "RSVP Now"}</Text>
-            <View style={styles.rsvpIcon}>
-              <Text style={styles.rsvpIconText}>→</Text>
+      {isAttending ? (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.rsvpButton, styles.leaveButton]}
+            onPress={() => leaveEventMutation()}
+            disabled={isLeaving}
+          >
+            <View style={styles.rsvpContent}>
+              {isLeaving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <CheckCircle size={20} color={theme.white} />
+                  <Text style={styles.rsvpButtonText}>You are going!</Text>
+                </>
+              )}
             </View>
-          </View>
-        </TouchableOpacity>
-      </View> */}
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.rsvpButton,
+              (isJoining || isLeaving) && styles.disabledButton,
+            ]}
+            onPress={() => joinEventMutation()}
+            disabled={isJoining}
+          >
+            <View style={styles.rsvpContent}>
+              {isJoining ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -851,6 +939,11 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
     color: theme.textPrimary,
   },
+  infoValueLarge: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: theme.textPrimary,
+  },
   mapButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -970,7 +1063,8 @@ const styles = StyleSheet.create({
   },
   rsvpContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap:12,
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -981,6 +1075,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
+  leaveButton: {
+    backgroundColor: extendedTheme.success,
+  },
+  disabledButton: { backgroundColor: theme.gray400 },
   rsvpIcon: {
     width: 28,
     height: 28,
@@ -1049,5 +1147,44 @@ const styles = StyleSheet.create({
   },
   groupArrow: {
     marginLeft: spacing.sm,
+  },
+  attendeesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  attendeesTitle: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.semiBold,
+    color: theme.primary,
+  },
+  attendeesList: {
+    marginTop: spacing.sm,
+  },
+  attendeeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  attendeeImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacing.md,
+  },
+  attendeeName: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.semiBold,
+    color: theme.textPrimary,
+  },
+  attendeeEmail: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
   },
 });

@@ -34,7 +34,7 @@ export const getAllGroups = async () => {
 
 export const getUserGroups = async () => {
   try {
-    const response = await api.get('/groups/user');
+    const response = await api.get('/groups/discover');
     return response.data ;
   } catch (error) {
     console.error('Error fetching user groups:', error);

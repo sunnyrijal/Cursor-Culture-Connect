@@ -1,12 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -25,57 +19,20 @@ import AutoplayVideo from '@/components/home/VideoCard';
 import { Image } from 'react-native';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
-import DiscoverNativeAd from '@/components/NativeAd';
-
-import mobileAds, { MaxAdContentRating, TestIds } from "react-native-google-mobile-ads";
+import AdMobScreen from '@/components/BannerAd';
 // Optional (iOS ATT prompt). If you want it, install: npx expo install expo-tracking-transparency
 // import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync, PermissionStatus } from "expo-tracking-transparency";
-
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
 
-   const { data: myData } = useQuery({
+  const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
-  console.log(myData)
-
-//   useEffect(() => {
-//   let mounted = true;
-
-//   (async () => {
-//     try {
-//       // If you want to request ATT on iOS first, uncomment this block:
-//       // if (Platform.OS === "ios") {
-//       //   const { status } = await getTrackingPermissionsAsync();
-//       //   if (status === PermissionStatus.UNDETERMINED) {
-//       //     await requestTrackingPermissionsAsync();
-//       //   }
-//       // }
-
-//       await mobileAds()
-//         .setRequestConfiguration({
-//           maxAdContentRating: MaxAdContentRating.PG,
-//           tagForChildDirectedTreatment: false,
-//           tagForUnderAgeOfConsent: false,
-//           // Add your device ID here later for realistic test ads
-//           testDeviceIdentifiers: ["EMULATOR"],
-//         });
-
-//       if (!mounted) return;
-//       await mobileAds().initialize();
-//     } catch (e) {
-//       console.warn("AdMob init failed", e);
-//     }
-//   })();
-
-//   return () => {
-//     mounted = false;
-//   };
-// }, []);
+  console.log(myData);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
@@ -112,13 +69,11 @@ export default function Dashboard() {
 
         <UserStat currentUser={currentUser} />
 
-
         <QuickActions />
-    <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
+        <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
+        {/* <AdMobScreen /> */}
 
         <CulturalExperiences />
-
-        {/* <DiscoverNativeAd /> */}
 
         <UpcommingEvents />
       </ScrollView>

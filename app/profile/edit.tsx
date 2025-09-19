@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import {
   View,
   Text,
@@ -20,68 +20,51 @@ import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
 import { router } from "expo-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import {
+import { Picker } from '@react-native-picker/picker';
+
+import { 
   ArrowLeft,
   Save,
   User,
   GraduationCap,
   Globe2,
   MapPin,
-  Phone,
   Calendar,
   Plus,
   X,
   CheckCircle,
   AlertCircle,
   Sparkles,
+  Link,
+  BookOpen, Heart,
 } from "lucide-react-native"
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated"
 import * as ImagePicker from "expo-image-picker"
+import DateTimePicker from "@react-native-community/datetimepicker"
 
 import type { UserProfile } from "@/types/user"
 import { getMyData, updateProfile } from "@/contexts/user.api"
 import { getUniversities } from "@/contexts/university.api"
 import { uploadFile } from "@/contexts/file.api"
 import UniversityDropdown from "@/components/UniversityDropdown"
+import { INTERESTS_OPTIONS, MAJOR_OPTIONS, CLASS_YEAR_OPTIONS } from "@/components/AuthForm"
 
 const { width, height } = Dimensions.get("window")
 
-const INTERESTS_OPTIONS = [
-  "Technology",
-  "Sports",
-  "Music",
-  "Art",
-  "Reading",
-  "Gaming",
-  "Travel",
-  "Cooking",
-  "Photography",
-  "Fitness",
-  "Politics",
-  "Dance",
-  "Movies",
-  "Fashion",
-  "Business",
-  "Science",
-]
+export const socialPlatforms = [
+      "Facebook",
+      "Instagram",
+      "Twitter",
+      "LinkedIn",
+      "GitHub",
+      "TikTok",
+      "YouTube",
+      "Snapchat",
+      "Discord",
+      "Portfolio",
+    ]
 
-const LANGUAGES_OPTIONS = [
-  "English",
-  "Spanish",
-  "French",
-  "German",
-  "Italian",
-  "Portuguese",
-  "Chinese",
-  "Japanese",
-  "Korean",
-  "Arabic",
-  "Hindi",
-  "Russian",
-  "Dutch",
-  "Swedish",
-  "Norwegian",
-]
+
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({
@@ -93,6 +76,7 @@ export default function EditProfile() {
     classYear: "",
     countryOfOrigin: "",
     dateOfBirth: "",
+    major: "",
   })
 
   const [focusedInput, setFocusedInput] = useState<string>("")
@@ -106,8 +90,16 @@ export default function EditProfile() {
   const [customInterest, setCustomInterest] = useState<string>("")
   const [newLanguage, setNewLanguage] = useState<string>("")
   const [profilePicture, setProfilePicture] = useState<string | null>(null)
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({})
+  const [newSocialPlatform, setNewSocialPlatform] = useState<string>("")
+  const [newSocialLink, setNewSocialLink] = useState<string>("")
 
-  // Animation values
+  const socialPlatformPickerRef = useRef<Picker<string>>(null);
+  const majorPickerRef = useRef<Picker<string>>(null);
+  const classYearPickerRef = useRef<Picker<string>>(null);
+
   const formOpacity = useSharedValue(0)
   const formTranslateY = useSharedValue(30)
 
@@ -142,6 +134,9 @@ export default function EditProfile() {
       case "phone":
         isValid = value.length >= 10
         break
+      case "major":
+      case "graduationYear":
+        break
       default:
         isValid = value.trim().length > 0
     }
@@ -150,7 +145,7 @@ export default function EditProfile() {
     return isValid
   }
 
-  const { isLoading } = useQuery({
+  const { isLoading, error: queryError } = useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
       console.log("[v0] Fetching user data...")
@@ -168,6 +163,7 @@ export default function EditProfile() {
           classYear: userData.classYear || "",
           countryOfOrigin: userData.countryOfOrigin || "",
           dateOfBirth: userData.dateOfBirth || "",
+          major: userData.major || "",
         })
 
         if (userData.university) {
@@ -182,16 +178,22 @@ export default function EditProfile() {
         if (userData.profilePicture) {
           setProfilePicture(userData.profilePicture)
         }
+        if (userData.socialMedia) {
+          setSocialMedia(userData.socialMedia)
+        }
 
         return userData
       }
       throw new Error("Failed to load profile data")
     },
-    onError: (error: any) => {
-      console.error("[v0] Error fetching user data:", error)
-      setError("Failed to load profile data")
-    },
   })
+
+  useEffect(() => {
+    if (queryError) {
+      console.error("[v0] Error fetching user data:", queryError)
+      setError("Failed to load profile data")
+    }
+  }, [queryError])
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: any) => {
@@ -220,8 +222,6 @@ export default function EditProfile() {
     mutationFn: uploadFile,
     onSuccess: (data) => {
       console.log("File uploaded successfully:", data)
-      // Assuming you want to add to the list of pictures.
-      // If you want to replace, it would be `setProfilePicture(data.url)`
       setProfilePicture(data.url)
     },
     onError: (error) => {
@@ -252,17 +252,18 @@ export default function EditProfile() {
     if (profile.classYear) updateData.classYear = profile.classYear
     if (profile.countryOfOrigin) updateData.countryOfOrigin = profile.countryOfOrigin
     if (profile.dateOfBirth) updateData.dateOfBirth = profile.dateOfBirth
+    if (profile.major) updateData.major = profile.major
     if (university) updateData.university = university
     if (interests.length > 0) updateData.interests = interests
     if (languagesSpoken.length > 0) updateData.languagesSpoken = languagesSpoken
     if (profilePicture) updateData.profilePicture = profilePicture
+    if (Object.keys(socialMedia).length > 0) updateData.socialMedia = socialMedia
 
     updateProfileMutation.mutate(updateData)
   }
 
   const updateProfileValue = (key: keyof UserProfile, value: any) => {
     setProfile((prev) => ({ ...prev, [key]: value }))
-    validateField(key, value)
   }
 
   const handleImagePicker = async () => {
@@ -283,9 +284,8 @@ export default function EditProfile() {
       const asset = result.assets[0]
       uploadFileMutation.mutate({
         uri: asset.uri,
-        // The following might not be available on all platforms, provide fallbacks
-        type: asset.type || 'image',
-        mimeType: asset.mimeType || 'image/jpeg',
+        type: asset.type || "image",
+        mimeType: asset.mimeType || "image/jpeg",
         fileName: asset.fileName || "profile_image.jpg",
       })
     }
@@ -359,10 +359,7 @@ export default function EditProfile() {
               value={value}
               onChangeText={onChangeText}
               onFocus={() => setFocusedInput(inputKey)}
-              onBlur={() => {
-                setFocusedInput("")
-                if (value) validateField(inputKey, value)
-              }}
+              // onBlur={() => setFocusedInput("")}
               editable={!loading}
               placeholderTextColor="#9CA3AF"
               {...options}
@@ -395,6 +392,100 @@ export default function EditProfile() {
     [fieldValidation, focusedInput, loading, formOpacity],
   )
 
+  const renderPickerInput = useCallback(
+    (
+      icon: React.ElementType,
+      label: string,
+      selectedValue: string,
+      onValueChange: (value: string) => void,
+      placeholder: string,
+      items: { label: string; value: string }[],
+      inputKey: string,
+      pickerRef: React.RefObject<Picker<string>>
+    ) => {
+      const isFocused = focusedInput === inputKey;
+      const isValid = fieldValidation[inputKey];
+  
+      const displayValue = selectedValue 
+        ? items.find(item => item.value === selectedValue)?.label || selectedValue 
+        : placeholder;
+  
+      const handleInputPress = () => {
+        if (!loading && pickerRef.current) {
+          setFocusedInput(inputKey);
+          pickerRef.current.focus();
+        }
+      };
+
+      const handlePickerChange = (itemValue: string) => {
+        if (itemValue && itemValue !== '') {
+          onValueChange(itemValue);
+        }
+        setFocusedInput('');
+      };
+
+      return (
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>{label}</Text>
+          <View style={{ position: 'relative' }}>
+            <TouchableOpacity
+              onPress={handleInputPress}
+              disabled={loading}
+              activeOpacity={0.7}
+              style={[
+                styles.inputWrapper,
+                isFocused && styles.inputWrapperFocused,
+                isValid === true && styles.inputWrapperValid,
+                isValid === false && selectedValue && styles.inputWrapperInvalid,
+                { paddingHorizontal: 0, paddingLeft: 16, paddingRight: 16 },
+              ]}
+            >
+              <View style={styles.inputIcon}>
+                {React.createElement(icon, {
+                  size: 20,
+                  color: isFocused
+                    ? '#6366F1'
+                    : isValid === true
+                    ? '#10B981'
+                    : isValid === false && selectedValue
+                    ? '#EF4444'
+                    : '#9CA3AF',
+                })}
+              </View>
+              
+              <View style={styles.pickerDisplayContainer}>
+                <Text
+                  style={[
+                    styles.pickerDisplayText,
+                    !selectedValue && styles.pickerPlaceholderText,
+                  ]}
+                >
+                  {displayValue}
+                </Text>
+              </View>
+              
+              <View style={styles.dropdownArrow}>
+                <Text style={styles.dropdownArrowText}>▼</Text>
+              </View>
+            </TouchableOpacity>
+  
+            <Picker
+              ref={pickerRef}
+              selectedValue={selectedValue}
+              onValueChange={handlePickerChange}
+              style={styles.picker}
+              enabled={!loading}
+              prompt={label}
+              mode="dropdown"
+            >
+              <Picker.Item label={placeholder} value="" enabled={false} color="#9CA3AF" />
+              {items.map((item) => <Picker.Item key={item.value} label={item.label} value={item.value} />)}
+            </Picker>
+          </View>
+        </View>
+      );
+    }, [fieldValidation, focusedInput, loading]);
+
   const renderProfilePictureSection = () => (
     <Animated.View style={[styles.section, { opacity: formOpacity }]}>
       <Text style={styles.sectionTitle}>Profile Picture</Text>
@@ -403,9 +494,7 @@ export default function EditProfile() {
       <View style={styles.imageGrid}>
         <View style={styles.imageContainer}>
           <Image
-            source={
-              profilePicture ? { uri: profilePicture } : require("../../assets/user.png")
-            }
+            source={profilePicture ? { uri: profilePicture } : require("../../assets/user.png")}
             style={styles.profileImage}
           />
           <TouchableOpacity
@@ -426,7 +515,7 @@ export default function EditProfile() {
 
   const renderInterestsSection = () => (
     <Animated.View style={[styles.section, { opacity: formOpacity }]}>
-      <Text style={styles.sectionTitle}>Interests</Text>
+      <Text style={styles.sectionTitle}><Heart size={20} color="#F59E0B" /> Interests</Text>
       <Text style={styles.sectionSubtitle}>Select your interests to connect with like-minded people</Text>
 
       <View style={styles.tagsContainer}>
@@ -459,14 +548,14 @@ export default function EditProfile() {
 
   const renderLanguagesSection = () => (
     <Animated.View style={[styles.section, { opacity: formOpacity }]}>
-      <Text style={styles.sectionTitle}>Languages</Text>
+      <Text style={styles.sectionTitle}><Globe2 size={20} color="#10B981" /> Languages</Text>
       <Text style={styles.sectionSubtitle}>What languages do you speak?</Text>
 
       <View style={styles.tagsContainer}>
         {languagesSpoken.map((language) => (
           <TouchableOpacity
             key={language}
-            style={[styles.tag, styles.tagSelected]} // Always selected style for existing
+            style={[styles.tag, styles.tagSelected]}
             onPress={() => toggleLanguage(language)}
           >
             <Text style={[styles.tagText, styles.tagTextSelected]}>{language}</Text>
@@ -483,10 +572,156 @@ export default function EditProfile() {
           onSubmitEditing={addLanguage}
           placeholderTextColor="#9CA3AF"
         />
-        <TouchableOpacity style={styles.addInterestButton} onPress={addLanguage}><Text style={styles.addInterestButtonText}>Add</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.addInterestButton} onPress={addLanguage}>
+          <Text style={styles.addInterestButtonText}>Add</Text>
+        </TouchableOpacity>
       </View>
     </Animated.View>
   )
+
+  const renderDateOfBirthPicker = () => {
+    const formatDate = (date: Date): string => {
+      return date.toISOString().split("T")[0] // YYYY-MM-DD format
+    }
+
+    const onDateChange = (event: any, selectedDate?: Date): void => {
+      const currentDate = selectedDate || new Date()
+      setShowDatePicker(Platform.OS === "ios") // Keep open on iOS, close on Android
+      setSelectedDate(currentDate)
+      const formattedDate = formatDate(currentDate)
+      updateProfileValue("dateOfBirth", formattedDate);
+    }
+
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <Text style={styles.inputLabel}>Date of Birth</Text>
+        <TouchableOpacity
+          style={[
+            styles.inputWrapper,
+            fieldValidation["dateOfBirth"] === true && styles.inputWrapperValid,
+            fieldValidation["dateOfBirth"] === false && profile.dateOfBirth && styles.inputWrapperInvalid,
+          ]}
+          onPress={() => setShowDatePicker(true)}
+          disabled={loading}
+        >
+          <View style={styles.inputIcon}>
+            <Calendar size={20} color={profile.dateOfBirth ? "#6366F1" : "#9CA3AF"} />
+          </View>
+          <Text style={[styles.input, { color: profile.dateOfBirth ? "#111827" : "#9CA3AF" }]}>
+            {profile.dateOfBirth || "Select your date of birth"}
+          </Text>
+          {fieldValidation["dateOfBirth"] === true && profile.dateOfBirth && (
+            <View style={styles.validIcon}>
+              <CheckCircle size={16} color="#10B981" />
+            </View>
+          )}
+          {fieldValidation["dateOfBirth"] === false && profile.dateOfBirth && (
+            <View style={styles.validIcon}>
+              <AlertCircle size={16} color="#EF4444" />
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+            maximumDate={new Date()} // Prevent future dates
+            minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+          />
+        )}
+
+        {fieldValidation["dateOfBirth"] === false && profile.dateOfBirth && (
+          <Text style={styles.validationText}>Please select a valid date of birth</Text>
+        )}
+      </Animated.View>
+    )
+  }
+
+  const renderSocialMediaSection = () => {
+
+
+    const addSocialMedia = () => {
+      if (newSocialPlatform && newSocialLink) {
+        setSocialMedia((prev) => ({
+          ...prev,
+          [newSocialPlatform.toLowerCase()]: newSocialLink,
+        }))
+        setNewSocialPlatform("")
+        setNewSocialLink("")
+      }
+    }
+
+    const removeSocialMedia = (platform: string) => {
+      setSocialMedia((prev) => {
+        const updated = { ...prev }
+        delete updated[platform]
+        return updated
+      })
+    }
+
+    return (
+      <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
+        <BlurView intensity={20} tint="light" style={styles.blurContainer}>
+          <LinearGradient colors={["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)"]} style={styles.gradientContainer}>
+            <View style={styles.sectionHeader}>
+              <Link size={20} color="#6366F1" />
+              <Text style={styles.formSectionTitle}>Social Media</Text>
+            </View>
+
+            {Object.entries(socialMedia).map(([platform, link]) => (
+              <View key={platform} style={styles.socialMediaItem}>
+                <Text style={styles.socialPlatform}>{platform.charAt(0).toUpperCase() + platform.slice(1)}</Text>
+                <Text style={styles.socialLink} numberOfLines={1}>
+                  {link}
+                </Text>
+                <TouchableOpacity onPress={() => removeSocialMedia(platform)}>
+                  <X size={16} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <View style={styles.addSocialContainer}>
+              <View style={styles.socialDropdownContainer}>
+                {renderPickerInput(
+                  Link,
+                  "Platform",
+                  newSocialPlatform,
+                  setNewSocialPlatform,
+                  "Select platform...",
+                  socialPlatforms.map(p => ({ label: p, value: p })),
+                  "socialPlatform",
+                  socialPlatformPickerRef
+                )}
+              </View>
+
+              <View style={{ width: "100%" }}>
+                {renderAnimatedInput(
+                  Link, 
+                  "Profile Link", 
+                  newSocialLink, 
+                  setNewSocialLink, 
+                  "https://...", 
+                  "socialLink")}
+              </View>
+            </View>
+            <View style={styles.addSocialButtonContainer}>
+              <TouchableOpacity
+                style={[styles.addButton, (!newSocialPlatform || !newSocialLink) && styles.addButtonDisabled]}
+                onPress={addSocialMedia}
+                disabled={!newSocialPlatform || !newSocialLink}
+              >
+                <Plus size={16} color="white" />
+                <Text style={styles.addButtonText}>Add Social Media</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </BlurView>
+      </Animated.View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -560,11 +795,11 @@ export default function EditProfile() {
             {renderProfilePictureSection()}
 
             {/* Basic Information */}
-            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
-              <BlurView intensity={20} style={styles.formBlur}>
+            <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
+              <BlurView intensity={20} tint="light" style={styles.blurContainer}>
                 <LinearGradient
-                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
-                  style={styles.formGradient}
+                  colors={["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)"]}
+                  style={styles.gradientContainer}
                 >
                   <View style={styles.sectionHeader}>
                     <Sparkles size={20} color="#6366F1" />
@@ -593,15 +828,7 @@ export default function EditProfile() {
                     true,
                   )}
 
-                  {renderAnimatedInput(
-                    Calendar,
-                    "Date of Birth",
-                    profile.dateOfBirth || "",
-                    (text) => updateProfileValue("dateOfBirth", text),
-                    "YYYY-MM-DD",
-                    "dateOfBirth",
-                    { maxLength: 10 },
-                  )}
+                  {renderDateOfBirthPicker()}
 
                   {renderAnimatedInput(
                     User,
@@ -620,12 +847,12 @@ export default function EditProfile() {
               </BlurView>
             </Animated.View>
 
-            {/* University Information */}
-            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
-              <BlurView intensity={20} style={styles.formBlur}>
+            {/* Academic Information */}
+            <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
+              <BlurView intensity={20} tint="light" style={styles.blurContainer}>
                 <LinearGradient
-                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
-                  style={styles.formGradient}
+                  colors={["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)"]}
+                  style={styles.gradientContainer}
                 >
                   <View style={styles.sectionHeader}>
                     <GraduationCap size={20} color="#6366F1" />
@@ -650,25 +877,37 @@ export default function EditProfile() {
                     />
                   </Animated.View>
 
-                  {renderAnimatedInput(
+                  {renderPickerInput(
+                    BookOpen,
+                    "Major",
+                    profile.major || '',
+                    (value) => updateProfileValue("major", value),
+                    "Select your major",
+                    MAJOR_OPTIONS.map(m => ({ label: m, value: m })),
+                    "major",
+                    majorPickerRef
+                  )}
+
+                  {renderPickerInput(
                     Calendar,
                     "Class Year",
-                    profile.classYear || "",
-                    (text) => updateProfileValue("classYear", text),
-                    "e.g., 2025",
+                    profile.classYear || '',
+                    (value) => updateProfileValue("classYear", value),
+                    "Select your class year",
+                    CLASS_YEAR_OPTIONS.map(y => ({ label: y, value: y })),
                     "classYear",
-                    { keyboardType: "numeric" },
+                    classYearPickerRef
                   )}
                 </LinearGradient>
               </BlurView>
             </Animated.View>
 
-            {/* Contact Information */}
-            <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
-              <BlurView intensity={20} style={styles.formBlur}>
+            {/* Location & Contact */}
+            <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
+              <BlurView intensity={20} tint="light" style={styles.blurContainer}>
                 <LinearGradient
-                  colors={["rgba(255, 255, 255, 0.95)", "rgba(248, 250, 252, 0.9)"]}
-                  style={styles.formGradient}
+                  colors={["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)"]}
+                  style={styles.gradientContainer}
                 >
                   <View style={styles.sectionHeader}>
                     <MapPin size={20} color="#6366F1" />
@@ -706,7 +945,6 @@ export default function EditProfile() {
                     "e.g., Nepal",
                     "countryOfOrigin",
                   )}
-
                 </LinearGradient>
               </BlurView>
             </Animated.View>
@@ -716,6 +954,9 @@ export default function EditProfile() {
 
             {/* Languages */}
             {renderLanguagesSection()}
+
+            {/* Social Media */}
+            {renderSocialMediaSection()}
 
             {/* Save Button */}
             <Animated.View style={[styles.saveContainer, { opacity: formOpacity }]}>
@@ -745,12 +986,27 @@ export default function EditProfile() {
   )
 }
 
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30, // to ensure the text is never behind the icon
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: 'black',
+  },
+});
 const styles = StyleSheet.create({
-
-  
-
- customInterestContainer: {
-  marginTop:10,
+  customInterestContainer: {
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -780,13 +1036,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#FFFFFF",
   },
-
-  // profileImage: {
-  //   width: 120,
-  //   height: 120,
-  //   borderRadius: 60,
-  // },
-
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -913,14 +1162,14 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginBottom: 16,
   },
-  formContainer: {
+  formSection: {
     marginBottom: 20,
   },
-  formBlur: {
+  blurContainer: {
     borderRadius: 20,
     overflow: "hidden",
   },
-  formGradient: {
+  gradientContainer: {
     padding: 24,
     borderRadius: 20,
     backgroundColor: "white",
@@ -1146,5 +1395,85 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     letterSpacing: -0.2,
+  },
+  socialMediaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  socialPlatform: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  socialLink: {
+    flex: 1,
+    fontSize: 14,
+    color: "#111827",
+    marginLeft: 8,
+  },
+  addSocialContainer: {
+    flexDirection: "column",
+    marginBottom: 20,
+  },
+  addSocialButtonContainer: {
+    alignItems: "flex-end",
+  },
+  socialDropdownContainer: {
+    flex: 1,
+    width: "100%",
+    marginBottom: 20,
+  },
+  picker: {
+    height: 50,
+    // This makes the picker invisible but clickable
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
+    zIndex: -1,
+      
+  },
+  addButton: { // This style is also used for addInterestButton
+    backgroundColor: "#6366F1",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  addButtonDisabled: {
+    backgroundColor: "#CBD5E1",
+  },
+  pickerDisplayContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+  pickerDisplayText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  pickerPlaceholderText: {
+    color: '#9CA3AF',
+  },
+  dropdownArrow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: 8,
+  },
+  dropdownArrowText: {
+    color: '#9CA3AF',
+    fontSize: 12,
   },
 })

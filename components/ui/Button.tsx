@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: typography.fontFamily.semiBold,
     textAlign: 'center',
+    color:theme.black
   },
   primaryText: {
     color: theme.white,

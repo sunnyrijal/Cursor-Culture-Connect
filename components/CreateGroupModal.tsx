@@ -62,6 +62,19 @@ export function CreateGroupModal({
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      category: '',
+      isPrivate: false,
+      universityOnly: false,
+      allowedUniversity: '',
+      meetingDetails: '',
+    });
+    setImageUrl('');
+  };
+
   // const handleAddMeeting = () => {
   //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
   // };
@@ -145,6 +158,7 @@ export function CreateGroupModal({
 
       onSubmit(variables);
       setIsSubmitting(false);
+      resetForm();
       // Close modal
       onClose();
     },

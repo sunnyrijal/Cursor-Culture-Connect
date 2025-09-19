@@ -64,7 +64,7 @@ import TermsModal from './TermsModal';
 
 const { width, height } = Dimensions.get('window');
 
-const ETHNICITY_OPTIONS = [
+export const ETHNICITY_OPTIONS = [
   'Asian',
   'Black/African American',
   'Hispanic/Latino',
@@ -75,7 +75,7 @@ const ETHNICITY_OPTIONS = [
   'Mixed/Multiracial',
 ];
 
-const INTERESTS_OPTIONS = [
+export const INTERESTS_OPTIONS = [
   'Technology',
   'Sports',
   'Music',
@@ -90,7 +90,7 @@ const INTERESTS_OPTIONS = [
   'Dance',
 ];
 
-const MAJOR_OPTIONS = [
+export const MAJOR_OPTIONS = [
   'Accounting',
   'Art',
   'Biology',
@@ -115,7 +115,7 @@ const MAJOR_OPTIONS = [
   'Other',
 ];
 
-const CLASS_YEAR_OPTIONS = [
+export const CLASS_YEAR_OPTIONS = [
   '2026 Senior',
   '2027 Junior',
   '2028 Sophomore',
@@ -166,6 +166,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
   const majorPickerRef = useRef<Picker<string>>(null);
   const classYearPickerRef = useRef<Picker<string>>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const uploadFileMutation = useMutation({
     mutationFn: uploadFile,
@@ -397,6 +398,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
 
       if (step1Valid) {
         setCurrentStep(2);
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
         return;
       } else {
         setError('Please fill in all required fields correctly.');
@@ -835,31 +837,32 @@ const renderPickerInput = useCallback(
 
   const renderPronounsDropdown = () => {
     const pronounOptions = ['she/her', 'he/him', 'they/them', 'other'];
-
     return (
       <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.sectionTitle}>Personal Identity</Text>
-        <View style={styles.dropdownContainer}>
-          {pronounOptions.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.dropdownOption,
-                pronouns === option && styles.dropdownOptionSelected,
-              ]}
-              onPress={() => setPronouns(option)}
-            >
-              <Text
-                style={[
-                  styles.dropdownOptionText,
-                  pronouns === option && styles.dropdownOptionTextSelected,
-                ]}
+        <Text style={styles.sectionTitle}>Pronouns</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollView}>
+          <View style={styles.dropdownContainer}>
+            {pronounOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.dropdownOption, pronouns === option && styles.dropdownOptionSelected]}
+                onPress={() => setPronouns(option)}
               >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={[styles.dropdownOptionText, pronouns === option && styles.dropdownOptionTextSelected]}>
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+        {pronouns === 'other' && (
+          <TextInput
+            style={styles.customInterestInput}
+            placeholder="Please specify your pronouns"
+            onChangeText={setPronouns}
+            autoFocus
+          />
+        )}
       </Animated.View>
     );
   };
@@ -963,28 +966,6 @@ const renderPickerInput = useCallback(
           Select your interests to connect with like-minded peers
         </Text>
 
-        {selectedInterests.length > 0 && (
-          <View style={styles.interestTagsContainer}>
-            {selectedInterests.map((interest, index) => (
-              <View key={index} style={styles.interestTagWrapper}>
-                <TouchableOpacity
-                  style={[styles.interestTag, styles.interestTagSelected]}
-                  onPress={() => toggleInterest(interest)}
-                >
-                  <Text
-                    style={[
-                      styles.interestTagText,
-                      styles.interestTagTextSelected,
-                    ]}
-                  >
-                    {interest}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
         <View style={styles.interestsGrid}>
           {INTERESTS_OPTIONS.map((interest) => (
             <TouchableOpacity
@@ -1007,6 +988,22 @@ const renderPickerInput = useCallback(
               </Text>
             </TouchableOpacity>
           ))}
+          {/* Display custom interests that are not in the default options */}
+          {selectedInterests
+            .filter((interest) => !INTERESTS_OPTIONS.includes(interest))
+            .map((interest, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.interestTag, styles.interestTagSelected]}
+                onPress={() => toggleInterest(interest)}
+              >
+                <Text
+                  style={[styles.interestTagText, styles.interestTagTextSelected]}
+                >
+                  {interest}
+                </Text>
+              </TouchableOpacity>
+            ))}
         </View>
 
         <View style={styles.customInterestContainer}>
@@ -1237,23 +1234,22 @@ const renderPickerInput = useCallback(
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <Animated.View style={[styles.header, headerAnimatedStyle]}>
-            <View style={styles.logoContainer}>
-              <Image source={logo} style={styles.logo} />
-            </View>
-            <Text style={styles.title}>
-              {isSignup ? 'Join Your College Network' : 'Welcome Back'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isSignup
-                ? 'Connect with peers who share your interests and background'
-                : 'Sign in to continue'}
-            </Text>
+            {isSignup ?
+              <Text style={styles.subtitle}>
+                Connect with peers who share your interests and background
+              </Text>
+              : <>
+                  <Image source={logo} style={styles.logo} />
+                  <Text style={styles.title}>Welcome Back!</Text>
+                </>
+            }
           </Animated.View>
 
           {renderBreadcrumb()}
@@ -1630,6 +1626,10 @@ const renderPickerInput = useCallback(
 
 const styles = StyleSheet.create({
   // ... existing styles ...
+  horizontalScrollView: {
+    marginBottom: 10,
+  },
+
  pickerDisplayContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1729,6 +1729,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 24,
+    fontWeight:'600'
   },
 
   profilePicturePlaceholder: {
@@ -1763,7 +1764,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 10,
     fontWeight: '600',
     color: '#111827',
@@ -1796,6 +1797,7 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    paddingBottom: 5,
     gap: 8,
   },
   dropdownOption: {
@@ -2157,7 +2159,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   checkboxContainer: {
-    gap: 12,
+    gap: 0,
   },
   checkboxRow: {
     flexDirection: 'row',

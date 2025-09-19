@@ -31,6 +31,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import SocialMediaLinks from '@/components/SocialMediaLinks';
 import { getMyData, deleteMe } from '@/contexts/user.api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -102,6 +103,7 @@ export default function Profile() {
           marketingOptIn: response.user.marketingOptIn,
           createdAt: response.user.createdAt,
           updatedAt: response.user.updatedAt,
+          socialMedia: response.user.socialMedia,
           
           // Legacy fields for backward compatibility (if needed)
           fullName: response.user.name,
@@ -317,6 +319,10 @@ export default function Profile() {
               </View>
             </View>
 
+            {userData.socialMedia && (
+              <SocialMediaLinks socialMedia={userData.socialMedia} />
+            )}
+
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Contact Information</Text>
               <View style={styles.infoCard}>
@@ -425,7 +431,7 @@ export default function Profile() {
                     </View>
                     <View style={styles.infoContent}>
                       <Text style={styles.infoLabel}>Bio</Text>
-                      <Text style={styles.infoValue} style={styles.bioText}>
+                      <Text style={styles.infoValue} >
                         {userData.bio}
                       </Text>
                     </View>

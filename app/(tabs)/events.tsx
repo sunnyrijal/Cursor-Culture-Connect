@@ -90,6 +90,7 @@ interface Event {
   location: string;
   imageUrl?: string | null;
   userId: string;
+  attendingUsers:any,
   eventTimes: {
     id: number;
     eventId: string;
@@ -539,7 +540,10 @@ export default function Events() {
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
             <View style={styles.headerRow}>
-                <Text style={styles.heroTitle}>Discover</Text>
+                {/* <Text style={styles.heroTitle}>Discover</Text> */}
+                <Text style={styles.heroSubtitle}>
+              Discover and participate in cultural celebrations
+            </Text>
                 <View style={styles.headerActions}>
                   <TouchableOpacity
                     style={styles.createButtonHero}
@@ -557,9 +561,7 @@ export default function Events() {
                   </TouchableOpacity>
                 </View>
             </View>
-            <Text style={styles.heroSubtitle}>
-              Discover and participate in cultural celebrations
-            </Text>
+            
           </View>
         </View>
       </View>
@@ -765,7 +767,7 @@ export default function Events() {
                     <View style={styles.statCard}>
                       <Users size={16} color="#6366F1" />
                       <Text style={styles.statText}>
-                        {event.attendees || 0} attending
+                        {event?.attendingUsers?.length || 0} attending
                       </Text>
                     </View>
 
@@ -910,7 +912,7 @@ const styles = StyleSheet.create({
   },
 
   heroSection: {
-    height: 140,
+    height: 100,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
@@ -958,11 +960,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 20,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 20,
     lineHeight: 22,
+    width:'66%',
+    fontWeight:'600'
   },
   createButtonHero: {
     padding: 8,
