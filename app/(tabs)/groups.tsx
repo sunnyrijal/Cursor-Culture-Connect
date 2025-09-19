@@ -156,22 +156,15 @@ export default function Groups() {
             <View style={styles.heroOverlay}>
               <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>
-                  <Text
-                    style={[
-                      styles.heroSubtitle,
-                      { fontSize: 20, lineHeight: 24, fontWeight: '600' },
-                    ]}
-                  >
-                    Connect with communities that share your interests
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={() => setShowCreateGroupModal(true)}
-                    activeOpacity={0.7}
-                  >
-                    <PlusCircle size={28} color={theme.primary} />
-                  </TouchableOpacity>
+                  <Text style={styles.heroSubtitle}>Discover and connect with communities that share your interests.</Text>
+
                 </View>
+
+
+
+                {/* <Text style={styles.heroSubtitle}>
+                Discover and connect with communities that share your interests.
+                </Text> */}
               </View>
             </View>
           </View>
@@ -193,6 +186,7 @@ export default function Groups() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           >
+
             {groups.map((group: any, index: number) => (
               <TouchableOpacity
                 key={group.id}
@@ -308,6 +302,13 @@ export default function Groups() {
 
             <View style={styles.bottomSpacing} />
           </ScrollView>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setShowCreateGroupModal(true)}
+            activeOpacity={0.7}
+          >
+            <PlusCircle size={28} color={theme.primary} />
+          </TouchableOpacity>
         </SafeAreaView>
       </View>
     </>
@@ -325,39 +326,51 @@ const styles = StyleSheet.create({
 
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
     marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    position: 'relative',
+    minHeight: 40,
   },
   createButton: {
-    padding: 8,
-    borderRadius: 12,
+    position: 'absolute',
+    right: 20,
+    bottom: 10,          // tweak to sit above your bottom tab bar
+    width: 70,
+    height: 70,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    zIndex: 20,
     ...Platform.select({
       ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 1,
-        shadowRadius: 4,
+        shadowColor: '#6d7075',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 3,
+        elevation: 8,
+
       },
     }),
   },
 
   // Hero Section Styles
   heroSection: {
-    height: 100,
+    // height: 140,
+    paddingBottom: 12,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
+    paddingTop: 4,
     // marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 12,
     // borderRadius: 24,
     ...Platform.select({
       ios: {
@@ -372,9 +385,9 @@ const styles = StyleSheet.create({
     }),
   },
   heroOverlay: {
-    flex: 1,
+    flex: 0,
     backgroundColor: 'rgba(99, 102, 241, 0.9)',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
     borderRadius: 24,
   },
@@ -393,9 +406,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
     lineHeight: 22,
-    width:'80%'
+    flex: 0,
+
   },
   statsContainer: {
     flexDirection: 'row',
@@ -443,7 +457,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 140,
   },
 
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)
