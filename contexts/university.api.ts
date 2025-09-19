@@ -37,3 +37,15 @@ export const getUniversities = async () => {
     throw error;
   }
 };
+
+export const getMyUniversity = async () => {
+  try {
+    const response: AxiosResponse= await api.get(
+      '/university/me'
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching universities:', error);
+    throw error;
+  }
+};

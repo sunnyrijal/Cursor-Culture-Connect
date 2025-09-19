@@ -4,10 +4,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -40,8 +42,9 @@
     "lucide-react-native": "^0.475.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "^0.79.5",
+    "react-native": "0.79.6",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-google-mobile-ads": "^15.7.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-neomorph-shadows": "^1.1.2",
     "react-native-neumorphic": "^0.0.0-development",

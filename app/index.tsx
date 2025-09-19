@@ -25,7 +25,20 @@ import Animated, {
   runOnJS,
   interpolate,
 } from 'react-native-reanimated';
-import { checkAuthStatus } from '@/utils/auth';
+
+// Conditional import for AdMob - only import if available
+let mobileAds: any = null;
+let MaxAdContentRating: any = null;
+let TestIds: any = null;
+
+try {
+  const adMobModule = require("react-native-google-mobile-ads");
+  mobileAds = adMobModule.default;
+  MaxAdContentRating = adMobModule.MaxAdContentRating;
+  TestIds = adMobModule.TestIds;
+} catch (error) {
+  console.warn('react-native-google-mobile-ads not available:', error);
+}
 
 import { Image } from 'react-native';
 //@ts-ignore
@@ -150,6 +163,46 @@ useEffect(() => {
   return () => clearTimeout(timer);
 }, []); 
 
+useEffect(() => {
+  // Initialize AdMob only if the module is available
+  if (!mobileAds) {
+    console.log('AdMob not available, skipping initialization');
+    return;
+  }
+
+  let mounted = true;
+
+  (async () => {
+    try {
+      // If you want to request ATT on iOS first, uncomment this block:
+      // if (Platform.OS === "ios") {
+      //   const { status } = await getTrackingPermissionsAsync();
+      //   if (status === PermissionStatus.UNDETERMINED) {
+      //     await requestTrackingPermissionsAsync();
+      //   }
+      // }
+
+      await mobileAds()
+        .setRequestConfiguration({
+          maxAdContentRating: MaxAdContentRating?.PG || 'PG',
+          tagForChildDirectedTreatment: false,
+          tagForUnderAgeOfConsent: false,
+          // Add your device ID here later for realistic test ads
+          testDeviceIdentifiers: ["EMULATOR"],
+        });
+
+      if (!mounted) return;
+      await mobileAds().initialize();
+      console.log('AdMob initialized successfully');
+    } catch (e) {
+      console.warn("AdMob init failed", e);
+    }
+  })();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
 
 // useEffect(() => {
 //   const timer = setTimeout(() => {

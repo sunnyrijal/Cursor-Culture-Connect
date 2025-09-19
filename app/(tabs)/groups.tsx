@@ -24,6 +24,7 @@ import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { useState } from 'react';
 
 import { PlusCircle } from 'lucide-react-native';
+import AdMobScreen from '@/components/BannerAd';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -97,7 +98,6 @@ export default function Groups() {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-
   const groups = allGroups.filter(
     (group: ApiGroup) =>
       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -149,14 +149,21 @@ export default function Groups() {
         onSubmit={() => setShowCreateGroupModal(false)}
       />
 
+
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.heroSection}>
             <View style={styles.heroOverlay}>
               <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>
-                  <Text style={styles.heroTitle}>Cultural Groups</Text>
-
+                  <Text
+                    style={[
+                      styles.heroSubtitle,
+                      { fontSize: 20, lineHeight: 24, fontWeight: '600' },
+                    ]}
+                  >
+                    Connect with communities that share your interests
+                  </Text>
                   <TouchableOpacity
                     style={styles.createButton}
                     onPress={() => setShowCreateGroupModal(true)}
@@ -165,10 +172,6 @@ export default function Groups() {
                     <PlusCircle size={28} color={theme.primary} />
                   </TouchableOpacity>
                 </View>
-
-                <Text style={styles.heroSubtitle}>
-                  Connect with communities that share your interests
-                </Text>
               </View>
             </View>
           </View>
@@ -241,9 +244,11 @@ export default function Groups() {
                     </Text>
                   </View>
 
-                 {group.description && group.description!=='' &&  <Text style={styles.groupDescription} numberOfLines={3}>
-                    {group.description}
-                  </Text>}
+                  {group.description && group.description !== '' && (
+                    <Text style={styles.groupDescription} numberOfLines={3}>
+                      {group.description}
+                    </Text>
+                  )}
 
                   <View style={styles.creatorSection}>
                     <View style={styles.creatorInfo}>
@@ -323,6 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    paddingHorizontal: 20,
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 16,
@@ -346,13 +352,12 @@ const styles = StyleSheet.create({
 
   // Hero Section Styles
   heroSection: {
-    height: 140,
+    height: 100,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
-    paddingTop: 10,
     // marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     // borderRadius: 24,
     ...Platform.select({
       ios: {
@@ -388,8 +393,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
     lineHeight: 22,
+    width:'80%'
   },
   statsContainer: {
     flexDirection: 'row',
@@ -894,7 +900,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingVertical: 12,
   },
-  
+
   // Filter buttons for categories
   filterWrapper: {
     marginHorizontal: 20,

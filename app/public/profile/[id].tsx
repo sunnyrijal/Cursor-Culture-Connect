@@ -40,6 +40,7 @@ import {
   sendFriendRequest,
   respondToFriendRequest,
 } from '@/contexts/friend.api';
+import SocialMediaLinks from '@/components/SocialMediaLinks';
 
 const theme = {
   white: 'white',
@@ -348,6 +349,10 @@ export default function UserProfilePage() {
 
             <View style={styles.actionsContainer}>{getActionButtons()}</View>
           </View>
+
+          {userData.socialMedia && (
+            <SocialMediaLinks socialMedia={userData.socialMedia} />
+          )}
 
           {userData.bio && (
             <View style={styles.infoSection}>

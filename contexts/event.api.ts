@@ -180,3 +180,24 @@ export const deleteEvent = async (eventId: string) => {
     throw error;
   }
 };
+
+export const joinEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/join`);
+    console.log(response)
+    return response.data;
+  } catch (error) {
+    console.error('Error joining event:', error);
+    throw error;
+  }
+};
+
+export const leaveEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('Error joining event:', error);
+    throw error;
+  }
+};
