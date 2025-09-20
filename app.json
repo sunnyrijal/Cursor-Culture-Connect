@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "myapp",
+    "owner": "rijalboy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -27,8 +28,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "android_app_id": "ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy",
-          "ios_app_id": "ca-app-pub-xxxxxxxxxxxxxxxx~zzzzzzzzzz"
+          "androidAppId": "ca-app-pub-4289098365837690~2373905837",
+          "iosAppId": "ca-app-pub-4289098365837690/4760411931"
         }
       ]
     ],
@@ -38,7 +39,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "f69c783d-aa2d-4edf-b56e-803ea3f60be9"
+        "projectId": "fecb2cb4-c2cd-4536-a6c8-fea3c961c70c"
       }
     }
   }
