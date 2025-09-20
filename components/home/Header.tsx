@@ -96,6 +96,24 @@ const Header = ({
         <View style={styles.headerActions}>
           {myData ? (
             <>
+            <Shadow
+            distance={8}
+            startColor="rgba(163, 177, 198, 0.15)"
+            offset={[4, 4]}
+          >
+            <TouchableOpacity
+              onPress={() => router.push('/notifications')}
+              onPressIn={() => handlePressIn('notification')}
+              onPressOut={handlePressOut}
+              style={[
+                getButtonStyle('notification'),
+                styles.notificationButton,
+              ]}
+              activeOpacity={1}
+            >
+              <Bell size={24} color="#3B82F6" />
+            </TouchableOpacity>
+          </Shadow>
               <Shadow
                 distance={8}
                 startColor="rgba(163, 177, 198, 0.15)"
@@ -148,24 +166,7 @@ const Header = ({
               <BookOpen size={24} color="#EC4899" />
             </TouchableOpacity>
           </Shadow> */}
-          <Shadow
-            distance={8}
-            startColor="rgba(163, 177, 198, 0.15)"
-            offset={[4, 4]}
-          >
-            <TouchableOpacity
-              onPress={() => router.push('/notifications')}
-              onPressIn={() => handlePressIn('notification')}
-              onPressOut={handlePressOut}
-              style={[
-                getButtonStyle('notification'),
-                styles.notificationButton,
-              ]}
-              activeOpacity={1}
-            >
-              <Bell size={24} color="#3B82F6" />
-            </TouchableOpacity>
-          </Shadow>
+          
           {/* <LogoutButton /> */}
         </View>
       </View>

@@ -67,10 +67,10 @@ const CulturalExperiences = () => {
   // Define categories
   const categories = [
     { id: 'all', label: 'All' },
-    { id: 'Events', label: 'Events' },
-    { id: 'Retail', label: 'Retail' },
     { id: 'Food', label: 'Food' },
-    { id: 'Other', label: 'Other' },
+    { id: 'Arts', label: 'Arts' },
+    { id: 'Volunteer', label: 'Volunteer' },
+    { id: 'Faith', label: 'Faith' },
   ];
 
   const {
@@ -224,7 +224,7 @@ const CulturalExperiences = () => {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Discover Experiences</Text>
+        <Text style={styles.sectionTitle}>Discover</Text>
         {/* <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
           <Text style={styles.viewAllBtnText}>View all</Text>
         </TouchableOpacity> */}
