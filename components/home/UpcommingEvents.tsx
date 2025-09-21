@@ -245,8 +245,9 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
     color: theme.textPrimary,
-    marginBottom: spacing.lg,
+    // marginBottom: spacing.lg,
     fontFamily: typography.fontFamily.bold,
+    flexShrink: 1,
   },
   viewAllText: {
     fontSize: typography.fontSize.xs,

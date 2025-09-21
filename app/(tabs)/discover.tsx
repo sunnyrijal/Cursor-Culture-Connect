@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
 
   heroSection: {
-    minHeight: 100,
+    minHeight: 70,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
@@ -265,10 +265,10 @@ const styles = StyleSheet.create({
   },
 
   heroSubtitle: {
-    fontSize: 20,
+    fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 15,
     fontWeight:'600'
   },
 
