@@ -547,7 +547,9 @@ export default function GroupDetailEnhanced() {
                     onPress={() => updateGroupMutation({ isPrivate: !group.isPrivate })}
                     disabled={isUpdatingGroup}
                   >
-                    <Text style={styles.togglePrivacyButtonText}>{isUpdatingGroup ? "Updating..." : "Toggle"}</Text>
+                    <Text style={styles.togglePrivacyButtonText}>
+                      {isUpdatingGroup ? "Updating..." : group.isPrivate ? "Make Public" : "Make Private"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1244,7 +1246,6 @@ const styles = StyleSheet.create({
   },
 
   descriptionContainer: {
-    paddingBottom: spacing.md,
   },
   descriptionCard: {
     backgroundColor: theme.white,
