@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)
   groupCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 20,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
 
   // Group Image Styles
   groupImageContainer: {
-    height: 120,
+    height: 100,
     position: 'relative',
     backgroundColor: '#6366F1',
     overflow: 'hidden',
@@ -497,14 +497,14 @@ const styles = StyleSheet.create({
   // Badge Styles
   badgeContainer: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 12,
+    left: 12,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     backdropFilter: 'blur(10px)',
@@ -585,20 +585,20 @@ const styles = StyleSheet.create({
 
   // Group Content Styles
   groupContent: {
-    padding: 20,
+    padding: 16,
   },
   groupHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   groupName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1E293B',
-    lineHeight: 24,
+    lineHeight: 22,
     letterSpacing: -0.3,
   },
   groupDescription: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#64748B',
     lineHeight: 22,
     marginBottom: 16,
@@ -607,16 +607,16 @@ const styles = StyleSheet.create({
 
   // Creator Section Styles
   creatorSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   creatorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   creatorAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   },
   creatorInitial: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   creatorDetails: {
@@ -660,14 +660,14 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
   },
   statCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,

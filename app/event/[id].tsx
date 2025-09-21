@@ -230,13 +230,13 @@ export default function EventDetail() {
   const organizer = event.user?.name || 'Unknown Organizer';
   const organizerEmail = event.user?.email;
 
-  const generateEventShareContent = () => {
-    return {
-      title: `${event.name} - Trivo`,
-      message: `Join me at ${event.name}!\n\n📅 ${eventDate} at ${eventTimeFormatted}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
-      url: `https://trivo.app/event/${event.id}`,
-    };
-  };
+  // const generateEventShareContent = () => {
+  //   return {
+  //     title: `${event.name} - Trivo`,
+  //     message: `Join me at ${event.name}!\n\n📅 ${eventDate} at ${eventTimeFormatted}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
+  //     url: `https://trivo.app/event/${event.id}`,
+  //   };
+  // };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -262,7 +262,7 @@ export default function EventDetail() {
               <ArrowLeft size={20} color={theme.textPrimary} />
             </TouchableOpacity>
             <View style={styles.headerRight}>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => setIsBookmarked(!isBookmarked)}
                 style={styles.headerButton}
               >
@@ -273,7 +273,7 @@ export default function EventDetail() {
                   }
                   fill={isBookmarked ? extendedTheme.accent : 'none'}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={handleDeleteEvent}
@@ -433,6 +433,8 @@ export default function EventDetail() {
                   </View>
 
                    {event?.userId === myData?.userId &&  <TouchableOpacity
+                      onPress={() => setShowAttendees(!showAttendees)}
+
                       style={styles.attendeesHeader}
                     >
                       <ChevronDown
