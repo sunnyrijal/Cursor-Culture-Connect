@@ -36,7 +36,7 @@ import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
 import { format } from 'date-fns';
 import { theme } from '@/components/theme';
-import { getQuickEvents } from '@/contexts/quickEvent.api';
+import { getQuickEvents, addInterestedUser, removeInterestedUser } from '@/contexts/quickEvent.api';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import React from 'react';
 
@@ -119,6 +119,7 @@ interface QuickEvent {
   description: string;
   max: string;
   location: string;
+  interestedUsers: { id: string }[];
   time: string;
   user: {
     id: string;
@@ -190,6 +191,26 @@ export default function Events() {
     },
     onError: (error) => {
       console.error('Error leaving event:', error);
+    },
+  });
+
+  const { mutate: addInterestMutation, isPending: isAddingInterest } = useMutation({
+    mutationFn: (quickEventId: string) => addInterestedUser(quickEventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+    },
+    onError: (error) => {
+      console.error('Error adding interest:', error);
+    },
+  });
+
+  const { mutate: removeInterestMutation, isPending: isRemovingInterest } = useMutation({
+    mutationFn: (quickEventId: string) => removeInterestedUser(quickEventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+    },
+    onError: (error) => {
+      console.error('Error removing interest:', error);
     },
   });
 
@@ -577,60 +598,74 @@ export default function Events() {
           // Quick Events
           <>
             {filteredQuickEvents.map(
-              (quickEvent: QuickEvent, index: number) => (
-                <TouchableOpacity
-                  key={quickEvent.id}
-                  style={[
-                    styles.quickEventCard,
-                    index === 0 && styles.firstCard,
-                    index === filteredQuickEvents.length - 1 && styles.lastCard,
-                  ]}
-                  onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.quickEventContent}>
-                    <View style={styles.quickEventHeader}>
-                      <Text style={styles.quickEventTitle} numberOfLines={2}>
-                        {quickEvent.name} at {quickEvent.location}
-                      </Text>
-                      <View style={styles.quickEventBadge}>
-                        <Text style={styles.quickEventBadgeText}>Quick</Text>
+              (quickEvent: QuickEvent, index: number) => {
+                const isInterested = quickEvent.interestedUsers.some(
+                  (user) => user.id === myData?.userId
+                );
+                return (
+                  <TouchableOpacity
+                    key={quickEvent.id}
+                    style={[
+                      styles.quickEventCard,
+                      index === 0 && styles.firstCard,
+                      index === filteredQuickEvents.length - 1 && styles.lastCard,
+                    ]}
+                    onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.quickEventContent}>
+                      <View style={styles.quickEventHeader}>
+                        <Text style={styles.quickEventTitle} numberOfLines={2}>
+                          {quickEvent.name} at {quickEvent.location}
+                        </Text>
+                        <View style={styles.quickEventBadge}>
+                          <Text style={styles.quickEventBadgeText}>Quick</Text>
+                        </View>
                       </View>
-                    </View>
-                    <Text
-                      style={styles.quickEventDescription}
-                      numberOfLines={2}
-                    >
-                      {quickEvent.description}
-                    </Text>
-                    <View style={styles.quickEventMeta}>
-                      <Clock size={16} color="#F59E0B" />
-                      <Text style={styles.quickEventMetaText}>
-                        {quickEvent.time}
+                      <Text
+                        style={styles.quickEventDescription}
+                        numberOfLines={2}
+                      >
+                        {quickEvent.description}
                       </Text>
-                    </View>
-                    <View style={styles.quickEventMeta}>
-                      <Users size={16} color="#6366F1" />
-                      <Text style={styles.quickEventMetaText}>
-                        Max {quickEvent.max} people
-                      </Text>
-                    </View>
-                    <View style={styles.quickEventCreator}>
-                      <View style={styles.creatorAvatar}>
-                        <Text style={styles.creatorInitial}>
-                          {quickEvent.user.name.charAt(0).toUpperCase()}
+                      <View style={styles.quickEventMeta}>
+                        <Clock size={16} color="#F59E0B" />
+                        <Text style={styles.quickEventMetaText}>
+                          {quickEvent.time}
                         </Text>
                       </View>
-                      <View style={styles.creatorDetails}>
-                        <Text style={styles.creatorName}>
-                          {quickEvent.user.name}
+                      <View style={styles.quickEventMeta}>
+                        <Users size={16} color="#6366F1" />
+                        <Text style={styles.quickEventMetaText}>
+                          Max {quickEvent.max} people
                         </Text>
-                        <Text style={styles.creatorRole}>Host</Text>
+                      </View>
+                      <View style={styles.quickEventActions}>
+                        <View style={styles.quickEventCreator}>
+                          <View style={styles.creatorAvatar}>
+                            <Text style={styles.creatorInitial}>
+                              {quickEvent.user.name.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={styles.creatorDetails}>
+                            <Text style={styles.creatorName}>
+                              {quickEvent.user.name}
+                            </Text>
+                            <Text style={styles.creatorRole}>Host</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.rsvpButtonSmall, isInterested && styles.rsvpedButtonSmall]}
+                          onPress={() => isInterested ? removeInterestMutation(quickEvent.id) : addInterestMutation(quickEvent.id)}
+                          disabled={isAddingInterest || isRemovingInterest}
+                        >
+                          <Text style={styles.rsvpButtonTextSmall}>{isInterested ? 'Interested' : 'I\'m in'}</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              )
+                  </TouchableOpacity>
+                )
+              }
             )}
 
             {filteredQuickEvents.length === 0 && (
@@ -1004,13 +1039,19 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
   },
-  quickEventCreator: {
+  quickEventActions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+  },
+  quickEventCreator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width:'70%'
   },
 
   firstCard: {
