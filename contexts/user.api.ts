@@ -80,6 +80,16 @@ export const getUsers = async () => {
   }
 };
 
+  export const getHubDetails = async () => {
+  try {
+    const response = await api.get('/user/hub-details');
+    return response.data
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error;
+  }
+};
+
 // Update user profile
 export const updateProfile = async (profileData: UpdateProfileData) => {
   try {

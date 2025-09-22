@@ -328,14 +328,17 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   viewAllBtn: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    backgroundColor: theme.white,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   viewAllBtnText: {
     color: theme.primary,
     fontWeight: '600',
-    fontSize: 14,
-    textDecorationLine: 'underline',
+    fontSize: 12,
   },
   categoryRow: {
     paddingLeft: 16,
