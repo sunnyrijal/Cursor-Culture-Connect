@@ -1,5 +1,7 @@
+import { isNativePlatformSupported } from 'react-native-screens/lib/typescript/core';
 import api from './axiosConfig'; // adjust path as needed
 import { AxiosResponse } from 'axios';
+import { University } from 'lucide-react-native';
 
 export interface EventTime {
   startTime: string;
@@ -33,9 +35,8 @@ export interface CreateEventData {
   eventTimes: EventTime[];
   location: string;
   imageurl?: string | null;
-  // groupId: string | null;
-  // isPublic: boolean;
   UniversityOnly: boolean;
+  associatedGroupId?: string | null;
 }
 
 export interface UpdateEventData {
@@ -78,55 +79,62 @@ export interface PaginatedResponse<T> {
   itemsPerPage: number;
 }
 
-const convertTimeStringToDate = (timeString: string, eventDate: string): Date => {
+const convertTimeStringToDate = (
+  timeString: string,
+  eventDate: string
+): Date => {
   // Parse the time string (e.g., "5:30", "14:45")
-  const [hours, minutes] = timeString.split(':').map(num => parseInt(num, 10));
-  
+  const [hours, minutes] = timeString
+    .split(':')
+    .map((num) => parseInt(num, 10));
+
   // Create a new Date object from the event date
   const date = new Date(eventDate);
-  
+
   // Set the hours and minutes
   date.setHours(hours, minutes, 0, 0); // hours, minutes, seconds, milliseconds
-  
+
   return date;
 };
 
 // Helper function to process event times array
-const processEventTimes = (eventTimes: Array<{startTime: string, endTime: string}>, eventDate: string) => {
-  return eventTimes.map(timeSlot => ({
+const processEventTimes = (
+  eventTimes: Array<{ startTime: string; endTime: string }>,
+  eventDate: string
+) => {
+  return eventTimes.map((timeSlot) => ({
     startTime: convertTimeStringToDate(timeSlot.startTime, eventDate),
-    endTime: convertTimeStringToDate(timeSlot.endTime, eventDate)
+    endTime: convertTimeStringToDate(timeSlot.endTime, eventDate),
   }));
 };
 
 export const createEvent = async (eventData: CreateEventData) => {
-  console.log("Original eventTimes:", eventData.eventTimes, "Date:", eventData.date);
-  
+  console.log(
+    'Original eventTimes:',
+    eventData.eventTimes,
+    'Date:',
+    eventData.date
+  );
+
   try {
-    const processedEventTimes = processEventTimes(eventData.eventTimes, eventData.date);
-    
+    const processedEventTimes = processEventTimes(
+      eventData.eventTimes,
+      eventData.date
+    );
+
     const processedEventData = {
       ...eventData,
-      eventTimes: processedEventTimes
+      eventTimes: processedEventTimes,
     };
-    
-    console.log("Event API Call - Data being sent:", {
-      name: processedEventData.name,
-      description: processedEventData.description,
-      eventTimes: processedEventData.eventTimes,
-      imageurl: processedEventData.imageurl,
-      location: processedEventData.location,
-      date: processedEventData.date,
-    });
-    
+
     const response = await api.post('/event/create', processedEventData);
     return response.data;
   } catch (error) {
+    console.log(error);
     console.error('Error creating event:', error);
     throw error;
   }
 };
-
 
 export const getEvents = async (params?: GetEventsParams) => {
   try {
@@ -138,7 +146,7 @@ export const getEvents = async (params?: GetEventsParams) => {
   }
 };
 
-export const getEvent = async (eventId: string | null ) => {
+export const getEvent = async (eventId: string | null) => {
   try {
     const response = await api.get(`/event/${eventId}`);
     return response.data;
@@ -148,12 +156,13 @@ export const getEvent = async (eventId: string | null ) => {
   }
 };
 
-
-
 // Update an event
-export const updateEvent = async (eventId: string, eventData: UpdateEventData) => {
+export const updateEvent = async (
+  eventId: string,
+  eventData: UpdateEventData
+) => {
   try {
-    const response = await api.put(`/events/${eventId}`, eventData);
+    const response = await api.put(`/event/${eventId}`, eventData);
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);
@@ -164,10 +173,31 @@ export const updateEvent = async (eventId: string, eventData: UpdateEventData) =
 // Delete an event
 export const deleteEvent = async (eventId: string) => {
   try {
-    const response = await api.delete(`/events/${eventId}`);
+    const response = await api.delete(`/event/${eventId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting event:', error);
+    throw error;
+  }
+};
+
+export const joinEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/join`);
+    console.log(response)
+    return response.data;
+  } catch (error) {
+    console.error('Error joining event:', error);
+    throw error;
+  }
+};
+
+export const leaveEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('Error joining event:', error);
     throw error;
   }
 };

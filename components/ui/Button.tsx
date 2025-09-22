@@ -97,12 +97,10 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   md: {
-    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     minHeight: 44,
   },
   lg: {
-    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     minHeight: 52,
   },
@@ -111,6 +109,7 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: typography.fontFamily.semiBold,
     textAlign: 'center',
+    color:theme.black
   },
   primaryText: {
     color: theme.white,

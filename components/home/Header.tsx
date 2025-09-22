@@ -88,8 +88,7 @@ const Header = ({
 
           <View style={styles.appTitleContainer}>
             <Text style={styles.appTitle}>TRiVO</Text>
-            {/* <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{currentUser.name}!</Text> */}
+            <Text style={styles.greeting}>Connect</Text>
           </View>
         </View>
 
@@ -249,12 +248,12 @@ const styles = StyleSheet.create({
   // greetingContainer: {
   //   flex: 1,
   // },
-  // greeting: {
-  //   fontSize: 14,
-  //   fontWeight: '500',
-  //   color: clayColors.textSecondary,
-  //   marginBottom: 2,
-  // },
+  greeting: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: clayColors.textSecondary,
+    marginBottom: 2,
+  },
   // userName: {
   //   fontSize: 20,
   //   fontWeight: '700',

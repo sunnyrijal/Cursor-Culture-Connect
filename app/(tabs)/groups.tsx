@@ -24,6 +24,7 @@ import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { useState } from 'react';
 
 import { PlusCircle } from 'lucide-react-native';
+import AdMobScreen from '@/components/BannerAd';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -92,11 +93,10 @@ export default function Groups() {
     queryKey: ['groups'],
     queryFn: () => getUserGroups(),
   });
+  const allGroups = groupResponse?.groups || [];
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const allGroups = groupResponse?.groups || [];
 
   const groups = allGroups.filter(
     (group: ApiGroup) =>
@@ -149,14 +149,21 @@ export default function Groups() {
         onSubmit={() => setShowCreateGroupModal(false)}
       />
 
+
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.heroSection}>
             <View style={styles.heroOverlay}>
               <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>
-                  <Text style={styles.heroTitle}>Cultural Groups</Text>
-
+                  <Text
+                    style={[
+                      styles.heroSubtitle,
+                      { fontSize: 20, lineHeight: 24, fontWeight: '600' },
+                    ]}
+                  >
+                    Connect with communities that share your interests
+                  </Text>
                   <TouchableOpacity
                     style={styles.createButton}
                     onPress={() => setShowCreateGroupModal(true)}
@@ -165,10 +172,6 @@ export default function Groups() {
                     <PlusCircle size={28} color={theme.primary} />
                   </TouchableOpacity>
                 </View>
-
-                <Text style={styles.heroSubtitle}>
-                  Connect with communities that share your interests
-                </Text>
               </View>
             </View>
           </View>
@@ -241,9 +244,11 @@ export default function Groups() {
                     </Text>
                   </View>
 
-                 {group.description && group.description!=='' &&  <Text style={styles.groupDescription} numberOfLines={3}>
-                    {group.description}
-                  </Text>}
+                  {group.description && group.description !== '' && (
+                    <Text style={styles.groupDescription} numberOfLines={3}>
+                      {group.description}
+                    </Text>
+                  )}
 
                   <View style={styles.creatorSection}>
                     <View style={styles.creatorInfo}>
@@ -323,6 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    paddingHorizontal: 20,
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 16,
@@ -346,13 +352,12 @@ const styles = StyleSheet.create({
 
   // Hero Section Styles
   heroSection: {
-    height: 140,
+    height: 100,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
-    paddingTop: 10,
     // marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     // borderRadius: 24,
     ...Platform.select({
       ios: {
@@ -388,8 +393,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
     lineHeight: 22,
+    width:'80%'
   },
   statsContainer: {
     flexDirection: 'row',
@@ -443,7 +449,7 @@ const styles = StyleSheet.create({
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)
   groupCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 20,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -469,7 +475,7 @@ const styles = StyleSheet.create({
 
   // Group Image Styles
   groupImageContainer: {
-    height: 120,
+    height: 100,
     position: 'relative',
     backgroundColor: '#6366F1',
     overflow: 'hidden',
@@ -491,14 +497,14 @@ const styles = StyleSheet.create({
   // Badge Styles
   badgeContainer: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 12,
+    left: 12,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     backdropFilter: 'blur(10px)',
@@ -579,20 +585,20 @@ const styles = StyleSheet.create({
 
   // Group Content Styles
   groupContent: {
-    padding: 20,
+    padding: 16,
   },
   groupHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   groupName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1E293B',
-    lineHeight: 24,
+    lineHeight: 22,
     letterSpacing: -0.3,
   },
   groupDescription: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#64748B',
     lineHeight: 22,
     marginBottom: 16,
@@ -601,16 +607,16 @@ const styles = StyleSheet.create({
 
   // Creator Section Styles
   creatorSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   creatorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   creatorAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
@@ -631,7 +637,7 @@ const styles = StyleSheet.create({
   },
   creatorInitial: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   creatorDetails: {
@@ -654,15 +660,14 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
+    gap: 12,
   },
   statCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
@@ -895,7 +900,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingVertical: 12,
   },
-  
+
   // Filter buttons for categories
   filterWrapper: {
     marginHorizontal: 20,

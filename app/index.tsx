@@ -25,11 +25,26 @@ import Animated, {
   runOnJS,
   interpolate,
 } from 'react-native-reanimated';
-import { checkAuthStatus } from '@/utils/auth';
+
+// Conditional import for AdMob - only import if available
+let mobileAds: any = null;
+let MaxAdContentRating: any = null;
+let TestIds: any = null;
+
+// try {
+//   const adMobModule = require("react-native-google-mobile-ads");
+//   mobileAds = adMobModule.default;
+//   MaxAdContentRating = adMobModule.MaxAdContentRating;
+//   TestIds = adMobModule.TestIds;
+// } catch (error) {
+//   console.warn('react-native-google-mobile-ads not available:', error);
+// }
 
 import { Image } from 'react-native';
 //@ts-ignore
 import logo from '../assets/logo.png'; // adjust path based on your folder structure
+import { useQuery } from '@tanstack/react-query';
+import getDecodedToken from '@/utils/getMyData';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,6 +73,14 @@ export default function Index() {
   const router = useRouter();
 
   const { authState } = useAuth();
+
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
+
+  console.log("MYDATA",myData);
+  console.log("AUTH STATE FROM INDEX", authState)
 
   useEffect(() => {
     // Logo animation sequence
@@ -122,25 +145,85 @@ export default function Index() {
     );
   }, [authState.authenticated]);
 
-  useEffect(() => {
-    if (authState.authenticated == false) {
-      return;
-    }
+useEffect(() => {
+  const timer = setTimeout(() => {
+    backgroundOpacity.value = withTiming(
+      0,
+      { duration: 600, easing: Easing.in(Easing.cubic) },
+      () => {
+        // Get fresh auth state at navigation time
+        runOnJS(() => {
+          const isAuthenticated = authState.authenticated;
+          router.replace(isAuthenticated ? '/(tabs)' : '/(auth)/login');
+        })();
+      }
+    );
+  }, 3500);
 
-    const timer = setTimeout(() => {
-      backgroundOpacity.value = withTiming(
-        0,
-        { duration: 600, easing: Easing.in(Easing.cubic) },
-        () => {
-          runOnJS(router.replace)(
-            authState.authenticated ? '/(tabs)' : '/(auth)/login'
-          );
-        }
-      );
-    }, 2000); // Animation delay
+  return () => clearTimeout(timer);
+}, []); 
 
-    return () => clearTimeout(timer);
-  }, [authState.authenticated]);
+// useEffect(() => {
+//   // Initialize AdMob only if the module is available
+//   if (!mobileAds) {
+//     console.log('AdMob not available, skipping initialization');
+//     return;
+//   }
+
+//   let mounted = true;
+
+//   (async () => {
+//     try {
+//       // If you want to request ATT on iOS first, uncomment this block:
+//       // if (Platform.OS === "ios") {
+//       //   const { status } = await getTrackingPermissionsAsync();
+//       //   if (status === PermissionStatus.UNDETERMINED) {
+//       //     await requestTrackingPermissionsAsync();
+//       //   }
+//       // }
+
+//       await mobileAds()
+//         .setRequestConfiguration({
+//           maxAdContentRating: MaxAdContentRating?.PG || 'PG',
+//           tagForChildDirectedTreatment: false,
+//           tagForUnderAgeOfConsent: false,
+//           // Add your device ID here later for realistic test ads
+//           testDeviceIdentifiers: ["EMULATOR"],
+//         });
+
+//       if (!mounted) return;
+//       await mobileAds().initialize();
+//       console.log('AdMob initialized successfully');
+//     } catch (e) {
+//       console.warn("AdMob init failed", e);
+//     }
+//   })();
+
+//   return () => {
+//     mounted = false;
+//   };
+// }, []);
+
+// useEffect(() => {
+//   const timer = setTimeout(() => {
+//     backgroundOpacity.value = withTiming(
+//       0,
+//       { duration: 600, easing: Easing.in(Easing.cubic) },
+//       () => {
+//         runOnJS(() => {
+//           // Always navigate to login for unauthenticated users
+//           if (authState.authenticated) {
+//             router.replace('/(tabs)');
+//           } else {
+//             router.replace('/(auth)/login');
+//           }
+//         })();
+//       }
+//     );
+//   }, 3500);
+
+//   return () => clearTimeout(timer);
+// }, [authState.authenticated]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -250,8 +333,7 @@ export default function Index() {
 
             <Animated.View style={subtitleAnimatedStyle}>
               <Text style={styles.subtitle}>
-                Discover amazing people and connect with events around the
-                world
+                Discover amazing people and connect with events around the world
               </Text>
               {/* <View style={styles.dots}>
                 <View style={[styles.dot, styles.dotActive]} />
@@ -359,7 +441,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
     width: '100%',
   },
   title: {

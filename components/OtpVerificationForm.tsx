@@ -63,7 +63,7 @@ const OtpVerificationForm: React.FC = () => {
     mutationFn: (data: VerifyOTPData) => verifyOTP(data),
     onSuccess: (data) => {
       console.log('✅ OTP verified successfully:', data);
-      router.replace('/(auth)/login');
+      router.replace('/(tabs)');
     },
     onError: (error: any) => {
       console.error('❌ Error verifying OTP:', error);
@@ -452,7 +452,7 @@ const OtpVerificationForm: React.FC = () => {
                   otp.some((digit) => digit === '') ||
                   !email.trim()
                     ? ['#CBD5E1', '#94A3B8']
-                    : ['#6366F1', '#8B5CF6', '#EC4899']
+                    : ['#8B5CF6', '#6366F1', '#3B82F6']
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}

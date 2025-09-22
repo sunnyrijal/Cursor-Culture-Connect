@@ -34,7 +34,7 @@ export const getAllGroups = async () => {
 
 export const getUserGroups = async () => {
   try {
-    const response = await api.get('/groups/user');
+    const response = await api.get('/groups/discover');
     return response.data ;
   } catch (error) {
     console.error('Error fetching user groups:', error);
@@ -58,6 +58,16 @@ export const updateGroup = async (groupId: string, data: UpdateGroupRequest) => 
     return response.data ;
   } catch (error) {
     console.error('Error updating group:', error);
+    throw error;
+  }
+};
+
+export const deleteGroup = async (groupId: string) => {
+  try {
+    const response = await api.delete(`/groups/${groupId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting group:', error);
     throw error;
   }
 };

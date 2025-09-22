@@ -44,7 +44,7 @@ function AppContent() {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
-
+  console.log(myData)
   return (
     <SocketProvider
       serverUrl={serverUrl}

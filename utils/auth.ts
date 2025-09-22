@@ -34,7 +34,9 @@ export const isTokenExpired = (token: string): boolean => {
   return decoded.exp < currentTime
 }
 
-export const checkAuthStatus = async () => {
+
+
+export const checkAuthStatus = async (): Promise<boolean> => {
   try {
     const token = await AsyncStorage.getItem('token');
     if (!token) {
@@ -43,22 +45,21 @@ export const checkAuthStatus = async () => {
 
     try {
       const decodedToken: { exp: number } = jwtDecode(token);
-      const currentTime = Date.now() / 1000; // to get in seconds
+      const currentTime = Date.now() / 1000; // in seconds
 
       if (decodedToken.exp < currentTime) {
         // Token is expired
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('userId');
+        await AsyncStorage.multiRemove(['token', 'userId']);
         return false;
       }
+
       return true; // Token is valid
-    } catch (e) {
-      console.error('Invalid token:', e);
+    } catch (decodeError) {
+      console.error('Invalid token:', decodeError);
       return false;
     }
-    
-  } catch (error) {
-    console.error('Error checking auth status:', error);
+  } catch (storageError) {
+    console.error('Error checking auth status:', storageError);
     return false;
   }
-}
+};

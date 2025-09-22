@@ -15,6 +15,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const theme = {
   primary: '#6366F1',
@@ -89,12 +90,11 @@ export default function Page() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Hero Section */}
       <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
-            <Text style={styles.heroTitle}>Friends</Text>
             <Text style={styles.heroSubtitle}>
               Connect and build meaningful relationships
             </Text>
@@ -159,7 +159,7 @@ export default function Page() {
       {/* Content */}
 
       <View style={styles.contentWrapper}>{renderContent()}</View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
 
   heroSection: {
-    minHeight: 140,
+    minHeight: 100,
     backgroundColor: '#6366F1',
     position: 'relative',
     overflow: 'hidden',
@@ -265,10 +265,11 @@ const styles = StyleSheet.create({
   },
 
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 20,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 22,
+    fontWeight:'600'
   },
 
   tabContainer: {

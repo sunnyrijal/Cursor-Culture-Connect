@@ -22,6 +22,7 @@ export interface CreateQuickEventData {
   description?: string;
   max?: string;
   time?: string;
+  isPublic:boolean
 }
 
 export interface UpdateQuickEventData {
@@ -44,10 +45,10 @@ export const createQuickEvent = async (quickEventData: CreateQuickEventData) => 
   }
 };
 
-export const getQuickEvents = async () => {
+export const getQuickEvents = async (params?: { includeNotInterested?: boolean }) => {
   try {
     const response: AxiosResponse = await api.get(
-      '/quickevents/all'
+      `/quickevents/all?includeNotInterested=${!params?.includeNotInterested}`,
     );
     return response.data;
   } catch (error) {
@@ -101,6 +102,42 @@ export const deleteQuickEvent = async (id: string) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting quick event:', error);
+    throw error;
+  }
+};
+
+export const addInterestedUser = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(
+      `/quickevents/add-interested-user/${id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error adding interested user:', error);
+    throw error;
+  }
+};
+
+export const removeInterestedUser = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(
+      `/quickevents/remove-interested-user/${id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error removing interested user:', error);
+    throw error;
+  }
+};
+
+export const addNotInterestedUser = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(
+      `/quickevents/add-not-interested-user/${id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error adding not interested user:', error);
     throw error;
   }
 };

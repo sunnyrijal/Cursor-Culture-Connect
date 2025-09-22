@@ -50,6 +50,7 @@ export function CreateGroupModal({
     isPrivate: false, // Default to public
     universityOnly: false,
     allowedUniversity: '',
+    meetingDetails: '',
   });
   const queryClient = useQueryClient();
 
@@ -60,6 +61,19 @@ export function CreateGroupModal({
   const [useLocation, setUseLocation] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      category: '',
+      isPrivate: false,
+      universityOnly: false,
+      allowedUniversity: '',
+      meetingDetails: '',
+    });
+    setImageUrl('');
+  };
 
   // const handleAddMeeting = () => {
   //   setMeetings([...meetings, { date: '', time: '', location: '' }]);
@@ -137,12 +151,14 @@ export function CreateGroupModal({
     onSuccess: (data, variables) => {
       console.log('Group created successfully:', data);
 
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
 
       Alert.alert('Success', 'Group created successfully!');
 
       onSubmit(variables);
       setIsSubmitting(false);
+      resetForm();
       // Close modal
       onClose();
     },
@@ -168,6 +184,7 @@ export function CreateGroupModal({
       description: formData.description,
       isPrivate: formData.isPrivate,
       imageUrl: imageUrl,
+      meetingDetails: formData.meetingDetails,
     };
     console.log(groupData);
     createGroupMutation.mutate(groupData);
@@ -293,6 +310,16 @@ export function CreateGroupModal({
                   (text) => setFormData({ ...formData, description: text }),
                   'Tell people what your group is about...',
                   <GraduationCap size={16} color="#6366F1" />,
+                  true,
+                  false
+                )}
+
+                {renderInput(
+                  'Meeting Details',
+                  formData.meetingDetails,
+                  (text) => setFormData({ ...formData, meetingDetails: text }),
+                  'e.g., Every Tuesday at 7 PM in Room 101',
+                  <LocateIcon size={16} color="#6366F1" />,
                   true,
                   false
                 )}

@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.babish.dev.boltexponativewind"
+    },
+    "android": {
+      "package": "com.babish.dev.boltexponativewind"
     },
     "web": {
       "bundler": "metro",
@@ -25,9 +29,6 @@
       "eas": {
         "projectId": "f69c783d-aa2d-4edf-b56e-803ea3f60be9"
       }
-    },
-    "android": {
-      "package": "com.babish.dev.boltexponativewind"
     }
   }
 }

@@ -43,7 +43,7 @@ const QuickActions = () => {
   const quickActionsData = [
     {
       id: 'createEvent',
-      title: 'Create Event',
+      title: 'Create\nEvent',
       description: 'Host cultural events',
       icon: Calendar,
       iconColor: '#1d4ed8',
@@ -52,7 +52,7 @@ const QuickActions = () => {
     },
     {
       id: 'createQuickEvent',
-      title: 'Quick Event',
+      title: 'Quick\nEvent',
       description: 'Fast event setup',
       icon: Zap,
       iconColor: '#7c3aed',
@@ -61,7 +61,7 @@ const QuickActions = () => {
     },
     {
       id: 'createGroup', 
-      title: 'Create Group',
+      title: 'Create\nGroup',
       description: 'Start new community',
       icon: Users,
       iconColor: '#15803d',
@@ -70,7 +70,7 @@ const QuickActions = () => {
     },
     {
       id: 'myUniversity',
-      title: 'My University', 
+      title: 'My\nUniversity', 
       description: 'Campus resources',
       icon: MapPin,
       iconColor: '#c2410c',
@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
   },
 
   actionTitle: {
@@ -188,5 +187,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: typography?.fontFamily?.bold || 'System',
     fontWeight: '600',
+    lineHeight: 14, // Added for better spacing between lines
   },
 })

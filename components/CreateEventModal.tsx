@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   View,
   Text,
@@ -39,26 +39,13 @@ import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { getUserGroups } from '@/contexts/group.api';
 
 interface CreateEventModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (eventData: any) => void;
 }
-
-interface Group {
-  id: string;
-  name: string;
-  president_id?: string;
-  is_joined?: boolean;
-}
-
-interface EventTime {
-  startTime: string;
-  endTime: string;
-}
-
-const currentUser = { id: '1' };
 
 export function CreateEventModal({
   visible,
@@ -71,7 +58,7 @@ export function CreateEventModal({
     title: '',
     description: '',
     date: new Date(),
-    eventTimes: [{ startTime: '', endTime: '' }] as EventTime[],
+    eventTimes: [{ startTime: '', endTime: '' }],
     location: '',
     groupId: null as string | null,
     images: [] as string[],
@@ -79,12 +66,17 @@ export function CreateEventModal({
     universityOnly: false,
   });
 
-  const [groups, setGroups] = useState<Group[]>([
-    { id: '1', name: 'Cultural Club', president_id: '1', is_joined: true },
-    { id: '2', name: 'Tech Society', president_id: '2', is_joined: true },
-    { id: '3', name: 'Art Community', president_id: '1', is_joined: true },
-  ]);
+  const {
+    data: groupResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => getUserGroups(),
+  });
+  const groups = groupResponse?.groups || [];
 
+  console.log(groups);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
@@ -160,6 +152,7 @@ export function CreateEventModal({
       console.log('Event created successfully:', data);
 
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
 
       Alert.alert('Success', 'Event created successfully!');
 
@@ -200,22 +193,6 @@ export function CreateEventModal({
 
   console.log(formData.images);
 
-  const hasPermission = useMemo(() => {
-    if (!formData.groupId) return true;
-    const group = groups.find((g) => g.id === formData.groupId);
-    if (!group) return false;
-    return group.president_id === currentUser.id;
-  }, [formData.groupId, groups]);
-
-  const removeImage = (index: number) => {
-    const newImages = [...formData.images];
-    newImages.splice(index, 1);
-    setFormData({
-      ...formData,
-      images: newImages,
-    });
-  };
-
   const addTimeSlot = () => {
     setFormData({
       ...formData,
@@ -231,6 +208,15 @@ export function CreateEventModal({
         eventTimes: newEventTimes,
       });
     }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({
+      ...formData,
+      images: newImages,
+    });
   };
 
   const formatTimeInput = (input: string): string => {
@@ -372,11 +358,10 @@ export function CreateEventModal({
       imageUrl: formData.images.length > 0 ? formData.images[0] : null,
       location: formData.location,
       date: formData.date.toISOString(),
-      // groupId: formData.groupId,
-      // isPublic: formData.isPublic,
+      ...(formData.groupId && { associatedGroupId: formData.groupId }),
+      isPublic: formData.isPublic,
       UniversityOnly: formData.universityOnly,
     };
-    console.log(eventData);
     // Use the TanStack Query mutation
     createEventMutation.mutate(eventData);
   };
@@ -389,7 +374,6 @@ export function CreateEventModal({
     'default',
     { month: 'long' }
   );
-  const userGroups = groups.filter((g) => g.is_joined);
 
   return (
     <Modal
@@ -768,25 +752,33 @@ export function CreateEventModal({
                 </View>
 
                 {/* Associated Group */}
-                {/* <View style={styles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
-                  <TouchableOpacity onPress={() => setShowGroupPicker(true)} disabled={createEventMutation.isPending}>
+                  <TouchableOpacity
+                    onPress={() => setShowGroupPicker(true)}
+                    disabled={createEventMutation.isPending}
+                  >
                     <View style={styles.inputWrapper}>
-                      <Users size={20} color="#6366F1" style={styles.inputIcon} />
-                      <Text style={[styles.inputText, !formData.groupId && { color: "#9CA3AF" }]}>
+                      <Users
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
+                      <Text
+                        style={[
+                          styles.inputText,
+                          !formData.groupId && { color: '#9CA3AF' },
+                        ]}
+                      >
                         {formData.groupId
-                          ? groups.find((g) => g.id === formData.groupId)?.name
-                          : "Select a group (optional)"}
+                          ? groups.find((g: any) => g.id === formData.groupId)
+                              ?.name
+                          : 'Select a group (optional)'}
                       </Text>
                       <ChevronDown size={20} color="#6366F1" />
                     </View>
                   </TouchableOpacity>
-                  {formData.groupId && !hasPermission && (
-                    <Text style={styles.validationText}>
-                      You are not an admin of this group. The event will be sent for approval.
-                    </Text>
-                  )}
-                </View> */}
+                </View>
 
                 {/* Event Visibility */}
                 <View style={styles.inputContainer}>
@@ -1020,8 +1012,11 @@ export function CreateEventModal({
               <View style={styles.groupPickerContent}>
                 <Text style={styles.groupPickerTitle}>Select Your Group</Text>
 
-                <ScrollView style={styles.groupList}>
-                  {userGroups.map((group) => (
+                <ScrollView
+                  style={styles.groupList}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {groups.map((group: any) => (
                     <TouchableOpacity
                       key={group.id}
                       style={styles.groupItem}
@@ -1030,14 +1025,21 @@ export function CreateEventModal({
                         setShowGroupPicker(false);
                       }}
                     >
-                      <View style={styles.groupItemContent}>
-                        <Users size={20} color="#6366F1" />
-                        <Text style={styles.groupItemText}>{group.name}</Text>
-                        {group.president_id === currentUser.id && (
-                          <View style={styles.adminBadge}>
-                            <Text style={styles.adminBadgeText}>Admin</Text>
-                          </View>
-                        )}
+                      <Image
+                        source={
+                          group.imageUrl
+                            ? { uri: group.imageUrl }
+                            : require('../assets/user.png')
+                        }
+                        style={styles.groupImage}
+                      />
+                      <View style={styles.groupInfo}>
+                        <Text style={styles.groupItemText} numberOfLines={1}>
+                          {group.name}
+                        </Text>
+                        <Text style={styles.groupCreatorText}>
+                          By {group.creator.name}
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -1646,31 +1648,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   groupList: {
-    flex: 1,
     marginBottom: 24,
+    maxHeight: 400,
   },
   groupItem: {
-    borderRadius: 16,
-    marginBottom: 12,
-    backgroundColor: '#F0F3F7',
-    borderWidth: 1,
-    borderColor: '#CDD2D8',
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  groupItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    borderRadius: 16,
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
   },
+  groupImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    backgroundColor: '#E5E7EB',
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupCreatorText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
   groupItemText: {
     flex: 1,
     fontSize: 16,
