@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 // import { Picker } from '@react-native-picker/picker';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
@@ -23,17 +24,21 @@ import {
   Clock,
   PlusCircle,
   Zap,
+  CheckCircle,
 } from 'lucide-react-native';
+import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useQuery } from '@tanstack/react-query';
-import { getEvents } from '@/contexts/event.api';
+import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 
 // Add import for date formatting
+import getDecodedToken from '@/utils/getMyData';
 import { format } from 'date-fns';
 import { theme } from '@/components/theme';
 import { getQuickEvents } from '@/contexts/quickEvent.api';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
+import React from 'react';
 
 // Helper function to format date
 const formatDate = (dateString: string) => {
@@ -90,7 +95,7 @@ interface Event {
   location: string;
   imageUrl?: string | null;
   userId: string;
-  attendingUsers:any,
+  attendingUsers: any;
   eventTimes: {
     id: number;
     eventId: string;
@@ -153,12 +158,7 @@ export default function Events() {
     selectedUniversity: '',
   });
   const [showHelper, setShowHelper] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedUniversity, setSelectedUniversity] = useState('');
-  const [selectedHeritage, setSelectedHeritage] = useState('');
+  const [includeNotInterested, setIncludeNotInterested] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
     'events'
@@ -166,69 +166,33 @@ export default function Events() {
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
 
-  // Add local state for pending filter selections
-  const [pendingCategory, setPendingCategory] = useState('all');
-  const [pendingState, setPendingState] = useState('');
-  const [pendingCity, setPendingCity] = useState('');
-  const [pendingUniversity, setPendingUniversity] = useState('');
-  const [pendingHeritage, setPendingHeritage] = useState('');
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
 
-  // When Apply Filters is pressed, update the actual filter state
-  const applyFilters = () => {
-    setSelectedCategory(pendingCategory);
-    setSelectedState(pendingState);
-    setSelectedCity(pendingCity);
-    setSelectedUniversity(pendingUniversity);
-    setSelectedHeritage(pendingHeritage);
-    setShowFilters(false);
-  };
+  const queryClient = useQueryClient();
 
-  // Example options (replace with real data as needed)
-  const categoryOptions = [
-    { key: 'all', label: 'All' },
-    { key: 'cultural', label: 'Cultural' },
-    { key: 'sports', label: 'Sports' },
-    { key: 'music', label: 'Music' },
-    { key: 'games', label: 'Games' },
-    { key: 'career', label: 'Career' },
-    { key: 'wellness', label: 'Wellness' },
-    { key: 'social', label: 'Social' },
-  ];
-  const stateOptions = ['California', 'New York', 'Texas', 'Minnesota'];
-  const cityOptionsByState = {
-    California: ['Palo Alto', 'Los Angeles', 'San Francisco'],
-    'New York': ['New York City', 'Buffalo'],
-    Texas: ['Austin', 'Houston'],
-    Minnesota: ['Minneapolis', 'St. Paul'],
-  };
-  const universityOptions = [
-    'Stanford University',
-    'Harvard University',
-    'UT Austin',
-    'UMN',
-  ];
-  const heritageOptions = [
-    'South Asian',
-    'East Asian',
-    'African',
-    'Latino',
-    'European',
-    'Middle Eastern',
-    'Other',
-  ];
+  const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
+    mutationFn: (eventId: string) => joinEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      console.error('Error joining event:', error);
+    },
+  });
 
-  // Quick filter state
-  const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'thisWeek', 'myUniversity', 'myGroups', 'nearMe'
+  const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
+    mutationFn: (eventId: string) => leaveEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      console.error('Error leaving event:', error);
+    },
+  });
 
-  // Quick filter buttons
-  const quickFilters = [
-    { key: 'thisWeek', label: 'This Week' },
-    { key: 'myUniversity', label: 'My University' },
-    { key: 'myGroups', label: 'My Groups' },
-    { key: 'nearMe', label: 'Near Me' },
-  ];
-
-  // Use Tanstack Query to fetch events
   const {
     data: eventsResponse,
     isLoading,
@@ -241,14 +205,16 @@ export default function Events() {
 
   const events = eventsResponse?.events || [];
 
+  console.log(events);
+
   const {
     data: quickEventsResponse,
     isLoading: isLoadingQuickEvents,
     error: quickEventsError,
     refetch: refetchQuickEvents,
   } = useQuery({
-    queryKey: ['quick-events'],
-    queryFn: () => getQuickEvents(),
+    queryKey: ['quick-events', { includeNotInterested }],
+    queryFn: () => getQuickEvents({ includeNotInterested }),
   });
 
   const quickEvents = quickEventsResponse?.data || [];
@@ -263,7 +229,6 @@ export default function Events() {
   const filteredEvents = useMemo(() => {
     let tempEvents = [...events];
 
-    // Filter by search query
     if (searchQuery) {
       tempEvents = tempEvents.filter(
         (event) =>
@@ -273,76 +238,7 @@ export default function Events() {
       );
     }
 
-    // // Category filters
-    // if (activeFilter === 'cultural') {
-    //   tempEvents = tempEvents.filter(event =>
-    //     event.category?.some(cat => [
-    //       'Chinese', 'East Asian', 'Vietnamese', 'Indian', 'South Asian', 'Hindu', 'Cultural'
-    //     ].includes(cat))
-    //   );
-    // } else if (activeFilter === 'sports') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Sports'));
-    // } else if (activeFilter === 'music') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Music'));
-    // } else if (activeFilter === 'games') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Games'));
-    // } else if (activeFilter === 'career') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Career'));
-    // } else if (activeFilter === 'wellness') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Wellness'));
-    // } else if (activeFilter === 'social') {
-    //   tempEvents = tempEvents.filter(event => event.category?.includes('Social'));
-    // }
-
-    // Advanced filters from FilterSystem
-    // switch (filters.filterBy) {
-    //   case 'my-university':
-    //     tempEvents = tempEvents.filter(event =>
-    //       event.location.includes(currentUser.university) ||
-    //       event.organizer?.university === currentUser.university
-    //     );
-    //     break;
-    //   case 'my-heritage':
-    //     const userHeritages = currentUser.heritage || [];
-    //     if (Array.isArray(userHeritages)) {
-    //       tempEvents = tempEvents.filter(event =>
-    //         userHeritages.some((heritage: string) =>
-    //           event.category?.some((cat: string) => cat.toLowerCase().includes(heritage.toLowerCase()))
-    //         )
-    //       );
-    //     }
-    //     break;
-    //   case 'filter-by-state':
-    //     if (filters.location.state) {
-    //       tempEvents = tempEvents.filter(event =>
-    //         event.location.includes(filters.location.state)
-    //       );
-    //     }
-    //     if (filters.location.city) {
-    //       tempEvents = tempEvents.filter(event =>
-    //         event.location.toLowerCase().includes(filters.location.city.toLowerCase())
-    //       );
-    //     }
-    //     break;
-    // }
-
-    // Filter by ethnicity/heritage
-    // if (filters.ethnicity.length > 0) {
-    //   tempEvents = tempEvents.filter(event =>
-    //     filters.ethnicity.some(ethnicity =>
-    //       event.category?.some(cat => cat.toLowerCase().includes(ethnicity.toLowerCase()))
-    //     )
-    //   );
-    // }
-
-    // // Filter by selected university
-    // if (filters.selectedUniversity) {
-    //   tempEvents = tempEvents.filter(event =>
-    //     event.location.includes(filters.selectedUniversity) ||
-    //     event.organizer?.university === filters.selectedUniversity
-    //   );
-    // }
-
+  
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
@@ -362,109 +258,15 @@ export default function Events() {
     return tempQuickEvents;
   }, [quickEvents, searchQuery]);
 
-  console.log(quickEvents);
 
   const handleCreateEvent = async (eventData: any) => {
     console.log('New Event Data:', eventData);
-
-    try {
-      // Format the data for the API
-      const formattedData = {
-        ...eventData,
-        // Ensure date is properly serialized
-        date:
-          eventData.date instanceof Date
-            ? eventData.date.toISOString()
-            : eventData.date,
-        // Keep both combined time and individual start/end time fields
-        time: `${eventData.startTime} - ${eventData.endTime}`,
-        startTime: eventData.startTime,
-        endTime: eventData.endTime,
-        // Map category properly
-        categories: eventData.category || [],
-        // Handle multiple images
-        images: eventData.images || (eventData.image ? [eventData.image] : []),
-        // Include group association if available
-        groupId: eventData.groupId,
-      };
-
-      // Send the data to the backend
-      const response = await fetch('http://localhost:3001/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(formattedData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to create event:', errorData);
-        throw new Error(
-          `Failed to create event: ${errorData.details || response.statusText}`
-        );
-      }
-
-      // Get the created event from the response
-      const createdEvent = await response.json();
-      console.log('Event created successfully:', createdEvent);
-
-      // Refresh the events list using refetch
-      refetch();
-    } catch (error) {
-      console.error('Error creating event:', error);
-      // For now, just show an error - in a real app you might show a toast
-    }
-
     setShowCreateModal(false);
   };
 
   const handleCreateQuickEvent = (eventData: any) => {
     setShowCreateQuickEventModal(false);
   };
-
-  // const handleRSVP = async (eventId: number) => {
-  //   try {
-  //     // Get current RSVP status for the event
-  //     const currentEvent = events.find((event: any) => event.id === eventId)
-  //     if (!currentEvent) return
-
-  //     const newRSVPStatus = !currentEvent.isRSVPed
-
-  //     // Send update to backend
-  //     const response = await fetch(`http://localhost:3001/api/events/${eventId}/rsvp`, {
-  //       method: "PATCH",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Accept: "application/json",
-  //       },
-  //       body: JSON.stringify({ isRSVPed: newRSVPStatus }),
-  //     })
-
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to update RSVP: ${response.statusText}`)
-  //     }
-
-  //     console.log(`Successfully ${newRSVPStatus ? "RSVP'd to" : "cancelled RSVP for"} event ${eventId}`)
-
-  //     // Refresh events after successful RSVP
-  //     refetch()
-  //   } catch (error) {
-  //     console.error("Error updating RSVP:", error)
-  //     // Refresh events to revert any potential state inconsistency
-  //     refetch()
-  //   }
-  // }
-
-  // const handleFiltersChange = (newFilters: FilterOptions) => {
-  //   setFilters(newFilters)
-  // }
-
-  // Add state for tracking active image indexes for each event
-  const [activeImageIndexes, setActiveImageIndexes] = useState<
-    Record<number, number>
-  >({});
 
   if (
     (activeTab === 'events' && isLoading) ||
@@ -530,38 +332,37 @@ export default function Events() {
         onSubmit={handleCreateEvent}
       />
 
-         <CreateQuickEventModal
-              visible={showCreateQuickEventModal}
-              onClose={() => handleCreateQuickEvent(false)}
-              onSubmit={handleCreateQuickEvent}
-            />
+      <CreateQuickEventModal
+        visible={showCreateQuickEventModal}
+        onClose={() => handleCreateQuickEvent(false)}
+        onSubmit={handleCreateQuickEvent}
+      />
 
       <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
             <View style={styles.headerRow}>
-                {/* <Text style={styles.heroTitle}>Discover</Text> */}
-                <Text style={styles.heroSubtitle}>
-              Discover and participate in cultural celebrations
-            </Text>
-                <View style={styles.headerActions}>
-                  <TouchableOpacity
-                    style={styles.createButtonHero}
-                    onPress={() => setShowCreateQuickEventModal(true)}
-                    activeOpacity={0.7}
-                  >
-                    <Zap size={24} color={theme.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.createButtonHero}
-                    onPress={() => setShowCreateModal(true)}
-                    activeOpacity={0.7}
-                  >
-                    <PlusCircle size={28} color={theme.primary} />
-                  </TouchableOpacity>
-                </View>
+              {/* <Text style={styles.heroTitle}>Discover</Text> */}
+              <Text style={styles.heroSubtitle}>
+                Discover and participate in cultural celebrations
+              </Text>
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  style={styles.createButtonHero}
+                  onPress={() => setShowCreateQuickEventModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Zap size={24} color={theme.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.createButtonHero}
+                  onPress={() => setShowCreateModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <PlusCircle size={28} color={theme.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
-            
           </View>
         </View>
       </View>
@@ -618,70 +419,19 @@ export default function Events() {
         </View>
       </View>
 
-      {/* Enhanced Filter System - Always Visible */}
-      {/* <View style={styles.filterSystemContainer}>
-          <FilterSystem
-            onFiltersChange={handleFiltersChange}
-            contentType="events"
-            showPresets={true}
-            eventCount={filteredEvents.length}
-            filterLabel={(() => {
-              if (filters.filterBy === 'my-university') return 'My University';
-              if (filters.filterBy === 'my-heritage') return 'My Heritage';
-              if (filters.filterBy === 'filter-by-state') return 'By State';
-              return 'All';
-            })()}
+      {activeTab === 'quickEvents' && (
+        <View style={styles.checkboxContainer}>
+          <Checkbox
+            style={styles.checkbox}
+            value={includeNotInterested}
+            onValueChange={setIncludeNotInterested}
+            color={includeNotInterested ? theme.primary : undefined}
           />
-        </View> */}
-
-      {/* {activeTab === "events" && (
-        <View style={styles.filterWrapper}>
-          <View style={styles.filterContainer}>
-            {quickFilters.map((f) => (
-              <TouchableOpacity
-                key={f.key}
-                style={[styles.filterButton, quickFilter === f.key && styles.activeFilter]}
-                onPress={() => setQuickFilter(f.key)}
-              >
-                <View style={styles.filterButtonContent}>
-                  <Text style={[styles.filterText, quickFilter === f.key && styles.activeFilterText]}>{f.label}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.checkboxLabel}>
+            Include events I'm not interested in
+          </Text>
         </View>
-      )} */}
-
-      {/* <Modal visible={showCategoryModal} animationType="slide" transparent onRequestClose={() => setShowCategoryModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.categoryFilterLabel}>Filter by Category</Text>
-              <Text style={styles.categoryHelperText}>Select categories to filter events</Text>
-              
-              <ScrollView style={{ maxHeight: 300, width: '100%' }}>
-                {filterOptions.map(option => (
-                  <TouchableOpacity
-                    key={option.key}
-                    style={[styles.filterButton, selectedCategories.includes(option.key) && styles.activeFilterButton]}
-                    onPress={() => toggleCategory(option.key)}
-                  >
-                    <Text style={[styles.filterButtonText, selectedCategories.includes(option.key) && styles.activeFilterButtonText]}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              <TouchableOpacity style={styles.applyFiltersButton} onPress={() => setShowCategoryModal(false)}>
-                <Text style={styles.applyFiltersButtonText}>Apply Filters</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowCategoryModal(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal> */}
+      )}
 
       <ScrollView
         style={styles.eventsList}
@@ -691,124 +441,125 @@ export default function Events() {
         // scrollEventThrottle={16}
       >
         {activeTab === 'events' ? (
-          // Regular Events
           <>
-            {filteredEvents.map((event: Event, index: number) => (
-              <TouchableOpacity
-                key={event.id}
-                style={[
-                  styles.eventCard,
-                  index === 0 && styles.firstCard,
-                  index === filteredEvents.length - 1 && styles.lastCard,
-                ]}
-                onPress={() => router.push(`/event/${event.id}`)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.eventImageContainer}>
-                  <Image
-                    source={{
-                      uri: event.imageUrl || 'https://via.placeholder.com/150',
-                    }}
-                    style={styles.eventImage}
-                  />
-                  <View style={styles.imageOverlay} />
-
-                  {/* <View style={styles.eventActions}>
-                    <ShareButton
-                    //@ts-ignore
-                      eventId={event.id}
-                      eventName={event.name}
-                      style={styles.shareButton}
+            {filteredEvents.map((event: Event, index: number) => {
+              const isAttending = event?.attendingUsers?.some(
+                  (attendee: any) => attendee.id === myData?.userId
+                );
+              return (
+                <TouchableOpacity
+                  key={event.id}
+                  disabled={isJoining || isLeaving}
+                  onLongPress={() => {
+                    isAttending
+                      ? leaveEventMutation(event.id)
+                      : joinEventMutation(event.id);
+                  }}
+                  style={[
+                    styles.eventCard,
+                    index === 0 && styles.firstCard,
+                    index === filteredEvents.length - 1 && styles.lastCard,
+                  ]}
+                  onPress={() => router.push(`/event/${event.id}`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.eventImageContainer}>
+                    <Image
+                      source={{
+                        uri:
+                          event.imageUrl || 'https://via.placeholder.com/150',
+                      }}
+                      style={styles.eventImage}
                     />
-                  </View> */}
-                </View>
+                    <View style={styles.imageOverlay} />
 
-                <View style={styles.eventContent}>
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventTitle} numberOfLines={2}>
-                      {event.name}
-                    </Text>
-                  </View>
-
-                  <View style={styles.eventMeta}>
-                    <MapPin size={16} color="#64748B" />
-                    <Text style={styles.eventMetaText} numberOfLines={1}>
-                      {event.location}
-                    </Text>
-                  </View>
-
-                  {event.eventTimes && event.eventTimes.length > 0 && (
-                    <View style={styles.eventMeta}>
-                      <Calendar size={16} color="#6366F1" />
-                      <Text style={styles.eventMetaText}>
-                        {formatDate(event.eventTimes[0].startTime)} at{' '}
-                        {formatTime(event.eventTimes[0].startTime)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.creatorSection}>
-                    <View style={styles.creatorInfo}>
-                      <View style={styles.creatorAvatar}>
-                        <Text style={styles.creatorInitial}>
-                          {event.user.name.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={styles.creatorDetails}>
-                        <Text style={styles.creatorName}>
-                          {event.user.name}
-                        </Text>
-                        <Text style={styles.creatorRole}>Event Organizer</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.statsSection}>
-                    <View style={styles.statCard}>
-                      <Users size={16} color="#6366F1" />
-                      <Text style={styles.statText}>
-                        {event?.attendingUsers?.length || 0} attending
-                      </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                      <Clock size={16} color="#F59E0B" />
-                      <Text style={styles.statText}>
-                        {event.eventTimes && event.eventTimes.length > 0
-                          ? formatTime(event.eventTimes[0].startTime)
-                          : 'TBA'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* <View style={styles.eventFooter}>
-                      <View style={styles.eventAttendees}>
-                        <Users size={16} color="#64748B" />
-                        <Text style={styles.eventAttendeesText}>
-                          {event.attendees || 0} attending
-                        </Text>
-                      </View>
-
+                    <View style={styles.eventActions}>
                       <TouchableOpacity
                         style={[
-                          styles.rsvpButton,
-                          event.isRSVPed ? styles.rsvpedButton : styles.notRsvpedButton,
+                          styles.rsvpButtonSmall,
+                          event.attendingUsers.some(
+                            (u: any) => u.id === myData?.userId
+                          ) && styles.rsvpedButtonSmall,
                         ]}
-                        onPress={() => handleRSVP(event.id)}
+                        onPress={() => {
+                          const isAttending = event.attendingUsers.some(
+                            (u: any) => u.id === myData?.userId
+                          );
+                          isAttending
+                            ? leaveEventMutation(event.id)
+                            : joinEventMutation(event.id);
+                        }}
                       >
-                        <Text
-                          style={[
-                            styles.rsvpButtonText,
-                            event.isRSVPed ? styles.rsvpedButtonText : styles.notRsvpedButtonText,
-                          ]}
-                        >
-                          {event.isRSVPed ? 'Going' : 'RSVP'}
+                        <Text style={styles.rsvpButtonTextSmall}>
+                          {isAttending ? 'Going' : 'RSVP'}
                         </Text>
                       </TouchableOpacity>
-                    </View> */}
-                </View>
-              </TouchableOpacity>
-            ))}
+                    </View>
+                  </View>
+
+                  <View style={styles.eventContent}>
+                    <View style={styles.eventHeader}>
+                      <Text style={styles.eventTitle} numberOfLines={2}>
+                        {event.name}
+                      </Text>
+                    </View>
+
+                    <View style={styles.eventMeta}>
+                      <MapPin size={16} color="#64748B" />
+                      <Text style={styles.eventMetaText} numberOfLines={1}>
+                        {event.location}
+                      </Text>
+                    </View>
+
+                    {event.eventTimes && event.eventTimes.length > 0 && (
+                      <View style={styles.eventMeta}>
+                        <Calendar size={16} color="#6366F1" />
+                        <Text style={styles.eventMetaText}>
+                          {formatDate(event.eventTimes[0].startTime)} at{' '}
+                          {formatTime(event.eventTimes[0].startTime)}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.creatorSection}>
+                      <View style={styles.creatorInfo}>
+                        <View style={styles.creatorAvatar}>
+                          <Text style={styles.creatorInitial}>
+                            {event.user.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.creatorDetails}>
+                          <Text style={styles.creatorName}>
+                            {event.user.name}
+                          </Text>
+                          <Text style={styles.creatorRole}>
+                            Event Organizer
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.statsSection}>
+                      <View style={styles.statCard}>
+                        <Users size={16} color="#6366F1" />
+                        <Text style={styles.statText}>
+                          {event?.attendingUsers?.length || 0} attending
+                        </Text>
+                      </View>
+
+                      <View style={styles.statCard}>
+                        <Clock size={16} color="#F59E0B" />
+                        <Text style={styles.statText}>
+                          {event.eventTimes && event.eventTimes.length > 0
+                            ? formatTime(event.eventTimes[0].startTime)
+                            : 'TBA'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
 
             {filteredEvents.length === 0 && (
               <View style={styles.emptyState}>
@@ -911,6 +662,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  rsvpButtonSmall: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+
+  rsvpedButtonSmall: {
+    backgroundColor: theme.success,
+    borderColor: 'rgba(255,255,255,0.8)',
+  },
+  rsvpButtonTextSmall: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+ 
   heroSection: {
     height: 100,
     backgroundColor: '#6366F1',
@@ -964,8 +734,8 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 22,
-    width:'66%',
-    fontWeight:'600'
+    width: '66%',
+    fontWeight: '600',
   },
   createButtonHero: {
     padding: 8,
@@ -1549,5 +1319,22 @@ const styles = StyleSheet.create({
 
   bottomSpacing: {
     height: 24,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: 'white',
+    padding: 12,
+    borderRadius: 12,
+  },
+  checkbox: {
+    marginRight: 12,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.textPrimary,
   },
 });

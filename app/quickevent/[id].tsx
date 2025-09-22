@@ -7,8 +7,8 @@ import { router, useLocalSearchParams } from "expo-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ShareButton } from "@/components/ui/ShareButton"
 import { theme, spacing, typography, borderRadius } from "@/components/theme"
-import { ArrowLeft, Users, Clock, User, Mail, CheckCircle, Trash2 } from "lucide-react-native"
-import { getQuickEventById, addInterestedUser, deleteQuickEvent } from "@/contexts/quickEvent.api"
+import { ArrowLeft, Users, Clock, User, Mail, CheckCircle, Trash2, XCircle, RotateCcw } from "lucide-react-native"
+import { getQuickEventById, addInterestedUser, deleteQuickEvent, addNotInterestedUser, removeInterestedUser } from "@/contexts/quickEvent.api"
 import getDecodedToken from "@/utils/getMyData"
 
 // Enhanced theme for neumorphism
@@ -27,7 +27,6 @@ const extendedTheme = {
   info: "#3B82F6",
 }
 
-// Assuming the QuickEvent type from API response includes interestedUsers and location
 interface QuickEventDetailType {
   id: string;
   name: string;
@@ -35,14 +34,14 @@ interface QuickEventDetailType {
   time: string;
   max: string;
   isPublic: boolean;
-  location: string; // Assuming location is a string based on generateEventShareContent
-  userId: string; // Assuming userId is present for creator check
+  location: string; 
+  userId: string;
   user?: {
     id: string;
     name?: string;
     email?: string;
   };
-  interestedUsers?: { id: string; name?: string; }[]; // Assuming interestedUsers has id and name
+  interestedUsers?: { id: string; name?: string; }[]; 
 }
 
 export default function QuickEventDetail() {
@@ -81,10 +80,33 @@ export default function QuickEventDetail() {
     },
   });
 
+  const { mutate: removeInterest, isPending: isRemovingInterest } = useMutation({
+    mutationFn: () => removeInterestedUser(eventId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
+    },
+    onError: (error) => {
+      console.error("Error removing interest:", error);
+      Alert.alert("Error", "Failed to remove interest. Please try again.");
+    },
+  });
+
+  const { mutate: expressNotInterested, isPending: isExpressingNotInterest } = useMutation({
+    mutationFn: () => addNotInterestedUser(eventId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["quick-events"] });
+
+      router.back();
+    },
+    onError: (error) => {
+      console.error("Error expressing not interested:", error);
+    },
+  });
+
   const isAlreadyInterested = React.useMemo(() => {
     console.log("Interested users:", quickEvent?.interestedUsers, "My data:", myData)
     if (!quickEvent?.interestedUsers || !myData?.userId) return false;
-    // Assuming interestedUsers is an array of objects with a userId property
     return quickEvent.interestedUsers.some((user: any) => user.id === myData.userId);
   }, [quickEvent, myData]);
 
@@ -117,7 +139,7 @@ export default function QuickEventDetail() {
   };
 
   const handleNotForMe = () => {
-    router.back();
+    expressNotInterested();
   };
 
   // Loading state
@@ -283,20 +305,40 @@ export default function QuickEventDetail() {
 
       {isAlreadyInterested ? (
         <View style={styles.footer}>
-          <View style={styles.alreadyInterestedContainer}>
-            <CheckCircle size={20} color={extendedTheme.success} />
-            <Text style={styles.alreadyInterestedText}>You are interested in this event!</Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.notForMeButton, styles.removeInterestButton, (isRemovingInterest) && styles.disabledButton]}
+            onPress={() => removeInterest()}
+            disabled={isRemovingInterest}
+          >
+            {isRemovingInterest ? (
+              <ActivityIndicator color={theme.textSecondary} size="small" />
+            ) : (
+              <>
+                <RotateCcw size={16} color={theme.textSecondary} />
+                <Text style={styles.notForMeButtonText}>
+                  Not Interested Anymore
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.notForMeButton} onPress={handleNotForMe}>
-            <Text style={styles.notForMeButtonText}>Not For Me</Text>
+          <TouchableOpacity 
+            style={[styles.notForMeButton, (isExpressingInterest || isDeletingEvent || isExpressingNotInterest) && styles.disabledButton]} 
+            onPress={handleNotForMe}
+            disabled={isExpressingInterest || isDeletingEvent || isExpressingNotInterest}
+          >
+            {isExpressingNotInterest ? (
+              <ActivityIndicator color={theme.textSecondary} size="small" />
+            ) : (
+              <Text style={styles.notForMeButtonText}>Not For Me</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.interestedButton, (isExpressingInterest || isDeletingEvent) && styles.disabledButton]}
-            onPress={() => expressInterest()} // Ensure this is not called if deleting
-            disabled={isExpressingInterest}
+            style={[styles.interestedButton, (isExpressingInterest || isDeletingEvent || isExpressingNotInterest) && styles.disabledButton]}
+            onPress={() => expressInterest()}
+            disabled={isExpressingInterest || isDeletingEvent || isExpressingNotInterest}
           >
             {isExpressingInterest ? (
               <ActivityIndicator color="#fff" size="small" />
@@ -583,6 +625,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
+  },
+  removeInterestButton: {
+    flexDirection: 'row',
+    gap: 8,
+    borderColor: extendedTheme.warning,
   },
   notForMeButtonText: {
     fontSize: typography.fontSize.md,
