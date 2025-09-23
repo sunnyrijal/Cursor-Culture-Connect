@@ -17,6 +17,7 @@ import { UserCheck, UserX, Clock, Users } from 'lucide-react-native';
 import {
   getPendingFriendRequests,
   respondToFriendRequest,
+  cancelFriendRequest,
 } from '@/contexts/friend.api';
 import { router } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
@@ -27,6 +28,7 @@ const theme = {
   success: '#10B981',
   warning: '#F59E0B',
   background: '#F0F3F7',
+  danger: '#EF4444',
   white: '#FFFFFF',
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
@@ -83,6 +85,24 @@ export default function FriendRequestsScreen() {
     },
   });
 
+  const cancelRequestMutation = useMutation({
+    mutationFn: cancelFriendRequest,
+    onSuccess: (data) => {
+      console.log('Friend request cancelled successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      Alert.alert('Success', 'Friend request cancelled.');
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling friend request:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to cancel friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
   const handleAcceptRequest = (friendshipId: string, senderName: string) => {
     Alert.alert(
       'Accept Friend Request',
@@ -112,6 +132,21 @@ export default function FriendRequestsScreen() {
               friendshipId,
               action: 'decline',
             }),
+        },
+      ]
+    );
+  };
+
+  const handleCancelRequest = (receiverId: string, receiverName: string) => {
+    Alert.alert(
+      'Cancel Request',
+      `Are you sure you want to cancel the friend request to ${receiverName}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => cancelRequestMutation.mutate({ receiverId }),
         },
       ]
     );
@@ -272,9 +307,15 @@ export default function FriendRequestsScreen() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={styles.sentStatus}>
-                      <Clock size={14} color={theme.warning} />
-                      <Text style={styles.sentStatusText}>Pending</Text>
+                    <View style={styles.requestActions}>
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => handleCancelRequest(user.id, name)}
+                        disabled={cancelRequestMutation.isPending}
+                      >
+                        <UserX size={14} color={theme.danger} />
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -506,6 +547,34 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
+  },
+
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.danger,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+        borderColor: theme.danger,
+        borderWidth: 0.5,
+      },
+    }),
+  },
+  cancelButtonText: {
+    color: theme.danger,
+    fontWeight: '600',
+    fontSize: 13,
   },
 
   sentStatus: {

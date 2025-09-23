@@ -28,6 +28,7 @@ import {
   Star,
   Bookmark,
   Music,
+  Edit3,
   Trash2,
   Navigation,
   CheckCircle,
@@ -40,6 +41,7 @@ import {
   leaveEvent,
 } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
+import { EditEventModal } from '@/components/EditEventModal';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -61,6 +63,7 @@ export default function EventDetail() {
   const { id } = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [showAttendees, setShowAttendees] = React.useState(false);
+  const [showEditEventModal, setShowEditEventModal] = React.useState(false);
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -274,6 +277,14 @@ export default function EventDetail() {
                   fill={isBookmarked ? extendedTheme.accent : 'none'}
                 />
               </TouchableOpacity> */}
+              {event?.userId === myData?.userId && (
+                <TouchableOpacity
+                  onPress={() => setShowEditEventModal(true)}
+                  style={styles.headerButton}
+                >
+                  <Edit3 size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={handleDeleteEvent}
@@ -573,6 +584,15 @@ export default function EventDetail() {
             </View>
           </TouchableOpacity>
         </View>
+      )}
+
+      {eventId && (
+        <EditEventModal
+          visible={showEditEventModal}
+          onClose={() => setShowEditEventModal(false)}
+          eventId={eventId}
+          onSubmit={() => queryClient.invalidateQueries({ queryKey: ['event', eventId] })}
+        />
       )}
     </SafeAreaView>
   );

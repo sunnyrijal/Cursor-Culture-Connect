@@ -20,9 +20,9 @@ import {
   Search,
   MessageCircle,
   Users,
-  Sparkles,
   ArrowRight,
   UserPlus,
+  MailPlus,
   X,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,7 +31,7 @@ import { theme } from '@/components/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createDirectChat, getUserChats } from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
-import { getAllUsers, getUsers } from '@/contexts/user.api';
+import {  getUsers } from '@/contexts/user.api';
 import useSocket from '@/hooks/useSocket';
 
 type FilterType = 'DIRECT' | 'GROUP';
@@ -474,7 +474,12 @@ export default function ChatListScreen() {
               >
                 <UserPlus size={24} color={theme.primary} />
               </TouchableOpacity>
-              <Sparkles size={24} color={theme.primary} />
+
+                <TouchableOpacity
+                onPress={() => router.push('/message-requests')}
+                 >
+                <MailPlus size={24} color={theme.primary} />
+                </TouchableOpacity>
             </View>
           </View>
         </View>

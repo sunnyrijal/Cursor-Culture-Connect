@@ -45,6 +45,8 @@ export interface CreateGroupRequest {
   imageUrl?: string;
   isPrivate?: boolean;
   meetingLocation?:string
+  meetingTime?:string
+  meetingDate?:string
   meetingDetails?:string
 }
 
@@ -53,6 +55,9 @@ export interface UpdateGroupRequest {
   description?: string;
   imageUrl?: string;
   isPrivate?: boolean;
+  meetingLocation?:string
+  meetingTime?:string
+  meetingDate?:string
 }
 
 export interface AddMemberRequest {

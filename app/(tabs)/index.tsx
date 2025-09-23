@@ -19,7 +19,6 @@ import AutoplayVideo from '@/components/home/VideoCard';
 import { Image } from 'react-native';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
-import AdMobScreen from '@/components/BannerAd';
 // Optional (iOS ATT prompt). If you want it, install: npx expo install expo-tracking-transparency
 // import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync, PermissionStatus } from "expo-tracking-transparency";
 

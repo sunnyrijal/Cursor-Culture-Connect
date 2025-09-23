@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Alert,
   Image,
+  Switch,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
@@ -36,7 +37,10 @@ import {
   AlertCircle,
   Sparkles,
   Link,
-  BookOpen, Heart,
+  BookOpen, 
+  Heart,
+  Globe,
+  Users as UsersIcon,
 } from "lucide-react-native"
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated"
 import * as ImagePicker from "expo-image-picker"
@@ -77,6 +81,7 @@ export default function EditProfile() {
     countryOfOrigin: "",
     dateOfBirth: "",
     major: "",
+    publicPreference: true,
   })
 
   const [focusedInput, setFocusedInput] = useState<string>("")
@@ -167,6 +172,7 @@ export default function EditProfile() {
           countryOfOrigin: userData.countryOfOrigin || "",
           dateOfBirth: userData.dateOfBirth || "",
           major: userData.major || "",
+          publicPreference: userData.publicPreference !== undefined ? userData.publicPreference : true,
         })
 
         if (userData.university) {
@@ -265,6 +271,7 @@ export default function EditProfile() {
     if (profilePicture) updateData.profilePicture = profilePicture
     if (Object.keys(socialMedia).length > 0) updateData.socialMedia = socialMedia
     if (ethnicity.length > 0) updateData.ethnicity = ethnicity
+    if (profile.publicPreference !== undefined) updateData.publicPreference = profile.publicPreference
 
     updateProfileMutation.mutate(updateData)
   }
@@ -996,6 +1003,43 @@ export default function EditProfile() {
               </BlurView>
             </Animated.View>
 
+            {/* Visibility Settings */}
+            <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
+              <BlurView intensity={20} tint="light" style={styles.blurContainer}>
+                <LinearGradient
+                  colors={["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)"]}
+                  style={styles.gradientContainer}
+                >
+                  <View style={styles.sectionHeader}>
+                    <UsersIcon size={20} color="#6366F1" />
+                    <Text style={styles.formSectionTitle}>Profile Visibility</Text>
+                  </View>
+                  <View style={styles.inputContainer}>
+                    <View style={styles.toggleRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.inputLabel}>Public Profile</Text>
+                        <Text style={styles.toggleSubtitle}>
+                          {profile.publicPreference
+                            ? 'Your profile is visible to everyone.'
+                            : 'Your profile is only visible to your connections.'}
+                        </Text>
+                      </View>
+                      <Switch
+                        value={profile.publicPreference}
+                        onValueChange={(value) =>
+                          setProfile((prev) => ({ ...prev, publicPreference: value }))
+                        }
+                        trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                        thumbColor={profile.publicPreference ? '#6366F1' : '#f4f3f4'}
+                        ios_backgroundColor="#E5E7EB"
+                        disabled={updateProfileMutation.isPending}
+                      />
+                    </View>
+                  </View>
+                </LinearGradient>
+              </BlurView>
+            </Animated.View>
+
 
             {renderEthnicitySelection()}
 
@@ -1344,6 +1388,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     gap: 16,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  toggleSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+    lineHeight: 20,
   },
   halfField: {
     flex: 1,

@@ -1,31 +1,57 @@
-"use client"
+'use client';
 
-import React from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Alert } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { router, useLocalSearchParams } from "expo-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ShareButton } from "@/components/ui/ShareButton"
-import { theme, spacing, typography, borderRadius } from "@/components/theme"
-import { ArrowLeft, Users, Clock, User, Mail, CheckCircle, Trash2, XCircle, RotateCcw } from "lucide-react-native"
-import { getQuickEventById, addInterestedUser, deleteQuickEvent, addNotInterestedUser, removeInterestedUser } from "@/contexts/quickEvent.api"
-import getDecodedToken from "@/utils/getMyData"
-
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ShareButton } from '@/components/ui/ShareButton';
+import { theme, spacing, typography, borderRadius } from '@/components/theme';
+import {
+  ArrowLeft,
+  Users,
+  Clock,
+  User,
+  Mail,
+  CheckCircle,
+  Trash2,
+  XCircle,
+  RotateCcw,
+  MessageCircle,
+} from 'lucide-react-native';
+import {
+  getQuickEventById,
+  addInterestedUser,
+  deleteQuickEvent,
+  addNotInterestedUser,
+  removeInterestedUser,
+} from '@/contexts/quickEvent.api';
+import getDecodedToken from '@/utils/getMyData';
+import { formatTo12Hour } from '@/utils/formatDate';
 // Enhanced theme for neumorphism
 const neomorphColors = {
-  background: "#F8FAFC",
-  lightShadow: "#FFFFFF",
-  darkShadow: "#a3b1c6",
-}
+  background: '#F8FAFC',
+  lightShadow: '#FFFFFF',
+  darkShadow: '#a3b1c6',
+};
 
 // Extended theme
 const extendedTheme = {
   ...theme,
-  accent: "#EC4899",
-  success: "#10B981",
-  warning: "#F59E0B",
-  info: "#3B82F6",
-}
+  accent: '#EC4899',
+  success: '#10B981',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+};
 
 interface QuickEventDetailType {
   id: string;
@@ -34,106 +60,124 @@ interface QuickEventDetailType {
   time: string;
   max: string;
   isPublic: boolean;
-  location: string; 
+  location: string;
   userId: string;
   user?: {
     id: string;
     name?: string;
     email?: string;
   };
-  interestedUsers?: { id: string; name?: string; }[]; 
+  interestedUsers?: { id: string; name?: string }[];
 }
 
 export default function QuickEventDetail() {
-  const { id } = useLocalSearchParams()
-  const queryClient = useQueryClient()
+  const { id } = useLocalSearchParams();
+  const queryClient = useQueryClient();
 
-  const eventId = Array.isArray(id) ? id[0] : (id ?? null)
+  const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
   const {
     data: eventResponse,
     isLoading,
     isError,
     error,
-  } = useQuery<any, Error, { data: QuickEventDetailType }>({ // Explicitly type the data for better intellisense
-    queryKey: ["quickevent", eventId],
+  } = useQuery<any, Error, { data: QuickEventDetailType }>({
+    // Explicitly type the data for better intellisense
+    queryKey: ['quickevent', eventId],
     queryFn: () => getQuickEventById(eventId as string),
     enabled: !!eventId,
-  })
+  });
 
   const quickEvent = eventResponse?.data;
 
-  console.log(quickEvent)
+  console.log(quickEvent);
 
-   const { data: myData } = useQuery({
+  const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
 
-  const { mutate: expressInterest, isPending: isExpressingInterest } = useMutation({
-    mutationFn: () => addInterestedUser(eventId as string),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
-    },
-    onError: (error) => {
-      console.error("Error expressing interest:", error);
-    },
-  });
+  const { mutate: expressInterest, isPending: isExpressingInterest } =
+    useMutation({
+      mutationFn: () => addInterestedUser(eventId as string),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] });
+      },
+      onError: (error) => {
+        console.error('Error expressing interest:', error);
+      },
+    });
 
-  const { mutate: removeInterest, isPending: isRemovingInterest } = useMutation({
-    mutationFn: () => removeInterestedUser(eventId as string),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
-    },
-    onError: (error) => {
-      console.error("Error removing interest:", error);
-      Alert.alert("Error", "Failed to remove interest. Please try again.");
-    },
-  });
+  const { mutate: removeInterest, isPending: isRemovingInterest } = useMutation(
+    {
+      mutationFn: () => removeInterestedUser(eventId as string),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] });
+      },
+      onError: (error) => {
+        console.error('Error removing interest:', error);
+        Alert.alert('Error', 'Failed to remove interest. Please try again.');
+      },
+    }
+  );
 
-  const { mutate: expressNotInterested, isPending: isExpressingNotInterest } = useMutation({
-    mutationFn: () => addNotInterestedUser(eventId as string),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quickevent", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["quick-events"] });
+  const { mutate: expressNotInterested, isPending: isExpressingNotInterest } =
+    useMutation({
+      mutationFn: () => addNotInterestedUser(eventId as string),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] });
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] });
 
-      router.back();
-    },
-    onError: (error) => {
-      console.error("Error expressing not interested:", error);
-    },
-  });
+        router.back();
+      },
+      onError: (error) => {
+        console.error('Error expressing not interested:', error);
+      },
+    });
 
   const isAlreadyInterested = React.useMemo(() => {
-    console.log("Interested users:", quickEvent?.interestedUsers, "My data:", myData)
+    console.log(
+      'Interested users:',
+      quickEvent?.interestedUsers,
+      'My data:',
+      myData
+    );
     if (!quickEvent?.interestedUsers || !myData?.userId) return false;
-    return quickEvent.interestedUsers.some((user: any) => user.id === myData.userId);
+    return quickEvent.interestedUsers.some(
+      (user: any) => user.id === myData.userId
+    );
   }, [quickEvent, myData]);
 
-  const { mutate: deleteEventMutation, isPending: isDeletingEvent } = useMutation({
-    mutationFn: (eventIdToDelete: string) => deleteQuickEvent(eventIdToDelete),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quick-events"] }); // Invalidate all quick events list
-      router.back(); // Navigate back after successful deletion
-      Alert.alert("Success", "Quick event deleted successfully.");
-    },
-    onError: (error) => {
-      console.error("Error deleting quick event:", error);
-      Alert.alert("Error", "Failed to delete quick event. Please try again.");
-    },
-  });
+  const { mutate: deleteEventMutation, isPending: isDeletingEvent } =
+    useMutation({
+      mutationFn: (eventIdToDelete: string) =>
+        deleteQuickEvent(eventIdToDelete),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] }); // Invalidate all quick events list
+        router.back(); // Navigate back after successful deletion
+        Alert.alert('Success', 'Quick event deleted successfully.');
+      },
+      onError: (error) => {
+        console.error('Error deleting quick event:', error);
+        Alert.alert('Error', 'Failed to delete quick event. Please try again.');
+      },
+    });
 
   const handleDeleteQuickEvent = () => {
     if (!eventId) {
-      Alert.alert("Error", "Event ID is missing.");
+      Alert.alert('Error', 'Event ID is missing.');
       return;
     }
     Alert.alert(
-      "Confirm Deletion",
+      'Confirm Deletion',
       `Are you sure you want to delete "${quickEvent?.name}"? This action cannot be undone.`,
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteEventMutation(eventId as string) },
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteEventMutation(eventId as string),
+        },
       ]
     );
   };
@@ -151,7 +195,7 @@ export default function QuickEventDetail() {
           <Text style={styles.loadingText}>Loading quick event details...</Text>
         </View>
       </SafeAreaView>
-    )
+    );
   }
 
   // Error state
@@ -160,17 +204,24 @@ export default function QuickEventDetail() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
-            <Text style={styles.errorText}>{isError ? "Failed to load quick event" : "Quick Event Not Found"}</Text>
-            <Text style={styles.errorSubtext}>
-              {isError ? error?.message || "Please try again later" : "Sorry, we couldn't find this quick event."}
+            <Text style={styles.errorText}>
+              {isError ? 'Failed to load quick event' : 'Quick Event Not Found'}
             </Text>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
+            <Text style={styles.errorSubtext}>
+              {isError
+                ? error?.message || 'Please try again later'
+                : "Sorry, we couldn't find this quick event."}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backLink}
+            >
               <Text style={styles.backLinkText}>← Go Back</Text>
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
-    )
+    );
   }
 
   const generateEventShareContent = () => {
@@ -178,18 +229,48 @@ export default function QuickEventDetail() {
       title: `${quickEvent.name} - Quick Event`,
       message: `Join me at ${quickEvent.name}!\n\n⏰ ${quickEvent.time}\n👥 Max ${quickEvent.max} participants\n\n${quickEvent.description}\n\nDiscover quick events!`,
       url: `https://app.com/quick-event/${quickEvent.id}`,
-    }
-  }
+    };
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerContainer}>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <View  style={{display:'flex',flexDirection:'row',alignItems:'center', justifyContent:'center', gap:12}}>
+
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.headerButton}
+              >
               <ArrowLeft size={20} color={theme.textPrimary} />
             </TouchableOpacity>
+
+             <View style={styles.badgeContainer}>
+                <View style={styles.quickEventBadge}>
+                  <Text style={styles.quickEventBadgeText}>Quick Event</Text>
+                </View>
+                <View
+                  style={[
+                    styles.quickEventBadge,
+                    {
+                      backgroundColor: quickEvent.isPublic
+                        ? extendedTheme.success
+                        : extendedTheme.info,
+                    },
+                  ]}
+                >
+                  <Text style={styles.quickEventBadgeText}>
+                    {quickEvent.isPublic ? 'Public' : 'University Only'}
+                  </Text>
+                </View>
+              </View>
+              </View>
             <View style={styles.headerRight}>
+             
               <ShareButton
                 {...generateEventShareContent()}
                 size={18}
@@ -207,18 +288,14 @@ export default function QuickEventDetail() {
             </View>
           </View>
 
-          <View style={styles.badgeContainer}>
-            <View style={styles.quickEventBadge}>
-              <Text style={styles.quickEventBadgeText}>Quick Event</Text>
-            </View>
-            <View style={[styles.quickEventBadge, { backgroundColor: quickEvent.isPublic ? extendedTheme.success : extendedTheme.info }]}>
-              <Text style={styles.quickEventBadgeText}>{quickEvent.isPublic ? "Public" : "University Only"}</Text>
-            </View>
-          </View>
-
           <View style={styles.titleContainer}>
             <Text style={styles.eventTitle}>{quickEvent.name}</Text>
-            <Text style={styles.eventSubtitle}>Organized by {quickEvent.user?.name}</Text>
+            <View style={styles.organizerContainer}>
+              <MessageCircle size={16} color={theme.textSecondary} />
+              <Text style={styles.eventSubtitle}>
+                Organized by {quickEvent.user?.name}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -228,32 +305,50 @@ export default function QuickEventDetail() {
             <View style={styles.detailsContainer}>
               <View style={styles.infoCard}>
                 <View style={styles.infoRow}>
-                  <View style={[styles.infoIconWrapper, { backgroundColor: "#FDF2F8" }]}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#FDF2F8' },
+                    ]}
+                  >
                     <Clock size={24} color={extendedTheme.accent} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Time</Text>
-                    <Text style={styles.infoValue}>{quickEvent.time}</Text>
+                    <Text style={styles.infoValue}>
+                      {formatTo12Hour(quickEvent.time)}
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
-                  <View style={[styles.infoIconWrapper, { backgroundColor: "#FEF3C7" }]}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#FEF3C7' },
+                    ]}
+                  >
                     <Users size={24} color={extendedTheme.warning} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Max Participants</Text>
-                    <Text style={styles.infoValue}>{quickEvent.max} people</Text>
+                    <Text style={styles.infoValue}>
+                      {quickEvent.max} people
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
-                  <View style={[styles.infoIconWrapper, { backgroundColor: "#DBEAFE" }]}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#DBEAFE' },
+                    ]}
+                  >
                     <Users size={24} color={extendedTheme.info} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Interested Users</Text>
-                    {quickEvent?.userId === myData?.userId && quickEvent.interestedUsers && quickEvent.interestedUsers.length > 0 ? (
+                    {quickEvent?.userId === myData?.userId &&
+                    quickEvent.interestedUsers &&
+                    quickEvent.interestedUsers.length > 0 ? (
                       <View>
                         {quickEvent.interestedUsers.map((user, index) => (
                           <Text key={user.id} style={styles.infoValue}>
@@ -262,30 +357,44 @@ export default function QuickEventDetail() {
                         ))}
                       </View>
                     ) : (
-                      <Text style={styles.infoValue}>{quickEvent.interestedUsers?.length || 0} interested</Text>
+                      <Text style={styles.infoValue}>
+                        {quickEvent.interestedUsers?.length || 0} interested
+                      </Text>
                     )}
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
-                  <View style={[styles.infoIconWrapper, { backgroundColor: "#EEF2FF" }]}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#EEF2FF' },
+                    ]}
+                  >
                     <User size={24} color={theme.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Organizer</Text>
-                    <Text style={styles.infoValue}>{quickEvent.user?.name}</Text>
+                    <Text style={styles.infoValue}>
+                      {quickEvent.user?.name}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.infoRow}>
-                  <View style={[styles.infoIconWrapper, { backgroundColor: "#ECFDF5" }]}>
+                {/* <View style={styles.infoRow}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#ECFDF5' },
+                    ]}
+                  >
                     <Mail size={24} color={extendedTheme.success} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Contact</Text>
-                    <Text style={styles.infoValue}>{quickEvent.user?.email}</Text>
+                    <Text style={styles.infoValue}>
+                      {quickEvent.user?.email}
+                    </Text>
                   </View>
-                </View>
+                </View> */}
               </View>
             </View>
           </View>
@@ -295,7 +404,8 @@ export default function QuickEventDetail() {
             <View style={styles.descriptionContainer}>
               <View style={styles.descriptionCard}>
                 <Text style={styles.description}>
-                  {quickEvent.description || "No description provided for this quick event."}
+                  {quickEvent.description ||
+                    'No description provided for this quick event.'}
                 </Text>
               </View>
             </View>
@@ -306,7 +416,11 @@ export default function QuickEventDetail() {
       {isAlreadyInterested ? (
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.notForMeButton, styles.removeInterestButton, (isRemovingInterest) && styles.disabledButton]}
+            style={[
+              styles.notForMeButton,
+              styles.removeInterestButton,
+              isRemovingInterest && styles.disabledButton,
+            ]}
             onPress={() => removeInterest()}
             disabled={isRemovingInterest}
           >
@@ -324,10 +438,18 @@ export default function QuickEventDetail() {
         </View>
       ) : (
         <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.notForMeButton, (isExpressingInterest || isDeletingEvent || isExpressingNotInterest) && styles.disabledButton]} 
+          <TouchableOpacity
+            style={[
+              styles.notForMeButton,
+              (isExpressingInterest ||
+                isDeletingEvent ||
+                isExpressingNotInterest) &&
+                styles.disabledButton,
+            ]}
             onPress={handleNotForMe}
-            disabled={isExpressingInterest || isDeletingEvent || isExpressingNotInterest}
+            disabled={
+              isExpressingInterest || isDeletingEvent || isExpressingNotInterest
+            }
           >
             {isExpressingNotInterest ? (
               <ActivityIndicator color={theme.textSecondary} size="small" />
@@ -336,9 +458,17 @@ export default function QuickEventDetail() {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.interestedButton, (isExpressingInterest || isDeletingEvent || isExpressingNotInterest) && styles.disabledButton]}
+            style={[
+              styles.interestedButton,
+              (isExpressingInterest ||
+                isDeletingEvent ||
+                isExpressingNotInterest) &&
+                styles.disabledButton,
+            ]}
             onPress={() => expressInterest()}
-            disabled={isExpressingInterest || isDeletingEvent || isExpressingNotInterest}
+            disabled={
+              isExpressingInterest || isDeletingEvent || isExpressingNotInterest
+            }
           >
             {isExpressingInterest ? (
               <ActivityIndicator color="#fff" size="small" />
@@ -349,26 +479,32 @@ export default function QuickEventDetail() {
         </View>
       )}
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
+
+   organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   badgeContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    gap: spacing.xs,
   },
+ 
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
   loadingText: {
     fontSize: typography.fontSize.base,
     color: theme.textSecondary,
     marginTop: spacing.md,
-    textAlign: "center",
+    textAlign: 'center',
   },
   container: {
     flex: 1,
@@ -382,16 +518,16 @@ const styles = StyleSheet.create({
   // Error States
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
   errorCard: {
     backgroundColor: theme.white,
     padding: spacing.lg,
     borderRadius: 20,
-    alignItems: "center",
-    width: "100%",
+    alignItems: 'center',
+    width: '100%',
     maxWidth: 300,
     ...Platform.select({
       ios: {
@@ -406,20 +542,20 @@ const styles = StyleSheet.create({
       },
     }),
     borderWidth: 0.5,
-    borderColor: "rgba(255, 255, 255, 0.7)",
+    borderColor: 'rgba(255, 255, 255, 0.7)',
   },
   errorText: {
     fontSize: typography.fontSize.lg,
     color: theme.error,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: spacing.sm,
-    textAlign: "center",
+    textAlign: 'center',
   },
   errorSubtext: {
     fontSize: typography.fontSize.base,
     color: theme.textSecondary,
     marginBottom: spacing.md,
-    textAlign: "center",
+    textAlign: 'center',
   },
   backLink: {
     paddingHorizontal: spacing.md,
@@ -441,7 +577,7 @@ const styles = StyleSheet.create({
   backLinkText: {
     color: theme.primary,
     fontSize: typography.fontSize.base,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   headerContainer: {
@@ -450,13 +586,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   headerActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing.lg,
   },
   headerRight: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.sm,
   },
   headerButton: {
@@ -464,8 +600,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: theme.white,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: neomorphColors.darkShadow,
@@ -479,31 +615,30 @@ const styles = StyleSheet.create({
     }),
   },
   quickEventBadge: {
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
     backgroundColor: theme.primary,
     paddingVertical: spacing.sm,
     borderRadius: 20,
-    marginBottom: spacing.md,
   },
   quickEventBadgeText: {
     color: theme.white,
     fontSize: typography.fontSize.sm,
-    fontWeight: "700",
-    paddingHorizontal:10
+    fontWeight: '700',
+    paddingHorizontal: 10,
   },
   titleContainer: {
     marginBottom: spacing.md,
   },
   eventTitle: {
-    fontSize: typography.fontSize["3xl"],
-    fontWeight: "800",
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: '800',
     color: theme.textPrimary,
     marginBottom: spacing.xs,
   },
   eventSubtitle: {
     fontSize: typography.fontSize.base,
     color: theme.textSecondary,
-    fontWeight: "500",
+    fontWeight: '500',
   },
 
   // Content Container
@@ -522,7 +657,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
-    fontWeight: "700",
+    fontWeight: '700',
     color: theme.textPrimary,
     marginBottom: spacing.md,
   },
@@ -549,18 +684,18 @@ const styles = StyleSheet.create({
     borderColor: neomorphColors.lightShadow,
   },
   infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: '#f3f4f6',
   },
   infoIconWrapper: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: spacing.sm,
   },
   infoContent: {
@@ -569,12 +704,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
-    fontWeight: "500",
+    fontWeight: '500',
     marginBottom: 2,
   },
   infoValue: {
     fontSize: typography.fontSize.base,
-    fontWeight: "600",
+    fontWeight: '600',
     color: theme.textPrimary,
   },
 
@@ -607,12 +742,12 @@ const styles = StyleSheet.create({
 
   // Footer RSVP
   footer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: Platform.OS === 'ios' ? 20 : 10,
     left: 0,
     right: 0,
     padding: spacing.md,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     gap: spacing.md,
   },
@@ -634,7 +769,7 @@ const styles = StyleSheet.create({
   notForMeButtonText: {
     fontSize: typography.fontSize.md,
     color: theme.textSecondary,
-    fontWeight: "700",
+    fontWeight: '700',
   },
   interestedButton: {
     flex: 2,
@@ -658,7 +793,7 @@ const styles = StyleSheet.create({
   interestedButtonText: {
     fontSize: typography.fontSize.md,
     color: theme.white,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   disabledButton: {
@@ -679,6 +814,6 @@ const styles = StyleSheet.create({
   alreadyInterestedText: {
     fontSize: typography.fontSize.md,
     color: extendedTheme.success,
-    fontWeight: "700",
+    fontWeight: '700',
   },
-})
+});

@@ -32,7 +32,9 @@ import {
   Shield,
   MapPin,
   Info,
+  Settings,
   MessageSquare,
+  Clock,
 } from "lucide-react-native"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
@@ -47,6 +49,7 @@ import {
 } from "@/contexts/group.api"
 import { getUsers } from "@/contexts/user.api"
 import getDecodedToken from "@/utils/getMyData"
+import { EditGroupModal } from "@/components/UpdateGroupModal"
 import { GroupRole } from "@/types/group.types"
 
 // Neomorphic color palette
@@ -98,6 +101,8 @@ interface GroupResponse {
   meetingDetails?: string
   chatId?: string
   meetingLocation?: string
+  meetingDate?: string
+  meetingTime?: string
 }
 
 export default function GroupDetailEnhanced() {
@@ -115,6 +120,7 @@ export default function GroupDetailEnhanced() {
   const [showUpdateRoleModal, setShowUpdateRoleModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showMembersList, setShowMembersList] = useState(false)
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false)
   const [memberToKick, setMemberToKick] = useState<Member | null>(null)
   const [memberToUpdate, setMemberToUpdate] = useState<Member | null>(null)
   const [selectedRole, setSelectedRole] = useState<GroupRole | null>(null)
@@ -140,7 +146,7 @@ export default function GroupDetailEnhanced() {
   const group = groupResponse?.group
   console.log(group)
   const currentUserMembership = groupResponse?.group?.members?.find((member: any) => member.userId === myData?.userId)
-  const isCurrentUserMember = !!currentUserMembership
+  const isCurrentUserMember = !!currentUserMembership;
   const isCurrentUserAdmin = currentUserMembership?.role === "ADMIN"
 
   const canJoinGroup = !isCurrentUserMember && !group?.isPrivate
@@ -385,6 +391,11 @@ export default function GroupDetailEnhanced() {
                   <UserPlus size={20} color={theme.textPrimary} />
                 </TouchableOpacity>
               )}
+              {isCurrentUserAdmin && (
+                <TouchableOpacity onPress={() => setShowEditGroupModal(true)} style={styles.headerButton}>
+                  <Edit3 size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
               {isCurrentUserMember && group?.chatId && (
                 <TouchableOpacity onPress={() => router.push(`/chat/${group.chatId}`)} style={styles.headerButton}>
                   <MessageSquare size={20} color={theme.primary} />
@@ -434,20 +445,48 @@ export default function GroupDetailEnhanced() {
           {/* Tags Section */}
           <View style={styles.tagsSection}>
             <View style={styles.tagsContainer}>
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryText}>{group.isPrivate ? "Private" : "Public"}</Text>
-              </View>
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryText}>{group.members.length} Members</Text>
-              </View>
               {isCurrentUserMember && (
                 <View style={styles.categoryTag}>
-                  <Text style={styles.categoryText}>{isCurrentUserAdmin ? "Admin" : "Member"}</Text>
+                  <Text style={styles.categoryText}>{isCurrentUserAdmin ? "Admin" : "Joined"}</Text>
                 </View>
               )}
             </View>
           </View>
 
+          {/* Meeting Details Section */}
+          {(group.meetingDate || group.meetingTime || group.meetingLocation) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Meeting Details</Text>
+              </View>
+              <View style={styles.infoCard}>
+                {group.meetingDate && (
+                  <View style={styles.infoRow}>
+                    <View style={[styles.infoIconWrapper, { backgroundColor: `${neomorphColors.accent}15` }]}>
+                      <Calendar size={20} color={neomorphColors.accent} />
+                    </View>
+                    <Text style={styles.infoValue}>{new Date(group.meetingDate).toLocaleDateString()}</Text>
+                  </View>
+                )}
+                {group.meetingTime && (
+                  <View style={styles.infoRow}>
+                    <View style={[styles.infoIconWrapper, { backgroundColor: `${extendedTheme.success}15` }]}>
+                      <Clock size={20} color={extendedTheme.success} />
+                    </View>
+                    <Text style={styles.infoValue}>{group.meetingTime}</Text>
+                  </View>
+                )}
+                {group.meetingLocation && (
+                  <View style={styles.infoRow}>
+                    <View style={[styles.infoIconWrapper, { backgroundColor: `${extendedTheme.warning}15` }]}>
+                      <MapPin size={20} color={extendedTheme.warning} />
+                    </View>
+                    <Text style={styles.infoValue}>{group.meetingLocation}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
           {/* Details Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -564,42 +603,7 @@ export default function GroupDetailEnhanced() {
               <View style={styles.descriptionCard}>
                 <Text style={styles.description}>{group.description}</Text>
 
-                <View style={styles.highlightsList}>
-                  <Text style={styles.highlightsTitle}>Group Highlights</Text>
-
-                  <View style={styles.highlightItem}>
-                    <View style={styles.highlightIconWrapper}>
-                      <Users size={16} color={theme.primary} />
-                    </View>
-                    <Text style={styles.highlightText}>Active community with {group.members.length} members</Text>
-                  </View>
-
-                  {group.meetingLocation != null && (
-                    <View style={styles.highlightItem}>
-                      <View style={styles.highlightIconWrapper}>
-                        <MapPin size={16} color={theme.primary} />
-                      </View>
-                      <Text style={styles.highlightText}>Meeting Location: {group.meetingLocation}</Text>
-                    </View>
-                  )}
-
-                  {group.meetingDetails && (
-                    <View style={styles.highlightItem}>
-                      <View style={styles.highlightIconWrapper}>
-                        <Info size={16} color={theme.primary} />
-                      </View>
-                      <Text style={styles.highlightText}>Meeting Details: {group.meetingDetails}</Text>
-                    </View>
-                  )}
-                  <View style={styles.highlightItem}>
-                    <View style={styles.highlightIconWrapper}>
-                      <Star size={16} color={theme.primary} />
-                    </View>
-                    <Text style={styles.highlightText}>
-                      {group.isPrivate ? "Exclusive private group" : "Open to everyone"}
-                    </Text>
-                  </View>
-                </View>
+               
               </View>
             </View>
           </View>
@@ -861,6 +865,13 @@ export default function GroupDetailEnhanced() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      <EditGroupModal
+        visible={showEditGroupModal}
+        onClose={() => setShowEditGroupModal(false)}
+        group={group}
+        onSubmit={() => refetch()}
+      />
     </SafeAreaView>
   )
 }

@@ -49,7 +49,6 @@ export interface UpdateEventData {
   groupId?: string;
   isPublic?: boolean;
   universityOnly?: boolean;
-  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 }
 
 export interface GetEventsParams {

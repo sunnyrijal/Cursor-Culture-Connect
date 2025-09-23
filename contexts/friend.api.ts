@@ -26,6 +26,10 @@ export interface SendFriendRequestData {
   message?: string;
 }
 
+export interface CancelFriendRequestData {
+  receiverId: string;
+}
+
 export interface RespondToFriendRequestData {
   friendshipId: string;
   action: 'accept' | 'decline';
@@ -57,6 +61,19 @@ export const sendFriendRequest = async (requestData: SendFriendRequestData) => {
     return response.data;
   } catch (error) {
     console.error('Error sending friend request:', error);
+    throw error;
+  }
+};
+
+export const cancelFriendRequest = async (requestData: CancelFriendRequestData) => {
+  try {
+    const response = await api.delete(
+      '/friend/cancel',
+      { data: requestData }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error cancelling friend request:', error);
     throw error;
   }
 };

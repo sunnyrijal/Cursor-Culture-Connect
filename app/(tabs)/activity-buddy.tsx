@@ -707,13 +707,13 @@ const renderUserCard = (user: any) => {
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <Text style={styles.headerTitle}>Activity Buddy</Text>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.addActivityButton}
             onPress={() => setIsPreferenceModalVisible(true)}
           >
             <Plus size={16} color={theme.primary} />
             <Text style={styles.addActivityButtonText}>Setup</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
            <TouchableOpacity
             style={styles.addActivityButton}
             onPress={() => setIsMyPreferenceVisible(true)}
@@ -756,10 +756,10 @@ const renderUserCard = (user: any) => {
       {activeTab === 'activities' ? renderActivitiesTab() : renderPingsTab()}
       {renderSendPingModal()}
       
-      <CreateInterestPreferenceModal
+      {/* <CreateInterestPreferenceModal
         visible={isPreferenceModalVisible}
         onClose={() => setIsPreferenceModalVisible(false)}
-      />
+      /> */}
       <CreateActivityModal
         visible={isActivityModalVisible}
         onClose={() => setIsActivityModalVisible(false)}

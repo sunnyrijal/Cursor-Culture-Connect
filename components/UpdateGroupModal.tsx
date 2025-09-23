@@ -8,7 +8,6 @@ import {
   ScrollView,
   Alert,
   Modal,
-  Switch,
   Platform,
   Image,
 } from 'react-native';
@@ -20,41 +19,57 @@ import {
   Check,
   MapPin,
   Sparkles,
-  LocateIcon,
   Calendar,
-  Clock,
   ChevronDown,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createGroup } from '@/contexts/group.api';
+import { updateGroup } from '@/contexts/group.api';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
 import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator } from 'react-native';
-import { Plus, ImageIcon } from 'lucide-react-native';
+import { ImageIcon } from 'lucide-react-native';
 import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
 
-interface CreateGroupModalProps {
+interface Group {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  creatorId: string;
+  meetingLocation: string | null;
+  meetingDetails: string | null;
+  meetingDate: string | null;
+  meetingTime: string | null;
+  creator: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+interface EditGroupModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (groupData: any) => void;
+  group: Group | null;
 }
 
-export function CreateGroupModal({
+export function EditGroupModal({
   visible,
   onClose,
   onSubmit,
-}: CreateGroupModalProps) {
+  group,
+}: EditGroupModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
     isPrivate: false,
-    universityOnly: false,
-    allowedUniversity: '',
     // Meeting details
     hasMeetingDetails: false,
     meetingDate: new Date(),
@@ -69,28 +84,43 @@ export function CreateGroupModal({
   const [showNativeDatePicker, setShowNativeDatePicker] = useState(false);
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      category: '',
-      isPrivate: false,
-      universityOnly: false,
-      allowedUniversity: '',
-      hasMeetingDetails: false,
-      meetingDate: new Date(),
-      meetingTime: '',
-      meetingLocation: '',
-    });
-    setImageUrl('');
+    if (group) {
+      const hasMeetingInfo = !!(group.meetingDate || group.meetingTime || group.meetingLocation);
+      
+      setFormData({
+        name: group.name || '',
+        description: group.description || '',
+        isPrivate: group.isPrivate || false,
+        hasMeetingDetails: hasMeetingInfo,
+        meetingDate: group.meetingDate ? new Date(group.meetingDate) : new Date(),
+        meetingTime: group.meetingTime || '',
+        meetingLocation: group.meetingLocation || '',
+      });
+      setImageUrl(group.imageUrl || '');
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        isPrivate: false,
+        hasMeetingDetails: false,
+        meetingDate: new Date(),
+        meetingTime: '',
+        meetingLocation: '',
+      });
+      setImageUrl('');
+    }
     setFocusedInput(null);
     setShowNativeDatePicker(false);
   };
 
   useEffect(() => {
-    if (!visible) {
+    if (visible && group) {
       resetForm();
+    } else if (!visible) {
+      setFocusedInput(null);
+      setShowNativeDatePicker(false);
     }
-  }, [visible]);
+  }, [visible, group]);
 
   const uploadFileMutation = useMutation({
     mutationFn: uploadFile,
@@ -177,34 +207,40 @@ export function CreateGroupModal({
     return { isValid: true };
   };
 
-  const createGroupMutation = useMutation({
-    mutationFn: createGroup,
+  const updateGroupMutation = useMutation({
+    mutationFn: ({ groupId, data }: { groupId: string; data: any }) => 
+      updateGroup(groupId, data),
     onSuccess: (data, variables) => {
-      console.log('Group created successfully:', data);
+      console.log('Group updated successfully:', data);
 
       queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group', group?.id] });
 
-      Alert.alert('Success', 'Group created successfully!');
+      Alert.alert('Success', 'Group updated successfully!');
 
-      onSubmit(variables);
+      onSubmit(variables.data);
       setIsSubmitting(false);
-      resetForm();
       onClose();
     },
     onError: (error: any) => {
-      console.error('Error creating Group:', error);
+      console.error('Error updating Group:', error);
       setIsSubmitting(false);
 
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        'Failed to create group. Please try again.';
+        'Failed to update group. Please try again.';
       Alert.alert('Error', errorMessage);
     },
   });
 
   const handleSubmit = async () => {
+    if (!group) {
+      Alert.alert('Error', 'Group data not available.');
+      return;
+    }
+
     if (!formData.name || !formData.description) {
       Alert.alert('Error', 'Please fill in all required fields.');
       return;
@@ -225,20 +261,27 @@ export function CreateGroupModal({
 
     setIsSubmitting(true);
     
-    const groupData = {
+    const groupData: any = {
       name: formData.name,
       description: formData.description,
       isPrivate: formData.isPrivate,
       imageUrl: imageUrl,
-      ...(formData.hasMeetingDetails && {
-        meetingDate: formData.meetingDate.toISOString(),
-        meetingTime: formData.meetingTime,
-        meetingLocation: formData.meetingLocation,
-      }),
     };
+
+    // Only include meeting details if the toggle is enabled
+    if (formData.hasMeetingDetails) {
+      groupData.meetingDate = formData.meetingDate.toISOString();
+      groupData.meetingTime = formData.meetingTime;
+      groupData.meetingLocation = formData.meetingLocation;
+    } else {
+      // Clear meeting details if toggle is disabled
+      groupData.meetingDate = null;
+      groupData.meetingTime = null;
+      groupData.meetingLocation = null;
+    }
     
-    console.log(groupData);
-    createGroupMutation.mutate(groupData);
+    console.log('Updating group with data:', groupData);
+    updateGroupMutation.mutate({ groupId: group.id, data: groupData });
   };
 
   const renderInput = (
@@ -276,7 +319,7 @@ export function CreateGroupModal({
             multiline={multiline}
             onFocus={() => setFocusedInput(inputKey)}
             onBlur={() => setFocusedInput(null)}
-            editable={!isSubmitting && !createGroupMutation.isPending}
+            editable={!isSubmitting && !updateGroupMutation.isPending}
           />
           {hasValue && (
             <View style={styles.validIcon}>
@@ -288,7 +331,7 @@ export function CreateGroupModal({
     );
   };
 
-  if (!visible) return null;
+  if (!visible || !group) return null;
 
   return (
     <Modal
@@ -305,9 +348,9 @@ export function CreateGroupModal({
         >
           {/* Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Create New Group</Text>
+            <Text style={styles.title}>Edit Group</Text>
             <Text style={styles.subtitle}>
-              Build your community and connect with like-minded people
+              Update your group information and settings
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#64748B" />
@@ -357,7 +400,7 @@ export function CreateGroupModal({
                           styles.uploadButtonDisabled,
                       ]}
                       onPress={pickImage}
-                      disabled={isSubmitting || uploadFileMutation.isPending || createGroupMutation.isPending}
+                      disabled={isSubmitting || uploadFileMutation.isPending || updateGroupMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -411,7 +454,7 @@ export function CreateGroupModal({
                             style={styles.removeImageButton}
                             onPress={removeImage}
                             disabled={
-                              isSubmitting || uploadFileMutation.isPending || createGroupMutation.isPending
+                              isSubmitting || uploadFileMutation.isPending || updateGroupMutation.isPending
                             }
                           >
                             <X size={16} color="#FFFFFF" />
@@ -428,7 +471,7 @@ export function CreateGroupModal({
                   <TouchableOpacity
                     style={styles.meetingToggleContainer}
                     onPress={() => setFormData({ ...formData, hasMeetingDetails: !formData.hasMeetingDetails })}
-                    disabled={isSubmitting || createGroupMutation.isPending}
+                    disabled={isSubmitting || updateGroupMutation.isPending}
                   >
                     <View style={styles.meetingToggleButton}>
                       <Text style={styles.meetingToggleText}>
@@ -453,7 +496,7 @@ export function CreateGroupModal({
                         <Text style={styles.inputLabel}>Meeting Date</Text>
                         <TouchableOpacity
                           onPress={() => setShowNativeDatePicker(true)}
-                          disabled={isSubmitting || createGroupMutation.isPending}
+                          disabled={isSubmitting || updateGroupMutation.isPending}
                         >
                           <View
                             style={[
@@ -496,7 +539,7 @@ export function CreateGroupModal({
                         }
                         label="Meeting Time"
                         placeholder="Select meeting time"
-                        disabled={isSubmitting || createGroupMutation.isPending}
+                        disabled={isSubmitting || updateGroupMutation.isPending}
                         required={formData.hasMeetingDetails}
                       />
 
@@ -528,7 +571,7 @@ export function CreateGroupModal({
                       onPress={() =>
                         setFormData({ ...formData, isPrivate: false })
                       }
-                      disabled={isSubmitting || createGroupMutation.isPending}
+                      disabled={isSubmitting || updateGroupMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -565,7 +608,7 @@ export function CreateGroupModal({
                       onPress={() =>
                         setFormData({ ...formData, isPrivate: true })
                       }
-                      disabled={isSubmitting || createGroupMutation.isPending}
+                      disabled={isSubmitting || updateGroupMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -605,7 +648,7 @@ export function CreateGroupModal({
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={onClose}
-            disabled={isSubmitting || createGroupMutation.isPending}
+            disabled={isSubmitting || updateGroupMutation.isPending}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
@@ -613,14 +656,14 @@ export function CreateGroupModal({
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              (isSubmitting || createGroupMutation.isPending) && styles.primaryButtonDisabled,
+              (isSubmitting || updateGroupMutation.isPending) && styles.primaryButtonDisabled,
             ]}
             onPress={handleSubmit}
-            disabled={isSubmitting || createGroupMutation.isPending}
+            disabled={isSubmitting || updateGroupMutation.isPending}
           >
             <LinearGradient
               colors={
-                isSubmitting || createGroupMutation.isPending 
+                isSubmitting || updateGroupMutation.isPending 
                   ? ['#94A3B8', '#64748B'] 
                   : ['#6366F1', '#8B5CF6']
               }
@@ -628,9 +671,9 @@ export function CreateGroupModal({
             >
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
-                  {isSubmitting || createGroupMutation.isPending ? 'Creating...' : 'Create Group'}
+                  {isSubmitting || updateGroupMutation.isPending ? 'Updating...' : 'Update Group'}
                 </Text>
-                {!isSubmitting && !createGroupMutation.isPending && (
+                {!isSubmitting && !updateGroupMutation.isPending && (
                   <Sparkles
                     size={16}
                     color="#FFFFFF"

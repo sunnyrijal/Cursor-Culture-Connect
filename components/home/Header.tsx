@@ -6,7 +6,7 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Bell, User, BookOpen, LogIn } from 'lucide-react-native';
+import { Camera, Settings, User, BookOpen, LogIn } from 'lucide-react-native';
 
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
@@ -153,16 +153,16 @@ const Header = ({
             offset={[4, 4]}
           >
             <TouchableOpacity
-              onPress={() => router.push('/notifications')}
-              onPressIn={() => handlePressIn('notification')}
+              onPress={() => router.push('/profile/edit')}
+              onPressIn={() => handlePressIn('settings')}
               onPressOut={handlePressOut}
               style={[
-                getButtonStyle('notification'),
-                styles.notificationButton,
+                getButtonStyle('settings'),
+                styles.settingsButton,
               ]}
               activeOpacity={1}
             >
-              <Bell size={24} color="#3B82F6" />
+              <Settings size={24} color="#6B7280" />
             </TouchableOpacity>
           </Shadow>
           {/* <LogoutButton /> */}
@@ -328,9 +328,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(236, 72, 153, 0.1)',
   },
 
-  notificationButton: {
-    backgroundColor: '#EFF6FF', // Light blue background
+  settingsButton: {
+    backgroundColor: '#E5E7EB', // Light gray background
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: 'rgba(107, 114, 128, 0.1)',
   },
 });

@@ -1,4 +1,4 @@
-package com.babish.dev.boltexponativewind
+package com.trivo
 
 import android.app.Application
 import android.content.res.Configuration

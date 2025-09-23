@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,9 +23,13 @@ import {
   UserX,
   MessageCircle,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { getUsers } from '@/contexts/user.api';
-import { sendFriendRequest } from '@/contexts/friend.api';
+import {
+  sendFriendRequest,
+  cancelFriendRequest,
+  respondToFriendRequest,
+} from '@/contexts/friend.api';
 
 const theme = {
   primary: '#6366F1',
@@ -71,12 +75,20 @@ export default function SendFriendRequestScreen() {
     queryKey: ['users'],
     queryFn: () => getUsers(),
   });
+  
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }, [queryClient])
+  );
 
   const users = usersResponse?.users || [];
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
     onSuccess: (data, variables) => {
+      setModalVisible(false);
+      setMessage('');
       console.log('Friend request sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
@@ -90,6 +102,42 @@ export default function SendFriendRequestScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to send friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const cancelRequestMutation = useMutation({
+    mutationFn: cancelFriendRequest,
+    onSuccess: (data, variables) => {
+      console.log('Friend request cancelled successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      Alert.alert('Success', 'Friend request cancelled.');
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling friend request:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to cancel friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const respondToRequestMutation = useMutation({
+    mutationFn: respondToFriendRequest,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      const action = variables.action === 'accept' ? 'accepted' : 'declined';
+      Alert.alert('Success', `Friend request ${action}!`);
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to respond to friend request. Please try again.';
       Alert.alert('Error', errorMessage);
     },
   });
@@ -122,6 +170,35 @@ export default function SendFriendRequestScreen() {
     setSelectedUser(null);
   };
 
+  const handleCancelRequest = (userId: string, userName: string) => {
+    Alert.alert(
+      'Cancel Request',
+      `Are you sure you want to cancel the friend request to ${userName}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => cancelRequestMutation.mutate({ receiverId: userId }),
+        },
+      ]
+    );
+  };
+
+  const handleAcceptRequest = (friendshipId: string, userName: string) => {
+    Alert.alert(
+      'Accept Friend Request',
+      `Accept friend request from ${userName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Accept',
+          onPress: () =>
+            respondToRequestMutation.mutate({ friendshipId, action: 'accept' }),
+        },
+      ]
+    );
+  };
 
   const getActionButton = (user: any) => {
     const { friendshipStatus, isFriendRequestSender } = user;
@@ -142,20 +219,28 @@ export default function SendFriendRequestScreen() {
 
     // Friend request pending
     if (friendshipStatus === FriendshipStatus.PENDING) {
-      if (isFriendRequestSender) {
+      if (isFriendRequestSender) { // I sent the request
         // Current user sent the request - show "Sent" button
         return (
-          <TouchableOpacity style={styles.requestSentButton} disabled>
-            <UserPlus size={18} color={theme.gray500} />
-            <Text style={styles.requestSentText}>Sent</Text>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => handleCancelRequest(user.id, user.name)}
+            disabled={cancelRequestMutation.isPending}
+          >
+            <UserX size={18} color={theme.danger} />
+            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
       } else {
-        // Current user received the request - show "Pending" button
+        // I received the request - show "Accept" button
         return (
-          <TouchableOpacity style={styles.pendingButton} disabled>
-            <UserCheck size={18} color={theme.warning} />
-            <Text style={styles.pendingText}>Pending</Text>
+          <TouchableOpacity
+            style={styles.acceptButton}
+            onPress={() => handleAcceptRequest(user.friendshipId, user.name)}
+            disabled={respondToRequestMutation.isPending}
+          >
+            <UserCheck size={18} color={theme.white} />
+            <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
         );
       }
@@ -195,7 +280,7 @@ export default function SendFriendRequestScreen() {
   };
 
   const getStatusBadge = (friendshipStatus: string) => {
-    if (!friendshipStatus || friendshipStatus === FriendshipStatus.ACCEPTED) return null;
+    if (!friendshipStatus || friendshipStatus === FriendshipStatus.ACCEPTED || friendshipStatus == FriendshipStatus.DECLINED) return null;
 
     const statusConfig = {
       [FriendshipStatus.PENDING]: {
@@ -335,10 +420,8 @@ export default function SendFriendRequestScreen() {
                     <Text style={styles.userName}>{user.name}</Text>
                     {getStatusBadge(user.friendshipStatus)}
                   </View>
-                  <Text style={styles.userEmail}>{user.email}</Text>
-                  {/* {user.city && (
-                    <Text style={styles.userLocation}>{user.city}</Text>
-                  )} */}
+                  <Text style={styles.userEmail}>{user.major}</Text>
+                 
                   {user.university && (
                     <Text style={styles.userUniversity}>
                       {user.university.name}
@@ -346,6 +429,9 @@ export default function SendFriendRequestScreen() {
                   )}
                   {user.classYear && (
                     <Text style={styles.userClass}>{user.classYear}</Text>
+                  )}
+                  {(user.countryOfOrigin || user.city) && (
+                    <Text style={styles.userLocation}>{user.countryOfOrigin || user.city}</Text>
                   )}
                 </View>
                 {getActionButton(user)}
@@ -641,10 +727,58 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  acceptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.success,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.success,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  acceptButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+    fontSize: 13,
+  },
   declinedText: {
     color: theme.danger,
     fontWeight: '600',
     fontSize: 13,
+  },
+
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.danger,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+        borderColor: theme.danger,
+        borderWidth: 0.5,
+      },
+    }),
   },
 
   blockedText: {
@@ -717,5 +851,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  cancelText: {
+    color: theme.danger,
+    fontWeight: '600',
+    fontSize: 13,
   },
 });
