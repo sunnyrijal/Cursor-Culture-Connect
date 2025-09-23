@@ -33,6 +33,7 @@ import {
   Navigation,
   CheckCircle,
   ChevronDown,
+  MessageCircle as MessageCircleIcon,
 } from 'lucide-react-native';
 import {
   deleteEvent,
@@ -41,6 +42,7 @@ import {
   leaveEvent,
 } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
+import { createDirectChat } from '@/contexts/chat.api';
 import { EditEventModal } from '@/components/EditEventModal';
 
 // Enhanced theme for neumorphism
@@ -132,6 +134,25 @@ export default function EventDetail() {
     },
   });
 
+  const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
+    useMutation({
+      mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
+      onSuccess: (data:any) => {
+        console.log('✅ Chat Created:', data);
+        if (data?.data?.id) {
+          router.push(`/chat/${data.data.id}`);
+        } else {
+          Alert.alert("Chat Created", "You can now message the host from your chats list.");
+          queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+      },
+      onError: (error: any) => {
+        console.error('❌ Error creating chat:', error);
+        Alert.alert('Error', error.message || 'Could not start a conversation.');
+      },
+    });
+
+
   const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
     mutationFn: () => leaveEvent(eventId as string),
     onSuccess: () => {
@@ -149,6 +170,15 @@ export default function EventDetail() {
       (attendee: any) => attendee.id === myData?.userId
     );
   }, [event, myData]);
+
+  const handleMessageHost = () => {
+    if (!event?.user?.id) return;
+    if (event.chatId) {
+      router.push(`/chat/${event.chatId}`);
+    } else {
+      createDirectChatMutate(event.user.id);
+    }
+  };
   // Helper function to format date
   const formatDate = (dateString: string) => {
     if (!dateString) return 'TBD';
@@ -222,6 +252,8 @@ export default function EventDetail() {
       </SafeAreaView>
     );
   }
+
+  const isHost = event?.userId === myData?.userId;
 
   // Extract dynamic data from response
   const eventTime = event.eventTimes?.[0]; // Get first event time
@@ -546,44 +578,60 @@ export default function EventDetail() {
         </View>
       </ScrollView>
 
-      {isAttending ? (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.rsvpButton, styles.leaveButton]}
-            onPress={() => leaveEventMutation()}
-            disabled={isLeaving}
-          >
-            <View style={styles.rsvpContent}>
-              {isLeaving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <CheckCircle size={20} color={theme.white} />
-                  <Text style={styles.rsvpButtonText}>You are going!</Text>
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.rsvpButton,
-              (isJoining || isLeaving) && styles.disabledButton,
-            ]}
-            onPress={() => joinEventMutation()}
-            disabled={isJoining}
-          >
-            <View style={styles.rsvpContent}>
-              {isJoining ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.rsvpButtonText}>RSVP Now</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
+      {!isHost && (
+         <View style={styles.footer}>
+           <TouchableOpacity
+             style={[
+               styles.messageButtonFooter,
+               (isCreatingChat) && styles.disabledButton,
+             ]}
+             onPress={handleMessageHost}
+             disabled={isCreatingChat}
+           >
+             <View style={styles.rsvpContent}>
+               {isCreatingChat ? (
+                 <ActivityIndicator color="#fff" />
+               ) : (
+                 <>
+                   <MessageCircleIcon size={20} color={theme.white} />
+                   <Text style={styles.rsvpButtonText}>Message Host</Text>
+                 </>
+               )}
+             </View>
+           </TouchableOpacity>
+           {isAttending ? (
+             <TouchableOpacity
+               style={[styles.rsvpButton, styles.leaveButton]}
+               onPress={() => leaveEventMutation()}
+               disabled={isLeaving}
+             >
+               <View style={styles.rsvpContent}>
+                 {isLeaving ? (
+                   <ActivityIndicator color="#fff" />
+                 ) : (
+                   <>
+                     <CheckCircle size={20} color={theme.white} />
+                     <Text style={styles.rsvpButtonText}>Going</Text>
+                   </>
+                 )}
+               </View>
+             </TouchableOpacity>
+           ) : (
+             <TouchableOpacity
+               style={[styles.rsvpButton, (isJoining) && styles.disabledButton]}
+               onPress={() => joinEventMutation()}
+               disabled={isJoining}
+             >
+               <View style={styles.rsvpContent}>
+                 {isJoining ? (
+                   <ActivityIndicator color="#fff" />
+                 ) : (
+                   <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+                 )}
+               </View>
+             </TouchableOpacity>
+           )}
+         </View>
       )}
 
       {eventId && (
@@ -1060,6 +1108,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
     padding: spacing.md,
     backgroundColor: neomorphColors.background,
     borderTopWidth: 1,
@@ -1067,13 +1116,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rsvpButton: {
+    flex: 1,
     width: '100%',
     borderRadius: 16,
     backgroundColor: theme.primary,
-    marginBottom: spacing.sm,
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  messageButtonFooter: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: theme.info,
+    marginRight: spacing.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.info,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
@@ -1092,7 +1158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   rsvpButtonText: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
     color: theme.white,
     fontWeight: '700',
     letterSpacing: 0.5,
