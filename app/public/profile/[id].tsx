@@ -172,6 +172,21 @@ const GroupCard = ({ group, onPress }: { group: any; onPress: (id: string) => vo
   );
 };
 
+const FriendCard = ({ friend, onPress }: { friend: any; onPress: (id: string) => void }) => {
+  return (
+    <TouchableOpacity onPress={() => onPress(friend.id)} style={styles.friendCard}>
+      <Image
+        source={friend.profilePicture ? { uri: friend.profilePicture } : require('../../../assets/user.png')}
+        style={styles.friendImage}
+        defaultSource={require('../../../assets/user.png')}
+      />
+      <Text style={styles.friendName} numberOfLines={2}>
+        {friend.firstName} {friend.lastName}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
 export default function UserProfilePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -309,6 +324,10 @@ export default function UserProfilePage() {
 
   const handleGroupPress = (groupId: string) => {
     router.push(`/group/${groupId}`);
+  };
+
+  const handleFriendPress = (friendId: string) => {
+    router.push(`/public/profile/${friendId}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -655,6 +674,21 @@ export default function UserProfilePage() {
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {userData.friends?.length > 0 && (
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Friends ({userData.friends.length})</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContainer}
+              >
+                {userData.friends.map((friend: any) => (
+                  <FriendCard key={friend.id} friend={friend} onPress={handleFriendPress} />
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -1075,12 +1109,12 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 8,
+        elevation: 4,
       },
     }),
   },
@@ -1127,12 +1161,12 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 8,
+        elevation: 4,
       },
     }),
   },
@@ -1181,6 +1215,37 @@ const styles = StyleSheet.create({
     right: 2,
     flexDirection: 'row',
     gap: 4,
+  },
+  friendCard: {
+    alignItems: 'center',
+    width: 110,
+    padding: spacing.sm,
+    backgroundColor: theme.white,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#CDD2D8',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  friendImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 40,
+    marginBottom: spacing.sm,
+    backgroundColor: theme.background,
+  },
+  friendName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textPrimary,
+    textAlign: 'center',
   },
   centeredView: {
     flex: 1,
