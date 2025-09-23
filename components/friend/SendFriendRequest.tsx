@@ -63,9 +63,11 @@ export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [message, setMessage] = useState('');
-
 
   const {
     data: usersResponse,
@@ -75,7 +77,7 @@ export default function SendFriendRequestScreen() {
     queryKey: ['users'],
     queryFn: () => getUsers(),
   });
-  
+
   useFocusEffect(
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -219,7 +221,8 @@ export default function SendFriendRequestScreen() {
 
     // Friend request pending
     if (friendshipStatus === FriendshipStatus.PENDING) {
-      if (isFriendRequestSender) { // I sent the request
+      if (isFriendRequestSender) {
+        // I sent the request
         // Current user sent the request - show "Sent" button
         return (
           <TouchableOpacity
@@ -280,7 +283,12 @@ export default function SendFriendRequestScreen() {
   };
 
   const getStatusBadge = (friendshipStatus: string) => {
-    if (!friendshipStatus || friendshipStatus === FriendshipStatus.ACCEPTED || friendshipStatus == FriendshipStatus.DECLINED) return null;
+    if (
+      !friendshipStatus ||
+      friendshipStatus === FriendshipStatus.ACCEPTED ||
+      friendshipStatus == FriendshipStatus.DECLINED
+    )
+      return null;
 
     const statusConfig = {
       [FriendshipStatus.PENDING]: {
@@ -363,7 +371,9 @@ export default function SendFriendRequestScreen() {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Send a friend request to {selectedUser?.name}?</Text>
+            <Text style={styles.modalText}>
+              Send a friend request to {selectedUser?.name}?
+            </Text>
             <TextInput
               style={styles.messageInput}
               placeholder="Add an optional message..."
@@ -373,10 +383,18 @@ export default function SendFriendRequestScreen() {
               multiline
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={() => setModalVisible(false)}>
-                <Text style={[styles.textStyle,{ color:'black'}]}>Cancel</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={[styles.textStyle, { color: 'black' }]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSend]} onPress={handleSendWithMessageHandler}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSend]}
+                onPress={handleSendWithMessageHandler}
+              >
                 <Text style={styles.textStyle}>Send</Text>
               </TouchableOpacity>
             </View>
@@ -406,11 +424,11 @@ export default function SendFriendRequestScreen() {
                 onPress={() => router.push(`/public/profile/${user.id}`)}
               >
                 <Image
-                   source={{
+                  source={{
                     uri:
                       user?.profilePicture ||
                       'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                   }}
+                  }}
                   style={styles.userImage}
                   defaultSource={require('../../assets/user.png')}
                 />
@@ -420,8 +438,9 @@ export default function SendFriendRequestScreen() {
                     <Text style={styles.userName}>{user.name}</Text>
                     {getStatusBadge(user.friendshipStatus)}
                   </View>
-                  <Text style={styles.userEmail}>{user.major}</Text>
-                 
+                  {user.major && (
+                    <Text style={styles.userEmail}>{user.major}</Text>
+                  )}
                   {user.university && (
                     <Text style={styles.userUniversity}>
                       {user.university.name}
@@ -431,7 +450,9 @@ export default function SendFriendRequestScreen() {
                     <Text style={styles.userClass}>{user.classYear}</Text>
                   )}
                   {(user.countryOfOrigin || user.city) && (
-                    <Text style={styles.userLocation}>{user.countryOfOrigin || user.city}</Text>
+                    <Text style={styles.userLocation}>
+                      {user.countryOfOrigin || user.city}
+                    </Text>
                   )}
                 </View>
                 {getActionButton(user)}

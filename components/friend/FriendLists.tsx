@@ -47,7 +47,6 @@ export default function FriendsListScreen() {
 
   const friends = friendsResponse?.data || [];
 
-
   const removeFriendMutation = useMutation({
     mutationFn: removeFriend,
     onSuccess: (data, variables) => {
@@ -148,7 +147,11 @@ export default function FriendsListScreen() {
                   <Text style={styles.friendName}>
                     {friend.firstName} {friend.lastName}
                   </Text>
-                  <Text style={styles.friendDetails}>{friend.email}</Text>
+                  {friend.major && (
+                    <Text style={styles.friendDetails}>{friend.major}</Text>
+                  )}
+
+                  {/* <Text style={styles.friendDetails}>{friend.email}</Text> */}
                 </View>
                 <View style={styles.friendActions}>
                   <TouchableOpacity

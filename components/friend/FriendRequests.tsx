@@ -268,7 +268,7 @@ export default function FriendRequestsScreen() {
                   />
                   <View style={styles.requestInfo}>
                     <Text style={styles.userName}>{name}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
+                    {user.major && <Text style={styles.userEmail}>{user.major}</Text>}
                     {user.city && (
                       <Text style={styles.userLocation}>{user.city}</Text>
                     )}
