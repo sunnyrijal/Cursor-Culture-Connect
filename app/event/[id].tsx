@@ -12,11 +12,11 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShareButton } from '@/components/ui/ShareButton';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
 import {
   ArrowLeft,
@@ -34,6 +34,7 @@ import {
   CheckCircle,
   ChevronDown,
   MessageCircle as MessageCircleIcon,
+  Share2,
 } from 'lucide-react-native';
 import {
   deleteEvent,
@@ -82,7 +83,6 @@ export default function EventDetail() {
 
 
   const event = eventResponse?.event;
-  console.log(event)
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -138,7 +138,6 @@ export default function EventDetail() {
     useMutation({
       mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
       onSuccess: (data:any) => {
-        console.log('✅ Chat Created:', data);
         if (data?.data?.id) {
           router.push(`/chat/${data.data.id}`);
         } else {
@@ -265,13 +264,19 @@ export default function EventDetail() {
   const organizer = event.user?.name || 'Unknown Organizer';
   const organizerEmail = event.user?.email;
 
-  // const generateEventShareContent = () => {
-  //   return {
-  //     title: `${event.name} - Trivo`,
-  //     message: `Join me at ${event.name}!\n\n📅 ${eventDate} at ${eventTimeFormatted}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
-  //     url: `https://trivo.app/event/${event.id}`,
-  //   };
-  // };
+  const handleShareEvent = async () => {
+    if (!event) return;
+    try {
+      const eventUrl = `https://cultureconnect.app/event/${event.id}`;
+      await Share.share({
+        message: `Check out this event on Culture Connect: "${event.name}" on ${eventDate}.\n\n${event.description}\n\nJoin here: ${eventUrl}`,
+        url: eventUrl,
+        title: `Culture Connect Event: ${event.name}`,
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Unable to share this event at this time.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -297,18 +302,9 @@ export default function EventDetail() {
               <ArrowLeft size={20} color={theme.textPrimary} />
             </TouchableOpacity>
             <View style={styles.headerRight}>
-              {/* <TouchableOpacity
-                onPress={() => setIsBookmarked(!isBookmarked)}
-                style={styles.headerButton}
-              >
-                <Bookmark
-                  size={18}
-                  color={
-                    isBookmarked ? extendedTheme.accent : theme.textPrimary
-                  }
-                  fill={isBookmarked ? extendedTheme.accent : 'none'}
-                />
-              </TouchableOpacity> */}
+              <TouchableOpacity onPress={handleShareEvent} style={styles.headerButton}>
+                <Share2 size={18} color={theme.textPrimary} />
+              </TouchableOpacity>
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={() => setShowEditEventModal(true)}

@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +8,7 @@ import {
   Image,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -34,16 +36,23 @@ const theme = {
 };
 
 export default function FriendsListScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
   const {
     data: friendsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['friends'],
     queryFn: () => getFriends(),
   });
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const friends = friendsResponse?.data || [];
 
@@ -117,6 +126,9 @@ export default function FriendsListScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {friends.length === 0 ? (
           <View style={styles.emptyState}>
@@ -186,14 +198,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
   },
-
+  
   headerContainer: {
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 12,
+    paddingTop:0,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',

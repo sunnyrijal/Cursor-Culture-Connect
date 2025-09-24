@@ -231,6 +231,7 @@ export default function UserProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+
     },
     onError: (err: any) => {
       Alert.alert('Error', err.message || 'Failed to respond to request.');
@@ -613,7 +614,7 @@ export default function UserProfilePage() {
                 <View style={styles.infoItem}>
                   <Calendar size={18} color={theme.primary} />
                   <Text style={styles.infoValue}>
-                    Class of {userData.classYear}
+                   {userData.classYear}
                   </Text>
                 </View>
               )}
@@ -700,7 +701,7 @@ export default function UserProfilePage() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollContainer}
               >
-                {userData.attendingEvents.map((event) => (
+                {userData.attendingEvents.map((event:any) => (
                   <EventCard key={event.id} event={event} onPress={handleEventPress} />
                 ))}
               </ScrollView>
@@ -715,7 +716,7 @@ export default function UserProfilePage() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollContainer}
               >
-                {userData.groups.map((group) => (
+                {userData.groups.map((group:any) => (
                   <GroupCard key={group.id} group={group} onPress={handleGroupPress} />
                 ))}
               </ScrollView>

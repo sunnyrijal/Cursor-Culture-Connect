@@ -13,6 +13,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -46,10 +47,10 @@ import {
   User,
   InterestPing,
 } from '@/contexts/interest.api';
-import { 
-  getActivities, 
+import {
+  getActivities,
   getUsersByActivity,
-  sendActivityPing, 
+  sendActivityPing,
 } from '@/contexts/activity.api';
 import { Activity } from '@/types/activity';
 import MyPreferencesModal from '@/components/MyPreferenceModal';
@@ -92,15 +93,21 @@ export default function ActivityBuddyPage() {
     userName: string;
   } | null>(null);
   const [pingMessage, setPingMessage] = useState('');
-  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const queryClient = useQueryClient();
-  const [isPreferenceModalVisible, setIsPreferenceModalVisible] =
-    useState(false);
   const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
   const [isMyPreferenceVisible, setIsMyPreferenceVisible] = useState(false);
 
   const [editingActivity, setEditingActivity] = useState(null);
+
+  const [showActivitySelectionModal, setShowActivitySelectionModal] =
+    useState(false);
+  const [selectedPingActivityId, setSelectedPingActivityId] = useState<
+    string | null
+  >(null);
 
   // Query for activities
   const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
@@ -135,7 +142,10 @@ export default function ActivityBuddyPage() {
 
   useEffect(() => {
     if (usersPages) {
-      console.log('Users by activity:', JSON.stringify(usersPages.pages, null, 2));
+      console.log(
+        'Users by activity:',
+        JSON.stringify(usersPages.pages, null, 2)
+      );
     }
   }, [usersPages]);
 
@@ -153,8 +163,8 @@ export default function ActivityBuddyPage() {
       Alert.alert('Success', 'Activity ping sent successfully!');
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
-    onError: (error) => {
-      Alert.alert('Error', 'Failed to send ping. Please try again.');
+    onError: (error:any) => {
+      Alert.alert('Error', error?.response.data.message || 'Failed to send ping. Please try again.');
       console.error('Send ping error:', error);
     },
   });
@@ -166,8 +176,8 @@ export default function ActivityBuddyPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
-    onError: (error) => {
-      Alert.alert('Error', 'Failed to update ping. Please try again.');
+    onError: (error:any) => {
+      Alert.alert('Error',  error?.response.data.message || 'Failed to update ping. Please try again.');
       console.error('Update ping error:', error);
     },
   });
@@ -207,10 +217,35 @@ export default function ActivityBuddyPage() {
     activityName: string,
     userName: string
   ) => {
-    setPingTarget({ receiverId, activityId, activityName, userName });
-    setPingMessage(
-      `Hi! I'd love to connect over our shared activity in ${activityName}!`
-    );
+    if (selectedActivity === 'all') {
+      // Show activity selection modal
+      setPingTarget({ receiverId, activityId, activityName, userName });
+      setShowActivitySelectionModal(true);
+    } else {
+      // Direct ping with selected activity
+      setPingTarget({ receiverId, activityId, activityName, userName });
+      setPingMessage(
+        `Hi! I'd love to connect over our shared activity in ${activityName}!`
+      );
+      setShowPingModal(true);
+    }
+  };
+
+  const handleActivitySelection = (
+    activityId: string,
+    activityName: string
+  ) => {
+    if (pingTarget) {
+      setPingTarget({
+        ...pingTarget,
+        activityId,
+        activityName,
+      });
+      setPingMessage(
+        `Hi! I'd love to connect over our shared activity in ${activityName}!`
+      );
+    }
+    setShowActivitySelectionModal(false);
     setShowPingModal(true);
   };
 
@@ -237,10 +272,10 @@ export default function ActivityBuddyPage() {
       //   'plain-text',
       //   "Great! I'd love to connect over this activity!"
       // );
-        updatePingMutation.mutate({
-                pingId,
-                updateData: { status },
-              });
+      updatePingMutation.mutate({
+        pingId,
+        updateData: { status },
+      });
     } else {
       updatePingMutation.mutate({
         pingId,
@@ -249,157 +284,219 @@ export default function ActivityBuddyPage() {
     }
   };
 
+  const renderUserCard = (user: any) => {
+    const isExpanded = expandedCards[user.id];
+    const preferencesToShow = isExpanded
+      ? user.activityPreferences
+      : user.activityPreferences?.slice(0, 2) || [];
 
-const renderUserCard = (user: any) => {
-  const isExpanded = expandedCards[user.id];
-  const preferencesToShow = isExpanded 
-    ? user.activityPreferences 
-    : user.activityPreferences?.slice(0, 2) || [];
-  
-  // Get the activity ID for pinging - if 'all' is selected, use 'all'
-  const activityId = selectedActivity === 'all' ? 'all' : selectedActivity;
-  const activityName = selectedActivity === 'all' ? 'all' : 
-    activities.find((activity: Activity) => activity.id === selectedActivity)?.name || selectedActivity;
+    // Get the activity ID for pinging - if 'all' is selected, use 'all'
+    const activityId = selectedActivity === 'all' ? 'all' : selectedActivity;
+    const activityName =
+      selectedActivity === 'all'
+        ? 'all'
+        : activities.find(
+            (activity: Activity) => activity.id === selectedActivity
+          )?.name || selectedActivity;
 
-  const getSkillLevelColor = (level: string) => {
-    switch (level) {
-      case 'Beginner': return '#4CAF50';
-      case 'Intermediate': return '#FF9800';
-      case 'Advanced': return '#F44336';
-      default: return '#757575';
-    }
-  };
+    const getSkillLevelColor = (level: string) => {
+      switch (level) {
+        case 'Beginner':
+          return '#4CAF50';
+        case 'Intermediate':
+          return '#FF9800';
+        case 'Advanced':
+          return '#F44336';
+        default:
+          return '#757575';
+      }
+    };
 
-  return (
-    <View key={user.id} style={styles.userCard}>
-      <View style={styles.userHeader}>
-        <Image
-          source={
-            user.profilePicture
-              ? { uri: user.profilePicture }
-              : require('../../assets/user.png')
-          }
-          style={styles.userImage}
-          defaultSource={require('../../assets/user.png')}
-        />
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{user.name}</Text>
-          {user.major && <Text style={styles.userMajor}>{user.major}</Text>}
-          <Text style={styles.userYear}>Class of {user.classYear}</Text>
-          {user.bio && (
-            <Text style={styles.userBio} numberOfLines={2}>
-              {user.bio}
-            </Text>
-          )}
+    return (
+      <View key={user.id} style={styles.userCard}>
+        <View style={styles.userHeader}>
+          <Image
+            source={
+              user.profilePicture
+                ? { uri: user.profilePicture }
+                : require('../../assets/user.png')
+            }
+            style={styles.userImage}
+            defaultSource={require('../../assets/user.png')}
+          />
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user.name}</Text>
+            {user.major && <Text style={styles.userMajor}>{user.major}</Text>}
+            <Text style={styles.userYear}>Class of {user.classYear}</Text>
+            {user.bio && (
+              <Text style={styles.userBio} numberOfLines={2}>
+                {user.bio}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-      
-      {/* Activity Preferences Section */}
-      {user.activityPreferences && user.activityPreferences.length > 0 && (
-        <View style={styles.activitiesSection}>
-          <Text style={styles.sectionTitle}>Activities</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.activitiesScrollView}
-            contentContainerStyle={styles.activitiesContainer}
-          >
-            {preferencesToShow.map((preference: any, index: number) => (
-                <View key={index} style={[
-                styles.activityPreferenceCard,
-                (user.activityPreferences?.length || 0) > 1 ? { width: 250 } :{width:300}
-                ]}>
-                <View style={styles.activityHeader}>
-                  <Text style={styles.activityName}>
-                    {preference.activity.name}
-                  </Text>
-                  <View style={[
-                    styles.skillBadge, 
-                    { backgroundColor: getSkillLevelColor(preference.skillLevel) }
-                  ]}>
-                    <Text style={styles.skillBadgeText}>
-                      {preference.skillLevel}
+
+        {/* Activity Preferences Section */}
+        {user.activityPreferences && user.activityPreferences.length > 0 && (
+          <View style={styles.activitiesSection}>
+            <Text style={styles.sectionTitle}>Activities</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.activitiesScrollView}
+              contentContainerStyle={styles.activitiesContainer}
+            >
+              {preferencesToShow.map((preference: any, index: number) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.activityPreferenceCard,
+                    (user.activityPreferences?.length || 0) > 1
+                      ? { width: 250 }
+                      : { width: 300 },
+                  ]}
+                >
+                  <View style={styles.activityHeader}>
+                    <Text style={styles.activityName}>
+                      {preference.activity.name}
                     </Text>
-                  </View>
-                </View>
-                
-                <View style={styles.preferenceDetails}>
-                  <View style={styles.preferenceRow}>
-                    {preference.hasEquipment ? (
-                      <View style={styles.preferenceTag}>
-                        <Text style={styles.preferenceTagText}>Has Equipment</Text>
-                      </View>
-                    ) : (
-                      <View style={[styles.preferenceTag, styles.needsTag]}>
-                        <Text style={styles.needsTagText}>
-                          Needs: {preference.equipmentNeeded || 'Equipment'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  
-                  <View style={styles.preferenceRow}>
-                    {preference.hasTransport ? (
-                      <View style={styles.preferenceTag}>
-                        <Text style={styles.preferenceTagText}>Has Transport</Text>
-                      </View>
-                    ) : (
-                      <View style={[styles.preferenceTag, styles.needsTag]}>
-                        <Text style={styles.needsTagText}>
-                          Transport: {preference.transportDetails || 'Needed'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  
-                  {preference.additionalNotes && (
-                    <View style={styles.additionalNotesContainer}>
-                      <Text style={styles.additionalNotesLabel}>Note:</Text>
-                      <Text style={styles.additionalNotesText}>
-                        {preference.additionalNotes}
+                    <View
+                      style={[
+                        styles.skillBadge,
+                        {
+                          backgroundColor: getSkillLevelColor(
+                            preference.skillLevel
+                          ),
+                        },
+                      ]}
+                    >
+                      <Text style={styles.skillBadgeText}>
+                        {preference.skillLevel}
                       </Text>
                     </View>
-                  )}
+                  </View>
+
+                  <View style={styles.preferenceDetails}>
+                    <View style={styles.preferenceRow}>
+                      {preference.hasEquipment ? (
+                        <View style={styles.preferenceTag}>
+                          <Text style={styles.preferenceTagText}>
+                            Has Equipment
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.preferenceTag, styles.needsTag]}>
+                          <Text style={styles.needsTagText}>
+                            Needs: {preference.equipmentNeeded || 'Equipment'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.preferenceRow}>
+                      {preference.hasTransport ? (
+                        <View style={styles.preferenceTag}>
+                          <Text style={styles.preferenceTagText}>
+                            Has Transport
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.preferenceTag, styles.needsTag]}>
+                          <Text style={styles.needsTagText}>
+                            Transport: {preference.transportDetails || 'Needed'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {preference.additionalNotes && (
+                      <View style={styles.additionalNotesContainer}>
+                        <Text style={styles.additionalNotesLabel}>Note:</Text>
+                        <Text style={styles.additionalNotesText}>
+                          {preference.additionalNotes}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
-            
-            {!isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
-              <TouchableOpacity 
-                onPress={() => toggleActivities(user.id)} 
-                style={styles.expandButton}
+              ))}
+
+              {!isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
+                <TouchableOpacity
+                  onPress={() => toggleActivities(user.id)}
+                  style={styles.expandButton}
+                >
+                  <Text style={styles.expandButtonText}>
+                    +{(user?.activityPreferences?.length || 0) - 2} more
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+
+            {isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
+              <TouchableOpacity
+                onPress={() => toggleActivities(user.id)}
+                style={styles.collapseButton}
               >
-                <Text style={styles.expandButtonText}>
-                  +{(user?.activityPreferences?.length || 0) - 2} more
-                </Text>
+                <Text style={styles.collapseButtonText}>Show less</Text>
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        <TouchableOpacity
+          style={styles.pingButton}
+          onPress={() =>
+            handleSendPing(user.id, activityId!, activityName!, user.name)
+          }
+          disabled={sendPingMutation.isPending}
+        >
+          <Send size={14} color={theme.white} />
+          <Text style={styles.pingButtonText}>
+            {sendPingMutation.isPending ? 'Sending...' : 'Send Ping'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderActivitySelectionModal = () => (
+    <Modal
+      visible={showActivitySelectionModal}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setShowActivitySelectionModal(false)}
+    >
+      <View style={styles.centeredView}>
+        <View style={styles.modalView}>
+          <Text style={styles.modalText}>
+            Select Activity for {pingTarget?.userName}
+          </Text>
+          <ScrollView style={{ maxHeight: 300, width: '100%' }}>
+            {activities.map((activity: Activity) => (
+              <TouchableOpacity
+                key={activity.id}
+                style={styles.activitySelectButton}
+                onPress={() =>
+                  handleActivitySelection(activity.id, activity.name)
+                }
+              >
+                <Text style={styles.activitySelectText}>{activity.name}</Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-          
-          {isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
-            <TouchableOpacity 
-              onPress={() => toggleActivities(user.id)} 
-              style={styles.collapseButton}
-            >
-              <Text style={styles.collapseButtonText}>Show less</Text>
-            </TouchableOpacity>
-          )}
+          <Pressable
+            style={{paddingHorizontal:24, paddingVertical:12, backgroundColor:theme.primary, marginTop:12, borderRadius:12}}
+            onPress={() => setShowActivitySelectionModal(false)}
+          >
+            <Text style={[styles.textStyle, { color:'white' }]}>
+              Cancel
+            </Text>
+          </Pressable>
         </View>
-      )}
-      
-      <TouchableOpacity
-        style={styles.pingButton}
-        onPress={() => handleSendPing(user.id, activityId!, activityName!, user.name)}
-        disabled={sendPingMutation.isPending}
-      >
-        <Send size={14} color={theme.white} />
-        <Text style={styles.pingButtonText}>
-          {sendPingMutation.isPending ? 'Sending...' : 'Send Ping'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </Modal>
   );
-};
 
   const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => (
     <View key={ping.id} style={styles.pingCard}>
@@ -421,7 +518,9 @@ const renderUserCard = (user: any) => {
           <Text style={styles.pingUserName}>
             {type === 'sent' ? ping.receiver.name : ping.sender.name}
           </Text>
-          <Text style={styles.pingActivity}>{ping.activity?.name || ping.interest?.name}</Text>
+          <Text style={styles.pingActivity}>
+            {ping.activity?.name || ping.interest?.name}
+          </Text>
           <Text style={styles.pingDate}>
             {new Date(ping.createdAt).toLocaleDateString()}
           </Text>
@@ -507,7 +606,10 @@ const renderUserCard = (user: any) => {
                 if (pingTarget) {
                   sendPingMutation.mutate({
                     receiverId: pingTarget.receiverId,
-                    activityId: pingTarget.activityId,
+                    activityId:
+                      pingTarget.activityId === 'all'
+                        ? selectedPingActivityId || pingTarget.activityId
+                        : pingTarget.activityId,
                     message: pingMessage.trim() || undefined,
                   });
                 }
@@ -551,8 +653,7 @@ const renderUserCard = (user: any) => {
           <TouchableOpacity
             style={[
               styles.categoryChip,
-              selectedActivity === 'all' &&
-                styles.categoryChipActive,
+              selectedActivity === 'all' && styles.categoryChipActive,
             ]}
             onPress={() => setSelectedActivity('all')}
             activeOpacity={0.7}
@@ -561,14 +662,13 @@ const renderUserCard = (user: any) => {
             <Text
               style={[
                 styles.categoryChipText,
-                selectedActivity === 'all' &&
-                  styles.categoryChipTextActive,
+                selectedActivity === 'all' && styles.categoryChipTextActive,
               ]}
             >
               All Activities
             </Text>
           </TouchableOpacity>
-          
+
           {activitiesLoading ? (
             <Text style={styles.loadingChip}>Loading Activities...</Text>
           ) : (
@@ -585,7 +685,8 @@ const renderUserCard = (user: any) => {
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedActivity === activity.id && styles.categoryChipTextActive,
+                    selectedActivity === activity.id &&
+                      styles.categoryChipTextActive,
                   ]}
                 >
                   {activity.name}
@@ -604,7 +705,6 @@ const renderUserCard = (user: any) => {
         }
         contentContainerStyle={styles.contentContainer}
       >
-        
         {usersLoading && !usersPages?.pages.length ? (
           <Text style={styles.loadingText}>Loading users...</Text>
         ) : selectedActivity ? (
@@ -623,8 +723,13 @@ const renderUserCard = (user: any) => {
                 <Text style={styles.emptyStateIcon}>🔍</Text>
                 <Text style={styles.emptyStateTitle}>No people found</Text>
                 <Text style={styles.emptyStateSubtitle}>
-                  No one has shown activity in {selectedActivity === 'all' ? 'any activities' : 
-                    activities.find((activity: Activity) => activity.id === selectedActivity)?.name || selectedActivity} yet
+                  No one has shown activity in{' '}
+                  {selectedActivity === 'all'
+                    ? 'any activities'
+                    : activities.find(
+                        (activity: Activity) => activity.id === selectedActivity
+                      )?.name || selectedActivity}{' '}
+                  yet
                 </Text>
               </View>
             ) : (
@@ -685,7 +790,7 @@ const renderUserCard = (user: any) => {
               renderPingCard(ping, 'received')
             )
           )}
-          
+
           {/* Sent Pings */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Sent Pings ({pings.sent?.length || 0})
@@ -714,7 +819,7 @@ const renderUserCard = (user: any) => {
             <Plus size={16} color={theme.primary} />
             <Text style={styles.addActivityButtonText}>Setup</Text>
           </TouchableOpacity> */}
-           <TouchableOpacity
+          <TouchableOpacity
             style={styles.addActivityButton}
             onPress={() => setIsMyPreferenceVisible(true)}
           >
@@ -722,7 +827,7 @@ const renderUserCard = (user: any) => {
             <Text style={styles.addActivityButtonText}>My Preferences</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.tabSelector}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
@@ -755,7 +860,8 @@ const renderUserCard = (user: any) => {
 
       {activeTab === 'activities' ? renderActivitiesTab() : renderPingsTab()}
       {renderSendPingModal()}
-      
+      {renderActivitySelectionModal()}
+
       {/* <CreateInterestPreferenceModal
         visible={isPreferenceModalVisible}
         onClose={() => setIsPreferenceModalVisible(false)}
@@ -765,17 +871,26 @@ const renderUserCard = (user: any) => {
         onClose={() => setIsActivityModalVisible(false)}
         editingActivity={editingActivity}
       />
-      <MyPreferencesModal 
-        visible={isMyPreferenceVisible} 
+      <MyPreferencesModal
+        visible={isMyPreferenceVisible}
         onClose={() => setIsMyPreferenceVisible(false)}
       />
-
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
-
- userCard: {
+  activitySelectButton: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    width: '100%',
+  },
+  activitySelectText: {
+    fontSize: 16,
+    color: theme.textPrimary,
+    textAlign: 'center',
+  },
+  userCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
@@ -956,8 +1071,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
- 
-
 
   //others
 
@@ -1160,7 +1273,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
   },
- 
+
   loadingText: {
     fontSize: 14,
     color: theme.textSecondary,
@@ -1257,7 +1370,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   // User Card Styles
- 
+
   userInterests: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1281,7 +1394,7 @@ const styles = StyleSheet.create({
     color: theme.primary,
     fontWeight: '600',
   },
- 
+
   moreActivities: {
     fontSize: 11,
     color: theme.primary,

@@ -153,6 +153,7 @@ export const sendInterestPing = async (pingData: SendPingData) => {
     );
     return response.data;
   } catch (error) {
+    console.log(error)
     console.error('Error sending interest ping:', error);
     throw error;
   }

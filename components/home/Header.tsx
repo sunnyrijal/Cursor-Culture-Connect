@@ -6,7 +6,7 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
-import { Camera, Settings, User, BookOpen, LogIn } from 'lucide-react-native';
+import { Camera, Bell, User, BookOpen, LogIn } from 'lucide-react-native';
 
 import { useRouter } from 'expo-router';
 import LogoutButton from '../LogoutButton';
@@ -19,6 +19,7 @@ import { getMyData } from '@/contexts/user.api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import getDecodedToken from '@/utils/getMyData';
+import { getNotificationCount } from '@/contexts/notification.api';
 
 export const clayColors = {
   background: '#F0F3F7',
@@ -58,13 +59,16 @@ const Header = ({
   };
 
   const { authState } = useAuth();
-  console.log('Auth State', authState);
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
 
+    const { data: notificationCount, isLoading, refetch } = useQuery({
+      queryKey: ['notificationCount'],
+      queryFn: () => getNotificationCount(),
+    });
 
   return (
     <View style={styles.container}>
@@ -88,7 +92,8 @@ const Header = ({
 
           <View style={styles.appTitleContainer}>
             <Text style={styles.appTitle}>TRiVO</Text>
-            <Text style={styles.greeting}>Connect</Text>
+            {/* <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>
         </View>
 
@@ -153,16 +158,21 @@ const Header = ({
             offset={[4, 4]}
           >
             <TouchableOpacity
-              onPress={() => router.push('/profile/edit')}
-              onPressIn={() => handlePressIn('settings')}
+              onPress={() => router.push('/notifications')}
+              onPressIn={() => handlePressIn('notification')}
               onPressOut={handlePressOut}
               style={[
-                getButtonStyle('settings'),
-                styles.settingsButton,
+                getButtonStyle('notification'),
+                styles.notificationButton,
               ]}
               activeOpacity={1}
             >
-              <Settings size={24} color="#6B7280" />
+              <Bell size={24} color="#3B82F6" />
+              {notificationCount && notificationCount?.data?.count > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{notificationCount?.data?.count}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </Shadow>
           {/* <LogoutButton /> */}
@@ -248,12 +258,12 @@ const styles = StyleSheet.create({
   // greetingContainer: {
   //   flex: 1,
   // },
-  greeting: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: clayColors.textSecondary,
-    marginBottom: 2,
-  },
+  // greeting: {
+  //   fontSize: 14,
+  //   fontWeight: '500',
+  //   color: clayColors.textSecondary,
+  //   marginBottom: 2,
+  // },
   // userName: {
   //   fontSize: 20,
   //   fontWeight: '700',
@@ -328,9 +338,28 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(236, 72, 153, 0.1)',
   },
 
-  settingsButton: {
-    backgroundColor: '#E5E7EB', // Light gray background
+  notificationButton: {
+    backgroundColor: '#EFF6FF', // Light blue background
     borderWidth: 1,
-    borderColor: 'rgba(107, 114, 128, 0.1)',
+    borderColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: clayColors.pink,
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: clayColors.background,
+  },
+  notificationBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: 'white',
+    paddingHorizontal: 2,
   },
 });

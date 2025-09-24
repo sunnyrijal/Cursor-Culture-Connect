@@ -20,7 +20,7 @@ import {
   MapPin,
   Sparkles,
   Calendar,
-  ChevronDown,
+  ChevronDown, // Keep this
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -72,7 +72,7 @@ export function EditGroupModal({
     isPrivate: false,
     // Meeting details
     hasMeetingDetails: false,
-    meetingDate: new Date(),
+    meetingDate: null as Date | null,
     meetingTime: '',
     meetingLocation: '',
   });
@@ -92,7 +92,7 @@ export function EditGroupModal({
         description: group.description || '',
         isPrivate: group.isPrivate || false,
         hasMeetingDetails: hasMeetingInfo,
-        meetingDate: group.meetingDate ? new Date(group.meetingDate) : new Date(),
+        meetingDate: group.meetingDate ? new Date(group.meetingDate) : null,
         meetingTime: group.meetingTime || '',
         meetingLocation: group.meetingLocation || '',
       });
@@ -103,7 +103,7 @@ export function EditGroupModal({
         description: '',
         isPrivate: false,
         hasMeetingDetails: false,
-        meetingDate: new Date(),
+        meetingDate: null,
         meetingTime: '',
         meetingLocation: '',
       });
@@ -247,14 +247,14 @@ export function EditGroupModal({
     }
 
     // Validate meeting details if enabled
-    if (formData.hasMeetingDetails) {
-      if (!formData.meetingTime || !formData.meetingLocation) {
-        Alert.alert('Error', 'Please fill in all meeting details or disable meeting details.');
-        return;
-      }
-
-      if (!validateTime(formData.meetingTime).isValid) {
-        Alert.alert('Error', 'Please enter a valid meeting time in HH:MM format.');
+    if (formData.hasMeetingDetails && formData.meetingTime) {
+      const timeValidation = validateTime(formData.meetingTime);
+      if (!timeValidation.isValid) {
+        Alert.alert(
+          'Invalid Time',
+          timeValidation.error ||
+            'Please enter a valid meeting time in HH:MM format.'
+        );
         return;
       }
     }
@@ -270,14 +270,16 @@ export function EditGroupModal({
 
     // Only include meeting details if the toggle is enabled
     if (formData.hasMeetingDetails) {
-      groupData.meetingDate = formData.meetingDate.toISOString();
-      groupData.meetingTime = formData.meetingTime;
-      groupData.meetingLocation = formData.meetingLocation;
+      if (formData.meetingDate) {
+        groupData.meetingDate = formData.meetingDate.toISOString();
+      }
+      if (formData.meetingTime) groupData.meetingTime = formData.meetingTime;
+      if (formData.meetingLocation) groupData.meetingLocation = formData.meetingLocation;
     } else {
       // Clear meeting details if toggle is disabled
       groupData.meetingDate = null;
       groupData.meetingTime = null;
-      groupData.meetingLocation = null;
+      groupData.meetingLocation = null; 
     }
     
     console.log('Updating group with data:', groupData);
@@ -465,21 +467,20 @@ export function EditGroupModal({
                   )}
                 </View>
 
-                {/* Meeting Details Toggle */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Meeting Details (Optional)</Text>
                   <TouchableOpacity
                     style={styles.meetingToggleContainer}
                     onPress={() => setFormData({ ...formData, hasMeetingDetails: !formData.hasMeetingDetails })}
-                    disabled={isSubmitting || updateGroupMutation.isPending}
+                    disabled={isSubmitting || updateGroupMutation.isPending }
                   >
                     <View style={styles.meetingToggleButton}>
                       <Text style={styles.meetingToggleText}>
                         {formData.hasMeetingDetails ? 'Hide Meeting Details' : 'Add Meeting Details'}
                       </Text>
-                      <ChevronDown 
-                        size={20} 
-                        color="#6366F1" 
+                      <ChevronDown
+                        size={20}
+                        color="#6366F1"
                         style={[
                           styles.chevronIcon,
                           formData.hasMeetingDetails && styles.chevronIconRotated
@@ -487,75 +488,85 @@ export function EditGroupModal({
                       />
                     </View>
                   </TouchableOpacity>
+                </View>
 
-                  {/* Meeting Details Fields */}
-                  {formData.hasMeetingDetails && (
-                    <View style={styles.meetingDetailsContainer}>
-                      {/* Meeting Date */}
-                      <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Meeting Date</Text>
-                        <TouchableOpacity
-                          onPress={() => setShowNativeDatePicker(true)}
-                          disabled={isSubmitting || updateGroupMutation.isPending}
-                        >
-                          <View
-                            style={[
-                              styles.inputWrapper,
-                              formData.meetingDate && styles.inputWrapperValid,
-                            ]}
-                          >
-                            <Calendar
-                              size={20}
-                              color="#6366F1"
-                              style={styles.inputIcon}
-                            />
-                            <Text style={styles.inputText}>
-                              {formData.meetingDate.toLocaleDateString()}
-                            </Text>
-                            <Check
-                              size={20}
-                              color="#10B981"
-                              style={styles.validIcon}
-                            />
-                          </View>
-                        </TouchableOpacity>
-
-                        {showNativeDatePicker && (
-                          <DateTimePicker
-                            value={formData.meetingDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={onNativeDateChange}
-                            minimumDate={new Date()}
-                          />
-                        )}
-                      </View>
-
-                      {/* Meeting Time */}
-                      <TimeSelectInput
-                        value={formData.meetingTime}
-                        onTimeChange={(time) =>
-                          setFormData({ ...formData, meetingTime: time })
-                        }
-                        label="Meeting Time"
-                        placeholder="Select meeting time"
+                {/* Meeting Details Fields */}
+                {formData.hasMeetingDetails && (
+                  <View style={styles.meetingDetailsContainer}>
+                    {/* Meeting Day */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Meeting Day (Optional)</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowNativeDatePicker(true)}
                         disabled={isSubmitting || updateGroupMutation.isPending}
-                        required={formData.hasMeetingDetails}
-                      />
+                      >
+                        <View
+                          style={[
+                            styles.inputWrapper,
+                            formData.meetingDate && styles.inputWrapperValid,
+                          ]}
+                        >
+                          <Calendar
+                            size={20}
+                            color="#6366F1"
+                            style={styles.inputIcon}
+                          />
+                          <Text style={[
+                            styles.inputText,
+                            !formData.meetingDate && { color: '#94A3B8' }
+                          ]}>
+                            {formData.meetingDate 
+                              ? formData.meetingDate.toLocaleDateString()
+                              : 'Select meeting day'
+                            }
+                          </Text>
+                          {formData.meetingDate && (
+                            <TouchableOpacity
+                              onPress={() => setFormData({ ...formData, meetingDate: null })}
+                              style={styles.clearDateButton}
+                              disabled={isSubmitting || updateGroupMutation.isPending}
+                            >
+                              <X size={16} color="#6B7280" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </TouchableOpacity>
 
-                      {/* Meeting Location */}
-                      {renderInput(
-                        'Meeting Location',
-                        formData.meetingLocation,
-                        (text) => setFormData({ ...formData, meetingLocation: text }),
-                        'e.g., Student Union Room 101',
-                        <MapPin size={16} color="#6366F1" />,
-                        false,
-                        false
+                      {showNativeDatePicker && (
+                        <DateTimePicker
+                          value={formData.meetingDate || new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          onChange={onNativeDateChange}
+                          minimumDate={new Date()}
+                        />
                       )}
                     </View>
-                  )}
-                </View>
+
+                    {/* Meeting Time */}
+                    <TimeSelectInput
+                      value={formData.meetingTime}
+                      onTimeChange={(time) =>
+                        setFormData({ ...formData, meetingTime: time })
+                      }
+                      label="Meeting Time (Optional)"
+                      placeholder="Select meeting time"
+                      disabled={isSubmitting || updateGroupMutation.isPending}
+                      required={false}
+                    />
+
+                    {/* Meeting Location */}
+                    {renderInput(
+                      'Meeting Location (Optional)',
+                      formData.meetingLocation,
+                      (text) => setFormData({ ...formData, meetingLocation: text }),
+                      'e.g., Student Union Room 101',
+                      <MapPin size={16} color="#6366F1" />,
+                      false,
+                      false
+                    )}
+                  </View>
+                )}
 
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>
@@ -802,6 +813,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.9)',
     borderRadius: 20,
     padding: 6,
+  },
+  clearDateButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 
   container: {

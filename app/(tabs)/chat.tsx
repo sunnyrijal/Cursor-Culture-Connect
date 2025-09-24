@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -92,6 +93,7 @@ export default function ChatListScreen() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -184,6 +186,11 @@ export default function ChatListScreen() {
         }
       });
   }, [chatResponse, myData, filter]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const handleNewMessage = useCallback(() => {
     refetch();
@@ -582,6 +589,9 @@ export default function ChatListScreen() {
               style={styles.list}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             />
           )}
         </View>

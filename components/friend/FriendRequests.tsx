@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ const theme = {
 
 export default function FriendRequestsScreen() {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
@@ -56,10 +58,16 @@ export default function FriendRequestsScreen() {
     data: requestsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['friend-requests'],
     queryFn: () => getPendingFriendRequests(),
   });
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const receivedRequests = requestsResponse?.data?.received || [];
   const sentRequests = requestsResponse?.data?.sent || [];
@@ -72,6 +80,9 @@ export default function FriendRequestsScreen() {
       console.log('Friend request response successful:', data);
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
+
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
       Alert.alert('Success', `Friend request ${action}!`);
     },
@@ -228,6 +239,9 @@ export default function FriendRequestsScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {currentRequests.length === 0 ? (
           <View style={styles.emptyState}>
@@ -249,7 +263,7 @@ export default function FriendRequestsScreen() {
               const user =
                 activeTab === 'received' ? request.sender : request.receiver;
 
-                const name = user.name || `${user.firstName} ${user.lastName}`;
+              const name = user.name || `${user.firstName} ${user.lastName}`;
 
               return (
                 <TouchableOpacity
@@ -258,17 +272,19 @@ export default function FriendRequestsScreen() {
                   onPress={() => router.push(`/public/profile/${user.id}`)}
                 >
                   <Image
-                     source={{
-                    uri:
-                      user?.profilePicture ||
-                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                  }}
+                    source={{
+                      uri:
+                        user?.profilePicture ||
+                        'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                    }}
                     style={styles.userImage}
                     defaultSource={require('../../assets/user.png')}
                   />
                   <View style={styles.requestInfo}>
                     <Text style={styles.userName}>{name}</Text>
-                    {user.major && <Text style={styles.userEmail}>{user.major}</Text>}
+                    {user.major && (
+                      <Text style={styles.userEmail}>{user.major}</Text>
+                    )}
                     {user.city && (
                       <Text style={styles.userLocation}>{user.city}</Text>
                     )}

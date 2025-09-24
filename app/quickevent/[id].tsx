@@ -27,6 +27,7 @@ import {
   XCircle,
   RotateCcw,
   MessageCircle,
+  UserRoundCog,
 } from 'lucide-react-native';
 import {
   getQuickEventById,
@@ -240,16 +241,23 @@ export default function QuickEventDetail() {
       >
         <View style={styles.headerContainer}>
           <View style={styles.headerActions}>
-            <View  style={{display:'flex',flexDirection:'row',alignItems:'center', justifyContent:'center', gap:12}}>
-
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.headerButton}
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={styles.headerButton}
               >
-              <ArrowLeft size={20} color={theme.textPrimary} />
-            </TouchableOpacity>
+                <ArrowLeft size={20} color={theme.textPrimary} />
+              </TouchableOpacity>
 
-             <View style={styles.badgeContainer}>
+              <View style={styles.badgeContainer}>
                 <View style={styles.quickEventBadge}>
                   <Text style={styles.quickEventBadgeText}>Quick Event</Text>
                 </View>
@@ -268,9 +276,8 @@ export default function QuickEventDetail() {
                   </Text>
                 </View>
               </View>
-              </View>
+            </View>
             <View style={styles.headerRight}>
-             
               <ShareButton
                 {...generateEventShareContent()}
                 size={18}
@@ -327,11 +334,13 @@ export default function QuickEventDetail() {
                       { backgroundColor: '#FEF3C7' },
                     ]}
                   >
-                    <Users size={24} color={extendedTheme.warning} />
+                    <UserRoundCog size={24} color={extendedTheme.warning} />
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>
-                      {quickEvent.max} people
+                      {quickEvent.max
+                        ? ` Max ${quickEvent.max} people`
+                        : 'No Limit'}
                     </Text>
                   </View>
                 </View>
@@ -483,8 +492,7 @@ export default function QuickEventDetail() {
 }
 
 const styles = StyleSheet.create({
-
-   organizerContainer: {
+  organizerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -493,7 +501,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
   },
- 
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

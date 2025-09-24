@@ -12,6 +12,7 @@ import {
   Modal,
   TextInput,
   Platform,
+  Share,
 } from "react-native"
 import { ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -35,6 +36,7 @@ import {
   Settings,
   MessageSquare,
   Clock,
+  Share2,
 } from "lucide-react-native"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
@@ -120,6 +122,7 @@ export default function GroupDetailEnhanced() {
   const [showUpdateRoleModal, setShowUpdateRoleModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showMembersList, setShowMembersList] = useState(false)
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
   const [showEditGroupModal, setShowEditGroupModal] = useState(false)
   const [memberToKick, setMemberToKick] = useState<Member | null>(null)
   const [memberToUpdate, setMemberToUpdate] = useState<Member | null>(null)
@@ -127,7 +130,7 @@ export default function GroupDetailEnhanced() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [searchEmail, setSearchEmail] = useState("")
   const queryClient = useQueryClient()
-
+  
   const {
     data: groupResponse,
     isLoading,
@@ -137,17 +140,18 @@ export default function GroupDetailEnhanced() {
     queryKey: ["group", id],
     queryFn: () => getGroup((id as string) || ""),
   })
-  console.log(id)
   const { data: usersResponse } = useQuery({
     queryKey: ["users"],
     queryFn: () => getUsers(),
   })
 
   const group = groupResponse?.group
-  console.log(group)
   const currentUserMembership = groupResponse?.group?.members?.find((member: any) => member.userId === myData?.userId)
   const isCurrentUserMember = !!currentUserMembership;
   const isCurrentUserAdmin = currentUserMembership?.role === "ADMIN"
+
+  const canShowSettings =
+    isCurrentUserAdmin || isCurrentUserMember || group?.creatorId === myData?.userId
 
   const canJoinGroup = !isCurrentUserMember && !group?.isPrivate
 
@@ -203,6 +207,22 @@ export default function GroupDetailEnhanced() {
     ])
   }
 
+  const handleShareGroup = async () => {
+    if (!group) return
+    try {
+      const groupUrl = `https://cultureconnect.app/group/${group.id}`
+      await Share.share({
+        message: `Check out the "${group.name}" group on Culture Connect! Let's join and connect: ${groupUrl}`,
+        url: groupUrl,
+        title: `Join the ${group.name} group on Culture Connect`,
+      })
+    } catch (error) {
+      console.error("Error sharing group:", error)
+      // @ts-ignore
+      Alert.alert("Error", error.message || "Unable to share this group at this time.")
+    }
+  }
+
   const { mutate: updateGroupMutation, isPending: isUpdatingGroup } = useMutation({
     mutationFn: (data: { isPrivate: boolean }) => updateGroup(id as string, data),
     onSuccess: () => {
@@ -219,7 +239,6 @@ export default function GroupDetailEnhanced() {
   const { mutate: kickMembersMutate, isPending: kickMemberPending } = useMutation({
     mutationFn: (userId: string) => removeMember(id as string, userId),
     onSuccess: (data) => {
-      console.log("✅ Members kicked:", data)
       setShowKickModal(false)
       refetch()
     },
@@ -386,35 +405,70 @@ export default function GroupDetailEnhanced() {
             </TouchableOpacity>
 
             <View style={styles.headerRight}>
+              {isCurrentUserMember && !group.isPrivate && (
+                <TouchableOpacity onPress={handleShareGroup} style={styles.headerButton}>
+                  <Share2 size={20} color={theme.textPrimary} />
+                </TouchableOpacity>
+              )}
               {isCurrentUserAdmin && (
                 <TouchableOpacity onPress={() => setShowAddMembersModal(true)} style={styles.headerButton}>
                   <UserPlus size={20} color={theme.textPrimary} />
                 </TouchableOpacity>
               )}
-              {isCurrentUserAdmin && (
-                <TouchableOpacity onPress={() => setShowEditGroupModal(true)} style={styles.headerButton}>
-                  <Edit3 size={20} color={theme.primary} />
-                </TouchableOpacity>
-              )}
-              {isCurrentUserMember && group?.chatId && (
-                <TouchableOpacity onPress={() => router.push(`/chat/${group.chatId}`)} style={styles.headerButton}>
-                  <MessageSquare size={20} color={theme.primary} />
-                </TouchableOpacity>
-              )}
-              {isCurrentUserMember && (
-                <TouchableOpacity onPress={handleLeaveGroup} style={styles.headerButton}>
-                  <LogOut size={20} color={theme.error} />
-                </TouchableOpacity>
-              )}
-              {group?.creatorId === myData?.userId && (
-                <TouchableOpacity onPress={handleDeleteGroup} style={styles.headerButton}>
-                  <Trash2 size={20} color={theme.error} />
-                </TouchableOpacity>
-              )}
+              {canShowSettings && (
+                <View>
+                  <TouchableOpacity onPress={() => setShowSettingsDropdown(!showSettingsDropdown)} style={styles.headerButton}>
+                    <Settings size={20} color={theme.primary} />
+                  </TouchableOpacity>
+                  {showSettingsDropdown && (
+                    <View style={styles.dropdownMenu}>
+                      {isCurrentUserAdmin && (
+                        <TouchableOpacity
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setShowEditGroupModal(true)
+                            setShowSettingsDropdown(false)
+                          }}
+                        >
+                          <Edit3 size={16} color={theme.textPrimary} style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Edit Group</Text>
+                        </TouchableOpacity>
+                      )}
+                      {isCurrentUserMember && (
+                        <TouchableOpacity
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            handleLeaveGroup()
+                            setShowSettingsDropdown(false)
+                          }}
+                        >
+                          <LogOut size={16} color={theme.error} style={styles.dropdownIcon} />
+                          <Text style={[styles.dropdownText, { color: theme.error }]}>Leave Group</Text>
+                        </TouchableOpacity>
+                      )}
+                      {group?.creatorId === myData?.userId && (
+                        <TouchableOpacity
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            handleDeleteGroup()
+                            setShowSettingsDropdown(false)
+                          }}
+                        >
+                          <Trash2 size={16} color={theme.error} style={styles.dropdownIcon} />
+                          <Text style={[styles.dropdownText, { color: theme.error }]}>Delete Group</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+                )}
             </View>
           </View>
 
           {/* Event Badge */}
+          {showSettingsDropdown && (
+            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowSettingsDropdown(false)} />
+          )}
           <View style={styles.eventBadge}>
             <Users size={16} color="white" />
             <Text style={styles.eventBadgeText}>{group.isPrivate ? "Private Group" : "Public Group"}</Text>
@@ -451,6 +505,12 @@ export default function GroupDetailEnhanced() {
                 </View>
               )}
             </View>
+            {isCurrentUserMember && group?.chatId && (
+              <TouchableOpacity onPress={() => router.push(`/chat/${group.chatId}`)} style={styles.messageButton}>
+                <MessageSquare size={16} color={theme.white} />
+                <Text style={styles.messageButtonText}>Message</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Meeting Details Section */}
@@ -850,6 +910,7 @@ export default function GroupDetailEnhanced() {
                   setSelectedRole(null)
                 }}
                 style={styles.cancelButton}
+                textStyle={{color:'black'}}
               />
               <Button
                 title={updateRolePending ? "Updaing..." : "Update"}
@@ -877,6 +938,59 @@ export default function GroupDetailEnhanced() {
 }
 
 const styles = StyleSheet.create({
+
+  dropdownMenu: {
+    position: "absolute",
+    top: 45,
+    right: 0,
+    backgroundColor: "white",
+    borderRadius: borderRadius.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+    width: 150,
+    zIndex: 100,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  dropdownIcon: {
+    marginRight: 10,
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: theme.textPrimary,
+    fontWeight: "500",
+  },
+  // To remove border from last item
+  dropdownItemLast: {
+    borderBottomWidth: 0,
+  },
+  
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    gap: spacing.xs,
+  },
+  messageButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+    fontSize: typography.fontSize.sm,
+  },
+
+  // Content Container
+
   compactRoleModalContent: {
     backgroundColor: neomorphColors.cardBackground,
     borderRadius: borderRadius.lg,
@@ -1139,6 +1253,9 @@ const styles = StyleSheet.create({
   // Tags Section
   tagsSection: {
     paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   tagsContainer: {
     flexDirection: "row",
@@ -1485,13 +1602,13 @@ const styles = StyleSheet.create({
   },
   roleOptionsContainer: {
     width: "100%",
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
     gap: spacing.md,
   },
   roleOption: {
     backgroundColor: theme.gray50,
     borderRadius: borderRadius.card,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 2,
     borderColor: theme.border,
     alignItems: "center",
@@ -1529,12 +1646,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   selectedRoleText: {
-    color: theme.primary,
+    color: theme.white,
     fontFamily: typography.fontFamily.bold,
   },
   currentRoleIndicator: {
     fontSize: typography.fontSize.sm,
-    color: theme.primary,
+    color: theme.white,
     marginTop: spacing.xs,
     fontFamily: typography.fontFamily.medium,
     backgroundColor: theme.primaryLight,
@@ -1542,6 +1659,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
     overflow: "hidden",
+    
   },
   modalActions: {
     marginTop: spacing.lg,

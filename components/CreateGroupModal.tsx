@@ -57,7 +57,7 @@ export function CreateGroupModal({
     allowedUniversity: '',
     // Meeting details
     hasMeetingDetails: false,
-    meetingDate: new Date(),
+    meetingDate: null as Date | null,
     meetingTime: '',
     meetingLocation: '',
   });
@@ -77,7 +77,7 @@ export function CreateGroupModal({
       universityOnly: false,
       allowedUniversity: '',
       hasMeetingDetails: false,
-      meetingDate: new Date(),
+      meetingDate: null,
       meetingTime: '',
       meetingLocation: '',
     });
@@ -127,7 +127,6 @@ export function CreateGroupModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-        console.log('Asset details:', asset);
 
         uploadFileMutation.mutate({
           uri: asset.uri,
@@ -210,13 +209,8 @@ export function CreateGroupModal({
       return;
     }
 
-    // Validate meeting details if enabled
-    if (formData.hasMeetingDetails) {
-      if (!formData.meetingTime || !formData.meetingLocation) {
-        Alert.alert('Error', 'Please fill in all meeting details or disable meeting details.');
-        return;
-      }
-
+    // Validate meeting time if provided
+    if (formData.hasMeetingDetails && formData.meetingTime) {
       if (!validateTime(formData.meetingTime).isValid) {
         Alert.alert('Error', 'Please enter a valid meeting time in HH:MM format.');
         return;
@@ -225,19 +219,26 @@ export function CreateGroupModal({
 
     setIsSubmitting(true);
     
-    const groupData = {
+    const groupData: any = {
       name: formData.name,
       description: formData.description,
       isPrivate: formData.isPrivate,
       imageUrl: imageUrl,
-      ...(formData.hasMeetingDetails && {
-        meetingDate: formData.meetingDate.toISOString(),
-        meetingTime: formData.meetingTime,
-        meetingLocation: formData.meetingLocation,
-      }),
     };
+
+    // Only add meeting details if they exist
+    if (formData.hasMeetingDetails) {
+      if (formData.meetingDate) {
+        groupData.meetingDate = formData.meetingDate.toISOString();
+      }
+      if (formData.meetingTime) {
+        groupData.meetingTime = formData.meetingTime;
+      }
+      if (formData.meetingLocation) {
+        groupData.meetingLocation = formData.meetingLocation;
+      }
+    }
     
-    console.log(groupData);
     createGroupMutation.mutate(groupData);
   };
 
@@ -448,9 +449,9 @@ export function CreateGroupModal({
                   {/* Meeting Details Fields */}
                   {formData.hasMeetingDetails && (
                     <View style={styles.meetingDetailsContainer}>
-                      {/* Meeting Date */}
+                      {/* Meeting Day */}
                       <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Meeting Date</Text>
+                        <Text style={styles.inputLabel}>Meeting Day (Optional)</Text>
                         <TouchableOpacity
                           onPress={() => setShowNativeDatePicker(true)}
                           disabled={isSubmitting || createGroupMutation.isPending}
@@ -466,20 +467,30 @@ export function CreateGroupModal({
                               color="#6366F1"
                               style={styles.inputIcon}
                             />
-                            <Text style={styles.inputText}>
-                              {formData.meetingDate.toLocaleDateString()}
+                            <Text style={[
+                              styles.inputText,
+                              !formData.meetingDate && { color: '#94A3B8' }
+                            ]}>
+                              {formData.meetingDate 
+                                ? formData.meetingDate.toLocaleDateString()
+                                : 'Select meeting day'
+                              }
                             </Text>
-                            <Check
-                              size={20}
-                              color="#10B981"
-                              style={styles.validIcon}
-                            />
+                            {formData.meetingDate && (
+                              <TouchableOpacity
+                                onPress={() => setFormData({ ...formData, meetingDate: null })}
+                                style={styles.clearDateButton}
+                                disabled={isSubmitting || createGroupMutation.isPending}
+                              >
+                                <X size={16} color="#6B7280" />
+                              </TouchableOpacity>
+                            )}
                           </View>
                         </TouchableOpacity>
 
                         {showNativeDatePicker && (
                           <DateTimePicker
-                            value={formData.meetingDate}
+                            value={formData.meetingDate || new Date()}
                             mode="date"
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                             onChange={onNativeDateChange}
@@ -494,15 +505,15 @@ export function CreateGroupModal({
                         onTimeChange={(time) =>
                           setFormData({ ...formData, meetingTime: time })
                         }
-                        label="Meeting Time"
+                        label="Meeting Time (Optional)"
                         placeholder="Select meeting time"
                         disabled={isSubmitting || createGroupMutation.isPending}
-                        required={formData.hasMeetingDetails}
+                        required={false}
                       />
 
                       {/* Meeting Location */}
                       {renderInput(
-                        'Meeting Location',
+                        'Meeting Location (Optional)',
                         formData.meetingLocation,
                         (text) => setFormData({ ...formData, meetingLocation: text }),
                         'e.g., Student Union Room 101',
@@ -759,6 +770,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.9)',
     borderRadius: 20,
     padding: 6,
+  },
+  clearDateButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 
   container: {

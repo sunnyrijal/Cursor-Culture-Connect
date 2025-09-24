@@ -11,20 +11,19 @@ import {
   TextInput,
   Animated,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { RefreshControl } from 'react-native';
 // import { Picker } from '@react-native-picker/picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   Search,
-  MapPin,
-  Calendar,
   Users,
   Clock,
   PlusCircle,
   Zap,
-  CheckCircle,
 } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
@@ -34,14 +33,13 @@ import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 
 // Add import for date formatting
 import getDecodedToken from '@/utils/getMyData';
-import { format } from 'date-fns';
 import { theme } from '@/components/theme';
 import {
   getQuickEvents,
   addInterestedUser,
   removeInterestedUser,
 } from '@/contexts/quickEvent.api';
-import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
+import { CreateQuickEventModal } from '@/components/CreateQuickEventModal'; 
 import React from 'react';
 import { EventCard } from '@/components/EventCard';
 import { formatTime, formatTo12Hour } from '@/utils/formatDate';
@@ -132,6 +130,8 @@ export default function Events() {
   const [showHelper, setShowHelper] = useState(true);
   const [includeNotInterested, setIncludeNotInterested] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const [mutatingQuickEventId, setMutatingQuickEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
     'events'
   );
@@ -167,23 +167,35 @@ export default function Events() {
 
   const { mutate: addInterestMutation, isPending: isAddingInterest } =
     useMutation({
-      mutationFn: (quickEventId: string) => addInterestedUser(quickEventId),
+      mutationFn: async (quickEventId: string) => {
+        setMutatingQuickEventId(quickEventId);
+        return addInterestedUser(quickEventId);
+      },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['quick-events'] });
       },
       onError: (error) => {
         console.error('Error adding interest:', error);
       },
+      onSettled: () => {
+        setMutatingQuickEventId(null);
+      },
     });
 
   const { mutate: removeInterestMutation, isPending: isRemovingInterest } =
     useMutation({
-      mutationFn: (quickEventId: string) => removeInterestedUser(quickEventId),
+      mutationFn: async (quickEventId: string) => {
+        setMutatingQuickEventId(quickEventId);
+        return removeInterestedUser(quickEventId);
+      },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['quick-events'] });
       },
       onError: (error) => {
         console.error('Error removing interest:', error);
+      },
+      onSettled: () => {
+        setMutatingQuickEventId(null);
       },
     });
 
@@ -211,6 +223,13 @@ export default function Events() {
   });
 
   const quickEvents = quickEventsResponse?.data || [];
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    Promise.all([refetch(), refetchQuickEvents()]).then(() => {
+      setRefreshing(false);
+    });
+  }, [refetch, refetchQuickEvents]);
 
   useEffect(() => {
     if (showHelper) {
@@ -251,7 +270,6 @@ export default function Events() {
   }, [quickEvents, searchQuery]);
 
   const handleCreateEvent = async (eventData: any) => {
-    console.log('New Event Data:', eventData);
     setShowCreateModal(false);
   };
 
@@ -411,23 +429,28 @@ export default function Events() {
       </View>
 
       {activeTab === 'quickEvents' && (
-        <View style={styles.checkboxContainer}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => setIncludeNotInterested(!includeNotInterested)}
+          activeOpacity={0.8}
+        >
           <Checkbox
             style={styles.checkbox}
             value={includeNotInterested}
             onValueChange={setIncludeNotInterested}
             color={includeNotInterested ? theme.primary : undefined}
           />
-          <Text style={styles.checkboxLabel}>
-            Include events I'm not interested in
-          </Text>
-        </View>
+          <Text style={styles.checkboxLabel}>Include events I'm not interested in</Text>
+        </TouchableOpacity>
       )}
 
       <ScrollView
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         // onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         // scrollEventThrottle={16}
       >
@@ -473,6 +496,9 @@ export default function Events() {
                 const isInterested = quickEvent.interestedUsers.some(
                   (user) => user.id === myData?.userId
                 );
+                const isMutating =
+                  (isAddingInterest || isRemovingInterest) &&
+                  mutatingQuickEventId === quickEvent.id;
                 return (
                   <TouchableOpacity
                     key={quickEvent.id}
@@ -509,7 +535,7 @@ export default function Events() {
                       <View style={styles.quickEventMeta}>
                         <Users size={16} color="#6366F1" />
                         <Text style={styles.quickEventMetaText}>
-                          Max {quickEvent.max} people
+                         {quickEvent.max ?` Max ${quickEvent.max} people` : 'No Limit'}
                         </Text>
                       </View>
                       <View style={styles.quickEventActions}>
@@ -532,15 +558,20 @@ export default function Events() {
                             isInterested && styles.rsvpedButtonSmall,
                           ]}
                           onPress={() =>
-                            isInterested
+                            !isMutating &&
+                            (isInterested
                               ? removeInterestMutation(quickEvent.id)
-                              : addInterestMutation(quickEvent.id)
+                              : addInterestMutation(quickEvent.id))
                           }
-                          disabled={isAddingInterest || isRemovingInterest}
+                          disabled={isMutating}
                         >
-                          <Text style={styles.rsvpButtonTextSmall}>
-                            {isInterested ? 'Interested' : "I'm in"}
-                          </Text>
+                          {isMutating ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <Text style={styles.rsvpButtonTextSmall}>
+                              {isInterested ? 'Interested' : "I'm in"}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       </View>
                     </View>

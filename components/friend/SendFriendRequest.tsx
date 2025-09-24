@@ -12,6 +12,7 @@ import {
   Alert,
   Platform,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     id: string;
     name: string;
@@ -73,6 +75,7 @@ export default function SendFriendRequestScreen() {
     data: usersResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['users'],
     queryFn: () => getUsers(),
@@ -83,6 +86,11 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     }, [queryClient])
   );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const users = usersResponse?.users || [];
 
@@ -95,6 +103,8 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
 
       Alert.alert('Success', 'Friend request sent successfully!');
     },
@@ -114,6 +124,8 @@ export default function SendFriendRequestScreen() {
       console.log('Friend request cancelled successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
       Alert.alert('Success', 'Friend request cancelled.');
     },
     onError: (error: any) => {
@@ -132,6 +144,10 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
+
+
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
       Alert.alert('Success', `Friend request ${action}!`);
     },
@@ -404,6 +420,9 @@ export default function SendFriendRequestScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>

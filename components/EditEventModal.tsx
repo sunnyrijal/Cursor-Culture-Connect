@@ -779,7 +779,6 @@ export function EditEventModal({
                   <Text style={styles.inputLabel}>Associated Group</Text>
                   <TouchableOpacity
                     onPress={() => {
-                      console.log('Associated Group pressed');
                       setShowGroupPicker(true);
                     }}
                     disabled={updateEventMutation.isPending}
@@ -1021,66 +1020,66 @@ export function EditEventModal({
         </Modal>
 
         {/* Group Picker Modal */}
-        <Modal
-          visible={showGroupPicker && !updateEventMutation.isPending}
-          transparent
-          animationType="fade"
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowGroupPicker(false)}
-          >
-            <TouchableOpacity
-              style={styles.groupPickerContainer}
-              activeOpacity={1}
-            >
-              <View style={styles.groupPickerContent}>
-                <Text style={styles.groupPickerTitle}>Select Your Group</Text>
-
-                <ScrollView
-                  style={styles.groupList}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {groups.map((group: any) => (
-                    <TouchableOpacity
-                      key={group.id}
-                      style={styles.groupItem}
-                      onPress={() => {
-                        setFormData({ ...formData, groupId: group.id });
-                        setShowGroupPicker(false);
-                      }}
-                    >
-                      <Image
-                        source={
-                          group.imageUrl
-                            ? { uri: group.imageUrl }
-                            : require('../assets/user.png')
-                        }
-                        style={styles.groupImage}
-                      />
-                      <View style={styles.groupInfo}>
-                        <Text style={styles.groupItemText} numberOfLines={1}>
-                          {group.name}
-                        </Text>
-                        <Text style={styles.groupCreatorText}>
-                          By {group.creator.name}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <TouchableOpacity
-                  style={styles.closeGroupPicker}
-                  onPress={() => setShowGroupPicker(false)}
-                >
-                  <Text style={styles.closeGroupPickerText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
+         <Modal
+                 visible={showGroupPicker && !updateEventMutation.isPending}
+                 transparent
+                 animationType="fade"
+               >
+                 <TouchableOpacity
+                   style={styles.modalOverlay}
+                   activeOpacity={1}
+                   onPress={() => setShowGroupPicker(false)}
+                 >
+                   <TouchableOpacity
+                     style={styles.groupPickerContainer}
+                     activeOpacity={1}
+                   >
+                     <View style={styles.groupPickerContent}>
+                       <Text style={styles.groupPickerTitle}>Select Your Group</Text>
+       
+                       <ScrollView
+                         style={styles.groupList}
+                         showsVerticalScrollIndicator={false}
+                       >
+                         {groups.map((group: any) => (
+                           <TouchableOpacity
+                             key={group.id}
+                             style={styles.groupItem}
+                             onPress={() => {
+                               setFormData({ ...formData, groupId: group.id });
+                               setShowGroupPicker(false);
+                             }}
+                           >
+                             <Image
+                               source={
+                                 group.imageUrl
+                                   ? { uri: group.imageUrl }
+                                   : require('../assets/user.png')
+                               }
+                               style={styles.groupImage}
+                             />
+                             <View style={styles.groupInfo}>
+                               <Text style={styles.groupItemText} numberOfLines={1}>
+                                 {group.name}
+                               </Text>
+                               <Text style={styles.groupCreatorText}>
+                                 By {group.creator.name}
+                               </Text>
+                             </View>
+                           </TouchableOpacity>
+                         ))}
+                       </ScrollView>
+       
+                       <TouchableOpacity
+                         style={styles.closeGroupPicker}
+                         onPress={() => setShowGroupPicker(false)}
+                       >
+                         <Text style={styles.closeGroupPickerText}>Close</Text>
+                       </TouchableOpacity>
+                     </View>
+                   </TouchableOpacity>
+                 </TouchableOpacity>
+               </Modal>
       </View>
     </Modal>
   );
@@ -1121,7 +1120,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   formContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingBottom: 100,
   },
   blurView: {
@@ -1497,62 +1496,95 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  groupPickerContainer: {
+groupPickerContainer: {
     width: '90%',
     maxWidth: 400,
     maxHeight: '70%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    overflow: 'hidden',
+    borderRadius: 24,
   },
   groupPickerContent: {
-    flex: 1,
+    backgroundColor: '#F0F3F7',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#CDD2D8',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    ...Platform.select({
+      android: {
+        elevation: 0,
+      },
+    }),
   },
   groupPickerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#374151',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    fontWeight: '700',
+    color: '#1E293B',
     textAlign: 'center',
+    marginBottom: 24,
   },
   groupList: {
-    flex: 1,
-    padding: 16,
+    marginBottom: 24,
+    maxHeight: 400,
   },
   groupItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: 16,
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
   },
   groupImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+    backgroundColor: '#E5E7EB',
   },
   groupInfo: {
     flex: 1,
   },
+  groupCreatorText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
   groupItemText: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#374151',
   },
-  groupCreatorText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
+  adminBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  adminBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   closeGroupPicker: {
-    padding: 16,
     backgroundColor: '#6366F1',
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   closeGroupPickerText: {
     color: '#FFFFFF',

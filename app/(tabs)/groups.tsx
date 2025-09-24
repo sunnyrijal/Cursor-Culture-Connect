@@ -7,6 +7,8 @@ import {
   Image,
   Platform,
   TextInput,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,12 +21,13 @@ import {
   Search,
 } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { getAllGroups, getUserGroups } from '@/contexts/group.api';
-import { CreateGroupModal } from '@/components/CreateGroupModal';
-import { useState } from 'react';
+import { getAllGroups, joinGroup } from '@/contexts/group.api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 
 import { PlusCircle } from 'lucide-react-native';
-import AdMobScreen from '@/components/BannerAd';
+import getDecodedToken from '@/utils/getMyData';
+import { CreateGroupModal } from '@/components/CreateGroupModal';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -85,18 +88,48 @@ interface ApiGroup {
 }
 
 export default function Groups() {
+  const queryClient = useQueryClient();
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+  });
   const {
     data: groupResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['groups'],
-    queryFn: () => getUserGroups(),
+    queryFn: () => getAllGroups(),
   });
   const allGroups = groupResponse?.groups || [];
 
+  const { mutate: joinGroupMutation, isPending: isJoining } = useMutation({
+    mutationFn: (groupId: string) => {
+      setJoiningGroupId(groupId);
+      return joinGroup(groupId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+    onError: (error) => {
+      console.error('Error joining group:', error);
+      Alert.alert('Error', 'Failed to join group. Please try again.');
+    },
+    onSettled: () => {
+      setJoiningGroupId(null);
+    },
+  });
+
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const groups = allGroups.filter(
     (group: ApiGroup) =>
@@ -105,7 +138,6 @@ export default function Groups() {
       group.creator.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  console.log(groupResponse);
 
   if (isLoading) {
     return (
@@ -143,13 +175,6 @@ export default function Groups() {
 
   return (
     <>
-      <CreateGroupModal
-        visible={showCreateGroupModal}
-        onClose={() => setShowCreateGroupModal(false)}
-        onSubmit={() => setShowCreateGroupModal(false)}
-      />
-
-
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.heroSection}>
@@ -192,107 +217,136 @@ export default function Groups() {
             style={styles.list}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
           >
-            {groups.map((group: any, index: number) => (
-              <TouchableOpacity
-                key={group.id}
-                style={[
-                  styles.groupCard,
-                  index === 0 && styles.firstCard,
-                  index === groups.length - 1 && styles.lastCard,
-                ]}
-                onPress={() => router.push(`/group/${group.id}`)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.groupImageContainer}>
-                  <Image
-                    source={{
-                      uri: group.imageUrl || placeholderImg,
-                    }}
-                    style={styles.groupImage}
-                  />
-                  <View style={styles.imageOverlay} />
+            {groups.map((group: any, index: number) => {
+              const currentUserMembership = group?.members?.find(
+                (member: any) => member.userId== myData?.userId
+              );
+              const isCurrentUserMember = !!currentUserMembership;
+              const isCurrentUserAdmin =
+                currentUserMembership?.role === 'ADMIN';
+              return (
+                <TouchableOpacity
+                  key={group.id}
+                  style={[
+                    styles.groupCard,
+                    index === 0 && styles.firstCard,
+                    index === groups.length - 1 && styles.lastCard,
+                  ]}
+                  onPress={() => router.push(`/group/${group.id}`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.groupImageContainer}>
+                    <Image
+                      source={{
+                        uri: group.imageUrl || placeholderImg,
+                      }}
+                      style={styles.groupImage}
+                    />
+                    <View style={styles.imageOverlay} />
 
-                  {/* Status Badge */}
-                  <View style={styles.badgeContainer}>
-                    {!group.isPrivate ? (
-                      <View style={[styles.badge, styles.publicBadge]}>
-                        <Globe size={10} color={theme.white} />
-                        <Text style={styles.badgeText}>Public</Text>
-                      </View>
-                    ) : (
-                      <View style={[styles.badge, styles.privateBadge]}>
-                        <Lock size={10} color={theme.white} />
-                        <Text style={styles.badgeText}>Private</Text>
-                      </View>
-                    )}
-                  </View>
+                    {/* Status Badge */}
+                    <View style={styles.badgeContainer}>
+                      {!group.isPrivate ? (
+                        <View style={[styles.badge, styles.publicBadge]}>
+                          <Globe size={10} color={theme.white} />
+                          <Text style={styles.badgeText}>Public</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.badge, styles.privateBadge]}>
+                          <Lock size={10} color={theme.white} />
+                          <Text style={styles.badgeText}>Private</Text>
+                        </View>
+                      )}
+                    </View>
 
-                  {/* Featured Badge for first few groups */}
-                  {/* {index < 2 && (
+                    {/* Featured Badge for first few groups */}
+                    {/* {index < 2 && (
                   <View style={styles.featuredBadge}>
                     <Star size={10} color={theme.warning} fill={theme.warning} />
                     <Text style={styles.featuredText}>Featured</Text>
                   </View>
                 )} */}
-                </View>
-
-                <View style={styles.groupContent}>
-                  <View style={styles.groupHeader}>
-                    <Text style={styles.groupName} numberOfLines={2}>
-                      {group.name}
-                    </Text>
                   </View>
 
-                  {group.description && group.description !== '' && (
-                    <Text style={styles.groupDescription} numberOfLines={3}>
-                      {group.description}
-                    </Text>
-                  )}
+                  <View style={styles.groupContent}>
+                    <View style={styles.groupHeader}>
+                      <Text style={styles.groupName} numberOfLines={2}>
+                        {group.name}
+                      </Text>
+                      {isCurrentUserAdmin ? (
+                        <View style={[styles.badge, { backgroundColor: theme.warning, paddingHorizontal: 10, paddingVertical: 4 }]}>
+                          <Text style={styles.badgeText}>Admin</Text>
+                        </View>
+                      ) : !isCurrentUserMember && !group.isPrivate ? (
+                        <TouchableOpacity
+                          style={styles.joinButton}
+                          onPress={() => joinGroupMutation(group.id)}
+                          disabled={isJoining}
+                        >
+                          <Text style={styles.joinButtonText}>
+                            {isJoining && joiningGroupId === group.id ? 'Joining...' : 'Join'}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
 
-                  <View style={styles.creatorSection}>
-                    <View style={styles.creatorInfo}>
-                      <View style={styles.creatorAvatar}>
-                        <Text style={styles.creatorInitial}>
-                          {group.creator.name.charAt(0).toUpperCase()}
+                    {group.description && group.description !== '' && (
+                      <Text style={styles.groupDescription} numberOfLines={3}>
+                        {group.description}
+                      </Text>
+                    )}
+
+                    <View style={styles.creatorSection}>
+                      <View style={styles.creatorInfo}>
+                        <View style={styles.creatorAvatar}>
+                          <Text style={styles.creatorInitial}>
+                            {group.creator.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.creatorDetails}>
+                          <Text style={styles.creatorName}>
+                            {group.creator.name}
+                          </Text>
+                          <Text style={styles.creatorRole}>Group Creator</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.statsSection}>
+                      <View style={styles.statCard}>
+                        <Users size={16} color={theme.primary} />
+                        <Text style={styles.statText}>
+                          {group._count?.members || 0} members
                         </Text>
                       </View>
-                      <View style={styles.creatorDetails}>
-                        <Text style={styles.creatorName}>
-                          {group.creator.name}
+
+                      <View style={styles.statCard}>
+                        <Calendar size={16} color={theme.accent} />
+                        <Text style={styles.statText}>
+                          {new Date(group.createdAt).toLocaleDateString(
+                            'en-US',
+                            {
+                              month: 'short',
+                              year: 'numeric',
+                            }
+                          )}
                         </Text>
-                        <Text style={styles.creatorRole}>Group Creator</Text>
                       </View>
                     </View>
-                  </View>
 
-                  <View style={styles.statsSection}>
-                    <View style={styles.statCard}>
-                      <Users size={16} color={theme.primary} />
-                      <Text style={styles.statText}>
-                        {group._count?.members || 0} members
-                      </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                      <Calendar size={16} color={theme.accent} />
-                      <Text style={styles.statText}>
-                        {new Date(group.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* <View style={styles.actionSection}>
+                    {/* <View style={styles.actionSection}>
                   <View style={styles.joinPreview}>
                     <Text style={styles.joinPreviewText}>Tap to explore</Text>
                   </View>
                 </View> */}
-                </View>
-              </TouchableOpacity>
-            ))}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
 
             {groups.length === 0 && (
               <View style={styles.emptyState}>
@@ -309,6 +363,13 @@ export default function Groups() {
             <View style={styles.bottomSpacing} />
           </ScrollView>
         </SafeAreaView>
+
+          
+              <CreateGroupModal
+                visible={showCreateGroupModal}
+                onClose={() => setShowCreateGroupModal(false)}
+                onSubmit={()=>{}}
+              />
       </View>
     </>
   );
@@ -330,8 +391,8 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     marginHorizontal: 20,
-    marginTop: 20,
     marginBottom: 16,
+    marginTop:16,
   },
   createButton: {
     padding: 8,
@@ -395,7 +456,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     lineHeight: 22,
-    width:'80%'
+    width: '80%',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -447,6 +508,17 @@ const styles = StyleSheet.create({
   },
 
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)
+  joinButton: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  joinButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
   groupCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -588,6 +660,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   groupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   groupName: {
