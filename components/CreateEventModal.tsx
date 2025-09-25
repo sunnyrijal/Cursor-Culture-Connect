@@ -39,7 +39,7 @@ import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getUserGroups } from '@/contexts/group.api';
+import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
 
 interface CreateEventModalProps {
   visible: boolean;
@@ -72,7 +72,7 @@ export function CreateEventModal({
     error,
   } = useQuery({
     queryKey: ['groups'],
-    queryFn: () => getUserGroups(),
+    queryFn: () => getUserMemberGroup(),
   });
   const groups = groupResponse?.groups || [];
 

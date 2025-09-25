@@ -45,7 +45,9 @@ export interface InterestPing {
   status: 'pending' | 'accepted' | 'declined';
   response?: string;
   respondedAt?: string;
+  pingedBack?: boolean;
   createdAt: string;
+  activity:any;
   sender: {
     id: string;
     firstName: string;
@@ -88,6 +90,11 @@ export interface UserPingsResponse {
     received: InterestPing[];
     all: InterestPing[];
   };
+}
+
+export interface SendPingBackInput {
+  originalPingId: string;
+  message?: string;
 }
 
 export const createInterest = async (interestData: CreateInterestData) => {
@@ -184,6 +191,23 @@ export const getUserPings = async (type: 'sent' | 'received' | 'all' = 'all') =>
     return response.data;
   } catch (error) {
     console.error('Error fetching user pings:', error);
+    throw error;
+  }
+};
+
+export const pingBack = async ({
+  originalPingId,
+  message,
+}: SendPingBackInput) => {
+  console.log(originalPingId)
+  try {
+    const response: AxiosResponse = await api.post(
+      `/interests/ping/${originalPingId}/ping-back`,
+      { message }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error sending ping back:', error);
     throw error;
   }
 };

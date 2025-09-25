@@ -23,6 +23,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { respondToFriendRequest } from '@/contexts/friend.api';
 import { updateInterestPing } from '@/contexts/interest.api';
+import { approveEvent } from '@/contexts/event.api';
 
 interface NotificationData {
   id: string;
@@ -79,6 +80,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       case 'INTEREST_PING_ACCEPTED':
       case 'INTEREST_PING_DECLINED':
         return <Heart size={20} color={theme.error} />;
+      case 'GROUP_EVENT_APPROVAL':
+        return <UserCheck size={20} color={theme.success} />;
       default:
         return <Bell size={20} color={theme.gray500} />;
     }
@@ -193,6 +196,24 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     }
   };
 
+  const approveEventMutation = useMutation({
+    mutationFn: approveEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['myUniversity'] });
+      Alert.alert('Success', 'Event has been approved.');
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to approve the event. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
   const getTimeAgo = (createdAt: string) => {
     const now = new Date();
     const notificationTime = new Date(createdAt);
@@ -246,9 +267,17 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     }
   };
 
+  const handleApproveEvent = (e: any) => {
+    e.stopPropagation();
+    if (notification.eventId) {
+      approveEventMutation.mutate(notification.eventId);
+    }
+  };
+
   const showActionButtons = () => {
     return (
       notification.type === 'FRIEND_REQUEST_RECEIVED' ||
+      notification.type === 'GROUP_EVENT_APPROVAL' ||
       notification.type === 'INTEREST_PING_RECEIVED'
     );
   };
@@ -274,6 +303,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       case 'EVENT_LEFT':
       case 'QUICK_EVENT_JOINED':
       case 'QUICK_EVENT_LEFT':
+      case 'GROUP_EVENT_APPROVAL':
         if (notification.eventId) {
           router.push(`/event/${notification.eventId}`);
         }
@@ -391,6 +421,22 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                       activeOpacity={0.7}
                     >
                       <Text style={styles.declineButtonText}>Decline</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {notification.type === 'GROUP_EVENT_APPROVAL' &&
+                  !notification.title.includes('Approved') && (
+                  <>
+                    <TouchableOpacity
+                      onPress={handleApproveEvent}
+                      style={[
+                        styles.acceptButton,
+                        approveEventMutation.isPending && styles.disabledButton,
+                      ]}
+                      disabled={approveEventMutation.isPending}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.acceptButtonText}>Approve</Text>
                     </TouchableOpacity>
                   </>
                 )}

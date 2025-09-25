@@ -28,7 +28,7 @@ export interface NotificationCountResponse {
 
 export const getNotifications = async () => {
   try {
-    const response: AxiosResponse<NotificationsResponse> = await api.get('/notifications');
+    const response= await api.get('/notifications');
     return response.data;
   } catch (error) {
     console.error('Error fetching notifications:', error);

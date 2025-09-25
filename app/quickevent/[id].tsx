@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,13 +21,12 @@ import {
   Users,
   Clock,
   User,
-  Mail,
-  CheckCircle,
   Trash2,
-  XCircle,
   RotateCcw,
   MessageCircle,
   UserRoundCog,
+  MapPin,
+  Edit3,
 } from 'lucide-react-native';
 import {
   getQuickEventById,
@@ -38,6 +37,7 @@ import {
 } from '@/contexts/quickEvent.api';
 import getDecodedToken from '@/utils/getMyData';
 import { formatTo12Hour } from '@/utils/formatDate';
+import { EditQuickEventModal } from '@/components/UpdateQuickEventModal'; // Corrected import path
 // Enhanced theme for neumorphism
 const neomorphColors = {
   background: '#F8FAFC',
@@ -74,6 +74,7 @@ interface QuickEventDetailType {
 export default function QuickEventDetail() {
   const { id } = useLocalSearchParams();
   const queryClient = useQueryClient();
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -258,9 +259,9 @@ export default function QuickEventDetail() {
               </TouchableOpacity>
 
               <View style={styles.badgeContainer}>
-                <View style={styles.quickEventBadge}>
+                {/* <View style={styles.quickEventBadge}>
                   <Text style={styles.quickEventBadgeText}>Quick Event</Text>
-                </View>
+                </View> */}
                 <View
                   style={[
                     styles.quickEventBadge,
@@ -284,6 +285,11 @@ export default function QuickEventDetail() {
                 color={theme.textPrimary}
                 style={styles.headerButton}
               />
+              {quickEvent?.userId === myData?.userId && (
+                <TouchableOpacity onPress={() => setIsEditModalVisible(true)} style={styles.headerButton}>
+                  <Edit3 size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
               {quickEvent?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={handleDeleteQuickEvent}
@@ -323,6 +329,22 @@ export default function QuickEventDetail() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>
                       {formatTo12Hour(quickEvent.time)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View
+                    style={[
+                      styles.infoIconWrapper,
+                      { backgroundColor: '#E0F2F1' }, // A light teal color
+                    ]}
+                  >
+                    <MapPin size={24} color="#26A69A" />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoValue}>
+                      {quickEvent.location}
                     </Text>
                   </View>
                 </View>
@@ -487,6 +509,12 @@ export default function QuickEventDetail() {
           </TouchableOpacity>
         </View>
       )}
+      <EditQuickEventModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        onSubmit={() => queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] })}
+        quickEvent={quickEvent}
+      />
     </SafeAreaView>
   );
 }

@@ -41,6 +41,15 @@ export const getUserGroups = async () => {
     throw error;
   }
 };
+export const getUserMemberGroup = async () => {
+  try {
+    const response = await api.get('/groups/user');
+    return response.data ;
+  } catch (error) {
+    console.error('Error fetching user groups:', error);
+    throw error;
+  }
+};
 
 export const getGroup = async (groupId: string | null) => {
   try {

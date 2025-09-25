@@ -135,6 +135,16 @@ export const createEvent = async (eventData: CreateEventData) => {
   }
 };
 
+export const approveEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/approve`);
+    return response.data;
+  } catch (error) {
+    console.error('Error approving event:', error);
+    throw error;
+  }
+};
+
 export const getEvents = async (params?: GetEventsParams) => {
   try {
     const response = await api.get('/event/all', { params });

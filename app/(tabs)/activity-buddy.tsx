@@ -44,6 +44,7 @@ import {
 import {
   getUserPings,
   updateInterestPing,
+  pingBack,
   User,
   InterestPing,
 } from '@/contexts/interest.api';
@@ -89,6 +90,7 @@ export default function ActivityBuddyPage() {
   const [pingTarget, setPingTarget] = useState<{
     receiverId: string;
     activityId: string;
+    originalPingId?: string;
     activityName: string;
     userName: string;
   } | null>(null);
@@ -139,15 +141,7 @@ export default function ActivityBuddyPage() {
     },
     enabled: !!selectedActivity,
   });
-
-  useEffect(() => {
-    if (usersPages) {
-      console.log(
-        'Users by activity:',
-        JSON.stringify(usersPages.pages, null, 2)
-      );
-    }
-  }, [usersPages]);
+  console.log(usersPages)
 
   // Query for user pings
   const { data: pingsData, isLoading: pingsLoading } = useQuery({
@@ -163,9 +157,28 @@ export default function ActivityBuddyPage() {
       Alert.alert('Success', 'Activity ping sent successfully!');
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
-    onError: (error:any) => {
-      Alert.alert('Error', error?.response.data.message || 'Failed to send ping. Please try again.');
+    onError: (error: any) => {
+      Alert.alert(
+        'Error',
+        error?.response.data.message || 'Failed to send ping. Please try again.'
+      );
       console.error('Send ping error:', error);
+    },
+  });
+
+  const pingBackMutation = useMutation({
+    mutationFn: pingBack,
+    onSuccess: () => {
+      Alert.alert('Success', 'Ping back sent!');
+      queryClient.invalidateQueries({ queryKey: ['userPings'] });
+      setShowPingModal(false);
+      setPingMessage('');
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to send ping back.'
+      );
     },
   });
 
@@ -176,8 +189,12 @@ export default function ActivityBuddyPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
-    onError: (error:any) => {
-      Alert.alert('Error',  error?.response.data.message || 'Failed to update ping. Please try again.');
+    onError: (error: any) => {
+      Alert.alert(
+        'Error',
+        error?.response.data.message ||
+          'Failed to update ping. Please try again.'
+      );
       console.error('Update ping error:', error);
     },
   });
@@ -214,6 +231,7 @@ export default function ActivityBuddyPage() {
   const handleSendPing = (
     receiverId: string,
     activityId: string,
+    originalPingId: string,
     activityName: string,
     userName: string
   ) => {
@@ -223,12 +241,30 @@ export default function ActivityBuddyPage() {
       setShowActivitySelectionModal(true);
     } else {
       // Direct ping with selected activity
-      setPingTarget({ receiverId, activityId, activityName, userName });
+      setPingTarget({
+        receiverId,
+        activityId,
+        originalPingId,
+        activityName,
+        userName,
+      });
       setPingMessage(
         `Hi! I'd love to connect over our shared activity in ${activityName}!`
       );
       setShowPingModal(true);
     }
+  };
+
+  const handlePingBack = (ping: InterestPing, type: 'sent' | 'received') => {
+    const targetUser = type === 'sent' ? ping.receiver : ping.sender;
+    setPingTarget({
+      receiverId: targetUser.id,
+      activityId: ping.activity?.id || ping.interest?.id,
+      originalPingId: ping.id,
+      activityName: ping.activity?.name || ping.interest?.name,
+      userName: targetUser.name,
+    });
+    setShowPingModal(true);
   };
 
   const handleActivitySelection = (
@@ -327,7 +363,7 @@ export default function ActivityBuddyPage() {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user.name}</Text>
             {user.major && <Text style={styles.userMajor}>{user.major}</Text>}
-            <Text style={styles.userYear}>Class of {user.classYear}</Text>
+            <Text style={styles.userYear}>{user.classYear}</Text>
             {user.bio && (
               <Text style={styles.userBio} numberOfLines={2}>
                 {user.bio}
@@ -447,7 +483,7 @@ export default function ActivityBuddyPage() {
         <TouchableOpacity
           style={styles.pingButton}
           onPress={() =>
-            handleSendPing(user.id, activityId!, activityName!, user.name)
+            handleSendPing(user.id, activityId!, '', activityName!, user.name)
           }
           disabled={sendPingMutation.isPending}
         >
@@ -486,12 +522,16 @@ export default function ActivityBuddyPage() {
             ))}
           </ScrollView>
           <Pressable
-            style={{paddingHorizontal:24, paddingVertical:12, backgroundColor:theme.primary, marginTop:12, borderRadius:12}}
+            style={{
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              backgroundColor: theme.primary,
+              marginTop: 12,
+              borderRadius: 12,
+            }}
             onPress={() => setShowActivitySelectionModal(false)}
           >
-            <Text style={[styles.textStyle, { color:'white' }]}>
-              Cancel
-            </Text>
+            <Text style={[styles.textStyle, { color: 'white' }]}>Cancel</Text>
           </Pressable>
         </View>
       </View>
@@ -550,24 +590,40 @@ export default function ActivityBuddyPage() {
       {ping.response && (
         <Text style={styles.pingResponse}>Response: "{ping.response}"</Text>
       )}
-      {type === 'received' && ping.status === 'pending' && (
-        <View style={styles.pingActions}>
+      <View style={styles.pingActions}>
+        {type === 'received' && ping.status === 'pending' && (
+          <>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.declineButton]}
+              onPress={() => handlePingResponse(ping.id, 'declined')}
+              disabled={updatePingMutation.isPending}
+            >
+              <Text style={styles.declineButtonText}>Decline</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.acceptButton]}
+              onPress={() => handlePingResponse(ping.id, 'accepted')}
+              disabled={updatePingMutation.isPending}
+            >
+              <Text style={styles.acceptButtonText}>Accept</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {type === 'received' && ping.status !== 'declined' && !ping.pingedBack && (
           <TouchableOpacity
-            style={[styles.actionButton, styles.declineButton]}
-            onPress={() => handlePingResponse(ping.id, 'declined')}
-            disabled={updatePingMutation.isPending}
+            style={[styles.actionButton, styles.pingBackButton]}
+            onPress={() => handlePingBack(ping, type)}
+            disabled={pingBackMutation.isPending}
           >
-            <Text style={styles.declineButtonText}>Decline</Text>
+            <Text style={styles.pingBackButtonText}>
+              {pingBackMutation.isPending &&
+              pingTarget?.originalPingId === ping.id
+                ? 'Pinging...'
+                : 'Ping Back'}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.acceptButton]}
-            onPress={() => handlePingResponse(ping.id, 'accepted')}
-            disabled={updatePingMutation.isPending}
-          >
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 
@@ -604,21 +660,38 @@ export default function ActivityBuddyPage() {
               style={[styles.button, styles.buttonSend]}
               onPress={() => {
                 if (pingTarget) {
-                  sendPingMutation.mutate({
-                    receiverId: pingTarget.receiverId,
-                    activityId:
-                      pingTarget.activityId === 'all'
-                        ? selectedPingActivityId || pingTarget.activityId
-                        : pingTarget.activityId,
-                    message: pingMessage.trim() || undefined,
-                  });
+                  if (pingTarget.originalPingId) {
+                    // This is a ping back
+                    pingBackMutation.mutate({
+                      originalPingId: pingTarget.originalPingId,
+                      message: pingMessage.trim() || undefined,
+                    });
+                  } else {
+                    // This is a new ping
+                    sendPingMutation.mutate({
+                      receiverId: pingTarget.receiverId,
+                      activityId:
+                        pingTarget.activityId === 'all'
+                          ? selectedPingActivityId || pingTarget.activityId
+                          : pingTarget.activityId,
+                      message: pingMessage.trim() || undefined,
+                    });
+                  }
                 }
                 setShowPingModal(false);
               }}
-              disabled={sendPingMutation.isPending}
+              disabled={
+                sendPingMutation.isPending || pingBackMutation.isPending
+              }
             >
               <Text style={styles.textStyle}>
-                {sendPingMutation.isPending ? 'Sending...' : 'Send Ping'}
+                {pingTarget?.originalPingId
+                  ? pingBackMutation.isPending
+                    ? 'Pinging Back...'
+                    : 'Send Ping Back'
+                  : sendPingMutation.isPending
+                  ? 'Sending...'
+                  : 'Send Ping'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1493,6 +1566,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 8,
+    gap: 8,
   },
   actionButton: {
     paddingHorizontal: 16,
@@ -1512,6 +1586,14 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
   },
   acceptButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.white,
+  },
+  pingBackButton: {
+    backgroundColor: theme.accent,
+  },
+  pingBackButtonText: {
     fontSize: 12,
     fontWeight: '600',
     color: theme.white,

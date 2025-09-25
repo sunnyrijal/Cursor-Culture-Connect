@@ -72,7 +72,7 @@ export function EditGroupModal({
     isPrivate: false,
     // Meeting details
     hasMeetingDetails: false,
-    meetingDate: null as Date | null,
+    meetingDate: '',
     meetingTime: '',
     meetingLocation: '',
   });
@@ -81,7 +81,6 @@ export function EditGroupModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [showNativeDatePicker, setShowNativeDatePicker] = useState(false);
 
   const resetForm = () => {
     if (group) {
@@ -92,7 +91,7 @@ export function EditGroupModal({
         description: group.description || '',
         isPrivate: group.isPrivate || false,
         hasMeetingDetails: hasMeetingInfo,
-        meetingDate: group.meetingDate ? new Date(group.meetingDate) : null,
+        meetingDate: group.meetingDate || '',
         meetingTime: group.meetingTime || '',
         meetingLocation: group.meetingLocation || '',
       });
@@ -103,14 +102,13 @@ export function EditGroupModal({
         description: '',
         isPrivate: false,
         hasMeetingDetails: false,
-        meetingDate: null,
+        meetingDate: '',
         meetingTime: '',
         meetingLocation: '',
       });
       setImageUrl('');
     }
     setFocusedInput(null);
-    setShowNativeDatePicker(false);
   };
 
   useEffect(() => {
@@ -118,7 +116,6 @@ export function EditGroupModal({
       resetForm();
     } else if (!visible) {
       setFocusedInput(null);
-      setShowNativeDatePicker(false);
     }
   }, [visible, group]);
 
@@ -174,12 +171,6 @@ export function EditGroupModal({
 
   const removeImage = () => {
     setImageUrl('');
-  };
-
-  const onNativeDateChange = (event: any, selectedDate: any) => {
-    const currentDate = selectedDate || formData.meetingDate;
-    setShowNativeDatePicker(Platform.OS === 'ios');
-    setFormData({ ...formData, meetingDate: currentDate });
   };
 
   const validateTimeFormat = (time: string): boolean => {
@@ -271,7 +262,7 @@ export function EditGroupModal({
     // Only include meeting details if the toggle is enabled
     if (formData.hasMeetingDetails) {
       if (formData.meetingDate) {
-        groupData.meetingDate = formData.meetingDate.toISOString();
+        groupData.meetingDate = formData.meetingDate;
       }
       if (formData.meetingTime) groupData.meetingTime = formData.meetingTime;
       if (formData.meetingLocation) groupData.meetingLocation = formData.meetingLocation;
@@ -493,55 +484,15 @@ export function EditGroupModal({
                 {/* Meeting Details Fields */}
                 {formData.hasMeetingDetails && (
                   <View style={styles.meetingDetailsContainer}>
-                    {/* Meeting Day */}
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.inputLabel}>Meeting Day (Optional)</Text>
-                      <TouchableOpacity
-                        onPress={() => setShowNativeDatePicker(true)}
-                        disabled={isSubmitting || updateGroupMutation.isPending}
-                      >
-                        <View
-                          style={[
-                            styles.inputWrapper,
-                            formData.meetingDate && styles.inputWrapperValid,
-                          ]}
-                        >
-                          <Calendar
-                            size={20}
-                            color="#6366F1"
-                            style={styles.inputIcon}
-                          />
-                          <Text style={[
-                            styles.inputText,
-                            !formData.meetingDate && { color: '#94A3B8' }
-                          ]}>
-                            {formData.meetingDate 
-                              ? formData.meetingDate.toLocaleDateString()
-                              : 'Select meeting day'
-                            }
-                          </Text>
-                          {formData.meetingDate && (
-                            <TouchableOpacity
-                              onPress={() => setFormData({ ...formData, meetingDate: null })}
-                              style={styles.clearDateButton}
-                              disabled={isSubmitting || updateGroupMutation.isPending}
-                            >
-                              <X size={16} color="#6B7280" />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-
-                      {showNativeDatePicker && (
-                        <DateTimePicker
-                          value={formData.meetingDate || new Date()}
-                          mode="date"
-                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                          onChange={onNativeDateChange}
-                          minimumDate={new Date()}
-                        />
-                      )}
-                    </View>
+                    {renderInput(
+                      'Meeting Day (Optional)',
+                      formData.meetingDate,
+                      (text) => setFormData({ ...formData, meetingDate: text }),
+                      'e.g., Every Thursday',
+                      <Calendar size={16} color="#6366F1" />,
+                      false,
+                      false
+                    )}
 
                     {/* Meeting Time */}
                     <TimeSelectInput

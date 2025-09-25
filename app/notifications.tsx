@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { theme, spacing, typography } from '@/components/theme';
 import { ArrowLeft, Bell, Settings } from 'lucide-react-native';
 import { 
@@ -14,7 +13,6 @@ import {
 } from '@/contexts/notification.api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NotificationCard } from '@/components/NotificationCard';
-import { updateInterestPing } from '@/contexts/interest.api';
 
 interface NotificationData {
   id: string;
@@ -47,7 +45,7 @@ export default function Notifications() {
   });
 
   const notifications: NotificationData[] = notificationResponse?.data || [];
-
+  console.log(notifications)
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => markNotificationAsRead([notificationId]),
     onSuccess: () => {
@@ -73,10 +71,6 @@ export default function Notifications() {
       Alert.alert("Error", "Could not mark all notifications as read.");
     }
   });
-
-
-
-
 
   const handleMarkAsRead = (notification: NotificationData) => {
     if (!notification.isRead) {

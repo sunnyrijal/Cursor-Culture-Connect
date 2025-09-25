@@ -40,7 +40,7 @@ import { TimeSelectInput } from './TimeSelectInput';
 import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getUserGroups } from '@/contexts/group.api';
+import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
 
 interface EditEventModalProps {
   visible: boolean;
@@ -88,7 +88,7 @@ export function EditEventModal({
     isLoading: groupsLoading,
   } = useQuery({
     queryKey: ['groups'],
-    queryFn: () => getUserGroups(),
+    queryFn: () => getUserMemberGroup(),
     enabled: visible, // Only fetch when modal is visible
   });
   const groups = groupResponse?.groups || [];
