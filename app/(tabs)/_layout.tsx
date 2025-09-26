@@ -27,7 +27,6 @@ export default function TabLayout() {
     if (myData?.userId) setUserId(myData.userId);
   }, [myData]);
 
-  // Socket event handlers
   const handleConnect = useCallback(
     () => console.log('🔌 Connected to socket'),
     []

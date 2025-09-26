@@ -1306,6 +1306,9 @@ const renderPickerInput = useCallback(
                     )}
 
                     <View style={styles.extraLinksContainer}>
+                      <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+                        <Text style={styles.linkText}>Forgot Password?</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => router.push(email ? `/(auth)/verify?email=${email}` : '/(auth)/verify')}
                       >
@@ -1653,7 +1656,7 @@ const styles = StyleSheet.create({
   },
   extraLinksContainer: {
     alignItems: 'flex-end',
-    marginTop: 8,
+    gap: 8,
   },
 
   picker: {

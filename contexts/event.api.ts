@@ -64,6 +64,14 @@ export interface GetEventsParams {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface EventFilters {
+  ofMyUniversity?: boolean; // Filter by user's university
+  myGroups?: boolean; // Filter by groups the user is a member of
+  timeFrame?: "thisWeek" | "thisMonth"; // Filter by time frame
+  sortBy?: "date" | "name"; // Sort by event date or name
+  sortOrder?: "asc" | "desc"; // Sort order: ascending or descending
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -145,7 +153,7 @@ export const approveEvent = async (id: string) => {
   }
 };
 
-export const getEvents = async (params?: GetEventsParams) => {
+export const getEvents = async (params?: EventFilters) => {
   try {
     const response = await api.get('/event/all', { params });
     return response.data;

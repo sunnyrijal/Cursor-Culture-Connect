@@ -15,6 +15,7 @@ import {
   Alert,
   Image,
   Switch,
+  Keyboard,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
@@ -101,6 +102,7 @@ export default function EditProfile() {
   const [newSocialPlatform, setNewSocialPlatform] = useState<string>("")
   const [newSocialLink, setNewSocialLink] = useState<string>("")
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const socialPlatformPickerRef = useRef<Picker<string>>(null);
   const majorPickerRef = useRef<Picker<string>>(null);
   const classYearPickerRef = useRef<Picker<string>>(null);
@@ -122,6 +124,22 @@ export default function EditProfile() {
     formOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) })
     formTranslateY.value = withSpring(0, { damping: 20, stiffness: 100 })
   }, [])
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
 
   const formAnimatedStyle = useAnimatedStyle(() => ({
     opacity: formOpacity.value,
@@ -170,7 +188,7 @@ export default function EditProfile() {
           state: userData.state || "",
           classYear: userData.classYear || "",
           countryOfOrigin: userData.countryOfOrigin || "",
-          dateOfBirth: userData.dateOfBirth || "",
+          dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split("T")[0] : "",
           major: userData.major || "",
           publicPreference: userData.publicPreference !== undefined ? userData.publicPreference : true,
         })
@@ -263,7 +281,9 @@ export default function EditProfile() {
     if (profile.state) updateData.state = profile.state
     if (profile.classYear) updateData.classYear = profile.classYear
     if (profile.countryOfOrigin) updateData.countryOfOrigin = profile.countryOfOrigin
-    if (profile.dateOfBirth) updateData.dateOfBirth = profile.dateOfBirth
+    if (profile.dateOfBirth) {
+      updateData.dateOfBirth = new Date(profile.dateOfBirth).toISOString()
+    }
     if (profile.major) updateData.major = profile.major
     if (university) updateData.university = university
     if (interests.length > 0) updateData.interests = interests
@@ -549,6 +569,18 @@ export default function EditProfile() {
             <Text style={[styles.tagText, interests.includes(interest) && styles.tagTextSelected]}>{interest}</Text>
           </TouchableOpacity>
         ))}
+        {/* Display custom interests that are not in the default options */}
+        {interests
+          .filter((interest) => !INTERESTS_OPTIONS.includes(interest))
+          .map((interest, index) => (
+            <TouchableOpacity
+              key={`custom-${index}`}
+              style={[styles.tag, styles.tagSelected]}
+              onPress={() => toggleInterest(interest)}
+            >
+              <Text style={[styles.tagText, styles.tagTextSelected]}>{interest}</Text>
+            </TouchableOpacity>
+          ))}
       </View>
 
       <View style={styles.customInterestContainer}>
@@ -816,7 +848,7 @@ export default function EditProfile() {
           </BlurView>
         </View>
 
-        <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === "ios" ? "padding" : "height"} enabled={keyboardVisible}>
           <ScrollView
             style={styles.scrollContainer}
             showsVerticalScrollIndicator={false}

@@ -19,6 +19,7 @@ import {
   Star,
   Calendar,
   Search,
+  Filter,
 } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getAllGroups, joinGroup } from '@/contexts/group.api';
@@ -28,6 +29,7 @@ import { useState, useCallback } from 'react';
 import { PlusCircle } from 'lucide-react-native';
 import getDecodedToken from '@/utils/getMyData';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
+import { GroupFilterModal } from '@/components/GroupFilterModal';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -93,16 +95,36 @@ export default function Groups() {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
+
+  const [showGroupFilterModal, setShowGroupFilterModal] = useState(false);
+  const [groupFilters, setGroupFilters] = useState<{
+    myUniversity?: boolean;
+    privacy?: 'private' | 'public';
+    sortBy?: 'name' | 'createdAt';
+    sortOrder?: 'asc' | 'desc';
+  }>({});
+
   const {
     data: groupResponse,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['groups'],
-    queryFn: () => getAllGroups(),
+    queryKey: ['groups', groupFilters],
+    queryFn: () => getAllGroups(groupFilters),
   });
   const allGroups = groupResponse?.groups || [];
+
+  const handleGroupFilterChange = (newFilters: typeof groupFilters) => {
+    setGroupFilters(newFilters);
+  };
+
+  const handleApplyGroupFilters = () => {
+    setShowGroupFilterModal(false);
+    refetch(); // This will refetch with new filters
+  };
+
+  const hasActiveGroupFilters = Object.keys(groupFilters).length > 0;
 
   const { mutate: joinGroupMutation, isPending: isJoining } = useMutation({
     mutationFn: (groupId: string) => {
@@ -137,7 +159,6 @@ export default function Groups() {
       group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       group.creator.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
 
   if (isLoading) {
     return (
@@ -178,7 +199,6 @@ export default function Groups() {
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.heroSection}>
-            <View style={styles.heroOverlay}>
               <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>
                   <Text
@@ -198,7 +218,6 @@ export default function Groups() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
           </View>
 
           <View style={styles.searchWrapper}>
@@ -211,6 +230,19 @@ export default function Groups() {
                 onChangeText={setSearchQuery}
                 placeholderTextColor={theme.textMuted}
               />
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  hasActiveGroupFilters && styles.activeFilterButton,
+                ]}
+                onPress={() => setShowGroupFilterModal(true)}
+                activeOpacity={0.7}
+              >
+                <Filter
+                  size={22}
+                  color={hasActiveGroupFilters ? '#FFFFFF' : theme.textMuted}
+                />
+              </TouchableOpacity>
             </View>
           </View>
           <ScrollView
@@ -223,7 +255,7 @@ export default function Groups() {
           >
             {groups.map((group: any, index: number) => {
               const currentUserMembership = group?.members?.find(
-                (member: any) => member.userId== myData?.userId
+                (member: any) => member.userId == myData?.userId
               );
               const isCurrentUserMember = !!currentUserMembership;
               const isCurrentUserAdmin =
@@ -278,7 +310,16 @@ export default function Groups() {
                         {group.name}
                       </Text>
                       {isCurrentUserAdmin ? (
-                        <View style={[styles.badge, { backgroundColor: theme.warning, paddingHorizontal: 10, paddingVertical: 4 }]}>
+                        <View
+                          style={[
+                            styles.badge,
+                            {
+                              backgroundColor: theme.warning,
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                            },
+                          ]}
+                        >
                           <Text style={styles.badgeText}>Admin</Text>
                         </View>
                       ) : !isCurrentUserMember && !group.isPrivate ? (
@@ -288,7 +329,9 @@ export default function Groups() {
                           disabled={isJoining}
                         >
                           <Text style={styles.joinButtonText}>
-                            {isJoining && joiningGroupId === group.id ? 'Joining...' : 'Join'}
+                            {isJoining && joiningGroupId === group.id
+                              ? 'Joining...'
+                              : 'Join'}
                           </Text>
                         </TouchableOpacity>
                       ) : null}
@@ -364,12 +407,19 @@ export default function Groups() {
           </ScrollView>
         </SafeAreaView>
 
-          
-              <CreateGroupModal
-                visible={showCreateGroupModal}
-                onClose={() => setShowCreateGroupModal(false)}
-                onSubmit={()=>{}}
-              />
+        <CreateGroupModal
+          visible={showCreateGroupModal}
+          onClose={() => setShowCreateGroupModal(false)}
+          onSubmit={() => {}}
+        />
+
+        <GroupFilterModal
+          visible={showGroupFilterModal}
+          onClose={() => setShowGroupFilterModal(false)}
+          filters={groupFilters}
+          onFiltersChange={handleGroupFilterChange}
+          onApply={handleApplyGroupFilters}
+        />
       </View>
     </>
   );
@@ -384,15 +434,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  filterButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    height:'100%',
+    display:'flex',
+  },
+  activeFilterButton: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    height:"100%",
     paddingHorizontal: 20,
     marginHorizontal: 20,
     marginBottom: 16,
-    marginTop:16,
   },
   createButton: {
     padding: 8,
@@ -441,6 +505,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
+    
   },
   heroTitle: {
     fontSize: 32,
@@ -933,11 +998,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
-    paddingHorizontal: 16,
+    // paddingHorizontal: 16,
+    paddingLeft:16,
+    paddingRight:4,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 52,
+    minHeight: 50,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
@@ -1000,23 +1067,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  filterButton: {
-    flex: 1,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
+
   activeFilter: {
     ...Platform.select({
       ios: {

@@ -23,6 +23,7 @@ import {
   UserCheck,
   UserX,
   MessageCircle,
+  Filter,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { getUsers } from '@/contexts/user.api';
@@ -31,6 +32,7 @@ import {
   cancelFriendRequest,
   respondToFriendRequest,
 } from '@/contexts/friend.api';
+import { FriendFilterModal } from '../UserFilterModal';
 
 const theme = {
   primary: '#6366F1',
@@ -60,6 +62,14 @@ const FriendshipStatus = {
   BLOCKED: 'BLOCKED',
 };
 
+interface FriendFilters {
+  myUniversity?: boolean;
+  major?: string;
+  sortBy?: 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  universityId?: string;
+}
+
 export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -71,16 +81,18 @@ export default function SendFriendRequestScreen() {
   } | null>(null);
   const [message, setMessage] = useState('');
 
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filters, setFilters] = useState<FriendFilters>({});
+
   const {
     data: usersResponse,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => getUsers(),
+    queryKey: ['users', filters], // Add filters to query key
+    queryFn: () => getUsers(filters), // Pass filters to API
   });
-
   useFocusEffect(
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -104,7 +116,6 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-
 
       Alert.alert('Success', 'Friend request sent successfully!');
     },
@@ -147,7 +158,6 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['counts'] });
 
-
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
       Alert.alert('Success', `Friend request ${action}!`);
     },
@@ -165,10 +175,7 @@ export default function SendFriendRequestScreen() {
 
     return users.filter(
       (user: any) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.university?.name.toLowerCase().includes(searchQuery.toLowerCase())
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) 
     );
   }, [users, searchQuery]);
 
@@ -365,16 +372,32 @@ export default function SendFriendRequestScreen() {
     <SafeAreaView style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchWrapper}>
-        <View style={styles.searchContainer}>
-          <Search size={18} color={theme.gray400} />
+        <View style={styles.searchBarContainer}>
+          <Search size={20} color="#94A3B8" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, email, city..."
+            placeholder="Search people..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={theme.gray400}
+            placeholderTextColor="#94A3B8"
           />
         </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setFilterModalVisible(true)}
+        >
+          {Object.keys(filters).length > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {Object.keys(filters).length}
+              </Text>
+            </View>
+          )}
+          <Filter
+            size={20}
+            color={Object.keys(filters).length > 0 ? theme.primary : '#64748B'}
+          />
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -480,6 +503,13 @@ export default function SendFriendRequestScreen() {
           </View>
         )}
       </ScrollView>
+      <FriendFilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onApply={() => setFilterModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -492,32 +522,65 @@ const styles = StyleSheet.create({
 
   searchWrapper: {
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 
-  searchContainer: {
+  searchBarContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 2,
+    borderRadius: 16,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 42,
-    gap: 8,
+    height: 52,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
     }),
+  },
+
+  searchIcon: {
+    marginLeft: 16,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: theme.danger,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.white,
+  },
+  filterBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  filterButton: {
+    width: 52,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 
   searchInput: {
@@ -525,7 +588,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.textPrimary,
     fontWeight: '500',
-    paddingVertical: 8,
+    marginLeft: 12,
   },
 
   scrollView: {

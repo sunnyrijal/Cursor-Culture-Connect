@@ -101,6 +101,8 @@ export default function ActivityBuddyPage() {
 
   const queryClient = useQueryClient();
   const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
+  const [isPreferenceModalVisible, setIsPreferenceModalVisible] =
+    useState(false);
   const [isMyPreferenceVisible, setIsMyPreferenceVisible] = useState(false);
 
   const [editingActivity, setEditingActivity] = useState(null);
@@ -885,13 +887,6 @@ export default function ActivityBuddyPage() {
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <Text style={styles.headerTitle}>Activity Buddy</Text>
-          {/* <TouchableOpacity
-            style={styles.addActivityButton}
-            onPress={() => setIsPreferenceModalVisible(true)}
-          >
-            <Plus size={16} color={theme.primary} />
-            <Text style={styles.addActivityButtonText}>Setup</Text>
-          </TouchableOpacity> */}
           <TouchableOpacity
             style={styles.addActivityButton}
             onPress={() => setIsMyPreferenceVisible(true)}
@@ -935,15 +930,23 @@ export default function ActivityBuddyPage() {
       {renderSendPingModal()}
       {renderActivitySelectionModal()}
 
-      {/* <CreateInterestPreferenceModal
+      <CreateInterestPreferenceModal
         visible={isPreferenceModalVisible}
         onClose={() => setIsPreferenceModalVisible(false)}
-      /> */}
+      />
       <CreateActivityModal
         visible={isActivityModalVisible}
         onClose={() => setIsActivityModalVisible(false)}
         editingActivity={editingActivity}
       />
+
+      {/* Floating Action Button to Add Preference */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setIsPreferenceModalVisible(true)}
+      >
+        <Plus size={24} color={theme.white} />
+      </TouchableOpacity>
       <MyPreferencesModal
         visible={isMyPreferenceVisible}
         onClose={() => setIsMyPreferenceVisible(false)}
@@ -952,6 +955,38 @@ export default function ActivityBuddyPage() {
   );
 }
 const styles = StyleSheet.create({
+    addActivityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.gray50,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  addActivityButtonText: {
+    marginLeft: 6,
+    color: theme.primary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  fab: {
+    position: 'absolute',
+    right:20,
+    bottom:16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#3d40ebff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
   activitySelectButton: {
     padding: 16,
     borderBottomWidth: 1,

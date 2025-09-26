@@ -71,6 +71,9 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
   const inputRef = useRef<TextInput>(null);
   const dropdownRef = useRef<ScrollView>(null);
 
+  // Fixed maximum height for dropdown - this ensures consistent scrolling
+  const MAX_DROPDOWN_HEIGHT = 280; // About 5 items
+
   useEffect(() => {
     if (universities && universities.length > 0) {
       if (searchText.trim() === '') {
@@ -88,34 +91,14 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
     setSearchText(value);
   }, [value]);
 
-  const calculateDropdownHeight = (itemsCount: number) => {
-    const baseItemHeight = 56;
-    const minHeight = 100;
-    const maxHeight = 280; // About 5 items
-    const calculatedHeight = itemsCount * baseItemHeight;
-
-    return Math.min(Math.max(calculatedHeight, minHeight), maxHeight);
-  };
-
   const toggleDropdown = () => {
     const newState = !isDropdownOpen;
     setIsDropdownOpen(newState);
 
     if (newState) {
       onFocus();
-      // Calculate dynamic height based on filtered results
-      const manualEntryCount =
-        searchText &&
-        !filteredUniversities.find(
-          (u) => u.name.toLowerCase() === searchText.toLowerCase()
-        )
-          ? 1
-          : 0;
-      const totalItems = filteredUniversities.length + manualEntryCount;
-      const calculatedHeight =
-        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
-
-      dropdownHeight.value = withSpring(calculatedHeight, {
+      // Use fixed height for consistent scrolling behavior
+      dropdownHeight.value = withSpring(MAX_DROPDOWN_HEIGHT, {
         damping: 15,
         stiffness: 100,
       });
@@ -153,50 +136,18 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
       setIsDropdownOpen(true);
       onFocus();
 
-      // Recalculate height for filtered results
-      const filtered = universities.filter((university) =>
-        university.name.toLowerCase().includes(text.toLowerCase())
-      );
-      const manualEntryCount =
-        text &&
-        !filtered.find((u) => u.name.toLowerCase() === text.toLowerCase())
-          ? 1
-          : 0;
-      const totalItems = filtered.length + manualEntryCount;
-      const calculatedHeight =
-        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
-
-      dropdownHeight.value = withSpring(calculatedHeight, {
+      // Use fixed height for consistent behavior
+      dropdownHeight.value = withSpring(MAX_DROPDOWN_HEIGHT, {
         damping: 15,
         stiffness: 100,
       });
       dropdownOpacity.value = withTiming(1, { duration: 200 });
       rotateAnimation.value = withTiming(180, { duration: 200 });
     }
-
-    // Update dropdown height if already open
-    if (isDropdownOpen) {
-      const filtered = universities.filter((university) =>
-        university.name.toLowerCase().includes(text.toLowerCase())
-      );
-      const manualEntryCount =
-        text &&
-        !filtered.find((u) => u.name.toLowerCase() === text.toLowerCase())
-          ? 1
-          : 0;
-      const totalItems = filtered.length + manualEntryCount;
-      const calculatedHeight =
-        totalItems > 0 ? calculateDropdownHeight(totalItems) : 100;
-
-      dropdownHeight.value = withSpring(calculatedHeight, {
-        damping: 15,
-        stiffness: 100,
-      });
-    }
   };
 
   const dropdownAnimatedStyle = useAnimatedStyle(() => ({
-    maxHeight: dropdownHeight.value, // allow ScrollView to handle real height
+    height: dropdownHeight.value, // Use fixed height instead of maxHeight
     opacity: dropdownOpacity.value,
   }));
 
@@ -281,7 +232,6 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
       </View>
 
       {/* Dropdown Menu */}
-      {/* Dropdown Menu */}
       {isDropdownOpen && (
         <Animated.View
           style={[styles.dropdownContainer, dropdownAnimatedStyle]}
@@ -296,9 +246,12 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
               contentContainerStyle={styles.dropdownContentContainer}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true} // allow scroll inside dropdown
+              nestedScrollEnabled={true}
               bounces={true}
               overScrollMode="always"
+              // Add these props for better scrolling
+              scrollEventThrottle={16}
+              decelerationRate="normal"
             >
               {filteredUniversities.length > 0 ? (
                 <>
@@ -329,13 +282,16 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
                     )}
 
                   {/* University options */}
-                  {filteredUniversities.map((university) => (
+                  {filteredUniversities.map((university, index) => (
                     <TouchableOpacity
                       key={university.id}
                       style={[
                         styles.dropdownItem,
                         searchText === university.name &&
                           styles.dropdownItemSelected,
+                        // Remove border from last item for cleaner look
+                        index === filteredUniversities.length - 1 && 
+                          styles.lastDropdownItem,
                       ]}
                       onPress={() => selectUniversity(university)}
                       activeOpacity={0.8}
@@ -348,7 +304,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
                             searchText === university.name &&
                               styles.dropdownItemTextSelected,
                           ]}
-                          numberOfLines={1}
+                          numberOfLines={2} // Allow 2 lines for long university names
                           ellipsizeMode="tail"
                         >
                           {university.name}
@@ -505,21 +461,23 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     flex: 1,
-    minHeight: 100,
   },
   dropdownContentContainer: {
-    flexGrow: 1,
+    // Remove flexGrow: 1 to allow proper scrolling
+    paddingBottom: 8, // Add some padding at bottom
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    minHeight: 56,
-    height:'auto',
+    paddingVertical: 14, // Slightly reduced for more items to fit
+    minHeight: 52, // Slightly smaller min height
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(226, 232, 240, 0.5)',
+  },
+  lastDropdownItem: {
+    borderBottomWidth: 0, // Remove border from last item
   },
   dropdownItemSelected: {
     backgroundColor: 'rgba(99, 102, 241, 0.05)',
@@ -536,6 +494,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 12,
     flex: 1,
+    lineHeight: 20, // Better line height for multi-line text
   },
   dropdownItemTextSelected: {
     color: '#6366F1',
@@ -553,9 +512,9 @@ const styles = StyleSheet.create({
   noResultsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 24,
+    paddingVertical: 32,
     paddingHorizontal: 16,
-    minHeight: 100,
+    height: 240, // Fixed height to fill the dropdown space
   },
   noResultsText: {
     fontSize: 14,

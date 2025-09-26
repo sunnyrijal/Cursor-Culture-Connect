@@ -8,7 +8,8 @@ import type {
   MemberResponse,
   AddMultipleMembersResponse,
   MessageResponse,
-  GroupRole
+  GroupRole,
+  GroupFilters
 } from '../types/group.types'; // adjust path as needed
 
 // Group CRUD operations
@@ -22,10 +23,10 @@ export const createGroup = async (data: CreateGroupRequest) => {
   }
 };
 
-export const getAllGroups = async () => {
+export const getAllGroups = async (params?: GroupFilters) => {
   try {
-    const response = await api.get('/groups/all');
-    return response.data ;
+    const response = await api.get('/groups/all', { params });
+    return response.data;
   } catch (error) {
     console.error('Error fetching groups:', error);
     throw error;

@@ -18,13 +18,7 @@ import { RefreshControl } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {
-  Search,
-  Users,
-  Clock,
-  PlusCircle,
-  Zap,
-} from 'lucide-react-native';
+import { Search, Users, Clock, PlusCircle, Zap } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -39,10 +33,13 @@ import {
   addInterestedUser,
   removeInterestedUser,
 } from '@/contexts/quickEvent.api';
-import { CreateQuickEventModal } from '@/components/CreateQuickEventModal'; 
+import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import React from 'react';
 import { EventCard } from '@/components/EventCard';
 import { formatTime, formatTo12Hour } from '@/utils/formatDate';
+
+import { Filter } from 'lucide-react-native';
+import { FilterModal } from '@/components/EventFilterModal';
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -130,8 +127,19 @@ export default function Events() {
   const [showHelper, setShowHelper] = useState(true);
   const [includeNotInterested, setIncludeNotInterested] = useState(false);
 
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [eventFilters, setEventFilters] = useState<{
+    ofMyUniversity?: boolean;
+    myGroups?: boolean;
+    timeFrame?: 'thisWeek' | 'thisMonth';
+    sortBy?: 'date' | 'name';
+    sortOrder?: 'asc' | 'desc';
+  }>({});
+
   const [refreshing, setRefreshing] = useState(false);
-  const [mutatingQuickEventId, setMutatingQuickEventId] = useState<string | null>(null);
+  const [mutatingQuickEventId, setMutatingQuickEventId] = useState<
+    string | null
+  >(null);
   const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
     'events'
   );
@@ -205,12 +213,22 @@ export default function Events() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => getEvents(),
+    queryKey: ['events', eventFilters],
+    queryFn: () => getEvents(eventFilters),
   });
 
   const events = eventsResponse?.events || [];
 
+  const handleFilterChange = (newFilters: typeof eventFilters) => {
+    setEventFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setShowFilterModal(false);
+    refetch(); // This will refetch with new filters
+  };
+
+  const hasActiveFilters = Object.keys(eventFilters).length > 0;
 
   const {
     data: quickEventsResponse,
@@ -252,6 +270,8 @@ export default function Events() {
 
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
+
+  console.log(filteredEvents)
 
   const filteredQuickEvents = useMemo(() => {
     let tempQuickEvents = [...quickEvents];
@@ -425,6 +445,21 @@ export default function Events() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#64748B"
           />
+          {activeTab === 'events' && (
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                hasActiveFilters && styles.activeFilterButton,
+              ]}
+              onPress={() => setShowFilterModal(true)}
+              activeOpacity={0.7}
+            >
+              <Filter
+                size={20}
+                color={hasActiveFilters ? '#FFFFFF' : '#64748B'}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -440,7 +475,9 @@ export default function Events() {
             onValueChange={setIncludeNotInterested}
             color={includeNotInterested ? theme.primary : undefined}
           />
-          <Text style={styles.checkboxLabel}>Include events I'm not interested in</Text>
+          <Text style={styles.checkboxLabel}>
+            Include events I'm not interested in
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -535,7 +572,9 @@ export default function Events() {
                       <View style={styles.quickEventMeta}>
                         <Users size={16} color="#6366F1" />
                         <Text style={styles.quickEventMetaText}>
-                         {quickEvent.max ?` Max ${quickEvent.max} people` : 'No Limit'}
+                          {quickEvent.max
+                            ? ` Max ${quickEvent.max} people`
+                            : 'No Limit'}
                         </Text>
                       </View>
                       <View style={styles.quickEventActions}>
@@ -596,6 +635,14 @@ export default function Events() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={eventFilters}
+        onFiltersChange={handleFilterChange}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -607,6 +654,18 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeFilterButton: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
 
   rsvpButtonSmall: {
@@ -760,12 +819,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight:4,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 52,
-    gap: 12,
+    height: 52,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
@@ -780,6 +839,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    marginLeft: 12,
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '500',
@@ -809,23 +869,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  filterButton: {
-    flex: 1,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 1)',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
+  // filterButton: {
+  //   width: 44,
+  //   height: 44,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   borderRadius: 12,
+  //   backgroundColor: '#F8FAFC',
+  //   borderWidth: 1,
+  //   borderColor: '#E2E8F0',
+  //   marginLeft: 12,
+  // },
   activeFilter: {
     backgroundColor: '#6366F1',
     ...Platform.select({

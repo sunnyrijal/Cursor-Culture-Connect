@@ -189,8 +189,14 @@ export default function ChatListScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    refetch().then(() => setRefreshing(false));
-  }, [refetch]);
+    if (!isConnected) {
+      console.log('Socket not connected, attempting to reconnect on refresh...');
+      reconnect();
+    }
+    refetch().finally(() => {
+      setRefreshing(false);
+    });
+  }, [refetch, isConnected, reconnect]);
 
   const handleNewMessage = useCallback(() => {
     refetch();

@@ -395,7 +395,7 @@ export default function QuickEventDetail() {
                   </View>
                 </View>
 
-                <View style={styles.infoRow}>
+                {/* <View style={styles.infoRow}>
                   <View
                     style={[
                       styles.infoIconWrapper,
@@ -409,7 +409,7 @@ export default function QuickEventDetail() {
                       {quickEvent.user?.name}
                     </Text>
                   </View>
-                </View>
+                </View> */}
 
                 {/* <View style={styles.infoRow}>
                   <View

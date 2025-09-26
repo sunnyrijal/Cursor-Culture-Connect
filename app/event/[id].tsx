@@ -438,7 +438,7 @@ export default function EventDetail() {
                     <Text style={styles.mapButtonText}>Map</Text>
                   </TouchableOpacity>
                 </View>
-
+{/* 
                 <View style={styles.infoRow}>
                   <View
                     style={[
@@ -451,7 +451,7 @@ export default function EventDetail() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>{organizer}</Text>
                   </View>
-                </View>
+                </View> */}
 
                 <Pressable
                       onPress={() => setShowAttendees(!showAttendees)}
