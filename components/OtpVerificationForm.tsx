@@ -31,11 +31,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   withSequence,
-  withDelay,
   Easing,
-  withRepeat,
 } from 'react-native-reanimated';
 import {
   resendOTP,
@@ -48,7 +45,6 @@ const { width, height } = Dimensions.get('window');
 
 const OtpVerificationForm: React.FC = () => {
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
-
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [focusedInput, setFocusedInput] = useState<number>(0);
@@ -89,47 +85,23 @@ const OtpVerificationForm: React.FC = () => {
     },
   });
 
-  const headerScale = useSharedValue(0);
-  const headerOpacity = useSharedValue(0);
+  // Simplified animations - smaller values and gentler timing
   const formOpacity = useSharedValue(0);
-  const formTranslateY = useSharedValue(50);
+  const formTranslateY = useSharedValue(20); // Reduced from 50
   const buttonScale = useSharedValue(1);
-  const particleOpacity = useSharedValue(0);
-  const backgroundRotation = useSharedValue(0);
-  const otpScale = useSharedValue(0);
 
   useEffect(() => {
     if (emailParam) {
       setEmail(emailParam);
     }
 
-    headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }));
-    headerScale.value = withDelay(
-      200,
-      withSpring(1, { damping: 15, stiffness: 100 })
-    );
-
-    formOpacity.value = withDelay(600, withTiming(1, { duration: 800 }));
-    formTranslateY.value = withDelay(
-      600,
-      withSpring(0, { damping: 15, stiffness: 120 })
-    );
-
-    otpScale.value = withDelay(
-      800,
-      withSpring(1, { damping: 12, stiffness: 100 })
-    );
-    particleOpacity.value = withDelay(1000, withTiming(1, { duration: 1000 }));
-
-    backgroundRotation.value = withRepeat(
-      withTiming(360, { duration: 60000, easing: Easing.linear }),
-      -1,
-      false
-    );
+    // Gentle fade in with smaller movement
+    formOpacity.value = withTiming(1, { duration: 400, easing: Easing.ease });
+    formTranslateY.value = withTiming(0, { duration: 400, easing: Easing.ease });
 
     setTimeout(() => {
       inputRefs.current[0]?.focus();
-    }, 1000);
+    }, 300);
   }, [emailParam]);
 
   useEffect(() => {
@@ -171,7 +143,7 @@ const OtpVerificationForm: React.FC = () => {
     const currentOtp = otpArray || otp;
     const otpString = currentOtp.join('');
 
-  if (otpString.length !== 6) {
+    if (otpString.length !== 6) {
       setError('Please enter all 6 digits');
       return;
     }
@@ -182,9 +154,11 @@ const OtpVerificationForm: React.FC = () => {
     }
 
     setError('');
+    
+    // Subtle button press animation - smaller scale change
     buttonScale.value = withSequence(
-      withTiming(0.95, { duration: 100 }),
-      withTiming(1, { duration: 100 })
+      withTiming(0.98, { duration: 80 }), // Reduced from 0.95
+      withTiming(1, { duration: 80 })
     );
 
     const payload: VerifyOTPData = {
@@ -219,13 +193,12 @@ const OtpVerificationForm: React.FC = () => {
     const hasValue = otp[index] !== '';
 
     return (
-      <Animated.View
+      <View
         key={index}
         style={[
           styles.otpInputContainer,
           isFocused && styles.otpInputFocused,
           hasValue && styles.otpInputFilled,
-          { transform: [{ scale: otpScale }] },
         ]}
       >
         <TextInput
@@ -255,14 +228,9 @@ const OtpVerificationForm: React.FC = () => {
             <CheckCircle size={12} color="#10B981" />
           </View>
         )}
-      </Animated.View>
+      </View>
     );
   };
-
-  const headerAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ scale: headerScale.value }],
-  }));
 
   const formAnimatedStyle = useAnimatedStyle(() => ({
     opacity: formOpacity.value,
@@ -271,14 +239,6 @@ const OtpVerificationForm: React.FC = () => {
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
-  }));
-
-  const particleAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: particleOpacity.value,
-  }));
-
-  const backgroundAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${backgroundRotation.value}deg` }],
   }));
 
   return (
@@ -292,27 +252,7 @@ const OtpVerificationForm: React.FC = () => {
         style={styles.gradientBackground}
       />
 
-      <Animated.View style={[styles.particleContainer, particleAnimatedStyle]}>
-        <Animated.View style={[styles.backgroundOrb, backgroundAnimatedStyle]}>
-          {[...Array(8)].map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.particle,
-                {
-                  top: `${15 + (index % 3) * 25}%`,
-                  left: `${10 + (index % 4) * 20}%`,
-                },
-              ]}
-            >
-              <Sparkles
-                size={6 + (index % 2) * 2}
-                color="rgba(99, 102, 241, 0.3)"
-              />
-            </View>
-          ))}
-        </Animated.View>
-      </Animated.View>
+      {/* Removed rotating particles and complex animations */}
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -333,7 +273,8 @@ const OtpVerificationForm: React.FC = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-          <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
+          {/* Simplified header - no complex animations */}
+          <View style={styles.headerContainer}>
             <LinearGradient
               colors={['rgba(255, 255, 255, 1)', 'rgba(248, 250, 252, 1)']}
               start={{ x: 0, y: 0 }}
@@ -354,15 +295,15 @@ const OtpVerificationForm: React.FC = () => {
 
                 <Text style={styles.title}>Verify Your Email</Text>
                 <Text style={styles.subtitle}>
-                  We've sent a 4-digit verification code to
+                  We've sent a 6-digit verification code to
                 </Text>
                 <Text style={styles.emailText}>{email || emailParam}</Text>
               </View>
             </LinearGradient>
-          </Animated.View>
+          </View>
 
           {error ? (
-            <Animated.View style={styles.errorContainer}>
+            <View style={styles.errorContainer}>
               <LinearGradient
                 colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
                 style={styles.errorGradient}
@@ -370,7 +311,7 @@ const OtpVerificationForm: React.FC = () => {
                 <AlertCircle size={20} color="#EF4444" />
                 <Text style={styles.errorText}>{error}</Text>
               </LinearGradient>
-            </Animated.View>
+            </View>
           ) : null}
 
           <Animated.View style={[styles.formContainer, formAnimatedStyle]}>
@@ -493,19 +434,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  particleContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: 0,
-  },
-  backgroundOrb: {
-    width: '100%',
-    height: '100%',
-  },
-  particle: {
-    position: 'absolute',
   },
   keyboardView: {
     flex: 1,

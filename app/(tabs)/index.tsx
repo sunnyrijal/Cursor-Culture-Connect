@@ -19,14 +19,11 @@ import UserStat from '@/components/home/UserStat';
 import CulturalExperiences from '@/components/home/CulturalExperiences';
 import UpcommingEvents from '@/components/home/UpcommingEvents';
 import QuickActions from '@/components/home/QuickActions';
-import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import AutoplayVideo from '@/components/home/VideoCard';
 
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-// Optional (iOS ATT prompt). If you want it, install: npx expo install expo-tracking-transparency
-// import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync, PermissionStatus } from "expo-tracking-transparency";
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -93,7 +90,6 @@ export default function Dashboard() {
 
         <QuickActions />
         <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
-        {/* <AdMobScreen /> */}
 
         <CulturalExperiences />
 

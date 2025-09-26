@@ -8,6 +8,17 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
+    "splash": {
+      "image": "./assets/logo.png",        
+      "resizeMode": "contain",             
+      "backgroundColor": "#ffffff",        
+      "dark": {
+        "image": "./assets/logo.png",
+        "backgroundColor": "#000000"
+      }
+    },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.babish.dev.boltexponativewind"
@@ -27,8 +38,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "f69c783d-aa2d-4edf-b56e-803ea3f60be9"
+        "projectId": "a417af0b-0523-456b-bd77-df807a7c19a8"
       }
-    }
+    },
+    "owner": "babish9887"
   }
 }

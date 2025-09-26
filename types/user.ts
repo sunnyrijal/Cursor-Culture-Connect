@@ -43,7 +43,7 @@ export interface SignupData {
   termsAccepted: boolean;
   privacyAccepted: boolean;
   marketingOptIn: boolean;
-  publicPreference:any
+  publicPreference?:any
   
 }
 
