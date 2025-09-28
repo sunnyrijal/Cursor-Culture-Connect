@@ -2,10 +2,11 @@
   "expo": {
     "name": "TRiVO",
     "slug": "bolt-expo-nativewind",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "myapp",
+    "owner": "rijalboy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
 
@@ -21,10 +22,10 @@
 
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.babish.dev.boltexponativewind"
+      "bundleIdentifier": "com.trivo.connect"
     },
     "android": {
-      "package": "com.babish.dev.boltexponativewind"
+      "package": "com.trivo.connect"
     },
     "web": {
       "bundler": "metro",
@@ -38,9 +39,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a417af0b-0523-456b-bd77-df807a7c19a8"
+        "projectId": "fecb2cb4-c2cd-4536-a6c8-fea3c961c70c"
       }
-    },
-    "owner": "babish9887"
+    }
   }
 }
