@@ -52,6 +52,7 @@ import getDecodedToken from '@/utils/getMyData';
 import { EditGroupModal } from '@/components/UpdateGroupModal';
 import { GroupRole } from '@/types/group.types';
 import { approveEvent } from '@/contexts/event.api';
+import { formatDate, formatTo12Hour } from '@/utils/formatDate';
 
 // Neomorphic color palette
 const neomorphColors = {
@@ -122,6 +123,7 @@ interface GroupResponse {
 }
 
 export default function GroupDetailEnhanced() {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { id } = useLocalSearchParams();
   // const myData = getDecodedToken()
 
@@ -160,6 +162,7 @@ export default function GroupDetailEnhanced() {
   });
 
   const group = groupResponse?.group;
+  console.log(group);
   const currentUserMembership = groupResponse?.group?.members?.find(
     (member: any) => member.userId === myData?.userId
   );
@@ -266,7 +269,7 @@ export default function GroupDetailEnhanced() {
         url: groupUrl,
         title: `Join the ${group.name} group on Culture Connect`,
       });
-    } catch (error) {
+    } catch (error:any) {
       console.error('Error sharing group:', error);
       // @ts-ignore
       Alert.alert(
@@ -661,7 +664,7 @@ export default function GroupDetailEnhanced() {
                     >
                       <Calendar size={20} color={neomorphColors.accent} />
                     </View>
-                    <Text style={styles.infoValue}>{group.meetingDate}</Text>
+                    <Text style={styles.infoValue}>{formatDate(group.meetingDate)}</Text>
                   </View>
                 )}
                 {group.meetingTime && (
@@ -674,7 +677,7 @@ export default function GroupDetailEnhanced() {
                     >
                       <Clock size={20} color={extendedTheme.success} />
                     </View>
-                    <Text style={styles.infoValue}>{group.meetingTime}</Text>
+                    <Text style={styles.infoValue}>{formatTo12Hour(group.meetingTime)}</Text>
                   </View>
                 )}
                 {group.meetingLocation && (
@@ -700,6 +703,28 @@ export default function GroupDetailEnhanced() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Group Details</Text>
             </View>
+
+            {group.description ? (
+              <View>
+                <Text
+                  style={styles.groupDescriptionText}
+                  numberOfLines={isDescriptionExpanded ? undefined : 3}
+                >
+                  {group.description}
+                </Text>
+                {group.description.length > 150 && ( // Show button only if text is long
+                  <TouchableOpacity
+                    onPress={() =>
+                      setIsDescriptionExpanded(!isDescriptionExpanded)
+                    }
+                  >
+                    <Text style={styles.readMoreText}>
+                      {isDescriptionExpanded ? 'Show less' : 'Read more'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : null}
             <View style={styles.infoCard}>
               {/* Moved createdAt info row to the end */}
               {/* <View style={styles.infoRow}>
@@ -1295,6 +1320,16 @@ export default function GroupDetailEnhanced() {
 }
 
 const styles = StyleSheet.create({
+  groupDescriptionText: {
+    paddingHorizontal: 16,
+  },
+  readMoreText: {
+    color: theme.primary,
+    fontWeight: '600',
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.base,
+  },
+
   eventCount: {
     fontSize: typography.fontSize.sm,
     color: theme.textSecondary,

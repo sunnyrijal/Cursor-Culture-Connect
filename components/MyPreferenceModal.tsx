@@ -7,9 +7,10 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { StyleSheet } from 'react-native';
-import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, Plus } from 'lucide-react-native';
+import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, SlidersHorizontal, Plus } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyActivityPreferences, deleteUserInterest, toggleUserInterestStatus } from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
@@ -254,7 +255,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>My Activity Preferences</Text>
@@ -296,7 +297,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             </View>
           )}
         </ScrollView>
-      </View>
+      </SafeAreaView>
 
        <CreateInterestPreferenceModal
               visible={isPreferenceModalVisible} // Use the new state here

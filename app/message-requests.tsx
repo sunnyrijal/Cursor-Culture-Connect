@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -53,9 +53,12 @@ interface ChatRequest {
   updatedAt: string;
   participants: Participant[];
   messages: Message[];
+  requestDirection:'SENT' | 'RECEIVED' | 'NONE'
 }
 
 const MessageRequestsScreen = () => {
+  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
@@ -71,6 +74,7 @@ const MessageRequestsScreen = () => {
     queryKey: ['chatRequests'],
     queryFn: getChatRequests,
   });
+  console.log(chatRequestsResponse)
 
   const processedRequests = useMemo(() => {
     if (!chatRequestsResponse?.data || !myData?.userId) return [];
@@ -89,6 +93,7 @@ const MessageRequestsScreen = () => {
         email: otherParticipant?.user.email || '',
         profilePicture: otherParticipant?.user.profilePicture || '',
         lastMessage: messageContent,
+        requestDirection:chat.requestDirection,
         lastMessageTime: lastMessage
           ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
               hour: '2-digit',
@@ -103,7 +108,15 @@ const MessageRequestsScreen = () => {
     });
   }, [chatRequestsResponse, myData]);
 
-  console.log("Chat Requests", processedRequests);
+  const filteredRequests = useMemo(() => {
+    if (activeTab === 'sent') {
+      return processedRequests.filter((req:ChatRequest)=> req.requestDirection === 'SENT');
+    }
+    // Default to received
+    return processedRequests.filter((req:ChatRequest)=> req.requestDirection === 'RECEIVED');
+  }, [processedRequests, activeTab]);
+
+  console.log("Chat Requests", filteredRequests);
 
   const handleRequestPress = (chatId: string) => {
     router.push(`/chat/${chatId}`);
@@ -112,9 +125,11 @@ const MessageRequestsScreen = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <MessageSquarePlus size={64} color="#9CA3AF" />
-      <Text style={styles.emptyTitle}>No Message Requests</Text>
+      <Text style={styles.emptyTitle}>
+        {activeTab === 'received' ? 'No Received Requests' : 'No Sent Requests'}
+      </Text>
       <Text style={styles.emptySubtitle}>
-        You don't have any pending connection requests right now.
+        {activeTab === 'received' ? "When someone sends you a message request, it will appear here." : "Your sent message requests will appear here."}
       </Text>
     </View>
   );
@@ -179,6 +194,35 @@ const MessageRequestsScreen = () => {
           </View>
         </View>
 
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              activeTab === 'received' && styles.activeTabButton,
+            ]}
+            onPress={() => setActiveTab('received')}
+          >
+            <Text
+              style={[
+                styles.tabButtonText,
+                activeTab === 'received' && styles.activeTabButtonText,
+              ]}
+            >
+              Received
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'sent' && styles.activeTabButton]}
+            onPress={() => setActiveTab('sent')}
+          >
+            <Text
+              style={[styles.tabButtonText, activeTab === 'sent' && styles.activeTabButtonText]}
+            >
+              Sent
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.listContainer}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
@@ -199,7 +243,7 @@ const MessageRequestsScreen = () => {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          ) : processedRequests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             renderEmptyState()
           ) : (
             <ScrollView 
@@ -207,7 +251,7 @@ const MessageRequestsScreen = () => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
-              {processedRequests.map((item:any, index:number) => renderRequestItem(item, index))}
+              {filteredRequests.map((item:any, index:number) => renderRequestItem(item, index))}
             </ScrollView>
           )}
         </View>
@@ -223,6 +267,51 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#CDD2D8',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTabButton: {
+    backgroundColor: '#6366F1',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  tabButtonText: { fontSize: 16, fontWeight: '600', color: '#64748B' },
+  activeTabButtonText: {
+    color: '#FFFFFF',
   },
   header: {
     marginHorizontal: 20,

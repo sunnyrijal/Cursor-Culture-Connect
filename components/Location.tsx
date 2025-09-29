@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Platform } from "react-native"
-import { MapPin, ChevronDown, Search } from "lucide-react-native"
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from "react-native-reanimated"
+import { useState, useEffect, useRef } from "react"
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native"
+import { MapPin, ChevronDown } from "lucide-react-native"
+import { Picker } from "@react-native-picker/picker"
 
 // Import the JSON data
 
@@ -34,28 +34,14 @@ const Location: React.FC<LocationProps> = ({
   onBlur,
   loading = false,
 }) => {
-  const [showStateDropdown, setShowStateDropdown] = useState(false)
-  const [showCityDropdown, setShowCityDropdown] = useState(false)
-  const [stateSearchQuery, setStateSearchQuery] = useState("")
-  const [citySearchQuery, setCitySearchQuery] = useState("")
-
-  // Animation values
-  const stateDropdownHeight = useSharedValue(0)
-  const cityDropdownHeight = useSharedValue(0)
-  const stateDropdownOpacity = useSharedValue(0)
-  const cityDropdownOpacity = useSharedValue(0)
+  const statePickerRef = useRef<Picker<string>>(null)
+  const cityPickerRef = useRef<Picker<string>>(null)
 
   // Get states array from JSON
   const states = Object.values(statesData)
 
   // Get cities for selected state
   const cities = selectedState ? (citiesData as any)[selectedState] || [] : []
-
-  // Filter states based on search
-  const filteredStates = states.filter((state) => state.toLowerCase().includes(stateSearchQuery.toLowerCase()))
-
-  // Filter cities based on search
-  const filteredCities = cities.filter((city: string) => city.toLowerCase().includes(citySearchQuery.toLowerCase()))
 
   // Reset city when state changes
   useEffect(() => {
@@ -67,60 +53,14 @@ const Location: React.FC<LocationProps> = ({
     }
   }, [selectedState])
 
-  // Animation effects
-  useEffect(() => {
-    if (showStateDropdown) {
-      stateDropdownHeight.value = withSpring(300)
-      stateDropdownOpacity.value = withTiming(1, { duration: 200 })
-    } else {
-      stateDropdownHeight.value = withSpring(0)
-      stateDropdownOpacity.value = withTiming(0, { duration: 200 })
-    }
-  }, [showStateDropdown])
-
-  useEffect(() => {
-    if (showCityDropdown) {
-      cityDropdownHeight.value = withSpring(300)
-      cityDropdownOpacity.value = withTiming(1, { duration: 200 })
-    } else {
-      cityDropdownHeight.value = withSpring(0)
-      cityDropdownOpacity.value = withTiming(0, { duration: 200 })
-    }
-  }, [showCityDropdown])
-
-  const stateDropdownStyle = useAnimatedStyle(() => ({
-    height: stateDropdownHeight.value,
-    opacity: stateDropdownOpacity.value,
-  }))
-
-  const cityDropdownStyle = useAnimatedStyle(() => ({
-    height: cityDropdownHeight.value,
-    opacity: cityDropdownOpacity.value,
-  }))
-
   const handleStateSelect = (state: string) => {
     onStateChange(state)
-    setShowStateDropdown(false)
-    setStateSearchQuery("")
     onCityChange("") // Reset city when state changes
   }
 
   const handleCitySelect = (city: string) => {
     onCityChange(city)
-    setShowCityDropdown(false)
-    setCitySearchQuery("")
   }
-
-  const renderDropdownItem = (item: string, onSelect: (item: string) => void, isSelected: boolean) => (
-    <TouchableOpacity
-      key={item}
-      style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
-      onPress={() => onSelect(item)}
-      disabled={loading}
-    >
-      <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>{item}</Text>
-    </TouchableOpacity>
-  )
 
   return (
     <View style={styles.container}>
@@ -135,9 +75,7 @@ const Location: React.FC<LocationProps> = ({
             isValid?.state === false && selectedState && styles.inputWrapperInvalid,
           ]}
           onPress={() => {
-            setShowStateDropdown(!showStateDropdown)
-            setShowCityDropdown(false)
-            onFocus?.("state")
+            statePickerRef.current?.focus()
           }}
           disabled={loading}
         >
@@ -158,29 +96,22 @@ const Location: React.FC<LocationProps> = ({
           <Text style={[styles.inputText, !selectedState && styles.placeholderText]}>
             {selectedState || "Select State"}
           </Text>
-          <ChevronDown
-            size={20}
-            color="#9CA3AF"
-            style={[styles.chevron, showStateDropdown && { transform: [{ rotate: "180deg" }] }]}
-          />
+          <ChevronDown size={20} color="#9CA3AF" style={styles.chevron} />
         </TouchableOpacity>
 
-        {/* State Dropdown */}
-        <Animated.View style={[styles.dropdown, stateDropdownStyle]}>
-          <View style={styles.searchContainer}>
-            <Search size={16} color="#9CA3AF" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search states..."
-              value={stateSearchQuery}
-              onChangeText={setStateSearchQuery}
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-          <ScrollView style={styles.dropdownList} showsVerticalScrollIndicator={false}>
-            {filteredStates.map((state) => renderDropdownItem(state, handleStateSelect, state === selectedState))}
-          </ScrollView>
-        </Animated.View>
+        <Picker
+          ref={statePickerRef}
+          selectedValue={selectedState}
+          onValueChange={(itemValue) => handleStateSelect(itemValue)}
+          style={styles.picker}
+          enabled={!loading}
+          prompt="Select a State"
+        >
+          <Picker.Item label="Select State" value="" enabled={false} />
+          {states.map((state) => (
+            <Picker.Item key={state} label={state} value={state} />
+          ))}
+        </Picker>
       </View>
 
       {/* City Dropdown */}
@@ -196,9 +127,7 @@ const Location: React.FC<LocationProps> = ({
           ]}
           onPress={() => {
             if (selectedState) {
-              setShowCityDropdown(!showCityDropdown)
-              setShowStateDropdown(false)
-              onFocus?.("city")
+              cityPickerRef.current?.focus()
             }
           }}
           disabled={loading || !selectedState}
@@ -224,29 +153,22 @@ const Location: React.FC<LocationProps> = ({
           >
             {selectedCity || (selectedState ? "Select City" : "Select State First")}
           </Text>
-          <ChevronDown
-            size={20}
-            color={!selectedState ? "#D1D5DB" : "#9CA3AF"}
-            style={[styles.chevron, showCityDropdown && { transform: [{ rotate: "180deg" }] }]}
-          />
+          <ChevronDown size={20} color={!selectedState ? "#D1D5DB" : "#9CA3AF"} style={styles.chevron} />
         </TouchableOpacity>
 
-        {/* City Dropdown */}
-        <Animated.View style={[styles.dropdown, cityDropdownStyle]}>
-          <View style={styles.searchContainer}>
-            <Search size={16} color="#9CA3AF" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search cities..."
-              value={citySearchQuery}
-              onChangeText={setCitySearchQuery}
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-          <ScrollView style={styles.dropdownList} showsVerticalScrollIndicator={false}>
-            {filteredCities.map((city: string) => renderDropdownItem(city, handleCitySelect, city === selectedCity))}
-          </ScrollView>
-        </Animated.View>
+        <Picker
+          ref={cityPickerRef}
+          selectedValue={selectedCity}
+          onValueChange={(itemValue) => handleCitySelect(itemValue)}
+          style={styles.picker}
+          enabled={!loading && !!selectedState}
+          prompt="Select a City"
+        >
+          <Picker.Item label="Select City" value="" enabled={false} />
+          {cities.map((city: string) => (
+            <Picker.Item key={city} label={city} value={city} />
+          ))}
+        </Picker>
       </View>
     </View>
   )
@@ -255,7 +177,7 @@ const Location: React.FC<LocationProps> = ({
 const styles = StyleSheet.create({
   container: {},
   inputContainer: {
-    marginBottom: 12,
+    marginBottom: 20,
     position: "relative",
   },
   inputLabel: {
@@ -270,7 +192,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 16,
-    paddingHorizontal: 16,
     paddingVertical: 16,
     borderWidth: 2,
     borderColor: "rgba(226, 232, 240, 0.8)",
@@ -285,6 +206,7 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
+    paddingHorizontal: 16,
   },
   inputWrapperFocused: {
     borderColor: "#6366F1",
@@ -331,66 +253,14 @@ const styles = StyleSheet.create({
   chevron: {
     marginLeft: 8,
   },
-  dropdown: {
+  picker: {
     position: "absolute",
     top: "100%",
     left: 0,
     right: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 16,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.8)",
-    zIndex: 99999,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(226, 232, 240, 0.5)",
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1F2937",
-    fontWeight: "500",
-  },
-  dropdownList: {
-    maxHeight: 250,
-  },
-  dropdownItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(226, 232, 240, 0.3)",
-  },
-  dropdownItemSelected: {
-    backgroundColor: "rgba(99, 102, 241, 0.1)",
-  },
-  dropdownItemText: {
-    fontSize: 14,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  dropdownItemTextSelected: {
-    color: "#6366F1",
-    fontWeight: "600",
+    bottom: 0,
+    opacity: 0,
+    zIndex: -1,
   },
 })
 

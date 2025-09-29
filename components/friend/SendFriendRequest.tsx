@@ -105,6 +105,7 @@ export default function SendFriendRequestScreen() {
   }, [refetch]);
 
   const users = usersResponse?.users || [];
+  console.log(users)
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
@@ -171,12 +172,13 @@ export default function SendFriendRequestScreen() {
   });
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-
-    return users.filter(
-      (user: any) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) 
-    );
+    let filtered = users.filter((user: any) => user.friendshipStatus === null);
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((user: any) =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return filtered;
   }, [users, searchQuery]);
 
   const handleSendRequest = (userId: string, userName: string) => {

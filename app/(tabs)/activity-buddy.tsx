@@ -31,6 +31,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { CreateActivityModal } from '@/components/AddActivityModal';
 import { router } from 'expo-router';
@@ -45,6 +46,7 @@ import {
   getUserPings,
   updateInterestPing,
   pingBack,
+  unsendInterestPing,
   User,
   InterestPing,
 } from '@/contexts/interest.api';
@@ -200,6 +202,23 @@ export default function ActivityBuddyPage() {
       console.error('Update ping error:', error);
     },
   });
+
+  // Unsend ping mutation
+  const unsendPingMutation = useMutation({
+    mutationFn: unsendInterestPing,
+    onSuccess: () => {
+      Alert.alert('Success', 'Ping unsent successfully!');
+      queryClient.invalidateQueries({ queryKey: ['userPings'] });
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to unsend ping.'
+      );
+      console.error('Unsend ping error:', error);
+    },
+  });
+
 
   const activities = activitiesData?.data || [];
   const users = usersPages?.pages.flatMap((page) => page.data.users) || [];
@@ -611,6 +630,27 @@ export default function ActivityBuddyPage() {
             </TouchableOpacity>
           </>
         )}
+        {type === 'sent' && ping.status === 'pending' && (
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.declineButton,
+              unsendPingMutation.isPending && styles.disabledButton,
+            ]}
+            onPress={() =>
+              Alert.alert(
+                'Unsend Ping',
+                'Are you sure you want to unsend this ping?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Unsend', style: 'destructive', onPress: () => unsendPingMutation.mutate(ping.id) },
+                ]
+              )
+            }
+            disabled={unsendPingMutation.isPending}>
+            <Text style={styles.declineButtonText}>{unsendPingMutation.isPending && pingTarget?.originalPingId === ping.id ? 'Unsending...' : 'Unsend'}</Text>
+          </TouchableOpacity>
+        )}
         {type === 'received' && ping.status !== 'declined' && !ping.pingedBack && (
           <TouchableOpacity
             style={[styles.actionButton, styles.pingBackButton]}
@@ -891,7 +931,7 @@ export default function ActivityBuddyPage() {
             style={styles.addActivityButton}
             onPress={() => setIsMyPreferenceVisible(true)}
           >
-            <Plus size={16} color={theme.primary} />
+            <SlidersHorizontal size={16} color={theme.white} />
             <Text style={styles.addActivityButtonText}>My Preferences</Text>
           </TouchableOpacity>
         </View>
@@ -958,16 +998,14 @@ const styles = StyleSheet.create({
     addActivityButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.gray50,
+    backgroundColor: theme.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
   },
   addActivityButtonText: {
     marginLeft: 6,
-    color: theme.primary,
+    color: theme.white,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -1182,12 +1220,12 @@ const styles = StyleSheet.create({
 
   //others
 
-  addActivityButtonText: {
-    marginLeft: 6,
-    color: theme.primary,
-    fontWeight: '600',
-    fontSize: 13,
-  },
+  // addActivityButtonText: {
+  //   marginLeft: 6,
+  //   color: theme.primary,
+  //   fontWeight: '600',
+  //   fontSize: 13,
+  // },
   userActivities: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1249,15 +1287,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.border,
   },
-  addActivityButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.gray50,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
+  // addActivityButton: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   backgroundColor: theme.gray50,
+  //   paddingHorizontal: 12,
+  //   paddingVertical: 8,
+  //   borderWidth: 1,
+  //   borderColor: theme.border,
+  // },
   addInterestButtonText: {
     marginLeft: 6,
     color: theme.primary,

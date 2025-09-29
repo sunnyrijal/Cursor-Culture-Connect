@@ -66,7 +66,9 @@ export default function FriendsListScreen() {
       (friend: any) =>
         friend.firstName.toLowerCase().includes(lowercasedQuery) ||
         friend.lastName.toLowerCase().includes(lowercasedQuery) ||
-        `${friend.firstName} ${friend.lastName}`.toLowerCase().includes(lowercasedQuery)
+        `${friend.firstName} ${friend.lastName}`
+          .toLowerCase()
+          .includes(lowercasedQuery)
     );
   }, [friends, searchQuery]);
 
@@ -145,7 +147,9 @@ export default function FriendsListScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {filteredFriends.length === 0 ? (
           <View style={styles.emptyState}>
@@ -178,6 +182,19 @@ export default function FriendsListScreen() {
                   </Text>
                   {friend.major && (
                     <Text style={styles.friendDetails}>{friend.major}</Text>
+                  )}
+                  {friend.university && (
+                    <Text style={styles.friendDetails}>
+                      {friend.university.name}
+                    </Text>
+                  )}
+                  {friend.classYear && (
+                    <Text style={styles.friendDetails}>{friend.classYear}</Text>
+                  )}
+                  {(friend.countryOfOrigin || friend.city) && (
+                    <Text style={styles.friendDetails}>
+                      {friend.countryOfOrigin || friend.city}
+                    </Text>
                   )}
 
                   {/* <Text style={styles.friendDetails}>{friend.email}</Text> */}

@@ -434,7 +434,6 @@ export default function ChatListScreen() {
               </View>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userEmail}>{user.email}</Text>
                 <Text style={styles.userUniversity}>
                   {user.university.name}
                 </Text>
