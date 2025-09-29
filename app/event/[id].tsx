@@ -37,6 +37,7 @@ import {
   Share2,
 } from 'lucide-react-native';
 import {
+  approveEvent,
   deleteEvent,
   getEvent,
   joinEvent,
@@ -45,6 +46,7 @@ import {
 import getDecodedToken from '@/utils/getMyData';
 import { createDirectChat } from '@/contexts/chat.api';
 import { EditEventModal } from '@/components/EditEventModal';
+import { AxiosResponse } from 'axios';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -81,9 +83,8 @@ export default function EventDetail() {
     enabled: !!eventId, // Only run query if eventId exists
   });
 
-
   const event = eventResponse?.event;
-
+  console.log('EVENT REPSONSE', eventResponse);
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
@@ -137,20 +138,25 @@ export default function EventDetail() {
   const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
     useMutation({
       mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
-      onSuccess: (data:any) => {
+      onSuccess: (data: any) => {
         if (data?.data?.id) {
           router.push(`/chat/${data.data.id}`);
         } else {
-          Alert.alert("Chat Created", "You can now message the host from your chats list.");
+          Alert.alert(
+            'Chat Created',
+            'You can now message the host from your chats list.'
+          );
           queryClient.invalidateQueries({ queryKey: ['chats'] });
         }
       },
       onError: (error: any) => {
         console.error('❌ Error creating chat:', error);
-        Alert.alert('Error', error.message || 'Could not start a conversation.');
+        Alert.alert(
+          'Error',
+          error.message || 'Could not start a conversation.'
+        );
       },
     });
-
 
   const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
     mutationFn: () => leaveEvent(eventId as string),
@@ -262,8 +268,8 @@ export default function EventDetail() {
     eventTime?.endTime
   );
   const organizer = event.user?.name || 'Unknown Organizer';
-  const organizerEmail = event.user?.email;
 
+  const canApprove = event?.canApprove;
   const handleShareEvent = async () => {
     if (!event) return;
     try {
@@ -277,6 +283,23 @@ export default function EventDetail() {
       Alert.alert('Error', 'Unable to share this event at this time.');
     }
   };
+
+  const approveEventMutation = useMutation({
+    mutationFn: approveEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['event', id] });
+
+      Alert.alert('Success', 'Event has been approved.');
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to approve the event. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -302,7 +325,10 @@ export default function EventDetail() {
               <ArrowLeft size={20} color={theme.textPrimary} />
             </TouchableOpacity>
             <View style={styles.headerRight}>
-              <TouchableOpacity onPress={handleShareEvent} style={styles.headerButton}>
+              <TouchableOpacity
+                onPress={handleShareEvent}
+                style={styles.headerButton}
+              >
                 <Share2 size={18} color={theme.textPrimary} />
               </TouchableOpacity>
               {event?.userId === myData?.userId && (
@@ -415,9 +441,7 @@ export default function EventDetail() {
                     <Clock size={24} color={extendedTheme.accent} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoValue}>
-                      {eventTimeFormatted}
-                    </Text>
+                    <Text style={styles.infoValue}>{eventTimeFormatted}</Text>
                   </View>
                 </View>
 
@@ -438,7 +462,7 @@ export default function EventDetail() {
                     <Text style={styles.mapButtonText}>Map</Text>
                   </TouchableOpacity>
                 </View>
-{/* 
+                {/* 
                 <View style={styles.infoRow}>
                   <View
                     style={[
@@ -454,8 +478,9 @@ export default function EventDetail() {
                 </View> */}
 
                 <Pressable
-                      onPress={() => setShowAttendees(!showAttendees)}
-                 style={styles.infoRow}>
+                  onPress={() => setShowAttendees(!showAttendees)}
+                  style={styles.infoRow}
+                >
                   <View
                     style={[
                       styles.infoIconWrapper,
@@ -464,26 +489,28 @@ export default function EventDetail() {
                   >
                     <Users size={24} color={extendedTheme.info} />
                   </View>
-                  <View  
-                  style={styles.infoContent}>
+                  <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>
                       {event.attendingUsers?.length || 0} going
                     </Text>
                   </View>
 
-                   {event?.userId === myData?.userId &&  <TouchableOpacity
+                  {event?.userId === myData?.userId && (
+                    <TouchableOpacity
                       onPress={() => setShowAttendees(!showAttendees)}
-
                       style={styles.attendeesHeader}
                     >
                       <ChevronDown
                         size={20}
                         color={theme.primary}
                         style={{
-                          transform: [{ rotate: showAttendees ? '180deg' : '0deg' }],
+                          transform: [
+                            { rotate: showAttendees ? '180deg' : '0deg' },
+                          ],
                         }}
                       />
-                    </TouchableOpacity>}
+                    </TouchableOpacity>
+                  )}
                 </Pressable>
 
                 {/* Attendee List for Host */}
@@ -505,7 +532,9 @@ export default function EventDetail() {
                               <Text style={styles.attendeeName}>
                                 {attendee.name}
                               </Text>
-                              <Text style={styles.attendeeEmail}>{attendee.email}</Text>
+                              <Text style={styles.attendeeEmail}>
+                                {attendee.email}
+                              </Text>
                             </View>
                           </View>
                         ))}
@@ -556,6 +585,29 @@ export default function EventDetail() {
                     />
                   </View>
                 </View>
+                {canApprove && !event.isApproved && (
+                  <View style={styles.approveContainer}>
+                    <TouchableOpacity
+                      onPress={() => approveEventMutation.mutate(event.id)}
+                      disabled={approveEventMutation.isPending}
+                      style={[
+                        styles.approveButton,
+                        approveEventMutation.isPending && styles.disabledButton,
+                      ]}
+                    >
+                      {approveEventMutation.isPending ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.approveButtonText}>
+                          Approve Event
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    <Text style={styles.approveHintText}>
+                      This event requires your approval to associate with Group
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -575,59 +627,59 @@ export default function EventDetail() {
       </ScrollView>
 
       {!isHost && (
-         <View style={styles.footer}>
-           <TouchableOpacity
-             style={[
-               styles.messageButtonFooter,
-               (isCreatingChat) && styles.disabledButton,
-             ]}
-             onPress={handleMessageHost}
-             disabled={isCreatingChat}
-           >
-             <View style={styles.rsvpContent}>
-               {isCreatingChat ? (
-                 <ActivityIndicator color="#fff" />
-               ) : (
-                 <>
-                   <MessageCircleIcon size={20} color={theme.white} />
-                   <Text style={styles.rsvpButtonText}>Message Host</Text>
-                 </>
-               )}
-             </View>
-           </TouchableOpacity>
-           {isAttending ? (
-             <TouchableOpacity
-               style={[styles.rsvpButton, styles.leaveButton]}
-               onPress={() => leaveEventMutation()}
-               disabled={isLeaving}
-             >
-               <View style={styles.rsvpContent}>
-                 {isLeaving ? (
-                   <ActivityIndicator color="#fff" />
-                 ) : (
-                   <>
-                     <CheckCircle size={20} color={theme.white} />
-                     <Text style={styles.rsvpButtonText}>Going</Text>
-                   </>
-                 )}
-               </View>
-             </TouchableOpacity>
-           ) : (
-             <TouchableOpacity
-               style={[styles.rsvpButton, (isJoining) && styles.disabledButton]}
-               onPress={() => joinEventMutation()}
-               disabled={isJoining}
-             >
-               <View style={styles.rsvpContent}>
-                 {isJoining ? (
-                   <ActivityIndicator color="#fff" />
-                 ) : (
-                   <Text style={styles.rsvpButtonText}>RSVP Now</Text>
-                 )}
-               </View>
-             </TouchableOpacity>
-           )}
-         </View>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.messageButtonFooter,
+              isCreatingChat && styles.disabledButton,
+            ]}
+            onPress={handleMessageHost}
+            disabled={isCreatingChat}
+          >
+            <View style={styles.rsvpContent}>
+              {isCreatingChat ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <MessageCircleIcon size={20} color={theme.white} />
+                  <Text style={styles.rsvpButtonText}>Message Host</Text>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+          {isAttending ? (
+            <TouchableOpacity
+              style={[styles.rsvpButton, styles.leaveButton]}
+              onPress={() => leaveEventMutation()}
+              disabled={isLeaving}
+            >
+              <View style={styles.rsvpContent}>
+                {isLeaving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <CheckCircle size={20} color={theme.white} />
+                    <Text style={styles.rsvpButtonText}>Going</Text>
+                  </>
+                )}
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.rsvpButton, isJoining && styles.disabledButton]}
+              onPress={() => joinEventMutation()}
+              disabled={isJoining}
+            >
+              <View style={styles.rsvpContent}>
+                {isJoining ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       {eventId && (
@@ -635,7 +687,9 @@ export default function EventDetail() {
           visible={showEditEventModal}
           onClose={() => setShowEditEventModal(false)}
           eventId={eventId}
-          onSubmit={() => queryClient.invalidateQueries({ queryKey: ['event', eventId] })}
+          onSubmit={() =>
+            queryClient.invalidateQueries({ queryKey: ['event', eventId] })
+          }
         />
       )}
     </SafeAreaView>
@@ -665,6 +719,32 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.7)',
   },
 
+  approveContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    alignItems: 'center',
+  },
+  approveButton: {
+    backgroundColor: theme.success,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    width: '100%',
+    alignItems: 'center',
+  },
+  approveButtonText: {
+    color: theme.white,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.base,
+  },
+  approveHintText: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: neomorphColors.background,
@@ -1148,7 +1228,7 @@ const styles = StyleSheet.create({
   rsvpContent: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap:12,
+    gap: 12,
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
