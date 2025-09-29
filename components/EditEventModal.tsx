@@ -13,7 +13,7 @@ import {
   Modal,
   Image,
   Platform,
-  ActivityIndicator, // Add this
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -31,8 +31,9 @@ import {
   Plus,
   Sparkles,
   Minus,
+  Edit3,
 } from 'lucide-react-native';
-import { createEvent } from '@/contexts/event.api';
+import { updateEvent, getEvent } from '@/contexts/event.api';
 
 import * as ImagePicker from 'expo-image-picker';
 import { TimeSelectInput } from './TimeSelectInput';
@@ -41,17 +42,19 @@ import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
 
-interface CreateEventModalProps {
+interface EditEventModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (eventData: any) => void;
+  eventId: string;
 }
 
-export function CreateEventModal({
+export function EditEventModal({
   visible,
   onClose,
   onSubmit,
-}: CreateEventModalProps) {
+  eventId,
+}: EditEventModalProps) {
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -66,28 +69,67 @@ export function CreateEventModal({
     universityOnly: false,
   });
 
+  // Fetch event data
+  const {
+    data: eventResponse,
+    isLoading: eventLoading,
+    isError: eventError,
+    error,
+  } = useQuery({
+    queryKey: ['event', eventId],
+    queryFn: () => getEvent(eventId as string),
+    enabled: !!eventId && visible, // Only run query if eventId exists and modal is visible
+  });
+  const event = eventResponse?.event;
+
+  // Fetch groups data
   const {
     data: groupResponse,
-    isLoading,
-    error,
+    isLoading: groupsLoading,
   } = useQuery({
     queryKey: ['groups'],
     queryFn: () => getUserMemberGroup(),
+    enabled: visible, // Only fetch when modal is visible
   });
   const groups = groupResponse?.groups || [];
 
-  console.log(groups);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
   const [showNativeDatePicker, setShowNativeDatePicker] = useState(false);
 
+  // Update form data when event data is loaded
+  useEffect(() => {
+    if (event && visible) {
+      setFormData({
+        title: event.name || '',
+        description: event.description || '',
+        date: event.date ? new Date(event.date) : new Date(),
+        eventTimes:
+          event.eventTimes && event.eventTimes.length > 0
+            ? event.eventTimes.map((timeSlot: any) => ({
+                startTime: timeSlot.startTime
+                  ? new Date(timeSlot.startTime).toTimeString().slice(0, 5)
+                  : '',
+                endTime: timeSlot.endTime
+                  ? new Date(timeSlot.endTime).toTimeString().slice(0, 5)
+                  : '',
+              }))
+            : [{ startTime: '', endTime: '' }],
+        location: event.location || '',
+        groupId: event.associatedGroupId || null,
+        images: event.imageUrl ? [event.imageUrl] : [],
+        isPublic: event.isPublic !== undefined ? event.isPublic : true,
+        universityOnly: event.UniversityOnly !== undefined ? event.UniversityOnly : false,
+      });
+    }
+  }, [event, visible]);
+
   const uploadFileMutation = useMutation({
     mutationFn: uploadFile,
     onSuccess: (data) => {
       console.log('File uploaded successfully:', data);
-      // Add the returned URL to formData.images
       setFormData((prev) => ({
         ...prev,
         images: [...prev.images, data.url],
@@ -99,9 +141,36 @@ export function CreateEventModal({
     },
   });
 
+  // Update Event Mutation
+  const updateEventMutation = useMutation({
+    mutationFn: ({ eventId, eventData }: { eventId: string; eventData: any }) =>
+      updateEvent(eventId, eventData),
+    onSuccess: (data, variables) => {
+      console.log('Event updated successfully:', data);
+
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
+
+      Alert.alert('Success', 'Event updated successfully!');
+
+      onSubmit(variables.eventData);
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error updating event:', error);
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to update event. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
   const onNativeDateChange = (event: any, selectedDate: any) => {
     const currentDate = selectedDate || formData.date;
-    setShowNativeDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    setShowNativeDatePicker(Platform.OS === 'ios');
     setFormData({ ...formData, date: currentDate });
   };
 
@@ -127,10 +196,6 @@ export function CreateEventModal({
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-
-        console.log('Asset details:', asset);
-
-        // Use the mutation instead of direct API call
         uploadFileMutation.mutate({
           uri: asset.uri,
           type: asset.type,
@@ -144,52 +209,11 @@ export function CreateEventModal({
     }
   };
 
-  // TanStack Query mutation for creating event
-  const createEventMutation = useMutation({
-    mutationFn: createEvent,
-    onSuccess: (data, variables) => {
-      console.log('Event created successfully:', data);
-
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['counts'] });
-
-      Alert.alert('Success', 'Event created successfully!');
-
-      onSubmit(variables);
-
-      // Close modal
-      onClose();
-    },
-    onError: (error: any) => {
-      console.error('Error creating event:', error);
-
-      // Show user-friendly error message
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to create event. Please try again.';
-      Alert.alert('Error', errorMessage);
-    },
-  });
-
   useEffect(() => {
     if (!visible) {
-      setFormData({
-        title: '',
-        description: '',
-        date: new Date(),
-        eventTimes: [{ startTime: '', endTime: '' }],
-        location: '',
-        groupId: null,
-        images: [],
-        isPublic: true,
-        universityOnly: false,
-      });
-      setShowNativeDatePicker(false); // Add this line
+      setShowNativeDatePicker(false);
     }
   }, [visible]);
-
-  console.log(formData.images);
 
   const addTimeSlot = () => {
     setFormData({
@@ -218,40 +242,34 @@ export function CreateEventModal({
   };
 
   const formatTimeInput = (input: string): string => {
-    // Remove any non-digit or colon characters
     const cleaned = input.replace(/[^\d:]/g, '');
 
     if (cleaned.length === 0) {
       return '';
     } else if (cleaned.length === 1) {
-      // First digit of hours: only allow 0, 1, 2
       const firstDigit = cleaned[0];
       if (firstDigit > '2') {
-        return ''; // Don't allow first digit greater than 2
+        return '';
       }
       return cleaned;
     } else if (cleaned.length === 2 && !cleaned.includes(':')) {
-      // Two digits without colon - check if valid hour and auto-add colon
       const firstDigit = cleaned[0];
       const secondDigit = cleaned[1];
       if (firstDigit === '2' && secondDigit > '3') {
-        return cleaned[0]; // Don't allow hours > 23
+        return cleaned[0];
       }
       return cleaned + ':';
     } else if (cleaned.includes(':')) {
-      // Already has colon, validate the format
       const parts = cleaned.split(':');
       const hours = parts[0].slice(0, 2);
       const minutes = parts[1] ? parts[1].slice(0, 2) : '';
 
-      // Validate hours
       if (hours.length === 2) {
         if (hours[0] === '2' && hours[1] > '3') {
           return hours[0] + ':' + minutes;
         }
       }
 
-      // Validate minutes first digit (0-5)
       if (minutes.length > 0 && minutes[0] > '5') {
         return hours + ':';
       }
@@ -259,18 +277,16 @@ export function CreateEventModal({
       return hours + ':' + minutes;
     }
 
-    // Limit to 5 characters (HH:MM)
     return cleaned.slice(0, 5);
   };
 
   const validateTimeFormat = (time: string): boolean => {
-    // Allow formats like 5:30, 05:30, 15:45, etc.
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
     return timeRegex.test(time);
   };
 
   const validateTime = (time: string): { isValid: boolean; error?: string } => {
-    if (!time) return { isValid: true }; // Empty is allowed during typing
+    if (!time) return { isValid: true };
 
     if (!validateTimeFormat(time)) {
       return { isValid: false, error: 'Use HH:MM format (24-hour)' };
@@ -352,19 +368,70 @@ export function CreateEventModal({
     const eventData = {
       name: formData.title,
       description: formData.description,
-      eventTimes: formData.eventTimes,
+      eventTimes: formData.eventTimes.map(slot => {
+        const [startHours, startMinutes] = slot.startTime.split(':').map(Number);
+        const [endHours, endMinutes] = slot.endTime.split(':').map(Number);
+
+        const startDate = new Date(formData.date);
+        startDate.setHours(startHours, startMinutes, 0, 0);
+
+        const endDate = new Date(formData.date);
+        endDate.setHours(endHours, endMinutes, 0, 0);
+
+        return { startTime: startDate.toISOString(), endTime: endDate.toISOString() };
+      }),
       imageUrl: formData.images.length > 0 ? formData.images[0] : null,
       location: formData.location,
       date: formData.date.toISOString(),
       ...(formData.groupId && { associatedGroupId: formData.groupId }),
       isPublic: formData.isPublic,
-      UniversityOnly: formData.universityOnly,
+      universityOnly: formData.universityOnly,
     };
-    // Use the TanStack Query mutation
-    createEventMutation.mutate(eventData);
+
+    updateEventMutation.mutate({ eventId, eventData });
   };
 
   if (!visible) return null;
+
+  // Show loading state while fetching event data
+  if (eventLoading) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text style={styles.loadingText}>Loading event details...</Text>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  // Show error state if event fetch failed
+  if (eventError) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={styles.container}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Failed to load event details</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={onClose}>
+              <Text style={styles.retryButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
@@ -386,9 +453,9 @@ export function CreateEventModal({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Create New Event</Text>
+            <Text style={styles.title}>Edit Event</Text>
             <Text style={styles.subtitle}>
-              Bring your community together with an amazing event
+              Update your event details to keep your community informed
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#64748B" />
@@ -413,7 +480,7 @@ export function CreateEventModal({
                       formData.title && styles.inputWrapperValid,
                     ]}
                   >
-                    <Sparkles
+                    <Edit3
                       size={20}
                       color="#6366F1"
                       style={styles.inputIcon}
@@ -426,7 +493,7 @@ export function CreateEventModal({
                       }
                       placeholder="e.g. Diwali Celebration"
                       placeholderTextColor="#9CA3AF"
-                      editable={!createEventMutation.isPending}
+                      editable={!updateEventMutation.isPending}
                     />
                     {formData.title && (
                       <Check
@@ -457,7 +524,7 @@ export function CreateEventModal({
                       multiline
                       numberOfLines={4}
                       placeholderTextColor="#9CA3AF"
-                      editable={!createEventMutation.isPending}
+                      editable={!updateEventMutation.isPending}
                     />
                   </View>
                 </View>
@@ -475,7 +542,7 @@ export function CreateEventModal({
                       ]}
                       onPress={pickImage}
                       disabled={
-                        createEventMutation.isPending ||
+                        updateEventMutation.isPending ||
                         uploadFileMutation.isPending
                       }
                     >
@@ -506,7 +573,6 @@ export function CreateEventModal({
                     </TouchableOpacity>
                   )}
 
-                  {/* Images Preview (keep existing) */}
                   {/* Images Preview */}
                   {(formData.images.length > 0 ||
                     uploadFileMutation.isPending) && (
@@ -515,7 +581,6 @@ export function CreateEventModal({
                         horizontal
                         showsHorizontalScrollIndicator={false}
                       >
-                        {/* Show loading placeholder while uploading */}
                         {uploadFileMutation.isPending && (
                           <View style={styles.imagePreviewContainer}>
                             <View
@@ -532,7 +597,6 @@ export function CreateEventModal({
                           </View>
                         )}
 
-                        {/* Existing images */}
                         {formData.images.map((url, index) => (
                           <View
                             key={`image-${index}`}
@@ -546,7 +610,7 @@ export function CreateEventModal({
                               style={styles.removeImageButton}
                               onPress={() => removeImage(index)}
                               disabled={
-                                createEventMutation.isPending ||
+                                updateEventMutation.isPending ||
                                 uploadFileMutation.isPending
                               }
                             >
@@ -575,41 +639,11 @@ export function CreateEventModal({
                 )}
 
                 {/* Date */}
-                {/* <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Date *</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(true)}
-                    disabled={createEventMutation.isPending}
-                  >
-                    <View
-                      style={[
-                        styles.inputWrapper,
-                        formData.date && styles.inputWrapperValid,
-                      ]}
-                    >
-                      <Calendar
-                        size={20}
-                        color="#6366F1"
-                        style={styles.inputIcon}
-                      />
-                      <Text style={styles.inputText}>
-                        {formData.date.toLocaleDateString()}
-                      </Text>
-                      <Check
-                        size={20}
-                        color="#10B981"
-                        style={styles.validIcon}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </View> */}
-
-                {/* Date */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
                   <TouchableOpacity
                     onPress={() => setShowNativeDatePicker(true)}
-                    disabled={createEventMutation.isPending}
+                    disabled={updateEventMutation.isPending}
                   >
                     <View
                       style={[
@@ -639,18 +673,19 @@ export function CreateEventModal({
                       mode="date"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={onNativeDateChange}
-                      minimumDate={new Date()} // Prevent past dates for events
+                      minimumDate={new Date()}
                     />
                   )}
                 </View>
 
+                {/* Event Times */}
                 <View style={styles.inputContainer}>
                   <View style={styles.timeSlotsHeader}>
                     <Text style={styles.inputLabel}>Event Times *</Text>
                     <TouchableOpacity
                       style={styles.addTimeSlotButton}
                       onPress={addTimeSlot}
-                      disabled={createEventMutation.isPending}
+                      disabled={updateEventMutation.isPending}
                     >
                       <Plus size={16} color="#6366F1" />
                       <Text style={styles.addTimeSlotText}>Add Time Slot</Text>
@@ -667,7 +702,7 @@ export function CreateEventModal({
                           <TouchableOpacity
                             style={styles.removeTimeSlotButton}
                             onPress={() => removeTimeSlot(index)}
-                            disabled={createEventMutation.isPending}
+                            disabled={updateEventMutation.isPending}
                           >
                             <Minus size={16} color="#EF4444" />
                           </TouchableOpacity>
@@ -683,7 +718,7 @@ export function CreateEventModal({
                             }
                             label="Start Time *"
                             placeholder="Select start time"
-                            disabled={createEventMutation.isPending}
+                            disabled={updateEventMutation.isPending}
                             required
                           />
                         </View>
@@ -696,7 +731,7 @@ export function CreateEventModal({
                             }
                             label="End Time *"
                             placeholder="Select end time"
-                            disabled={createEventMutation.isPending}
+                            disabled={updateEventMutation.isPending}
                             required
                           />
                         </View>
@@ -727,7 +762,7 @@ export function CreateEventModal({
                       }
                       placeholder="e.g., Student Union"
                       placeholderTextColor="#9CA3AF"
-                      editable={!createEventMutation.isPending}
+                      editable={!updateEventMutation.isPending}
                     />
                     {formData.location && (
                       <Check
@@ -743,8 +778,10 @@ export function CreateEventModal({
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
                   <TouchableOpacity
-                    onPress={() => setShowGroupPicker(true)}
-                    disabled={createEventMutation.isPending}
+                    onPress={() => {
+                      setShowGroupPicker(true);
+                    }}
+                    disabled={updateEventMutation.isPending}
                   >
                     <View style={styles.inputWrapper}>
                       <Users
@@ -786,7 +823,7 @@ export function CreateEventModal({
                           universityOnly: false,
                         }))
                       }
-                      disabled={createEventMutation.isPending}
+                      disabled={updateEventMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -830,7 +867,7 @@ export function CreateEventModal({
                           universityOnly: true,
                         }))
                       }
-                      disabled={createEventMutation.isPending}
+                      disabled={updateEventMutation.isPending}
                     >
                       <LinearGradient
                         colors={
@@ -869,7 +906,7 @@ export function CreateEventModal({
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={onClose}
-            disabled={createEventMutation.isPending}
+            disabled={updateEventMutation.isPending}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
@@ -877,14 +914,14 @@ export function CreateEventModal({
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              createEventMutation.isPending && styles.primaryButtonDisabled,
+              updateEventMutation.isPending && styles.primaryButtonDisabled,
             ]}
             onPress={handleSubmit}
-            disabled={createEventMutation.isPending}
+            disabled={updateEventMutation.isPending}
           >
             <LinearGradient
               colors={
-                createEventMutation.isPending
+                updateEventMutation.isPending
                   ? ['#9CA3AF', '#6B7280']
                   : ['#6366F1', '#8B5CF6']
               }
@@ -892,11 +929,11 @@ export function CreateEventModal({
             >
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
-                  {createEventMutation.isPending
-                    ? 'Creating...'
-                    : 'Create Event'}
+                  {updateEventMutation.isPending
+                    ? 'Updating...'
+                    : 'Update Event'}
                 </Text>
-                <Sparkles size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                <Edit3 size={20} color="#FFFFFF" style={styles.buttonIcon} />
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -904,7 +941,7 @@ export function CreateEventModal({
 
         {/* Date Picker Modal */}
         <Modal
-          visible={showDatePicker && !createEventMutation.isPending}
+          visible={showDatePicker && !updateEventMutation.isPending}
           transparent
           animationType="fade"
         >
@@ -983,194 +1020,273 @@ export function CreateEventModal({
         </Modal>
 
         {/* Group Picker Modal */}
-        <Modal
-          visible={showGroupPicker && !createEventMutation.isPending}
-          transparent
-          animationType="fade"
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowGroupPicker(false)}
-          >
-            <TouchableOpacity
-              style={styles.groupPickerContainer}
-              activeOpacity={1}
-            >
-              <View style={styles.groupPickerContent}>
-                <Text style={styles.groupPickerTitle}>Select Your Group</Text>
-
-                <ScrollView
-                  style={styles.groupList}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {groups.map((group: any) => (
-                    <TouchableOpacity
-                      key={group.id}
-                      style={styles.groupItem}
-                      onPress={() => {
-                        setFormData({ ...formData, groupId: group.id });
-                        setShowGroupPicker(false);
-                      }}
-                    >
-                      <Image
-                        source={
-                          group.imageUrl
-                            ? { uri: group.imageUrl }
-                            : require('../assets/user.png')
-                        }
-                        style={styles.groupImage}
-                      />
-                      <View style={styles.groupInfo}>
-                        <Text style={styles.groupItemText} numberOfLines={1}>
-                          {group.name}
-                        </Text>
-                        <Text style={styles.groupCreatorText}>
-                          By {group.creator.name}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <TouchableOpacity
-                  style={styles.closeGroupPicker}
-                  onPress={() => setShowGroupPicker(false)}
-                >
-                  <Text style={styles.closeGroupPickerText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
+         <Modal
+                 visible={showGroupPicker && !updateEventMutation.isPending}
+                 transparent
+                 animationType="fade"
+               >
+                 <TouchableOpacity
+                   style={styles.modalOverlay}
+                   activeOpacity={1}
+                   onPress={() => setShowGroupPicker(false)}
+                 >
+                   <TouchableOpacity
+                     style={styles.groupPickerContainer}
+                     activeOpacity={1}
+                   >
+                     <View style={styles.groupPickerContent}>
+                       <Text style={styles.groupPickerTitle}>Select Your Group</Text>
+       
+                       <ScrollView
+                         style={styles.groupList}
+                         showsVerticalScrollIndicator={false}
+                       >
+                         {groups.map((group: any) => (
+                           <TouchableOpacity
+                             key={group.id}
+                             style={styles.groupItem}
+                             onPress={() => {
+                               setFormData({ ...formData, groupId: group.id });
+                               setShowGroupPicker(false);
+                             }}
+                           >
+                             <Image
+                               source={
+                                 group.imageUrl
+                                   ? { uri: group.imageUrl }
+                                   : require('../assets/user.png')
+                               }
+                               style={styles.groupImage}
+                             />
+                             <View style={styles.groupInfo}>
+                               <Text style={styles.groupItemText} numberOfLines={1}>
+                                 {group.name}
+                               </Text>
+                               <Text style={styles.groupCreatorText}>
+                                 By {group.creator.name}
+                               </Text>
+                             </View>
+                           </TouchableOpacity>
+                         ))}
+                       </ScrollView>
+       
+                       <TouchableOpacity
+                         style={styles.closeGroupPicker}
+                         onPress={() => setShowGroupPicker(false)}
+                       >
+                         <Text style={styles.closeGroupPickerText}>Close</Text>
+                       </TouchableOpacity>
+                     </View>
+                   </TouchableOpacity>
+                 </TouchableOpacity>
+               </Modal>
       </View>
     </Modal>
   );
 }
 
+// Additional styles for the EditEventModal
 const styles = StyleSheet.create({
-  // Add this to your CreateEventModal styles
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   scrollContainer: {
     flex: 1,
-    paddingBottom: 40,
-    zIndex: 1, // Add this to lower the scroll container's z-index
   },
-
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
+    position: 'relative',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748B',
+    lineHeight: 24,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 24,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
   formContainer: {
-    marginHorizontal: 20,
+    paddingHorizontal: 12,
+    paddingBottom: 100,
+  },
+  blurView: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  formGradient: {
+    padding: 24,
+  },
+  inputContainer: {
     marginBottom: 24,
-    zIndex: 1, // Add this
   },
-  primaryButtonDisabled: {},
-  timeSlotsHeader: {
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  inputWrapper: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 50,
   },
-
+  inputWrapperFocused: {
+    borderColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputWrapperValid: {
+    borderColor: '#10B981',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+  },
+  inputText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  validIcon: {
+    marginLeft: 8,
+  },
+  uploadButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   uploadButtonDisabled: {
     opacity: 0.7,
   },
-
-  // Loading overlay styles
+  uploadButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  imagesPreview: {
+    marginTop: 12,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  imagePreviewLoading: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingImageText: {
+    fontSize: 10,
+    color: '#6366F1',
+    marginTop: 4,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   uploadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1000,
-    borderRadius: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   uploadingBlur: {
     flex: 1,
-    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   uploadingContent: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
   },
   uploadingText: {
+    color: '#6366F1',
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 12,
+    marginTop: 8,
   },
   uploadingSubtext: {
+    color: '#9CA3AF',
     fontSize: 14,
-    color: '#6B7280',
     marginTop: 4,
   },
-
-  // Loading image placeholder styles
-  imagePreviewLoading: {
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'column',
-  },
-  loadingImageText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-
-  uploadButton: {
-    marginBottom: 12,
-  },
-  uploadButtonGradient: {
+  timeSlotsHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  uploadButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  inputWrapperError: {
-    borderColor: '#EF4444',
-    borderWidth: 2,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    marginBottom: 12,
   },
   addTimeSlotButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#6366F1',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
   },
   addTimeSlotText: {
-    fontSize: 12,
-    fontWeight: '600',
     color: '#6366F1',
+    fontSize: 14,
+    fontWeight: '500',
     marginLeft: 4,
   },
   timeSlotContainer: {
-    marginBottom: 16,
-    // backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    // borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
   timeSlotHeader: {
     flexDirection: 'row',
@@ -1185,126 +1301,8 @@ const styles = StyleSheet.create({
   },
   removeTimeSlotButton: {
     padding: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#EF4444',
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: '#F0F3F7',
-  },
-  // scrollContainer: {
-  //   flex: 1,
-  //   paddingBottom: 40,
-  // },
-  headerContainer: {
-    marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
-    marginBottom: 24,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 24,
-    fontWeight: '500',
-  },
-  // formContainer: {
-  //   marginHorizontal: 20,
-  //   marginBottom: 24,
-  // },
-  blurView: {
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  formGradient: {
-    padding: 16,
-    borderRadius: 24,
-  },
-  inputContainer: {
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F3F7',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 1,
-    borderWidth: 1,
-    borderColor: '#CDD2D8',
-    minHeight: 56,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  inputWrapperValid: {
-    borderColor: '#10B981',
-    backgroundColor: '#FFFFFF',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-    fontWeight: '500',
-    paddingVertical: 16,
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-    fontWeight: '500',
-    paddingVertical: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
-  },
-  validIcon: {
-    marginLeft: 8,
-  },
-  validationText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 6,
-    marginLeft: 4,
-    fontWeight: '500',
+    borderRadius: 4,
+    backgroundColor: '#FEE2E2',
   },
   rowContainer: {
     flexDirection: 'row',
@@ -1313,214 +1311,131 @@ const styles = StyleSheet.create({
   halfWidth: {
     flex: 1,
   },
-  imageInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  addImageButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  addImageButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagesPreview: {
-    marginTop: 12,
-  },
-  imagePreviewContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#EF4444',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
   visibilityButton: {
     flex: 1,
-    borderRadius: 16,
-    borderWidth: 2,
-    backgroundColor: 'white',
-    borderColor: 'rgba(226, 232, 240, 0.8)',
+    marginHorizontal: 4,
+    borderRadius: 12,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
   },
-
   visibilityButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   visibilityButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   visibilityButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#6366F1',
+    marginLeft: 6,
   },
   visibilityButtonTextActive: {
     color: '#FFFFFF',
   },
   actionsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingTop: 20,
-    gap: 16,
-    backgroundColor: '#F0F3F7',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderTopWidth: 1,
-    borderTopColor: '#CDD2D8',
+    borderTopColor: '#E5E7EB',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    gap: 12,
   },
   cancelButton: {
     flex: 1,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderWidth: 2,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    justifyContent: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#6B7280',
   },
   primaryButton: {
     flex: 2,
-    height: 56,
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+  },
+  primaryButtonDisabled: {
+    opacity: 0.7,
   },
   buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    borderRadius: 16,
+    justifyContent: 'center',
   },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   buttonIcon: {
-    marginLeft: 4,
+    marginLeft: 8,
   },
-  modalOverlay: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#6366F1',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   datePickerContainer: {
     width: '90%',
     maxWidth: 400,
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.2,
-        shadowRadius: 30,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
   },
   datePickerGradient: {
     padding: 24,
@@ -1529,41 +1444,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   datePickerHeaderText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
   },
   navButton: {
-    fontSize: 18,
-    color: '#6366F1',
+    fontSize: 16,
     fontWeight: '600',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    color: '#6366F1',
+    paddingHorizontal: 8,
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: 24,
   },
   calendarWeekday: {
     width: '14.28%',
     textAlign: 'center',
-    paddingVertical: 8,
-    color: '#64748B',
-    fontWeight: '600',
     fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    paddingVertical: 8,
   },
   calendarDay: {
     width: '14.28%',
-    height: 44,
+    aspectRatio: 1,
   },
   calendarDayButton: {
     width: '14.28%',
-    height: 44,
+    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -1571,31 +1483,20 @@ const styles = StyleSheet.create({
   calendarDayText: {
     fontSize: 16,
     color: '#374151',
-    fontWeight: '500',
   },
   closeDatePicker: {
+    marginTop: 16,
+    paddingVertical: 12,
     backgroundColor: '#6366F1',
-    paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   closeDatePickerText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  groupPickerContainer: {
+groupPickerContainer: {
     width: '90%',
     maxWidth: 400,
     maxHeight: '70%',

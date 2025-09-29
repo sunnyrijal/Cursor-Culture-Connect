@@ -61,6 +61,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
     data: preferencesData,
     isLoading,
     error,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ['myActivityPreferences'],
@@ -275,7 +276,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
               <ActivityIndicator size="large" color="#007AFF" />
               <Text style={styles.loadingText}>Loading preferences...</Text>
             </View>
-          ) : error ? (
+          ) : isError ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>Failed to load preferences</Text>
               <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>

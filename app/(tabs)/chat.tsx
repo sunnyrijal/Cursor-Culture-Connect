@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -20,9 +21,9 @@ import {
   Search,
   MessageCircle,
   Users,
-  Sparkles,
   ArrowRight,
   UserPlus,
+  MailPlus,
   X,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,7 +32,7 @@ import { theme } from '@/components/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createDirectChat, getUserChats } from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
-import { getAllUsers, getUsers } from '@/contexts/user.api';
+import {  getUsers } from '@/contexts/user.api';
 import useSocket from '@/hooks/useSocket';
 
 type FilterType = 'DIRECT' | 'GROUP';
@@ -92,6 +93,7 @@ export default function ChatListScreen() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -184,6 +186,17 @@ export default function ChatListScreen() {
         }
       });
   }, [chatResponse, myData, filter]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    if (!isConnected) {
+      console.log('Socket not connected, attempting to reconnect on refresh...');
+      reconnect();
+    }
+    refetch().finally(() => {
+      setRefreshing(false);
+    });
+  }, [refetch, isConnected, reconnect]);
 
   const handleNewMessage = useCallback(() => {
     refetch();
@@ -474,7 +487,12 @@ export default function ChatListScreen() {
               >
                 <UserPlus size={24} color={theme.primary} />
               </TouchableOpacity>
-              <Sparkles size={24} color={theme.primary} />
+
+                <TouchableOpacity
+                onPress={() => router.push('/message-requests')}
+                 >
+                <MailPlus size={24} color={theme.primary} />
+                </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -577,6 +595,9 @@ export default function ChatListScreen() {
               style={styles.list}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             />
           )}
         </View>

@@ -45,6 +45,8 @@ export interface CreateGroupRequest {
   imageUrl?: string;
   isPrivate?: boolean;
   meetingLocation?:string
+  meetingTime?:string
+  meetingDate?:string
   meetingDetails?:string
 }
 
@@ -53,6 +55,9 @@ export interface UpdateGroupRequest {
   description?: string;
   imageUrl?: string;
   isPrivate?: boolean;
+  meetingLocation?:string
+  meetingTime?:string
+  meetingDate?:string
 }
 
 export interface AddMemberRequest {
@@ -115,13 +120,7 @@ export interface MemberWithRole extends User {
   membershipId: string;
 }
 
-// Filter and search types
-export interface GroupFilters {
-  search?: string;
-  isPrivate?: boolean;
-  role?: GroupRole;
-  createdBy?: string;
-}
+
 
 export interface GroupMemberFilters {
   search?: string;
@@ -195,4 +194,11 @@ export interface GroupActivity {
   details: string;
   createdAt: string;
   user: User;
+}
+
+export interface GroupFilters {
+  myUniversity?: boolean;
+  privacy?: 'private' | 'public';
+  sortBy?: 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
 }

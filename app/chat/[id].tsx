@@ -9,6 +9,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -294,7 +295,9 @@ export default function ChatScreen() {
                       !newMessage.trim() || sendMessageMutation.isPending || isSending
                     }
                   >
-                    {newMessage.trim() ? (
+                    {isSending || sendMessageMutation.isPending ? (
+                      <ActivityIndicator size="small" color={theme.primary} />
+                    ) : newMessage.trim() ? (
                       <LinearGradient
                         colors={[theme.primary, '#8B5CF6']}
                         style={styles.sendButtonGradient}

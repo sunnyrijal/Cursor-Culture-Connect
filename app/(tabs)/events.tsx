@@ -11,21 +11,14 @@ import {
   TextInput,
   Animated,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { RefreshControl } from 'react-native';
 // import { Picker } from '@react-native-picker/picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {
-  Search,
-  MapPin,
-  Calendar,
-  Users,
-  Clock,
-  PlusCircle,
-  Zap,
-  CheckCircle,
-} from 'lucide-react-native';
+import { Search, Users, Clock, PlusCircle, Zap } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -34,30 +27,19 @@ import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 
 // Add import for date formatting
 import getDecodedToken from '@/utils/getMyData';
-import { format } from 'date-fns';
 import { theme } from '@/components/theme';
-import { getQuickEvents, addInterestedUser, removeInterestedUser } from '@/contexts/quickEvent.api';
+import {
+  getQuickEvents,
+  addInterestedUser,
+  removeInterestedUser,
+} from '@/contexts/quickEvent.api';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import React from 'react';
+import { EventCard } from '@/components/EventCard';
+import { formatTime, formatTo12Hour } from '@/utils/formatDate';
 
-// Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-// Helper function to format time
-const formatTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-};
+import { Filter } from 'lucide-react-native';
+import { FilterModal } from '@/components/EventFilterModal';
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -128,22 +110,6 @@ interface QuickEvent {
   };
 }
 
-// Helper function to format dates
-const formatEventDate = (date: string | Date): string => {
-  if (date instanceof Date) {
-    return format(date, 'MMM d, yyyy');
-  }
-  return date;
-};
-
-// Helper function to format times
-const formatEventTime = (time: string | Date): string => {
-  if (time instanceof Date) {
-    return format(time, 'h:mm a');
-  }
-  return time;
-};
-
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
@@ -161,6 +127,19 @@ export default function Events() {
   const [showHelper, setShowHelper] = useState(true);
   const [includeNotInterested, setIncludeNotInterested] = useState(false);
 
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [eventFilters, setEventFilters] = useState<{
+    ofMyUniversity?: boolean;
+    myGroups?: boolean;
+    timeFrame?: 'thisWeek' | 'thisMonth';
+    sortBy?: 'date' | 'name';
+    sortOrder?: 'asc' | 'desc';
+  }>({});
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [mutatingQuickEventId, setMutatingQuickEventId] = useState<
+    string | null
+  >(null);
   const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
     'events'
   );
@@ -194,25 +173,39 @@ export default function Events() {
     },
   });
 
-  const { mutate: addInterestMutation, isPending: isAddingInterest } = useMutation({
-    mutationFn: (quickEventId: string) => addInterestedUser(quickEventId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
-    },
-    onError: (error) => {
-      console.error('Error adding interest:', error);
-    },
-  });
+  const { mutate: addInterestMutation, isPending: isAddingInterest } =
+    useMutation({
+      mutationFn: async (quickEventId: string) => {
+        setMutatingQuickEventId(quickEventId);
+        return addInterestedUser(quickEventId);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+      },
+      onError: (error) => {
+        console.error('Error adding interest:', error);
+      },
+      onSettled: () => {
+        setMutatingQuickEventId(null);
+      },
+    });
 
-  const { mutate: removeInterestMutation, isPending: isRemovingInterest } = useMutation({
-    mutationFn: (quickEventId: string) => removeInterestedUser(quickEventId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quick-events'] });
-    },
-    onError: (error) => {
-      console.error('Error removing interest:', error);
-    },
-  });
+  const { mutate: removeInterestMutation, isPending: isRemovingInterest } =
+    useMutation({
+      mutationFn: async (quickEventId: string) => {
+        setMutatingQuickEventId(quickEventId);
+        return removeInterestedUser(quickEventId);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+      },
+      onError: (error) => {
+        console.error('Error removing interest:', error);
+      },
+      onSettled: () => {
+        setMutatingQuickEventId(null);
+      },
+    });
 
   const {
     data: eventsResponse,
@@ -220,13 +213,22 @@ export default function Events() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => getEvents(),
+    queryKey: ['events', eventFilters],
+    queryFn: () => getEvents(eventFilters),
   });
 
   const events = eventsResponse?.events || [];
 
-  console.log(events);
+  const handleFilterChange = (newFilters: typeof eventFilters) => {
+    setEventFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setShowFilterModal(false);
+    refetch(); // This will refetch with new filters
+  };
+
+  const hasActiveFilters = Object.keys(eventFilters).length > 0;
 
   const {
     data: quickEventsResponse,
@@ -239,6 +241,13 @@ export default function Events() {
   });
 
   const quickEvents = quickEventsResponse?.data || [];
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    Promise.all([refetch(), refetchQuickEvents()]).then(() => {
+      setRefreshing(false);
+    });
+  }, [refetch, refetchQuickEvents]);
 
   useEffect(() => {
     if (showHelper) {
@@ -259,9 +268,10 @@ export default function Events() {
       );
     }
 
-  
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
+
+  console.log(filteredEvents)
 
   const filteredQuickEvents = useMemo(() => {
     let tempQuickEvents = [...quickEvents];
@@ -279,9 +289,7 @@ export default function Events() {
     return tempQuickEvents;
   }, [quickEvents, searchQuery]);
 
-
   const handleCreateEvent = async (eventData: any) => {
-    console.log('New Event Data:', eventData);
     setShowCreateModal(false);
   };
 
@@ -437,11 +445,30 @@ export default function Events() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#64748B"
           />
+          {activeTab === 'events' && (
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                hasActiveFilters && styles.activeFilterButton,
+              ]}
+              onPress={() => setShowFilterModal(true)}
+              activeOpacity={0.7}
+            >
+              <Filter
+                size={20}
+                color={hasActiveFilters ? '#FFFFFF' : '#64748B'}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {activeTab === 'quickEvents' && (
-        <View style={styles.checkboxContainer}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => setIncludeNotInterested(!includeNotInterested)}
+          activeOpacity={0.8}
+        >
           <Checkbox
             style={styles.checkbox}
             value={includeNotInterested}
@@ -451,136 +478,40 @@ export default function Events() {
           <Text style={styles.checkboxLabel}>
             Include events I'm not interested in
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       <ScrollView
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         // onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         // scrollEventThrottle={16}
       >
         {activeTab === 'events' ? (
           <>
-            {filteredEvents.map((event: Event, index: number) => {
-              const isAttending = event?.attendingUsers?.some(
-                  (attendee: any) => attendee.id === myData?.userId
-                );
-              return (
-                <TouchableOpacity
-                  key={event.id}
-                  disabled={isJoining || isLeaving}
-                  onLongPress={() => {
-                    isAttending
-                      ? leaveEventMutation(event.id)
-                      : joinEventMutation(event.id);
-                  }}
-                  style={[
-                    styles.eventCard,
-                    index === 0 && styles.firstCard,
-                    index === filteredEvents.length - 1 && styles.lastCard,
-                  ]}
-                  onPress={() => router.push(`/event/${event.id}`)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.eventImageContainer}>
-                    <Image
-                      source={{
-                        uri:
-                          event.imageUrl || 'https://via.placeholder.com/150',
-                      }}
-                      style={styles.eventImage}
-                    />
-                    <View style={styles.imageOverlay} />
-
-                    <View style={styles.eventActions}>
-                      <TouchableOpacity
-                        style={[
-                          styles.rsvpButtonSmall,
-                          event.attendingUsers.some(
-                            (u: any) => u.id === myData?.userId
-                          ) && styles.rsvpedButtonSmall,
-                        ]}
-                        onPress={() => {
-                          const isAttending = event.attendingUsers.some(
-                            (u: any) => u.id === myData?.userId
-                          );
-                          isAttending
-                            ? leaveEventMutation(event.id)
-                            : joinEventMutation(event.id);
-                        }}
-                      >
-                        <Text style={styles.rsvpButtonTextSmall}>
-                          {isAttending ? 'Going' : 'RSVP'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styles.eventContent}>
-                    <View style={styles.eventHeader}>
-                      <Text style={styles.eventTitle} numberOfLines={2}>
-                        {event.name}
-                      </Text>
-                    </View>
-
-                    <View style={styles.eventMeta}>
-                      <MapPin size={16} color="#64748B" />
-                      <Text style={styles.eventMetaText} numberOfLines={1}>
-                        {event.location}
-                      </Text>
-                    </View>
-
-                    {event.eventTimes && event.eventTimes.length > 0 && (
-                      <View style={styles.eventMeta}>
-                        <Calendar size={16} color="#6366F1" />
-                        <Text style={styles.eventMetaText}>
-                          {formatDate(event.eventTimes[0].startTime)} at{' '}
-                          {formatTime(event.eventTimes[0].startTime)}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.creatorSection}>
-                      <View style={styles.creatorInfo}>
-                        <View style={styles.creatorAvatar}>
-                          <Text style={styles.creatorInitial}>
-                            {event.user.name.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={styles.creatorDetails}>
-                          <Text style={styles.creatorName}>
-                            {event.user.name}
-                          </Text>
-                          <Text style={styles.creatorRole}>
-                            Event Organizer
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={styles.statsSection}>
-                      <View style={styles.statCard}>
-                        <Users size={16} color="#6366F1" />
-                        <Text style={styles.statText}>
-                          {event?.attendingUsers?.length || 0} attending
-                        </Text>
-                      </View>
-
-                      <View style={styles.statCard}>
-                        <Clock size={16} color="#F59E0B" />
-                        <Text style={styles.statText}>
-                          {event.eventTimes && event.eventTimes.length > 0
-                            ? formatTime(event.eventTimes[0].startTime)
-                            : 'TBA'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            {filteredEvents.map((event: Event, index: number) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                myUserId={myData?.userId}
+                isFirst={index === 0}
+                isLast={index === filteredEvents.length - 1}
+                onPress={() => router.push(`/event/${event.id}`)}
+                onRSVP={() => {
+                  const isAttending = event.attendingUsers.some(
+                    (u: any) => u.id === myData?.userId
+                  );
+                  isAttending
+                    ? leaveEventMutation(event.id)
+                    : joinEventMutation(event.id);
+                }}
+                isLoading={isJoining || isLeaving}
+              />
+            ))}
 
             {filteredEvents.length === 0 && (
               <View style={styles.emptyState}>
@@ -602,13 +533,17 @@ export default function Events() {
                 const isInterested = quickEvent.interestedUsers.some(
                   (user) => user.id === myData?.userId
                 );
+                const isMutating =
+                  (isAddingInterest || isRemovingInterest) &&
+                  mutatingQuickEventId === quickEvent.id;
                 return (
                   <TouchableOpacity
                     key={quickEvent.id}
                     style={[
                       styles.quickEventCard,
                       index === 0 && styles.firstCard,
-                      index === filteredQuickEvents.length - 1 && styles.lastCard,
+                      index === filteredQuickEvents.length - 1 &&
+                        styles.lastCard,
                     ]}
                     onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
                     activeOpacity={0.8}
@@ -631,13 +566,15 @@ export default function Events() {
                       <View style={styles.quickEventMeta}>
                         <Clock size={16} color="#F59E0B" />
                         <Text style={styles.quickEventMetaText}>
-                          {quickEvent.time}
+                          {formatTo12Hour(quickEvent.time)}
                         </Text>
                       </View>
                       <View style={styles.quickEventMeta}>
                         <Users size={16} color="#6366F1" />
                         <Text style={styles.quickEventMetaText}>
-                          Max {quickEvent.max} people
+                          {quickEvent.max
+                            ? ` Max ${quickEvent.max} people`
+                            : 'No Limit'}
                         </Text>
                       </View>
                       <View style={styles.quickEventActions}>
@@ -655,16 +592,30 @@ export default function Events() {
                           </View>
                         </View>
                         <TouchableOpacity
-                          style={[styles.rsvpButtonSmall, isInterested && styles.rsvpedButtonSmall]}
-                          onPress={() => isInterested ? removeInterestMutation(quickEvent.id) : addInterestMutation(quickEvent.id)}
-                          disabled={isAddingInterest || isRemovingInterest}
+                          style={[
+                            styles.rsvpButtonSmall,
+                            isInterested && styles.rsvpedButtonSmall,
+                          ]}
+                          onPress={() =>
+                            !isMutating &&
+                            (isInterested
+                              ? removeInterestMutation(quickEvent.id)
+                              : addInterestMutation(quickEvent.id))
+                          }
+                          disabled={isMutating}
                         >
-                          <Text style={styles.rsvpButtonTextSmall}>{isInterested ? 'Interested' : 'I\'m in'}</Text>
+                          {isMutating ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <Text style={styles.rsvpButtonTextSmall}>
+                              {isInterested ? 'Interested' : "I'm in"}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       </View>
                     </View>
                   </TouchableOpacity>
-                )
+                );
               }
             )}
 
@@ -684,6 +635,14 @@ export default function Events() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={eventFilters}
+        onFiltersChange={handleFilterChange}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -697,10 +656,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeFilterButton: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+
   rsvpButtonSmall: {
     backgroundColor: theme.primary,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 12,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
@@ -713,9 +684,9 @@ const styles = StyleSheet.create({
   rsvpButtonTextSmall: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 14,
   },
- 
+
   heroSection: {
     height: 100,
     backgroundColor: '#6366F1',
@@ -848,12 +819,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight:4,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 52,
-    gap: 12,
+    height: 52,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
@@ -868,6 +839,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    marginLeft: 12,
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '500',
@@ -897,23 +869,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  filterButton: {
-    flex: 1,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 1)',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
+  // filterButton: {
+  //   width: 44,
+  //   height: 44,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   borderRadius: 12,
+  //   backgroundColor: '#F8FAFC',
+  //   borderWidth: 1,
+  //   borderColor: '#E2E8F0',
+  //   marginLeft: 12,
+  // },
   activeFilter: {
     backgroundColor: '#6366F1',
     ...Platform.select({
@@ -951,26 +917,6 @@ const styles = StyleSheet.create({
   eventsListContent: {
     paddingHorizontal: 20,
     paddingBottom: 24,
-  },
-
-  eventCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    marginBottom: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
 
   quickEventCard: {
@@ -1051,7 +997,7 @@ const styles = StyleSheet.create({
   quickEventCreator: {
     flexDirection: 'row',
     alignItems: 'center',
-    width:'70%'
+    width: '70%',
   },
 
   firstCard: {
@@ -1059,75 +1005,6 @@ const styles = StyleSheet.create({
   },
   lastCard: {
     marginBottom: 0,
-  },
-
-  eventImageContainer: {
-    height: 120,
-    position: 'relative',
-    backgroundColor: '#6366F1',
-    overflow: 'hidden',
-  },
-  eventImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#94A3B8',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  },
-
-  eventActions: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 12,
-    padding: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  shareButton: {
-    padding: 4,
-  },
-
-  eventContent: {
-    padding: 20,
-  },
-  eventHeader: {
-    marginBottom: 12,
-  },
-  eventTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
-    lineHeight: 24,
-    letterSpacing: -0.3,
-  },
-
-  eventMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  eventMetaText: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
   },
 
   creatorSection: {
@@ -1179,42 +1056,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
     fontWeight: '500',
-  },
-
-  statsSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    // marginBottom: 16,
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.5,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  statText: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '600',
-    marginLeft: 6,
-    flex: 1,
   },
 
   loadingContainer: {

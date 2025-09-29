@@ -21,10 +21,10 @@ import {
   Check,
   Sparkles,
   Zap,
-  Clock,
-  Users,
+
   Globe,
   GraduationCap,
+  UserRoundCog,
 } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQuickEvent } from '@/contexts/quickEvent.api';
@@ -423,7 +423,7 @@ export function CreateQuickEventModal({
                         styles.inputWrapperValid,
                     ]}
                   >
-                    <Users size={20} color="#6366F1" style={styles.inputIcon} />
+                    <UserRoundCog size={20} color="#6366F1" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={formData.max}

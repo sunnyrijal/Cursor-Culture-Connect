@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
 import SocketService from '../utils/socketService';
 
 // Types
@@ -46,59 +46,58 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   onAuthenticated,
 }) => {
   const messageCallbackRef = useRef<((message: MessageData) => void) | null>(null);
-  const isConnectedRef = useRef(false);
+  const [isConnected, setIsConnected] = useState(SocketService.getConnectionStatus());
 
   useEffect(() => {
-    // Set up global message handler that delegates to current callback
     const globalMessageHandler = (message: MessageData) => {
       if (messageCallbackRef.current) {
         messageCallbackRef.current(message);
       }
     };
 
-    // Set up all socket event handlers
     SocketService.setOnNewMessage(globalMessageHandler);
-    
-    if (onConnect) {
-      SocketService.setOnConnect(() => {
-        isConnectedRef.current = true;
-        onConnect();
-      });
-    }
-    
-    if (onDisconnect) {
-      SocketService.setOnDisconnect(() => {
-        isConnectedRef.current = false;
-        onDisconnect();
-      });
-    }
-    
-    if (onError) {
-      SocketService.setOnError(onError);
-    }
-    
-    if (onAuthenticated) {
-      SocketService.setOnAuthenticated(onAuthenticated);
-    }
 
-    // Connect to socket
+    const handleConnect = () => {
+      setIsConnected(true);
+      if (onConnect) onConnect();
+    };
+
+    const handleDisconnect = () => {
+      setIsConnected(false);
+      if (onDisconnect) onDisconnect();
+    };
+
+    const handleError = (error: string) => {
+      if (onError) onError(error);
+    };
+
+    const handleAuthenticated = (data: { success: boolean; userId: string; socketId: string }) => {
+      if (onAuthenticated) onAuthenticated(data);
+    };
+
+    // Set up all socket event handlers
+    SocketService.setOnConnect(handleConnect);
+    SocketService.setOnDisconnect(handleDisconnect);
+    SocketService.setOnError(handleError);
+    SocketService.setOnAuthenticated(handleAuthenticated);
+
+    // Initial connection
     SocketService.connect(serverUrl, userId);
 
     // Cleanup function
     return () => {
       SocketService.removeAllListeners();
       SocketService.disconnect();
-      isConnectedRef.current = false;
+      setIsConnected(false);
     };
   }, [serverUrl, userId, onConnect, onDisconnect, onError, onAuthenticated]);
 
   const contextValue: SocketContextType = {
-    isConnected: SocketService.getConnectionStatus(),
+    isConnected: isConnected,
     joinChat: (chatId: string) => SocketService.joinChat(chatId),
     leaveChat: (chatId: string) => SocketService.leaveChat(chatId),
     disconnect: () => {
-      SocketService.disconnect();
-      isConnectedRef.current = false;
+      SocketService.disconnect()
     },
     reconnect: () => SocketService.reconnect(),
     socketId: SocketService.getSocketId(),

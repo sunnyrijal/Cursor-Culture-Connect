@@ -12,11 +12,11 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShareButton } from '@/components/ui/ShareButton';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
 import {
   ArrowLeft,
@@ -28,10 +28,13 @@ import {
   Star,
   Bookmark,
   Music,
+  Edit3,
   Trash2,
   Navigation,
   CheckCircle,
   ChevronDown,
+  MessageCircle as MessageCircleIcon,
+  Share2,
 } from 'lucide-react-native';
 import {
   deleteEvent,
@@ -40,6 +43,8 @@ import {
   leaveEvent,
 } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
+import { createDirectChat } from '@/contexts/chat.api';
+import { EditEventModal } from '@/components/EditEventModal';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -61,6 +66,7 @@ export default function EventDetail() {
   const { id } = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [showAttendees, setShowAttendees] = React.useState(false);
+  const [showEditEventModal, setShowEditEventModal] = React.useState(false);
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -77,7 +83,6 @@ export default function EventDetail() {
 
 
   const event = eventResponse?.event;
-  console.log(event)
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -129,6 +134,24 @@ export default function EventDetail() {
     },
   });
 
+  const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
+    useMutation({
+      mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
+      onSuccess: (data:any) => {
+        if (data?.data?.id) {
+          router.push(`/chat/${data.data.id}`);
+        } else {
+          Alert.alert("Chat Created", "You can now message the host from your chats list.");
+          queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+      },
+      onError: (error: any) => {
+        console.error('❌ Error creating chat:', error);
+        Alert.alert('Error', error.message || 'Could not start a conversation.');
+      },
+    });
+
+
   const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
     mutationFn: () => leaveEvent(eventId as string),
     onSuccess: () => {
@@ -146,6 +169,15 @@ export default function EventDetail() {
       (attendee: any) => attendee.id === myData?.userId
     );
   }, [event, myData]);
+
+  const handleMessageHost = () => {
+    if (!event?.user?.id) return;
+    if (event.chatId) {
+      router.push(`/chat/${event.chatId}`);
+    } else {
+      createDirectChatMutate(event.user.id);
+    }
+  };
   // Helper function to format date
   const formatDate = (dateString: string) => {
     if (!dateString) return 'TBD';
@@ -220,6 +252,8 @@ export default function EventDetail() {
     );
   }
 
+  const isHost = event?.userId === myData?.userId;
+
   // Extract dynamic data from response
   const eventTime = event.eventTimes?.[0]; // Get first event time
   const eventDate = formatDate(eventTime?.startTime);
@@ -230,13 +264,19 @@ export default function EventDetail() {
   const organizer = event.user?.name || 'Unknown Organizer';
   const organizerEmail = event.user?.email;
 
-  // const generateEventShareContent = () => {
-  //   return {
-  //     title: `${event.name} - Trivo`,
-  //     message: `Join me at ${event.name}!\n\n📅 ${eventDate} at ${eventTimeFormatted}\n📍 ${event.location}\n\n${event.description}\n\nDiscover amazing cultural events on Culture Connect!`,
-  //     url: `https://trivo.app/event/${event.id}`,
-  //   };
-  // };
+  const handleShareEvent = async () => {
+    if (!event) return;
+    try {
+      const eventUrl = `https://cultureconnect.app/event/${event.id}`;
+      await Share.share({
+        message: `Check out this event on Culture Connect: "${event.name}" on ${eventDate}.\n\n${event.description}\n\nJoin here: ${eventUrl}`,
+        url: eventUrl,
+        title: `Culture Connect Event: ${event.name}`,
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Unable to share this event at this time.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -262,18 +302,17 @@ export default function EventDetail() {
               <ArrowLeft size={20} color={theme.textPrimary} />
             </TouchableOpacity>
             <View style={styles.headerRight}>
-              {/* <TouchableOpacity
-                onPress={() => setIsBookmarked(!isBookmarked)}
-                style={styles.headerButton}
-              >
-                <Bookmark
-                  size={18}
-                  color={
-                    isBookmarked ? extendedTheme.accent : theme.textPrimary
-                  }
-                  fill={isBookmarked ? extendedTheme.accent : 'none'}
-                />
-              </TouchableOpacity> */}
+              <TouchableOpacity onPress={handleShareEvent} style={styles.headerButton}>
+                <Share2 size={18} color={theme.textPrimary} />
+              </TouchableOpacity>
+              {event?.userId === myData?.userId && (
+                <TouchableOpacity
+                  onPress={() => setShowEditEventModal(true)}
+                  style={styles.headerButton}
+                >
+                  <Edit3 size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={handleDeleteEvent}
@@ -399,7 +438,7 @@ export default function EventDetail() {
                     <Text style={styles.mapButtonText}>Map</Text>
                   </TouchableOpacity>
                 </View>
-
+{/* 
                 <View style={styles.infoRow}>
                   <View
                     style={[
@@ -412,7 +451,7 @@ export default function EventDetail() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>{organizer}</Text>
                   </View>
-                </View>
+                </View> */}
 
                 <Pressable
                       onPress={() => setShowAttendees(!showAttendees)}
@@ -535,44 +574,69 @@ export default function EventDetail() {
         </View>
       </ScrollView>
 
-      {isAttending ? (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.rsvpButton, styles.leaveButton]}
-            onPress={() => leaveEventMutation()}
-            disabled={isLeaving}
-          >
-            <View style={styles.rsvpContent}>
-              {isLeaving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <CheckCircle size={20} color={theme.white} />
-                  <Text style={styles.rsvpButtonText}>You are going!</Text>
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.rsvpButton,
-              (isJoining || isLeaving) && styles.disabledButton,
-            ]}
-            onPress={() => joinEventMutation()}
-            disabled={isJoining}
-          >
-            <View style={styles.rsvpContent}>
-              {isJoining ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.rsvpButtonText}>RSVP Now</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
+      {!isHost && (
+         <View style={styles.footer}>
+           <TouchableOpacity
+             style={[
+               styles.messageButtonFooter,
+               (isCreatingChat) && styles.disabledButton,
+             ]}
+             onPress={handleMessageHost}
+             disabled={isCreatingChat}
+           >
+             <View style={styles.rsvpContent}>
+               {isCreatingChat ? (
+                 <ActivityIndicator color="#fff" />
+               ) : (
+                 <>
+                   <MessageCircleIcon size={20} color={theme.white} />
+                   <Text style={styles.rsvpButtonText}>Message Host</Text>
+                 </>
+               )}
+             </View>
+           </TouchableOpacity>
+           {isAttending ? (
+             <TouchableOpacity
+               style={[styles.rsvpButton, styles.leaveButton]}
+               onPress={() => leaveEventMutation()}
+               disabled={isLeaving}
+             >
+               <View style={styles.rsvpContent}>
+                 {isLeaving ? (
+                   <ActivityIndicator color="#fff" />
+                 ) : (
+                   <>
+                     <CheckCircle size={20} color={theme.white} />
+                     <Text style={styles.rsvpButtonText}>Going</Text>
+                   </>
+                 )}
+               </View>
+             </TouchableOpacity>
+           ) : (
+             <TouchableOpacity
+               style={[styles.rsvpButton, (isJoining) && styles.disabledButton]}
+               onPress={() => joinEventMutation()}
+               disabled={isJoining}
+             >
+               <View style={styles.rsvpContent}>
+                 {isJoining ? (
+                   <ActivityIndicator color="#fff" />
+                 ) : (
+                   <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+                 )}
+               </View>
+             </TouchableOpacity>
+           )}
+         </View>
+      )}
+
+      {eventId && (
+        <EditEventModal
+          visible={showEditEventModal}
+          onClose={() => setShowEditEventModal(false)}
+          eventId={eventId}
+          onSubmit={() => queryClient.invalidateQueries({ queryKey: ['event', eventId] })}
+        />
       )}
     </SafeAreaView>
   );
@@ -1040,6 +1104,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
     padding: spacing.md,
     backgroundColor: neomorphColors.background,
     borderTopWidth: 1,
@@ -1047,13 +1112,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rsvpButton: {
+    flex: 1,
     width: '100%',
     borderRadius: 16,
     backgroundColor: theme.primary,
-    marginBottom: spacing.sm,
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  messageButtonFooter: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: theme.info,
+    marginRight: spacing.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.info,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
@@ -1072,7 +1154,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   rsvpButtonText: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
     color: theme.white,
     fontWeight: '700',
     letterSpacing: 0.5,

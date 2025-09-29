@@ -49,7 +49,6 @@ export interface UpdateEventData {
   groupId?: string;
   isPublic?: boolean;
   universityOnly?: boolean;
-  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 }
 
 export interface GetEventsParams {
@@ -63,6 +62,14 @@ export interface GetEventsParams {
   universityOnly?: boolean;
   sortBy?: 'date' | 'name' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
+}
+
+export interface EventFilters {
+  ofMyUniversity?: boolean; // Filter by user's university
+  myGroups?: boolean; // Filter by groups the user is a member of
+  timeFrame?: "thisWeek" | "thisMonth"; // Filter by time frame
+  sortBy?: "date" | "name"; // Sort by event date or name
+  sortOrder?: "asc" | "desc"; // Sort order: ascending or descending
 }
 
 export interface ApiResponse<T> {
@@ -136,7 +143,17 @@ export const createEvent = async (eventData: CreateEventData) => {
   }
 };
 
-export const getEvents = async (params?: GetEventsParams) => {
+export const approveEvent = async (id: string) => {
+  try {
+    const response: AxiosResponse = await api.post(`/event/${id}/approve`);
+    return response.data;
+  } catch (error) {
+    console.error('Error approving event:', error);
+    throw error;
+  }
+};
+
+export const getEvents = async (params?: EventFilters) => {
   try {
     const response = await api.get('/event/all', { params });
     return response.data;

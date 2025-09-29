@@ -1,3 +1,4 @@
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,10 +8,12 @@ import {
   Image,
   Alert,
   Platform,
+  RefreshControl,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, MessageCircle, UserMinus } from 'lucide-react-native';
+import { Users, MessageCircle, UserMinus, Search } from 'lucide-react-native';
 import { getFriends, removeFriend } from '@/contexts/friend.api';
 import { router } from 'expo-router';
 
@@ -34,19 +37,38 @@ const theme = {
 };
 
 export default function FriendsListScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const {
     data: friendsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['friends'],
     queryFn: () => getFriends(),
   });
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
+
   const friends = friendsResponse?.data || [];
 
+  const filteredFriends = useMemo(() => {
+    if (!searchQuery.trim()) return friends;
+
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return friends.filter(
+      (friend: any) =>
+        friend.firstName.toLowerCase().includes(lowercasedQuery) ||
+        friend.lastName.toLowerCase().includes(lowercasedQuery) ||
+        `${friend.firstName} ${friend.lastName}`.toLowerCase().includes(lowercasedQuery)
+    );
+  }, [friends, searchQuery]);
 
   const removeFriendMutation = useMutation({
     mutationFn: removeFriend,
@@ -107,19 +129,25 @@ export default function FriendsListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Friends Count Header */}
-      <View style={styles.headerContainer}>
-        <View style={styles.friendsCount}>
-          <Users size={18} color={theme.gray500} />
-          <Text style={styles.friendsCountText}>{friends.length} friends</Text>
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchBarContainer}>
+          <Search size={20} color="#94A3B8" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search friends..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#94A3B8"
+          />
         </View>
       </View>
 
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {friends.length === 0 ? (
+        {filteredFriends.length === 0 ? (
           <View style={styles.emptyState}>
             <Users size={48} color={theme.gray400} />
             <Text style={styles.emptyStateTitle}>No friends yet</Text>
@@ -129,7 +157,7 @@ export default function FriendsListScreen() {
           </View>
         ) : (
           <View style={styles.friendsList}>
-            {friends.map((friend: any) => (
+            {filteredFriends.map((friend: any) => (
               <TouchableOpacity
                 key={friend.id}
                 style={styles.friendCard}
@@ -148,7 +176,11 @@ export default function FriendsListScreen() {
                   <Text style={styles.friendName}>
                     {friend.firstName} {friend.lastName}
                   </Text>
-                  <Text style={styles.friendDetails}>{friend.email}</Text>
+                  {friend.major && (
+                    <Text style={styles.friendDetails}>{friend.major}</Text>
+                  )}
+
+                  {/* <Text style={styles.friendDetails}>{friend.email}</Text> */}
                 </View>
                 <View style={styles.friendActions}>
                   <TouchableOpacity
@@ -184,31 +216,41 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background,
   },
 
-  headerContainer: {
+  searchWrapper: {
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
+  },
+
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    height: 52,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
+        shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.2,
-        shadowRadius: 2,
+        shadowRadius: 4,
       },
       android: {
         elevation: 1,
       },
     }),
   },
-
-  friendsCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'center',
+  searchIcon: {
+    marginLeft: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.textPrimary,
+    fontWeight: '500',
+    marginLeft: 12,
   },
 
   friendsCountText: {

@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/Badge';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
 import { ArrowLeft, User, CreditCard as Edit3, Share2, Eye, Shield, Bell, Lock, CircleHelp as HelpCircle, ChevronRight, Settings as SettingsIcon, Globe, Smartphone, Mail } from 'lucide-react-native';
 import LogoutButton from '@/components/LogoutButton';
+import getDecodedToken from '@/utils/getMyData';
+import { useQuery } from '@tanstack/react-query';
+import { getMyData } from '@/contexts/user.api';
 
 interface SettingsOption {
   id: string;
@@ -26,9 +29,14 @@ export default function Settings() {
     router.push('/profile/edit');
   };
 
+  const { data: myData, isLoading } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getMyData(),
+  });
+
   const handleShareProfile = async () => {
     try {
-      const profileUrl = 'https://cultureconnect.app/profile/priya-sharma';
+      const profileUrl = `https://cultureconnect.app/profile/${myData?.user?.id || 'user'}`;
       await Share.share({
         message: `Check out my TRiVO profile! Connect with me to explore our shared cultural heritage: ${profileUrl}`,
         url: profileUrl,
@@ -41,7 +49,7 @@ export default function Settings() {
   };
 
   const handleViewPublicProfile = () => {
-    router.push('/profile/public/1');
+    router.push(`/public/profile/${myData?.user?.id || '1'}`);
   };
 
   const profileOptions: SettingsOption[] = [
@@ -163,6 +171,56 @@ export default function Settings() {
     </View>
   );
 
+  // Helper function to format location
+  const getLocationString = () => {
+    const user = myData?.user;
+    if (!user) return '';
+    
+    const parts = [];
+    if (user.city) parts.push(user.city);
+    if (user.state) parts.push(user.state);
+    
+    return parts.join(', ');
+  };
+
+  // Helper function to format user's academic info
+  const getAcademicInfo = () => {
+    const user = myData?.user;
+    if (!user) return '';
+    
+    const parts = [];
+    if (user.major) parts.push(user.major);
+    if (user.classYear) parts.push(user.classYear);
+    
+    return parts.join(' • ');
+  };
+
+  // Helper function to format user's bio or fallback
+  const getUserBio = () => {
+    const user = myData?.user;
+    if (!user) return '';
+    
+    if (user.bio) return user.bio;
+    
+    // Create a dynamic bio based on user's interests
+    if (user.interests && user.interests.length > 0) {
+      const interestsText = user.interests.slice(0, 3).join(', ');
+      return `Passionate about ${interestsText.toLowerCase()} and connecting with fellow students! 🌍`;
+    }
+    
+    return 'Student passionate about connecting with fellow students from around the world! 🌍';
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const user = myData?.user;
+
   return (
     <View style={styles.container}>
       {/* Background gradient */}
@@ -215,21 +273,35 @@ export default function Settings() {
                     </LinearGradient>
                   </View>
                   <View style={styles.profileInfo}>
-                    <Text style={styles.profileName}>Alex Chen</Text>
-                    <Text style={styles.profileEmail}>alex.chen@stanford.edu</Text>
+                    <Text style={styles.profileName}>
+                      {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
+                    </Text>
+                    <Text style={styles.profileEmail}>{user?.email || 'No email'}</Text>
                     <View style={styles.profileBadgesRow}>
-                      <View style={styles.neomorphicBadge}>
-                        <Text style={styles.badgeText}>✓ Verified</Text>
-                      </View>
-                      <View style={[styles.neomorphicBadge, styles.studentBadge]}>
-                        <Text style={[styles.badgeText, styles.studentBadgeText]}>Student</Text>
-                      </View>
+                      {user?.isVerified && (
+                        <View style={styles.neomorphicBadge}>
+                          <Text style={styles.badgeText}>✓ Verified</Text>
+                        </View>
+                      )}
+                      {user?.classYear && (
+                        <View style={[styles.neomorphicBadge, styles.studentBadge]}>
+                          <Text style={[styles.badgeText, styles.studentBadgeText]}>
+                            {user.classYear}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    <Text style={styles.profileMeta}>Computer Science • Junior</Text>
-                    <Text style={styles.profileMeta}>Stanford University</Text>
-                    <Text style={styles.profileMeta}>Palo Alto, CA</Text>
+                    {getAcademicInfo() && (
+                      <Text style={styles.profileMeta}>{getAcademicInfo()}</Text>
+                    )}
+                    {user?.university?.name && (
+                      <Text style={styles.profileMeta}>{user.university.name}</Text>
+                    )}
+                    {getLocationString() && (
+                      <Text style={styles.profileMeta}>{getLocationString()}</Text>
+                    )}
                     <Text style={styles.profileBio}>
-                      Passionate about technology and preserving cultural traditions. Love connecting with fellow students from around the world! 🌏
+                      {getUserBio()}
                     </Text>
                   </View>
                 </View>
@@ -267,6 +339,11 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
   },
   headerContainer: {
     marginHorizontal: 20,
@@ -368,17 +445,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 16,
     overflow: 'hidden',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#6366F1',
-    //     shadowOffset: { width: 0, height: 4 },
-    //     shadowOpacity: 0.2,
-    //     shadowRadius: 12,
-    //   },
-    //   android: {
-    //     elevation: 6,
-    //   },
-    // }),
   },
   avatarGradient: {
     flex: 1,
@@ -411,25 +477,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#10B981',
-    //     shadowOffset: { width: 0, height: 2 },
-    //     shadowOpacity: 0.15,
-    //     shadowRadius: 4,
-    //   },
-    //   android: {
-    //     elevation: 3,
-    //   },
-    // }),
   },
   studentBadge: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#3B82F6',
-      },
-    }),
   },
   badgeText: {
     fontSize: 12,
@@ -494,17 +544,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#E2E8F0',
-    //     shadowOffset: { width: 0, height: 2 },
-    //     shadowOpacity: 0.8,
-    //     shadowRadius: 4,
-    //   },
-    //   android: {
-    //     elevation: 2,
-    //   },
-    // }),
   },
   lastOption: {
     marginBottom: 0,
@@ -520,17 +559,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 16,
     overflow: 'hidden',
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#CBD5E1',
-    //     shadowOffset: { width: 0, height: 3 },
-    //     shadowOpacity: 0.3,
-    //     shadowRadius: 6,
-    //   },
-    //   android: {
-    //     elevation: 4,
-    //   },
-    // }),
   },
   iconGradient: {
     flex: 1,
@@ -560,7 +588,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(148, 163, 184, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-   
   },
   bottomSpacing: {
     height: 20,

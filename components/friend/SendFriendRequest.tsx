@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
   Platform,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,10 +23,16 @@ import {
   UserCheck,
   UserX,
   MessageCircle,
+  Filter,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { getUsers } from '@/contexts/user.api';
-import { sendFriendRequest } from '@/contexts/friend.api';
+import {
+  sendFriendRequest,
+  cancelFriendRequest,
+  respondToFriendRequest,
+} from '@/contexts/friend.api';
+import { FriendFilterModal } from '../UserFilterModal';
 
 const theme = {
   primary: '#6366F1',
@@ -55,32 +62,60 @@ const FriendshipStatus = {
   BLOCKED: 'BLOCKED',
 };
 
+interface FriendFilters {
+  myUniversity?: boolean;
+  major?: string;
+  sortBy?: 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  universityId?: string;
+}
+
 export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [message, setMessage] = useState('');
 
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filters, setFilters] = useState<FriendFilters>({});
 
   const {
     data: usersResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => getUsers(),
+    queryKey: ['users', filters], // Add filters to query key
+    queryFn: () => getUsers(filters), // Pass filters to API
   });
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }, [queryClient])
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const users = usersResponse?.users || [];
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
     onSuccess: (data, variables) => {
+      setModalVisible(false);
+      setMessage('');
       console.log('Friend request sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
       Alert.alert('Success', 'Friend request sent successfully!');
     },
@@ -94,15 +129,53 @@ export default function SendFriendRequestScreen() {
     },
   });
 
+  const cancelRequestMutation = useMutation({
+    mutationFn: cancelFriendRequest,
+    onSuccess: (data, variables) => {
+      console.log('Friend request cancelled successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      Alert.alert('Success', 'Friend request cancelled.');
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling friend request:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to cancel friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const respondToRequestMutation = useMutation({
+    mutationFn: respondToFriendRequest,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
+
+      const action = variables.action === 'accept' ? 'accepted' : 'declined';
+      Alert.alert('Success', `Friend request ${action}!`);
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to respond to friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users;
 
     return users.filter(
       (user: any) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.university?.name.toLowerCase().includes(searchQuery.toLowerCase())
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) 
     );
   }, [users, searchQuery]);
 
@@ -122,6 +195,35 @@ export default function SendFriendRequestScreen() {
     setSelectedUser(null);
   };
 
+  const handleCancelRequest = (userId: string, userName: string) => {
+    Alert.alert(
+      'Cancel Request',
+      `Are you sure you want to cancel the friend request to ${userName}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => cancelRequestMutation.mutate({ receiverId: userId }),
+        },
+      ]
+    );
+  };
+
+  const handleAcceptRequest = (friendshipId: string, userName: string) => {
+    Alert.alert(
+      'Accept Friend Request',
+      `Accept friend request from ${userName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Accept',
+          onPress: () =>
+            respondToRequestMutation.mutate({ friendshipId, action: 'accept' }),
+        },
+      ]
+    );
+  };
 
   const getActionButton = (user: any) => {
     const { friendshipStatus, isFriendRequestSender } = user;
@@ -143,19 +245,28 @@ export default function SendFriendRequestScreen() {
     // Friend request pending
     if (friendshipStatus === FriendshipStatus.PENDING) {
       if (isFriendRequestSender) {
+        // I sent the request
         // Current user sent the request - show "Sent" button
         return (
-          <TouchableOpacity style={styles.requestSentButton} disabled>
-            <UserPlus size={18} color={theme.gray500} />
-            <Text style={styles.requestSentText}>Sent</Text>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => handleCancelRequest(user.id, user.name)}
+            disabled={cancelRequestMutation.isPending}
+          >
+            <UserX size={18} color={theme.danger} />
+            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
       } else {
-        // Current user received the request - show "Pending" button
+        // I received the request - show "Accept" button
         return (
-          <TouchableOpacity style={styles.pendingButton} disabled>
-            <UserCheck size={18} color={theme.warning} />
-            <Text style={styles.pendingText}>Pending</Text>
+          <TouchableOpacity
+            style={styles.acceptButton}
+            onPress={() => handleAcceptRequest(user.friendshipId, user.name)}
+            disabled={respondToRequestMutation.isPending}
+          >
+            <UserCheck size={18} color={theme.white} />
+            <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
         );
       }
@@ -195,7 +306,12 @@ export default function SendFriendRequestScreen() {
   };
 
   const getStatusBadge = (friendshipStatus: string) => {
-    if (!friendshipStatus || friendshipStatus === FriendshipStatus.ACCEPTED) return null;
+    if (
+      !friendshipStatus ||
+      friendshipStatus === FriendshipStatus.ACCEPTED ||
+      friendshipStatus == FriendshipStatus.DECLINED
+    )
+      return null;
 
     const statusConfig = {
       [FriendshipStatus.PENDING]: {
@@ -256,16 +372,32 @@ export default function SendFriendRequestScreen() {
     <SafeAreaView style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchWrapper}>
-        <View style={styles.searchContainer}>
-          <Search size={18} color={theme.gray400} />
+        <View style={styles.searchBarContainer}>
+          <Search size={20} color="#94A3B8" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, email, city..."
+            placeholder="Search people..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={theme.gray400}
+            placeholderTextColor="#94A3B8"
           />
         </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setFilterModalVisible(true)}
+        >
+          {Object.keys(filters).length > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {Object.keys(filters).length}
+              </Text>
+            </View>
+          )}
+          <Filter
+            size={20}
+            color={Object.keys(filters).length > 0 ? theme.primary : '#64748B'}
+          />
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -278,7 +410,9 @@ export default function SendFriendRequestScreen() {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Send a friend request to {selectedUser?.name}?</Text>
+            <Text style={styles.modalText}>
+              Send a friend request to {selectedUser?.name}?
+            </Text>
             <TextInput
               style={styles.messageInput}
               placeholder="Add an optional message..."
@@ -288,10 +422,18 @@ export default function SendFriendRequestScreen() {
               multiline
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={() => setModalVisible(false)}>
-                <Text style={[styles.textStyle,{ color:'black'}]}>Cancel</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={[styles.textStyle, { color: 'black' }]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSend]} onPress={handleSendWithMessageHandler}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSend]}
+                onPress={handleSendWithMessageHandler}
+              >
                 <Text style={styles.textStyle}>Send</Text>
               </TouchableOpacity>
             </View>
@@ -301,6 +443,9 @@ export default function SendFriendRequestScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
@@ -321,11 +466,11 @@ export default function SendFriendRequestScreen() {
                 onPress={() => router.push(`/public/profile/${user.id}`)}
               >
                 <Image
-                   source={{
+                  source={{
                     uri:
                       user?.profilePicture ||
                       'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                   }}
+                  }}
                   style={styles.userImage}
                   defaultSource={require('../../assets/user.png')}
                 />
@@ -335,10 +480,9 @@ export default function SendFriendRequestScreen() {
                     <Text style={styles.userName}>{user.name}</Text>
                     {getStatusBadge(user.friendshipStatus)}
                   </View>
-                  <Text style={styles.userEmail}>{user.email}</Text>
-                  {/* {user.city && (
-                    <Text style={styles.userLocation}>{user.city}</Text>
-                  )} */}
+                  {user.major && (
+                    <Text style={styles.userEmail}>{user.major}</Text>
+                  )}
                   {user.university && (
                     <Text style={styles.userUniversity}>
                       {user.university.name}
@@ -347,6 +491,11 @@ export default function SendFriendRequestScreen() {
                   {user.classYear && (
                     <Text style={styles.userClass}>{user.classYear}</Text>
                   )}
+                  {(user.countryOfOrigin || user.city) && (
+                    <Text style={styles.userLocation}>
+                      {user.countryOfOrigin || user.city}
+                    </Text>
+                  )}
                 </View>
                 {getActionButton(user)}
               </TouchableOpacity>
@@ -354,6 +503,13 @@ export default function SendFriendRequestScreen() {
           </View>
         )}
       </ScrollView>
+      <FriendFilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onApply={() => setFilterModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -366,32 +522,65 @@ const styles = StyleSheet.create({
 
   searchWrapper: {
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 
-  searchContainer: {
+  searchBarContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 2,
+    borderRadius: 16,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 42,
-    gap: 8,
+    height: 52,
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
     }),
+  },
+
+  searchIcon: {
+    marginLeft: 16,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: theme.danger,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.white,
+  },
+  filterBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  filterButton: {
+    width: 52,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 
   searchInput: {
@@ -399,7 +588,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.textPrimary,
     fontWeight: '500',
-    paddingVertical: 8,
+    marginLeft: 12,
   },
 
   scrollView: {
@@ -641,10 +830,58 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  acceptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.success,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.success,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  acceptButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+    fontSize: 13,
+  },
   declinedText: {
     color: theme.danger,
     fontWeight: '600',
     fontSize: 13,
+  },
+
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.danger,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+        borderColor: theme.danger,
+        borderWidth: 0.5,
+      },
+    }),
   },
 
   blockedText: {
@@ -717,5 +954,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  cancelText: {
+    color: theme.danger,
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

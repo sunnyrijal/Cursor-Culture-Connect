@@ -218,14 +218,6 @@ export default function HubDetails() {
         <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.headerContainer}>
-        <View style={styles.countContainer}>
-          <Text style={styles.countText}>
-            {getTabCount()} {activeTab}
-          </Text>
-        </View>
-      </View>
-
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
@@ -326,7 +318,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     borderRadius: 16,
     padding: 4,
-    marginBottom: spacing.md,
+    marginVertical: spacing.md,
     ...Platform.select({
       ios: {
         shadowColor: '#A3B1C6',

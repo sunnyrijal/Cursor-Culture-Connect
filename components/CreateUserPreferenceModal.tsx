@@ -13,6 +13,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Switch } from 'react-native'; // Ensure Switch is imported
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
@@ -68,6 +69,7 @@ export function CreateInterestPreferenceModal({
     locationRadius: 10,
     additionalNotes: '',
     isActive: true,
+    publicPreference: true,
   });
   
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function CreateInterestPreferenceModal({
   const interests = interestsData?.data || [];
   const activities= activityData?.data || [];
   console.log(activities)
-
+  const editingPreferenceId = editingPreference?.id;
  useEffect(() => {
     if (editingPreference) {
       // Pre-fill form for editing
@@ -109,6 +111,7 @@ export function CreateInterestPreferenceModal({
         locationRadius: editingPreference.locationRadius,
         additionalNotes: editingPreference.additionalNotes || '',
         isActive: editingPreference.isActive,
+        publicPreference: editingPreference.publicPreference !== undefined ? editingPreference.publicPreference : true,
       });
       
       // Set selected interest
@@ -130,11 +133,12 @@ export function CreateInterestPreferenceModal({
         locationRadius: 10,
         additionalNotes: '',
         isActive: true,
+        publicPreference: true,
       });
       setSelectedActivity(null);
       setFocusedField(null);
     }
-  }, [visible, editingPreference, activities]);
+  }, [visible, editingPreferenceId]);
 
   const queryClient = useQueryClient();
 
@@ -233,6 +237,7 @@ export function CreateInterestPreferenceModal({
       locationRadius: formData.locationRadius,
       additionalNotes: formData.additionalNotes.trim() || undefined,
       isActive: formData.isActive,
+      publicPreference: formData.publicPreference,
     };
 
     if (editingPreference) {
@@ -642,60 +647,22 @@ export function CreateInterestPreferenceModal({
 
                 {/* Active Status Toggle */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Status</Text>
-                  <View style={styles.rowContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.statusButton,
-                        formData.isActive && styles.statusButtonActive,
-                      ]}
-                      onPress={() => setFormData({ ...formData, isActive: true })}
-                    >
-                      <LinearGradient
-                        colors={
-                          formData.isActive
-                            ? ['#10B981', '#059669']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
-                        }
-                        style={styles.statusButtonGradient}
-                      >
-                        <Zap size={16} color={formData.isActive ? '#FFFFFF' : '#374151'} />
-                        <Text
-                          style={[
-                            styles.statusButtonText,
-                            formData.isActive && styles.statusButtonTextActive,
-                          ]}
-                        >
-                          Active
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.statusButton,
-                        !formData.isActive && styles.statusButtonActive,
-                      ]}
-                      onPress={() => setFormData({ ...formData, isActive: false })}
-                    >
-                      <LinearGradient
-                        colors={
-                          !formData.isActive
-                            ? ['#64748B', '#475569']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
-                        }
-                        style={styles.statusButtonGradient}
-                      >
-                        <Text
-                          style={[
-                            styles.statusButtonText,
-                            !formData.isActive && styles.statusButtonTextActive,
-                          ]}
-                        >
-                          Inactive
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.inputLabel}>Set Preference Active</Text>
+                      <Text style={styles.toggleSubtitle}>
+                        {formData.isActive
+                          ? 'Your preference is currently active and visible.'
+                          : 'Your preference is inactive and hidden.'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={formData.isActive}
+                      onValueChange={(value) => setFormData({ ...formData, isActive: value })}
+                      trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                      thumbColor={formData.isActive ? '#6366F1' : '#f4f3f4'}
+                      ios_backgroundColor="#E5E7EB"
+                    />
                   </View>
                 </View>
               </LinearGradient>
@@ -783,6 +750,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
+  },
+
+  visibilityButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: 'white',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    paddingVertical: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  visibilityButtonActive: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  visibilityButtonText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  visibilityButtonTextActive: { color: '#FFFFFF' },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  toggleSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
   },
   addActivityButton: {
     flexDirection: 'row',

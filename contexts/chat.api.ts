@@ -81,3 +81,14 @@ export const getChatMessages = async (
     throw error;
   }
 };
+
+// 7. GET CHAT REQUESTS
+export const getChatRequests = async () => {
+  try {
+    const response = await api.get('/chat/requests');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching chat requests:', error);
+    throw error;
+  }
+};

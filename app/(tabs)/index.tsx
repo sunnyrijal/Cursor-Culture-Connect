@@ -1,6 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
@@ -13,18 +19,15 @@ import UserStat from '@/components/home/UserStat';
 import CulturalExperiences from '@/components/home/CulturalExperiences';
 import UpcommingEvents from '@/components/home/UpcommingEvents';
 import QuickActions from '@/components/home/QuickActions';
-import WelcomeCenter from '@/components/home/WelcomeMesage';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import AutoplayVideo from '@/components/home/VideoCard';
-import { Image } from 'react-native';
+
 import getDecodedToken from '@/utils/getMyData';
-import { useQuery } from '@tanstack/react-query';
-import AdMobScreen from '@/components/BannerAd';
-// Optional (iOS ATT prompt). If you want it, install: npx expo install expo-tracking-transparency
-// import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync, PermissionStatus } from "expo-tracking-transparency";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
 
@@ -32,7 +35,6 @@ export default function Dashboard() {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
-  console.log(myData);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
@@ -58,12 +60,29 @@ export default function Dashboard() {
     setShowStoriesModal(false);
     setShowShareCultureModal(true);
   };
+  const queryClient=useQueryClient()
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Invalidate all queries that are used on this page
+      await queryClient.invalidateQueries({ queryKey: ['myData'] });
+      await queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
+      await queryClient.invalidateQueries({ queryKey: ['counts'] });
+      await queryClient.invalidateQueries({ queryKey: ['advertisements'] });
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <Header setShowStoriesModal={setShowStoriesModal} />
 
@@ -71,7 +90,6 @@ export default function Dashboard() {
 
         <QuickActions />
         <AutoplayVideo source={require('../../assets/trivo.mp4')} style={{}} />
-        {/* <AdMobScreen /> */}
 
         <CulturalExperiences />
 

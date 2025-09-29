@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +18,7 @@ import { UserCheck, UserX, Clock, Users } from 'lucide-react-native';
 import {
   getPendingFriendRequests,
   respondToFriendRequest,
+  cancelFriendRequest,
 } from '@/contexts/friend.api';
 import { router } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
@@ -27,6 +29,7 @@ const theme = {
   success: '#10B981',
   warning: '#F59E0B',
   background: '#F0F3F7',
+  danger: '#EF4444',
   white: '#FFFFFF',
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
@@ -43,6 +46,7 @@ const theme = {
 
 export default function FriendRequestsScreen() {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
@@ -54,10 +58,16 @@ export default function FriendRequestsScreen() {
     data: requestsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['friend-requests'],
     queryFn: () => getPendingFriendRequests(),
   });
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
 
   const receivedRequests = requestsResponse?.data?.received || [];
   const sentRequests = requestsResponse?.data?.sent || [];
@@ -70,6 +80,9 @@ export default function FriendRequestsScreen() {
       console.log('Friend request response successful:', data);
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['counts'] });
+
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
       Alert.alert('Success', `Friend request ${action}!`);
     },
@@ -79,6 +92,24 @@ export default function FriendRequestsScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to respond to friend request. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const cancelRequestMutation = useMutation({
+    mutationFn: cancelFriendRequest,
+    onSuccess: (data) => {
+      console.log('Friend request cancelled successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      Alert.alert('Success', 'Friend request cancelled.');
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling friend request:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to cancel friend request. Please try again.';
       Alert.alert('Error', errorMessage);
     },
   });
@@ -112,6 +143,21 @@ export default function FriendRequestsScreen() {
               friendshipId,
               action: 'decline',
             }),
+        },
+      ]
+    );
+  };
+
+  const handleCancelRequest = (receiverId: string, receiverName: string) => {
+    Alert.alert(
+      'Cancel Request',
+      `Are you sure you want to cancel the friend request to ${receiverName}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => cancelRequestMutation.mutate({ receiverId }),
         },
       ]
     );
@@ -193,6 +239,9 @@ export default function FriendRequestsScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {currentRequests.length === 0 ? (
           <View style={styles.emptyState}>
@@ -214,7 +263,7 @@ export default function FriendRequestsScreen() {
               const user =
                 activeTab === 'received' ? request.sender : request.receiver;
 
-                const name = user.name || `${user.firstName} ${user.lastName}`;
+              const name = user.name || `${user.firstName} ${user.lastName}`;
 
               return (
                 <TouchableOpacity
@@ -223,17 +272,19 @@ export default function FriendRequestsScreen() {
                   onPress={() => router.push(`/public/profile/${user.id}`)}
                 >
                   <Image
-                     source={{
-                    uri:
-                      user?.profilePicture ||
-                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                  }}
+                    source={{
+                      uri:
+                        user?.profilePicture ||
+                        'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                    }}
                     style={styles.userImage}
                     defaultSource={require('../../assets/user.png')}
                   />
                   <View style={styles.requestInfo}>
                     <Text style={styles.userName}>{name}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
+                    {user.major && (
+                      <Text style={styles.userEmail}>{user.major}</Text>
+                    )}
                     {user.city && (
                       <Text style={styles.userLocation}>{user.city}</Text>
                     )}
@@ -272,9 +323,15 @@ export default function FriendRequestsScreen() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={styles.sentStatus}>
-                      <Clock size={14} color={theme.warning} />
-                      <Text style={styles.sentStatusText}>Pending</Text>
+                    <View style={styles.requestActions}>
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => handleCancelRequest(user.id, name)}
+                        disabled={cancelRequestMutation.isPending}
+                      >
+                        <UserX size={14} color={theme.danger} />
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -296,7 +353,6 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
@@ -506,6 +562,34 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
+  },
+
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.danger,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+        borderColor: theme.danger,
+        borderWidth: 0.5,
+      },
+    }),
+  },
+  cancelButtonText: {
+    color: theme.danger,
+    fontWeight: '600',
+    fontSize: 13,
   },
 
   sentStatus: {

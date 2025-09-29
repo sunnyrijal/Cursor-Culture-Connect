@@ -336,7 +336,7 @@ export default function Profile() {
                   </View>
                 </View> */}
 
-                <View style={styles.infoItem}>
+                {/* <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <Phone size={18} color={clayTheme.accent} />
                   </View>
@@ -346,7 +346,7 @@ export default function Profile() {
                       {userData.phone || 'Not provided'}
                     </Text>
                   </View>
-                </View>
+                </View> */}
 
                 {userData.dateOfBirth && (
                   <View style={styles.infoItem}>

@@ -4,11 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // export const API_URL = 'https://4bhw4zcd-4000.inc1.devtunnels.ms/api';
 // export const API_BASE_URL = 'https://4bhw4zcd-4000.inc1.devtunnels.ms';
 
-// export const API_URL = 'http://localhost:4000/api';
-// export const API_BASE_URL = 'http://localhost:4000';
+export const API_URL = 'https://39f5b30a8a28.ngrok-free.app/api';
+export const API_BASE_URL = 'https://39f5b30a8a28.ngrok-free.app';
 
-export const API_URL = "https://secureapi.trivoconnect.com/api";
-export const API_BASE_URL = "https://secureapi.trivoconnect.com";
+// export const API_URL = "https://secureapi.trivoconnect.com/api";
+// export const API_BASE_URL = "https://secureapi.trivoconnect.com";
 
 // export const API_URL = process.env.API_URL;
 // export const API_BASE_URL = process.env.API_BASE_URL;

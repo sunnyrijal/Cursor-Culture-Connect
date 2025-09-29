@@ -1,6 +1,14 @@
 // Base types
 export type ChatType = 'direct' | 'group';
 
+export interface ChatUser {
+  _id: string;
+  id: string;
+  name: string;
+  profilePicture?: string;
+  email: string;
+}
+
 // Request types
 export interface CreateDirectChatRequest {
   otherUserId: string;
@@ -46,4 +54,20 @@ export interface MessagesResponse {
   message: string;
   messages: any[];
   pagination: any;
+}
+
+// Chat Request types
+export interface ChatRequest {
+  _id: string;
+  sender: ChatUser;
+  receiver: ChatUser;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatRequestsResponse {
+  success: boolean;
+  message: string;
+  requests: ChatRequest[];
 }

@@ -23,6 +23,7 @@ export interface CreateQuickEventData {
   max?: string;
   time?: string;
   isPublic:boolean
+  location?:string
 }
 
 export interface UpdateQuickEventData {
@@ -30,6 +31,8 @@ export interface UpdateQuickEventData {
   description?: string;
   max?: string;
   time?: string;
+  location?:string
+  isPublic:boolean
 }
 
 export const createQuickEvent = async (quickEventData: CreateQuickEventData) => {
@@ -82,6 +85,7 @@ export const getQuickEventsByUserId = async (userId: string) => {
 };
 
 export const updateQuickEvent = async (id: string, quickEventData: UpdateQuickEventData) => {
+  console.log(quickEventData)
   try {
     const response: AxiosResponse = await api.put(
       `/quickevents/${id}`,

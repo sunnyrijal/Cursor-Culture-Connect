@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -59,6 +59,7 @@ export function CreateActivityModal({
     null
   );
 
+
   const queryClient = useQueryClient();
 
   const { data: interestsData, isLoading: interestsLoading } = useQuery({
@@ -67,9 +68,28 @@ export function CreateActivityModal({
   });
 
   const interests = interestsData?.data || [];
+  console.log(interests)
 
+
+  // Reset form when modal opens/closes or when switching between create/edit modes
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: '',
+      description: '',
+      interestId: '',
+    });
+    setSelectedInterest(null);
+    setFocusedField(null);
+    setShowInterestDropdown(false);
+  }, []);
+
+  // Handle editing activity setup
   useEffect(() => {
-    if (editingActivity) {
+    if (!visible) {
+      return;
+    }
+
+    if (editingActivity && interests.length > 0) {
       setFormData({
         name: editingActivity.name,
         description: editingActivity.description || '',
@@ -81,17 +101,17 @@ export function CreateActivityModal({
       if (interest) {
         setSelectedInterest(interest);
       }
-    } else {
-      // Reset form when modal is not for editing or is closed
-      setFormData({
-        name: '',
-        description: '',
-        interestId: '',
-      });
-      setSelectedInterest(null);
-      setFocusedField(null);
+    } else if (!editingActivity) {
+      resetForm();
     }
-  }, [visible, editingActivity, interests]);
+  }, [visible, editingActivity?.id, interests.length, resetForm]); // Only depend on the ID and length, not the entire arrays
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!visible) {
+      resetForm();
+    }
+  }, [visible, resetForm]);
 
   const createActivityMutation = useMutation({
     mutationFn: createActivity,
@@ -195,11 +215,11 @@ export function CreateActivityModal({
     );
   };
 
-  const selectInterest = (interest: Interest) => {
+  const selectInterest = useCallback((interest: Interest) => {
     setSelectedInterest(interest);
-   setFormData({ ...formData, interestId: interest.id });
+    setFormData(prev => ({ ...prev, interestId: interest.id }));
     setShowInterestDropdown(false);
-  };
+  }, []);
 
   if (!visible) return null;
 
@@ -256,7 +276,7 @@ export function CreateActivityModal({
                       style={styles.input}
                       value={formData.name}
                       onChangeText={(text) =>
-                        setFormData({ ...formData, name: text })
+                        setFormData(prev => ({ ...prev, name: text }))
                       }
                       placeholder="e.g., Basketball, Hiking, Coding"
                       onFocus={() => setFocusedField('name')}
@@ -339,7 +359,7 @@ export function CreateActivityModal({
                       style={[styles.input, styles.textArea]}
                       value={formData.description}
                       onChangeText={(text) =>
-                        setFormData({ ...formData, description: text })
+                        setFormData(prev => ({ ...prev, description: text }))
                       }
                       placeholder="A short description of the activity..."
                       multiline

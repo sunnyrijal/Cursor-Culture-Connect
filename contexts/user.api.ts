@@ -31,6 +31,27 @@ export interface UpdateProfileData {
   profilePicture?: string
 }
 
+export interface SendResetPasswordOtpData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface UserFilters {
+  myUniversity?: boolean;
+  universityId?: string;
+  major?: string;
+  sortBy?: 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+
+
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -49,6 +70,26 @@ export const getMyData = async () => {
   }
 };
 
+export const sendResetPasswordOtp = async (data: SendResetPasswordOtpData) => {
+  try {
+    const response = await api.post('/auth/forgot-password', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending reset password OTP:', error);
+    throw error;
+  }
+};
+
+export const resetPassword = async (data: ResetPasswordData) => {
+  try {
+    const response = await api.post('/auth/reset-password', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error;
+  }
+};
+
 export const getAllUsers = async () => {
   try {
     const response = await api.get('/user/all');
@@ -59,16 +100,44 @@ export const getAllUsers = async () => {
   }
 };
 
-export const getUsers = async () => {
+// export const getUsers = async (params?: UserFilters) => {
+//   try {
+//     const response = await api.get('/user/', {params});
+//     return response.data
+//   } catch (error) {
+//     console.error('Error fetching user data:', error);
+//     throw error;
+//   }
+// };
+// In your user.api.ts file
+export const getUsers = async (filters?: {
+  myUniversity?: boolean;
+  major?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  universityId?: string;
+}) => {
   try {
-    const response = await api.get('/user/');
-    return response.data
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      if (filters.myUniversity) params.append('myUniversity', 'true');
+      if (filters.major) params.append('major', filters.major);
+      if (filters.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (filters.universityId) params.append('universityId', filters.universityId);
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `/user/?${queryString}` : '/user/';
+    
+    const response = await api.get(url);
+    return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
   }
 };
-
 
   export const getCounts = async () => {
   try {
@@ -121,5 +190,3 @@ export const deleteMe = async () => {
     throw error;
   }
 };
-
-
