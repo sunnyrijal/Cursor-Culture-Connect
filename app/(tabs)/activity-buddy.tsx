@@ -1,5 +1,4 @@
 // project/app/(tabs)/activity-buddy.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -32,7 +31,9 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react-native';
+import { CreateActivityModal } from '@/components/AddActivityModal';
 import { router } from 'expo-router';
+import { CreateInterestPreferenceModal } from '@/components/CreateUserPreferenceModal';
 import {
   useQuery,
   useMutation,
@@ -40,15 +41,18 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query';
 import {
-  getInterests,
-  getUsersByInterest,
-  sendInterestPing,
   getUserPings,
   updateInterestPing,
-  Interest,
   User,
   InterestPing,
 } from '@/contexts/interest.api';
+import { 
+  getActivities, 
+  getUsersByActivity,
+  sendActivityPing, 
+} from '@/contexts/activity.api';
+import { Activity } from '@/types/activity';
+import MyPreferencesModal from '@/components/MyPreferenceModal';
 
 const theme = {
   primary: '#6366F1',
@@ -71,32 +75,40 @@ const theme = {
   shadow: 'rgba(0, 0, 0, 0.1)',
 };
 
-type TabType = 'interests' | 'pings';
+type TabType = 'activities' | 'pings';
 
 export default function ActivityBuddyPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('interests');
+  const [activeTab, setActiveTab] = useState<TabType>('activities');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedInterest, setSelectedInterest] = useState<string | null>(
-    'All Activities'
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(
+    'all'
   );
   const [refreshing, setRefreshing] = useState(false);
   const [showPingModal, setShowPingModal] = useState(false);
   const [pingTarget, setPingTarget] = useState<{
     receiverId: string;
-    interestName: string;
+    activityId: string;
+    activityName: string;
     userName: string;
   } | null>(null);
   const [pingMessage, setPingMessage] = useState('');
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
-  const queryClient = useQueryClient();
 
-  // Query for interests
-  const { data: interestsData, isLoading: interestsLoading } = useQuery({
-    queryKey: ['interests'],
-    queryFn: getInterests,
+  const queryClient = useQueryClient();
+  const [isPreferenceModalVisible, setIsPreferenceModalVisible] =
+    useState(false);
+  const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
+  const [isMyPreferenceVisible, setIsMyPreferenceVisible] = useState(false);
+
+  const [editingActivity, setEditingActivity] = useState(null);
+
+  // Query for activities
+  const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
+    queryKey: ['activities'],
+    queryFn: () => getActivities(),
   });
 
-  // Query for users by interest using infinite query for pagination
+  // Query for users by activity using infinite query for pagination
   const {
     data: usersPages,
     fetchNextPage,
@@ -105,11 +117,11 @@ export default function ActivityBuddyPage() {
     isFetchingNextPage,
     refetch: refetchUsers,
   } = useInfiniteQuery({
-    queryKey: ['usersByInterest', selectedInterest],
+    queryKey: ['usersByActivity', selectedActivity],
     queryFn: ({ pageParam = 1 }) => {
-      const interestToFetch =
-        selectedInterest === 'All Activities' ? 'all' : selectedInterest;
-      return getUsersByInterest(interestToFetch!, pageParam);
+      const activityToFetch =
+        selectedActivity === 'all' ? 'all' : selectedActivity;
+      return getUsersByActivity(activityToFetch!, pageParam);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
@@ -118,8 +130,14 @@ export default function ActivityBuddyPage() {
       }
       return undefined;
     },
-    enabled: !!selectedInterest,
+    enabled: !!selectedActivity,
   });
+
+  useEffect(() => {
+    if (usersPages) {
+      console.log('Users by activity:', JSON.stringify(usersPages.pages, null, 2));
+    }
+  }, [usersPages]);
 
   // Query for user pings
   const { data: pingsData, isLoading: pingsLoading } = useQuery({
@@ -130,9 +148,9 @@ export default function ActivityBuddyPage() {
 
   // Send ping mutation
   const sendPingMutation = useMutation({
-    mutationFn: sendInterestPing,
+    mutationFn: sendActivityPing,
     onSuccess: () => {
-      Alert.alert('Success', 'Interest ping sent successfully!');
+      Alert.alert('Success', 'Activity ping sent successfully!');
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
     onError: (error) => {
@@ -154,7 +172,7 @@ export default function ActivityBuddyPage() {
     },
   });
 
-  const interests = interestsData?.data || [];
+  const activities = activitiesData?.data || [];
   const users = usersPages?.pages.flatMap((page) => page.data.users) || [];
   const pings = pingsData?.data || { sent: [], received: [] };
 
@@ -168,16 +186,15 @@ export default function ActivityBuddyPage() {
   const onRefresh = async () => {
     setRefreshing(true);
     setExpandedCards({});
-    if (activeTab === 'interests') {
+    if (activeTab === 'activities') {
       await refetchUsers();
-      
     } else {
       await queryClient.invalidateQueries({ queryKey: ['userPings'] });
     }
     setRefreshing(false);
   };
 
-  const toggleInterests = (userId: string) => {
+  const toggleActivities = (userId: string) => {
     setExpandedCards((prev) => ({
       ...prev,
       [userId]: !prev[userId],
@@ -186,12 +203,13 @@ export default function ActivityBuddyPage() {
 
   const handleSendPing = (
     receiverId: string,
-    interestName: string,
+    activityId: string,
+    activityName: string,
     userName: string
   ) => {
-    setPingTarget({ receiverId, interestName, userName });
+    setPingTarget({ receiverId, activityId, activityName, userName });
     setPingMessage(
-      `Hi! I'd love to connect over our shared interest in ${interestName}!`
+      `Hi! I'd love to connect over our shared activity in ${activityName}!`
     );
     setShowPingModal(true);
   };
@@ -201,24 +219,28 @@ export default function ActivityBuddyPage() {
     status: 'accepted' | 'declined'
   ) => {
     if (status === 'accepted') {
-      Alert.prompt(
-        'Accept Ping',
-        'Add a response message (optional):',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Accept',
-            onPress: (response) => {
-              updatePingMutation.mutate({
+      // Alert.prompt(
+      //   'Accept Ping',
+      //   'Add a response message (optional):',
+      //   [
+      //     { text: 'Cancel', style: 'cancel' },
+      //     {
+      //       text: 'Accept',
+      //       onPress: (response) => {
+      //         updatePingMutation.mutate({
+      //           pingId,
+      //           updateData: { status, response: response || undefined },
+      //         });
+      //       },
+      //     },
+      //   ],
+      //   'plain-text',
+      //   "Great! I'd love to connect over this activity!"
+      // );
+        updatePingMutation.mutate({
                 pingId,
-                updateData: { status, response: response || undefined },
+                updateData: { status },
               });
-            },
-          },
-        ],
-        'plain-text',
-        "Great! I'd love to connect over this interest!"
-      );
     } else {
       updatePingMutation.mutate({
         pingId,
@@ -226,11 +248,30 @@ export default function ActivityBuddyPage() {
       });
     }
   };
-  const renderUserCard = (user: User) => {
-    const isExpanded = expandedCards[user.id];
-    const interestsToShow = isExpanded ? user.interests : user.interests.slice(0, 3);
 
-    return (<View key={user.id} style={styles.userCard}>
+
+const renderUserCard = (user: any) => {
+  const isExpanded = expandedCards[user.id];
+  const preferencesToShow = isExpanded 
+    ? user.activityPreferences 
+    : user.activityPreferences?.slice(0, 2) || [];
+  
+  // Get the activity ID for pinging - if 'all' is selected, use 'all'
+  const activityId = selectedActivity === 'all' ? 'all' : selectedActivity;
+  const activityName = selectedActivity === 'all' ? 'all' : 
+    activities.find((activity: Activity) => activity.id === selectedActivity)?.name || selectedActivity;
+
+  const getSkillLevelColor = (level: string) => {
+    switch (level) {
+      case 'Beginner': return '#4CAF50';
+      case 'Intermediate': return '#FF9800';
+      case 'Advanced': return '#F44336';
+      default: return '#757575';
+    }
+  };
+
+  return (
+    <View key={user.id} style={styles.userCard}>
       <View style={styles.userHeader}>
         <Image
           source={
@@ -252,25 +293,103 @@ export default function ActivityBuddyPage() {
           )}
         </View>
       </View>
-
-      <View style={styles.userInterests}>
-        {interestsToShow.map((interest, index) => (
-          <View key={index} style={styles.interestChip}>
-            <Text style={styles.interestChipText}>{interest}</Text>
-          </View>
-        ))}
-        {!isExpanded && user.interests.length > 3 && (
-          <TouchableOpacity onPress={() => toggleInterests(user.id)} style={styles.interestChip}>
-            <Text style={styles.moreInterests}>
-              +{user.interests.length - 3} more
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
+      
+      {/* Activity Preferences Section */}
+      {user.activityPreferences && user.activityPreferences.length > 0 && (
+        <View style={styles.activitiesSection}>
+          <Text style={styles.sectionTitle}>Activities</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.activitiesScrollView}
+            contentContainerStyle={styles.activitiesContainer}
+          >
+            {preferencesToShow.map((preference: any, index: number) => (
+                <View key={index} style={[
+                styles.activityPreferenceCard,
+                (user.activityPreferences?.length || 0) > 1 ? { width: 250 } :{width:300}
+                ]}>
+                <View style={styles.activityHeader}>
+                  <Text style={styles.activityName}>
+                    {preference.activity.name}
+                  </Text>
+                  <View style={[
+                    styles.skillBadge, 
+                    { backgroundColor: getSkillLevelColor(preference.skillLevel) }
+                  ]}>
+                    <Text style={styles.skillBadgeText}>
+                      {preference.skillLevel}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.preferenceDetails}>
+                  <View style={styles.preferenceRow}>
+                    {preference.hasEquipment ? (
+                      <View style={styles.preferenceTag}>
+                        <Text style={styles.preferenceTagText}>Has Equipment</Text>
+                      </View>
+                    ) : (
+                      <View style={[styles.preferenceTag, styles.needsTag]}>
+                        <Text style={styles.needsTagText}>
+                          Needs: {preference.equipmentNeeded || 'Equipment'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.preferenceRow}>
+                    {preference.hasTransport ? (
+                      <View style={styles.preferenceTag}>
+                        <Text style={styles.preferenceTagText}>Has Transport</Text>
+                      </View>
+                    ) : (
+                      <View style={[styles.preferenceTag, styles.needsTag]}>
+                        <Text style={styles.needsTagText}>
+                          Transport: {preference.transportDetails || 'Needed'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {preference.additionalNotes && (
+                    <View style={styles.additionalNotesContainer}>
+                      <Text style={styles.additionalNotesLabel}>Note:</Text>
+                      <Text style={styles.additionalNotesText}>
+                        {preference.additionalNotes}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+            
+            {!isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
+              <TouchableOpacity 
+                onPress={() => toggleActivities(user.id)} 
+                style={styles.expandButton}
+              >
+                <Text style={styles.expandButtonText}>
+                  +{(user?.activityPreferences?.length || 0) - 2} more
+                </Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+          
+          {isExpanded && (user?.activityPreferences?.length || 0) > 2 && (
+            <TouchableOpacity 
+              onPress={() => toggleActivities(user.id)} 
+              style={styles.collapseButton}
+            >
+              <Text style={styles.collapseButtonText}>Show less</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+      
       <TouchableOpacity
         style={styles.pingButton}
-        onPress={() => handleSendPing(user.id, selectedInterest!, user.name)}
+        onPress={() => handleSendPing(user.id, activityId!, activityName!, user.name)}
         disabled={sendPingMutation.isPending}
       >
         <Send size={14} color={theme.white} />
@@ -278,8 +397,9 @@ export default function ActivityBuddyPage() {
           {sendPingMutation.isPending ? 'Sending...' : 'Send Ping'}
         </Text>
       </TouchableOpacity>
-    </View>)
-  };
+    </View>
+  );
+};
 
   const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => (
     <View key={ping.id} style={styles.pingCard}>
@@ -297,12 +417,11 @@ export default function ActivityBuddyPage() {
           style={styles.pingUserImage}
           defaultSource={require('../../assets/user.png')}
         />
-
         <View style={styles.pingInfo}>
           <Text style={styles.pingUserName}>
             {type === 'sent' ? ping.receiver.name : ping.sender.name}
           </Text>
-          <Text style={styles.pingInterest}>{ping.interest.name}</Text>
+          <Text style={styles.pingActivity}>{ping.activity?.name || ping.interest?.name}</Text>
           <Text style={styles.pingDate}>
             {new Date(ping.createdAt).toLocaleDateString()}
           </Text>
@@ -328,13 +447,10 @@ export default function ActivityBuddyPage() {
           )}
         </View>
       </View>
-
       {ping.message && <Text style={styles.pingMessage}>"{ping.message}"</Text>}
-
       {ping.response && (
         <Text style={styles.pingResponse}>Response: "{ping.response}"</Text>
       )}
-
       {type === 'received' && ping.status === 'pending' && (
         <View style={styles.pingActions}>
           <TouchableOpacity
@@ -391,7 +507,7 @@ export default function ActivityBuddyPage() {
                 if (pingTarget) {
                   sendPingMutation.mutate({
                     receiverId: pingTarget.receiverId,
-                    interestName: pingTarget.interestName,
+                    activityId: pingTarget.activityId,
                     message: pingMessage.trim() || undefined,
                   });
                 }
@@ -409,7 +525,7 @@ export default function ActivityBuddyPage() {
     </Modal>
   );
 
-  const renderInterestsTab = () => (
+  const renderActivitiesTab = () => (
     <View style={styles.tabContent}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -425,7 +541,7 @@ export default function ActivityBuddyPage() {
         </View>
       </View>
 
-      {/* Interest Categories */}
+      {/* Activity Categories */}
       <View style={styles.categoryFilter}>
         <ScrollView
           horizontal
@@ -435,46 +551,44 @@ export default function ActivityBuddyPage() {
           <TouchableOpacity
             style={[
               styles.categoryChip,
-              selectedInterest === 'All Activities' &&
+              selectedActivity === 'all' &&
                 styles.categoryChipActive,
             ]}
-            onPress={() => setSelectedInterest('All Activities')}
+            onPress={() => setSelectedActivity('all')}
             activeOpacity={0.7}
           >
             <Text style={styles.categoryChipIcon}>🎯</Text>
             <Text
               style={[
                 styles.categoryChipText,
-                selectedInterest === 'All Activities' &&
+                selectedActivity === 'all' &&
                   styles.categoryChipTextActive,
               ]}
             >
               All Activities
             </Text>
           </TouchableOpacity>
-          {interestsLoading ? (
-            <Text style={styles.loadingChip}>Loading...</Text>
+          
+          {activitiesLoading ? (
+            <Text style={styles.loadingChip}>Loading Activities...</Text>
           ) : (
-            interests.map((interest: Interest) => (
+            activities.map((activity: Activity) => (
               <TouchableOpacity
-                key={interest.id}
+                key={activity.id}
                 style={[
                   styles.categoryChip,
-                  selectedInterest === interest.name &&
-                    styles.categoryChipActive,
+                  selectedActivity === activity.id && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedInterest(interest.name)}
+                onPress={() => setSelectedActivity(activity.id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.categoryChipIcon}>⚡</Text>
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedInterest === interest.name &&
-                      styles.categoryChipTextActive,
+                    selectedActivity === activity.id && styles.categoryChipTextActive,
                   ]}
                 >
-                  {interest.name}
+                  {activity.name}
                 </Text>
               </TouchableOpacity>
             ))
@@ -493,7 +607,7 @@ export default function ActivityBuddyPage() {
         
         {usersLoading && !usersPages?.pages.length ? (
           <Text style={styles.loadingText}>Loading users...</Text>
-        ) : selectedInterest ? (
+        ) : selectedActivity ? (
           <>
             <Text style={styles.resultsCount}>
               {usersPages?.pages[0]?.data.pagination.totalCount ||
@@ -509,7 +623,8 @@ export default function ActivityBuddyPage() {
                 <Text style={styles.emptyStateIcon}>🔍</Text>
                 <Text style={styles.emptyStateTitle}>No people found</Text>
                 <Text style={styles.emptyStateSubtitle}>
-                  No one has shown interest in {selectedInterest} yet
+                  No one has shown activity in {selectedActivity === 'all' ? 'any activities' : 
+                    activities.find((activity: Activity) => activity.id === selectedActivity)?.name || selectedActivity} yet
                 </Text>
               </View>
             ) : (
@@ -535,12 +650,12 @@ export default function ActivityBuddyPage() {
             )}
           </>
         ) : (
-          // Show message to select an interest
+          // Show message to select an activity
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateIcon}>🎯</Text>
-            <Text style={styles.emptyStateTitle}>Select an Interest</Text>
+            <Text style={styles.emptyStateTitle}>Select an Activity</Text>
             <Text style={styles.emptyStateSubtitle}>
-              Choose an interest above to find people who share your passion
+              Choose an activity above to find people who share your interests
             </Text>
           </View>
         )}
@@ -570,7 +685,7 @@ export default function ActivityBuddyPage() {
               renderPingCard(ping, 'received')
             )
           )}
-
+          
           {/* Sent Pings */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Sent Pings ({pings.sent?.length || 0})
@@ -591,27 +706,35 @@ export default function ActivityBuddyPage() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
-          <Text style={styles.headerTitle}>Interest Buddy</Text>
+          <Text style={styles.headerTitle}>Activity Buddy</Text>
           <TouchableOpacity
-            style={styles.addInterestButton}
-            onPress={() => router.push('/profile/edit')}
+            style={styles.addActivityButton}
+            onPress={() => setIsPreferenceModalVisible(true)}
           >
             <Plus size={16} color={theme.primary} />
-            <Text style={styles.addInterestButtonText}>Add Interest</Text>
+            <Text style={styles.addActivityButtonText}>Setup</Text>
+          </TouchableOpacity>
+           <TouchableOpacity
+            style={styles.addActivityButton}
+            onPress={() => setIsMyPreferenceVisible(true)}
+          >
+            <Plus size={16} color={theme.primary} />
+            <Text style={styles.addActivityButtonText}>My Preferences</Text>
           </TouchableOpacity>
         </View>
+        
         <View style={styles.tabSelector}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'interests' && styles.tabActive]}
-            onPress={() => setActiveTab('interests')}
+            style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
+            onPress={() => setActiveTab('activities')}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === 'interests' && styles.tabTextActive,
+                activeTab === 'activities' && styles.tabTextActive,
               ]}
             >
-              Interests
+              Activities
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -630,14 +753,238 @@ export default function ActivityBuddyPage() {
         </View>
       </View>
 
-      {activeTab === 'interests' ? renderInterestsTab() : renderPingsTab()}
-
+      {activeTab === 'activities' ? renderActivitiesTab() : renderPingsTab()}
       {renderSendPingModal()}
+      
+      <CreateInterestPreferenceModal
+        visible={isPreferenceModalVisible}
+        onClose={() => setIsPreferenceModalVisible(false)}
+      />
+      <CreateActivityModal
+        visible={isActivityModalVisible}
+        onClose={() => setIsActivityModalVisible(false)}
+        editingActivity={editingActivity}
+      />
+      <MyPreferencesModal 
+        visible={isMyPreferenceVisible} 
+        onClose={() => setIsMyPreferenceVisible(false)}
+      />
+
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
+
+ userCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  userHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  userImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 12,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  userMajor: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  userYear: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  userBio: {
+    fontSize: 14,
+    color: '#888',
+    lineHeight: 20,
+  },
+  activitiesSection: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  activitiesContainer: {
+    gap: 12,
+  },
+  activitiesScrollView: {
+    marginBottom: 8,
+  },
+  activityPreferenceCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.primary,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  activityName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  skillBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  skillBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  preferenceDetails: {
+    gap: 6,
+  },
+  preferenceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  preferenceTag: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.primary,
+  },
+  preferenceTagText: {
+    fontSize: 12,
+    color: '#1976D2',
+    fontWeight: '500',
+  },
+  needsTag: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+  },
+  needsTagText: {
+    fontSize: 12,
+    color: '#F57C00',
+    fontWeight: '500',
+  },
+  expandButton: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+  },
+  expandButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  collapseButton: {
+    alignItems: 'center',
+    padding: 8,
+  },
+  collapseButtonText: {
+    fontSize: 14,
+    color: theme.primary,
+    fontWeight: '500',
+  },
+  additionalNotesContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  additionalNotesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+  },
+  additionalNotesText: {
+    fontSize: 12,
+    color: '#555',
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
+  pingButton: {
+    backgroundColor: theme.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  pingButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+ 
+
+
+  //others
+
+  addActivityButtonText: {
+    marginLeft: 6,
+    color: theme.primary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  userActivities: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  activityChip: {
+    backgroundColor: theme.gray100,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  activityChipText: {
+    fontSize: 11,
+    color: theme.textSecondary,
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -681,11 +1028,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.border,
   },
+  addActivityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.gray50,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
   addInterestButtonText: {
     marginLeft: 6,
     color: theme.primary,
     fontWeight: '600',
     fontSize: 13,
+  },
+  filterTypeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: theme.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  filterTypeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  filterTypeButtonActive: {
+    backgroundColor: theme.primary + '20',
+  },
+  filterTypeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  filterTypeButtonTextActive: {
+    color: theme.primary,
   },
   tabSelector: {
     flexDirection: 'row',
@@ -776,15 +1157,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 12,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.textPrimary,
-    marginBottom: 12,
-  },
+ 
   loadingText: {
     fontSize: 14,
     color: theme.textSecondary,
@@ -881,60 +1257,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   // User Card Styles
-  userCard: {
-    backgroundColor: theme.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.5,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  userHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  userImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.textPrimary,
-    marginBottom: 2,
-  },
-  userMajor: {
-    fontSize: 13,
-    color: theme.textSecondary,
-    marginBottom: 1,
-  },
-  userYear: {
-    fontSize: 12,
-    color: theme.gray500,
-    marginBottom: 4,
-  },
-  userBio: {
-    fontSize: 13,
-    color: theme.textSecondary,
-    lineHeight: 18,
-  },
+ 
   userInterests: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -958,31 +1281,11 @@ const styles = StyleSheet.create({
     color: theme.primary,
     fontWeight: '600',
   },
-  pingButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: theme.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  pingButtonText: {
-    fontSize: 13,
-    color: theme.white,
+ 
+  moreActivities: {
+    fontSize: 11,
+    color: theme.primary,
     fontWeight: '600',
-    marginLeft: 6,
   },
   // Ping Card Styles
   pingCard: {
@@ -1024,7 +1327,7 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
     marginBottom: 2,
   },
-  pingInterest: {
+  pingActivity: {
     fontSize: 13,
     color: theme.primary,
     fontWeight: '500',

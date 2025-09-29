@@ -69,6 +69,12 @@ export interface SendPingData {
   message?: string;
 }
 
+export interface SendActivityPingData {
+  receiverId: string;
+  activityId: string;
+  message?: string;
+}
+
 export interface UpdatePingData {
   status: 'accepted' | 'declined';
   response?: string;
@@ -157,6 +163,7 @@ export const updateInterestPing = async (
   updateData: UpdatePingData
 ) => {
   try {
+    console.log(updateData)
     const response: AxiosResponse = await api.patch(
       `/interests/ping/${pingId}`,
       updateData

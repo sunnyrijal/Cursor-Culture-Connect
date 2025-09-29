@@ -185,9 +185,9 @@ const CulturalExperiences = () => {
       <Text style={styles.errorText}>
         {error?.message || 'Something went wrong while fetching data'}
       </Text>
-      {/* <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+      <TouchableOpacity style={styles.viewAllButton} onPress={() => router.push('/ads')} activeOpacity={0.8}>
         <Text style={styles.viewAllButtonText}>View All</Text>
-      </TouchableOpacity> */}
+      </TouchableOpacity>
     </View>
   );
 
@@ -204,9 +204,9 @@ const CulturalExperiences = () => {
       <Text style={styles.emptyText}>
         Try selecting a different category or check back later.
       </Text>
-      {/* <TouchableOpacity style={styles.viewAllButton} onPress={handleViewAll}>
+      <TouchableOpacity style={styles.viewAllButton} onPress={() => router.push('/ads')} activeOpacity={0.8}>
         <Text style={styles.viewAllButtonText}>View All</Text>
-      </TouchableOpacity> */}
+      </TouchableOpacity>
     </View>
   );
 
@@ -224,10 +224,10 @@ const CulturalExperiences = () => {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Discover</Text>
-        {/* <TouchableOpacity onPress={handleViewAll} style={styles.viewAllBtn}>
+        <Text style={styles.sectionTitle}>Discover Experiences</Text>
+        <TouchableOpacity onPress={() => router.push('/ads')} style={styles.viewAllBtn}>
           <Text style={styles.viewAllBtnText}>View all</Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </View>
 
       {/* Category Tabs */}
@@ -332,14 +332,17 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   viewAllBtn: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    backgroundColor: theme.white,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   viewAllBtnText: {
     color: theme.primary,
     fontWeight: '600',
-    fontSize: 14,
-    textDecorationLine: 'underline',
+    fontSize: 12,
   },
   categoryRow: {
     paddingLeft: 16,
@@ -400,13 +403,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   viewAllButton: {
-    backgroundColor: theme.primary,
+    backgroundColor: neomorphColors.background,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: neomorphColors.darkShadow,
+        shadowOffset: { width: 3, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+        shadowColor: neomorphColors.darkShadow,
+      },
+    }),
+    borderWidth: 1,
+    borderColor: neomorphColors.lightShadow,
   },
   viewAllButtonText: {
-    color: '#fff',
+    color: theme.primary,
     fontWeight: '600',
     fontSize: typography.fontSize.sm,
   },

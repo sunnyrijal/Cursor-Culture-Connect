@@ -47,7 +47,7 @@ import { getMyData, updateProfile } from "@/contexts/user.api"
 import { getUniversities } from "@/contexts/university.api"
 import { uploadFile } from "@/contexts/file.api"
 import UniversityDropdown from "@/components/UniversityDropdown"
-import { INTERESTS_OPTIONS, MAJOR_OPTIONS, CLASS_YEAR_OPTIONS } from "@/components/AuthForm"
+import { INTERESTS_OPTIONS, MAJOR_OPTIONS, CLASS_YEAR_OPTIONS, ETHNICITY_OPTIONS } from "@/components/AuthForm"
 
 const { width, height } = Dimensions.get("window")
 
@@ -99,6 +99,9 @@ export default function EditProfile() {
   const socialPlatformPickerRef = useRef<Picker<string>>(null);
   const majorPickerRef = useRef<Picker<string>>(null);
   const classYearPickerRef = useRef<Picker<string>>(null);
+
+    const [ethnicity, setEthnicity] = useState<string[]>([]);
+  
 
   const formOpacity = useSharedValue(0)
   const formTranslateY = useSharedValue(30)
@@ -181,6 +184,9 @@ export default function EditProfile() {
         if (userData.socialMedia) {
           setSocialMedia(userData.socialMedia)
         }
+        if (userData.ethnicity) {
+          setEthnicity(userData.ethnicity)
+        }
 
         return userData
       }
@@ -258,6 +264,7 @@ export default function EditProfile() {
     if (languagesSpoken.length > 0) updateData.languagesSpoken = languagesSpoken
     if (profilePicture) updateData.profilePicture = profilePicture
     if (Object.keys(socialMedia).length > 0) updateData.socialMedia = socialMedia
+    if (ethnicity.length > 0) updateData.ethnicity = ethnicity
 
     updateProfileMutation.mutate(updateData)
   }
@@ -313,6 +320,16 @@ export default function EditProfile() {
     setLanguagesSpoken((prev) => (prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]))
   }
 
+    const toggleEthnicity = (option: string): void => {
+    setEthnicity((prev) => {
+      if (prev.includes(option)) {
+        return prev.filter((item) => item !== option);
+      } else {
+        return [...prev, option];
+      }
+    });
+  };
+
   const renderAnimatedInput = useCallback(
     (
       icon: any,
@@ -322,7 +339,6 @@ export default function EditProfile() {
       placeholder: string,
       inputKey: string,
       options: any = {},
-      required = false,
     ) => {
       const isValid = fieldValidation[inputKey]
       const isFocused = focusedInput === inputKey
@@ -330,7 +346,7 @@ export default function EditProfile() {
       return (
         <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
           <Text style={styles.inputLabel}>
-            {label} {required && <Text style={styles.required}>*</Text>}
+            {label}
           </Text>
           <View
             style={[
@@ -358,8 +374,6 @@ export default function EditProfile() {
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              onFocus={() => setFocusedInput(inputKey)}
-              // onBlur={() => setFocusedInput("")}
               editable={!loading}
               placeholderTextColor="#9CA3AF"
               {...options}
@@ -723,6 +737,41 @@ export default function EditProfile() {
     )
   }
 
+    const renderEthnicitySelection = () => {
+      return (
+        <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+          <View style={styles.ethnicityHeader}>
+            <Heart size={20} color="#8B5CF6" />
+            <Text style={styles.sectionTitle}>Ethnicity & Background</Text>
+          </View>
+          <Text style={styles.sectionSubtitle}>
+            Help us build inclusive communities and celebrate diversity
+          </Text>
+          <View style={styles.checkboxContainer}>
+            {ETHNICITY_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={styles.checkboxRow}
+                onPress={() => toggleEthnicity(option)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    ethnicity.includes(option) && styles.checkboxSelected,
+                  ]}
+                >
+                  {ethnicity.includes(option) && (
+                    <CheckCircle size={16} color="#6366F1" />
+                  )}
+                </View>
+                <Text style={styles.checkboxLabel}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Animated.View>
+      );
+    };
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={["#F8FAFC", "#E2E8F0", "#F1F5F9"]} style={styles.backgroundGradient} />
@@ -814,7 +863,6 @@ export default function EditProfile() {
                     "Enter your first name",
                     "firstName",
                     { autoCapitalize: "words" },
-                    true,
                   )}
 
                   {renderAnimatedInput(
@@ -825,7 +873,6 @@ export default function EditProfile() {
                     "Enter your last name",
                     "lastName",
                     { autoCapitalize: "words" },
-                    true,
                   )}
 
                   {renderDateOfBirthPicker()}
@@ -949,6 +996,9 @@ export default function EditProfile() {
               </BlurView>
             </Animated.View>
 
+
+            {renderEthnicitySelection()}
+
             {/* Interests */}
             {renderInterestsSection()}
 
@@ -987,6 +1037,8 @@ export default function EditProfile() {
 }
 
 const pickerSelectStyles = StyleSheet.create({
+
+
   inputIOS: {
     fontSize: 16,
     paddingVertical: 12,
@@ -1005,6 +1057,39 @@ const pickerSelectStyles = StyleSheet.create({
   },
 });
 const styles = StyleSheet.create({
+
+     ethnicityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+   checkboxContainer: {
+    gap: 0,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#6366F1',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+  },
   customInterestContainer: {
     marginTop: 10,
     flexDirection: "row",

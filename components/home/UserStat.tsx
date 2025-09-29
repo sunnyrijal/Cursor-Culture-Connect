@@ -26,11 +26,11 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
     queryKey:["counts"]
   })
 
-  console.log(data)
 
   return (
     <TouchableOpacity 
       onPressIn={() => setIsPressed(true)}
+      onPress={() => router.push('/hub-details')}
       onPressOut={() => setIsPressed(false)}
       style={[
         styles.mainContainer,
