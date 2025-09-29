@@ -1,46 +1,51 @@
 {
   "expo": {
     "name": "TRiVO",
-    "slug": "bolt-expo-nativewind",
-    "version": "1.0.0",
+    "slug": "trivo-connect-ios",
+    "version": "0.0.2",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "myapp",
+    "owner": "rijalboy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "splash": {
-      "image": "./assets/logo.png",        
-      "resizeMode": "contain",             
-      "backgroundColor": "#ffffff",        
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
       "dark": {
         "image": "./assets/logo.png",
         "backgroundColor": "#000000"
       }
     },
-
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.babish.dev.boltexponativewind"
+      "bundleIdentifier": "com.trivo.connect",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.babish.dev.boltexponativewind"
+      "package": "com.trivo.connect"
     },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/logo.png"
     },
-    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser"
+    ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a417af0b-0523-456b-bd77-df807a7c19a8"
+        "projectId": "cf643482-bae7-4ceb-9802-0c8db379cf8f"
       }
-    },
-    "owner": "babish9887"
+    }
   }
 }
