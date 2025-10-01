@@ -93,9 +93,6 @@ export default function HubDetails() {
               )}
               <View style={styles.groupInfo}>
                 <Text style={styles.groupName}>{group.name}</Text>
-                <Text style={styles.groupDescription} numberOfLines={2}>
-                  {group.description || 'No description available'}
-                </Text>
                 <View style={styles.groupMeta}>
                   <Text style={styles.groupMembers}>
                     {group._count.members} member{group._count.members !== 1 ? 's' : ''}
@@ -106,6 +103,9 @@ export default function HubDetails() {
                 </View>
               </View>
             </View>
+            <Text style={styles.groupDescription} numberOfLines={2}>
+              {group.description || 'No description available'}
+            </Text>
             {group.meetingLocation && (
               <Text style={styles.groupLocation}>📍 {group.meetingLocation}</Text>
             )}

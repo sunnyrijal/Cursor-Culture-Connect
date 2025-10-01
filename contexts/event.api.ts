@@ -145,7 +145,7 @@ export const createEvent = async (eventData: CreateEventData) => {
 
 export const approveEvent = async (id: string) => {
   try {
-    const response: AxiosResponse = await api.post(`/event/${id}/approve`);
+    const response: AxiosResponse = await api.patch(`/event/${id}/approve`);
     return response.data;
   } catch (error) {
     console.error('Error approving event:', error);

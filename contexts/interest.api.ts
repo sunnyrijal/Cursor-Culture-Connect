@@ -211,3 +211,15 @@ export const pingBack = async ({
     throw error;
   }
 };
+
+export const unsendInterestPing = async (pingId: string) => {
+  try {
+    const response: AxiosResponse = await api.delete(
+      `/interests/ping/${pingId}/unsend`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error unsending interest ping:', error);
+    throw error;
+  }
+};

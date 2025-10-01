@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
+    marginBottom:2,
     padding: 4,
     ...Platform.select({
       ios: {

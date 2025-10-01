@@ -46,10 +46,6 @@ const ForgotPasswordForm: React.FC = () => {
       });
     },
     onError: (error: any) => {
-      router.push({
-        pathname: '/(auth)/reset-password',
-        params: { email },
-      });
       console.error('❌ Error sending OTP:', error);
       const errorMessage =
         error.response?.data?.message ||

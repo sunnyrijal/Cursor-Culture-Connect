@@ -434,10 +434,9 @@ export default function ChatListScreen() {
               </View>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userEmail}>{user.email}</Text>
-                <Text style={styles.userUniversity}>
+                {user?.university?.name && <Text style={styles.userUniversity}>
                   {user.university.name}
-                </Text>
+                </Text>}
               </View>
               <View style={styles.userArrow}>
                 <ArrowRight size={16} color="#94A3B8" />

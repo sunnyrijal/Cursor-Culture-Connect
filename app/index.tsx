@@ -137,14 +137,14 @@ export default function Index() {
           </Animated.View>
 
           {/* Get Started Button */}
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(auth)/login')}>
+          {/* <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(auth)/login')}>
             <LinearGradient colors={[theme.primary, theme.accent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.buttonGradient}>
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>Get Started</Text>
                 <Globe size={20} color="#fff" />
               </View>
             </LinearGradient>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </LinearGradient>
     </Animated.View>
