@@ -1,7 +1,16 @@
 // project/app/my-university.tsx
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { theme, spacing, typography } from '@/components/theme';
@@ -15,12 +24,21 @@ import GroupsList from '@/components/university/GroupList';
 
 export default function MyUniversity() {
   const [activeTab, setActiveTab] = useState('events');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: res, isLoading, error } = useQuery({
+  const {
+    data: res,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['myUniversity'],
     queryFn: () => getMyUniversity(),
   });
-
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().then(() => setRefreshing(false));
+  }, [refetch]);
   
   const renderContent = () => {
     if (isLoading) {
@@ -121,7 +139,13 @@ export default function MyUniversity() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {renderContent()}
       </ScrollView>
     </SafeAreaView>
@@ -147,9 +171,12 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   title: {
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.bold,
     color: theme.textPrimary,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: spacing.sm,
   },
   placeholder: {
     width: 40,

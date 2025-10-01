@@ -103,25 +103,6 @@ interface Event {
   }[];
 }
 
-interface GroupResponse {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string | null;
-  isPrivate: boolean;
-  createdAt: string;
-  updatedAt: string;
-  creatorId: string;
-  creator: User;
-  members: Member[];
-  meetingDetails?: string;
-  chatId?: string;
-  meetingLocation?: string;
-  meetingDate?: string;
-  meetingTime?: string;
-  events?: Event[];
-}
-
 export default function GroupDetailEnhanced() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { id } = useLocalSearchParams();
@@ -1733,6 +1714,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     marginTop: -24,
     paddingTop: spacing.lg,
+    paddingBottom:40
   },
 
   // Tags Section

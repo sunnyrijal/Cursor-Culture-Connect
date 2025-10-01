@@ -41,6 +41,7 @@ import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
+import { typography } from './theme';
 
 interface EditEventModalProps {
   visible: boolean;
@@ -1101,7 +1102,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   title: {
-    fontSize: 28,
+        fontSize: typography.fontSize.xl,
+
     fontWeight: 'bold',
     color: '#1E293B',
     marginBottom: 8,

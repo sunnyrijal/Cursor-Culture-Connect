@@ -28,6 +28,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateQuickEvent } from '@/contexts/quickEvent.api';
 import { TimeSelectInput } from './TimeSelectInput';
+import { typography } from './theme';
 
 interface QuickEvent {
   id: string;
@@ -35,6 +36,7 @@ interface QuickEvent {
   description: string;
   location: string;
   time: string | null;
+  endTime?: string | null;
   max: string | null;
   isPublic: boolean;
 }
@@ -57,10 +59,11 @@ export function EditQuickEventModal({
     description: '',
     location: '',
     time: '',
+    endTime: '',
     max: '',
     isPublic: true,
   });
-  
+
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -72,6 +75,7 @@ export function EditQuickEventModal({
         description: quickEvent.description || '',
         location: quickEvent.location || '',
         time: quickEvent.time || '',
+        endTime: quickEvent.endTime || '',
         max: quickEvent.max || '',
         isPublic: quickEvent.isPublic,
       });
@@ -81,6 +85,7 @@ export function EditQuickEventModal({
         description: '',
         location: '',
         time: '',
+        endTime: '',
         max: '',
         isPublic: true,
       });
@@ -122,13 +127,15 @@ export function EditQuickEventModal({
   };
 
   const updateQuickEventMutation = useMutation({
-    mutationFn: ({ eventId, data }: { eventId: string; data: any }) => 
+    mutationFn: ({ eventId, data }: { eventId: string; data: any }) =>
       updateQuickEvent(eventId, data),
     onSuccess: (data, variables) => {
       console.log('Quick Event updated successfully:', data);
 
       queryClient.invalidateQueries({ queryKey: ['quick-events'] });
-      queryClient.invalidateQueries({ queryKey: ['quick-event', quickEvent?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['quick-event', quickEvent?.id],
+      });
 
       Alert.alert('Success', 'Quick Event updated successfully!');
 
@@ -165,8 +172,7 @@ export function EditQuickEventModal({
       if (!timeValidation.isValid) {
         Alert.alert(
           'Invalid Time',
-          timeValidation.error ||
-            'Please enter a valid time in HH:MM format.'
+          timeValidation.error || 'Please enter a valid time in HH:MM format.'
         );
         return;
       }
@@ -185,18 +191,22 @@ export function EditQuickEventModal({
     }
 
     setIsSubmitting(true);
-    
+
     const eventData: any = {
       name: formData.name.trim(),
       description: formData.description.trim(),
       location: formData.location.trim(),
       time: formData.time || null,
+      endTime: formData.time ? formData.endTime || null : null,
       max: formData.max || null,
       isPublic: formData.isPublic,
     };
-    
+
     console.log('Updating quick event with data:', eventData);
-    updateQuickEventMutation.mutate({ eventId: quickEvent.id, data: eventData });
+    updateQuickEventMutation.mutate({
+      eventId: quickEvent.id,
+      data: eventData,
+    });
   };
 
   const renderInput = (
@@ -274,9 +284,7 @@ export function EditQuickEventModal({
           {/* Header */}
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Edit Quick Event</Text>
-            <Text style={styles.subtitle}>
-              Update your event information
-            </Text>
+            <Text style={styles.subtitle}>Update your event information</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#64748B" />
             </TouchableOpacity>
@@ -335,9 +343,20 @@ export function EditQuickEventModal({
                 <TimeSelectInput
                   value={formData.time}
                   onTimeChange={(time) => setFormData({ ...formData, time })}
-                  label="Time"
-                  placeholder="Select a time"
+                  label="End Time"
+                  placeholder="Select a end time"
                   disabled={isSubmitting || updateQuickEventMutation.isPending}
+                  required={false}
+                />
+
+                <TimeSelectInput
+                  value={formData.endTime}
+                  onTimeChange={(time) =>
+                    setFormData({ ...formData, endTime: time })
+                  }
+                  label="End Time (Optional)"
+                  placeholder="Select an end time"
+                  disabled={isSubmitting || updateQuickEventMutation.isPending || !formData.time}
                   required={false}
                 />
 
@@ -345,10 +364,11 @@ export function EditQuickEventModal({
                 {renderInput(
                   'Max People',
                   formData.max,
-                  (text) => setFormData({
-                    ...formData,
-                    max: text.replace(/[^0-9]/g, ''),
-                  }),
+                  (text) =>
+                    setFormData({
+                      ...formData,
+                      max: text.replace(/[^0-9]/g, ''),
+                    }),
                   'e.g., 10',
                   <UserRoundCog size={16} color="#6366F1" />,
                   false,
@@ -371,7 +391,9 @@ export function EditQuickEventModal({
                       onPress={() =>
                         setFormData({ ...formData, isPublic: true })
                       }
-                      disabled={isSubmitting || updateQuickEventMutation.isPending}
+                      disabled={
+                        isSubmitting || updateQuickEventMutation.isPending
+                      }
                     >
                       <LinearGradient
                         colors={
@@ -408,7 +430,9 @@ export function EditQuickEventModal({
                       onPress={() =>
                         setFormData({ ...formData, isPublic: false })
                       }
-                      disabled={isSubmitting || updateQuickEventMutation.isPending}
+                      disabled={
+                        isSubmitting || updateQuickEventMutation.isPending
+                      }
                     >
                       <LinearGradient
                         colors={
@@ -472,15 +496,16 @@ export function EditQuickEventModal({
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              (isSubmitting || updateQuickEventMutation.isPending) && styles.primaryButtonDisabled,
+              (isSubmitting || updateQuickEventMutation.isPending) &&
+                styles.primaryButtonDisabled,
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting || updateQuickEventMutation.isPending}
           >
             <LinearGradient
               colors={
-                isSubmitting || updateQuickEventMutation.isPending 
-                  ? ['#94A3B8', '#64748B'] 
+                isSubmitting || updateQuickEventMutation.isPending
+                  ? ['#94A3B8', '#64748B']
                   : ['#6366F1', '#8B5CF6']
               }
               style={styles.buttonGradient}
@@ -490,14 +515,12 @@ export function EditQuickEventModal({
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 )}
                 <Text style={styles.primaryButtonText}>
-                  {isSubmitting || updateQuickEventMutation.isPending ? 'Updating...' : 'Update Event'}
+                  {isSubmitting || updateQuickEventMutation.isPending
+                    ? 'Updating...'
+                    : 'Update Event'}
                 </Text>
                 {!isSubmitting && !updateQuickEventMutation.isPending && (
-                  <Zap
-                    size={16}
-                    color="#FFFFFF"
-                    style={styles.buttonIcon}
-                  />
+                  <Zap size={16} color="#FFFFFF" style={styles.buttonIcon} />
                 )}
               </View>
             </LinearGradient>
@@ -519,7 +542,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 32,
     alignItems: 'center',
   },
@@ -532,7 +555,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   title: {
-    fontSize: 28,
+    fontSize: typography.fontSize.xl,
+
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

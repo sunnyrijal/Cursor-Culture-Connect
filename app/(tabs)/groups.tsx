@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 10,          // tweak to sit above your bottom tab bar
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
 
   // Hero Section Styles
   heroSection: {
-    // height: 140,
+    height: 100,
     paddingBottom: 12,
     backgroundColor: '#6366F1',
     position: 'relative',
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 140,
+    paddingBottom: 80,
   },
 
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)

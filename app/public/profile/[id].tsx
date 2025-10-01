@@ -47,6 +47,7 @@ import {
 import SocialMediaLinks from '@/components/SocialMediaLinks';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import getDecodedToken from '@/utils/getMyData';
 
 const theme = {
   white: 'white',
@@ -194,6 +195,12 @@ export default function UserProfilePage() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [message, setMessage] = useState('');
+
+    const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
+    retry: false,
+  });
 
   const {
     data: userResponse,
@@ -349,6 +356,9 @@ export default function UserProfilePage() {
 
   const getActionButtons = () => {
     if (!userData) return null;
+
+    // If viewing your own profile, don't show any action buttons.
+    if (myData?.userId === id) return null;
 
     const { friendshipStatus, isFriendRequestSender, chatId } = userData;
 

@@ -69,6 +69,7 @@ export default function EventDetail() {
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [showAttendees, setShowAttendees] = React.useState(false);
   const [showEditEventModal, setShowEditEventModal] = React.useState(false);
+  const queryClient = useQueryClient();
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -90,7 +91,6 @@ export default function EventDetail() {
     queryFn: () => getDecodedToken(),
   });
 
-  const queryClient = useQueryClient();
   const { mutate: deleteEventMutation } = useMutation({
     mutationFn: (eventIdToDelete: string) => deleteEvent(eventIdToDelete),
     onSuccess: () => {
@@ -169,6 +169,27 @@ export default function EventDetail() {
       Alert.alert('Error', 'Failed to cancel RSVP.');
     },
   });
+
+  const approveEventMutation = useMutation({
+    mutationFn: approveEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['event', id] });
+
+      Alert.alert('Success', 'Event has been approved.');
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to approve the event. Please try again.';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const handleApproveEvent = ()=>{
+    approveEventMutation.mutate(event.id)
+  }
 
   const isAttending = React.useMemo(() => {
     return event?.attendingUsers?.some(
@@ -284,22 +305,7 @@ export default function EventDetail() {
     }
   };
 
-  const approveEventMutation = useMutation({
-    mutationFn: approveEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group', id] });
-      queryClient.invalidateQueries({ queryKey: ['event', id] });
-
-      Alert.alert('Success', 'Event has been approved.');
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to approve the event. Please try again.';
-      Alert.alert('Error', errorMessage);
-    },
-  });
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -519,7 +525,7 @@ export default function EventDetail() {
                     {showAttendees && (
                       <View style={styles.attendeesList}>
                         {event.attendingUsers?.map((attendee: any) => (
-                          <View key={attendee.id} style={styles.attendeeItem}>
+                          <TouchableOpacity onPress={()=>router.push(`/public/profile/${attendee.id}`)}  key={attendee.id} style={styles.attendeeItem}>
                             <Image
                               source={
                                 attendee.profilePicture
@@ -533,10 +539,10 @@ export default function EventDetail() {
                                 {attendee.name}
                               </Text>
                               <Text style={styles.attendeeEmail}>
-                                {attendee.email}
+                                {attendee.major}
                               </Text>
                             </View>
-                          </View>
+                          </TouchableOpacity>
                         ))}
                       </View>
                     )}
@@ -588,7 +594,7 @@ export default function EventDetail() {
                 {canApprove && !event.isApproved && (
                   <View style={styles.approveContainer}>
                     <TouchableOpacity
-                      onPress={() => approveEventMutation.mutate(event.id)}
+                      onPress={handleApproveEvent}
                       disabled={approveEventMutation.isPending}
                       style={[
                         styles.approveButton,

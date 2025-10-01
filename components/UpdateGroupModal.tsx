@@ -32,6 +32,7 @@ import { ActivityIndicator } from 'react-native';
 import { ImageIcon } from 'lucide-react-native';
 import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
+import { typography } from './theme';
 
 interface Group {
   id: string;
@@ -76,7 +77,7 @@ export function EditGroupModal({
     meetingTime: '',
     meetingLocation: '',
   });
-  
+
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -84,8 +85,12 @@ export function EditGroupModal({
 
   const resetForm = () => {
     if (group) {
-      const hasMeetingInfo = !!(group.meetingDate || group.meetingTime || group.meetingLocation);
-      
+      const hasMeetingInfo = !!(
+        group.meetingDate ||
+        group.meetingTime ||
+        group.meetingLocation
+      );
+
       setFormData({
         name: group.name || '',
         description: group.description || '',
@@ -199,7 +204,7 @@ export function EditGroupModal({
   };
 
   const updateGroupMutation = useMutation({
-    mutationFn: ({ groupId, data }: { groupId: string; data: any }) => 
+    mutationFn: ({ groupId, data }: { groupId: string; data: any }) =>
       updateGroup(groupId, data),
     onSuccess: (data, variables) => {
       console.log('Group updated successfully:', data);
@@ -232,7 +237,7 @@ export function EditGroupModal({
       return;
     }
 
-    if (!formData.name || !formData.description) {
+    if (!formData.name) {
       Alert.alert('Error', 'Please fill in all required fields.');
       return;
     }
@@ -251,7 +256,7 @@ export function EditGroupModal({
     }
 
     setIsSubmitting(true);
-    
+
     const groupData: any = {
       name: formData.name,
       description: formData.description,
@@ -265,14 +270,15 @@ export function EditGroupModal({
         groupData.meetingDate = formData.meetingDate;
       }
       if (formData.meetingTime) groupData.meetingTime = formData.meetingTime;
-      if (formData.meetingLocation) groupData.meetingLocation = formData.meetingLocation;
+      if (formData.meetingLocation)
+        groupData.meetingLocation = formData.meetingLocation;
     } else {
       // Clear meeting details if toggle is disabled
       groupData.meetingDate = null;
       groupData.meetingTime = null;
-      groupData.meetingLocation = null; 
+      groupData.meetingLocation = null;
     }
-    
+
     console.log('Updating group with data:', groupData);
     updateGroupMutation.mutate({ groupId: group.id, data: groupData });
   };
@@ -378,7 +384,7 @@ export function EditGroupModal({
                   'Tell people what your group is about...',
                   <GraduationCap size={16} color="#6366F1" />,
                   true,
-                  true
+                  false
                 )}
 
                 {/* Group Image */}
@@ -393,7 +399,11 @@ export function EditGroupModal({
                           styles.uploadButtonDisabled,
                       ]}
                       onPress={pickImage}
-                      disabled={isSubmitting || uploadFileMutation.isPending || updateGroupMutation.isPending}
+                      disabled={
+                        isSubmitting ||
+                        uploadFileMutation.isPending ||
+                        updateGroupMutation.isPending
+                      }
                     >
                       <LinearGradient
                         colors={
@@ -447,7 +457,9 @@ export function EditGroupModal({
                             style={styles.removeImageButton}
                             onPress={removeImage}
                             disabled={
-                              isSubmitting || uploadFileMutation.isPending || updateGroupMutation.isPending
+                              isSubmitting ||
+                              uploadFileMutation.isPending ||
+                              updateGroupMutation.isPending
                             }
                           >
                             <X size={16} color="#FFFFFF" />
@@ -459,22 +471,32 @@ export function EditGroupModal({
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Meeting Details (Optional)</Text>
+                  <Text style={styles.inputLabel}>
+                    Meeting Details (Optional)
+                  </Text>
                   <TouchableOpacity
                     style={styles.meetingToggleContainer}
-                    onPress={() => setFormData({ ...formData, hasMeetingDetails: !formData.hasMeetingDetails })}
-                    disabled={isSubmitting || updateGroupMutation.isPending }
+                    onPress={() =>
+                      setFormData({
+                        ...formData,
+                        hasMeetingDetails: !formData.hasMeetingDetails,
+                      })
+                    }
+                    disabled={isSubmitting || updateGroupMutation.isPending}
                   >
                     <View style={styles.meetingToggleButton}>
                       <Text style={styles.meetingToggleText}>
-                        {formData.hasMeetingDetails ? 'Hide Meeting Details' : 'Add Meeting Details'}
+                        {formData.hasMeetingDetails
+                          ? 'Hide Meeting Details'
+                          : 'Add Meeting Details'}
                       </Text>
                       <ChevronDown
                         size={20}
                         color="#6366F1"
                         style={[
                           styles.chevronIcon,
-                          formData.hasMeetingDetails && styles.chevronIconRotated
+                          formData.hasMeetingDetails &&
+                            styles.chevronIconRotated,
                         ]}
                       />
                     </View>
@@ -510,7 +532,8 @@ export function EditGroupModal({
                     {renderInput(
                       'Meeting Location (Optional)',
                       formData.meetingLocation,
-                      (text) => setFormData({ ...formData, meetingLocation: text }),
+                      (text) =>
+                        setFormData({ ...formData, meetingLocation: text }),
                       'e.g., Student Union Room 101',
                       <MapPin size={16} color="#6366F1" />,
                       false,
@@ -618,22 +641,25 @@ export function EditGroupModal({
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              (isSubmitting || updateGroupMutation.isPending) && styles.primaryButtonDisabled,
+              (isSubmitting || updateGroupMutation.isPending) &&
+                styles.primaryButtonDisabled,
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting || updateGroupMutation.isPending}
           >
             <LinearGradient
               colors={
-                isSubmitting || updateGroupMutation.isPending 
-                  ? ['#94A3B8', '#64748B'] 
+                isSubmitting || updateGroupMutation.isPending
+                  ? ['#94A3B8', '#64748B']
                   : ['#6366F1', '#8B5CF6']
               }
               style={styles.buttonGradient}
             >
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
-                  {isSubmitting || updateGroupMutation.isPending ? 'Updating...' : 'Update Group'}
+                  {isSubmitting || updateGroupMutation.isPending
+                    ? 'Updating...'
+                    : 'Update Group'}
                 </Text>
                 {!isSubmitting && !updateGroupMutation.isPending && (
                   <Sparkles
@@ -780,12 +806,12 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 24,
     position: 'relative',
   },
   title: {
-    fontSize: 30,
+    fontSize: typography.fontSize.xl,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

@@ -92,15 +92,15 @@ const Header = ({
 
           <View style={styles.appTitleContainer}>
             <Text style={styles.appTitle}>TRiVO</Text>
-            {/* <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{currentUser.name}!</Text> */}
+            <Text style={styles.greeting}>Connect</Text>
+            {/* <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>
         </View>
 
         <View style={styles.headerActions}>
           {myData ? (
             <>
-            <Shadow
+            {/* <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
             offset={[4, 4]}
@@ -117,7 +117,7 @@ const Header = ({
             >
               <Bell size={24} color="#3B82F6" />
             </TouchableOpacity>
-          </Shadow>
+          </Shadow> */}
               <Shadow
                 distance={8}
                 startColor="rgba(163, 177, 198, 0.15)"
@@ -186,9 +186,9 @@ const Header = ({
               activeOpacity={1}
             >
               <Bell size={24} color="#3B82F6" />
-              {notificationCount && notificationCount?.data?.count > 0 && (
+              {notificationCount && (notificationCount as any)?.data?.count > 0 && (
                 <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>{notificationCount?.data?.count}</Text>
+                  <Text style={styles.notificationBadgeText}>{(notificationCount as any)?.data?.count}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -273,15 +273,15 @@ const styles = StyleSheet.create({
   },
 
   // Commented out greeting styles
-  // greetingContainer: {
-  //   flex: 1,
-  // },
-  // greeting: {
-  //   fontSize: 14,
-  //   fontWeight: '500',
-  //   color: clayColors.textSecondary,
-  //   marginBottom: 2,
-  // },
+  greetingContainer: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: clayColors.textSecondary,
+    marginBottom: 2,
+  },
   // userName: {
   //   fontSize: 20,
   //   fontWeight: '700',

@@ -48,6 +48,7 @@ export interface InterestPing {
   pingedBack?: boolean;
   createdAt: string;
   activity:any;
+  chatId:string | null;
   sender: {
     id: string;
     firstName: string;
@@ -97,11 +98,11 @@ export interface SendPingBackInput {
   message?: string;
 }
 
-export const createInterest = async (interestData: CreateInterestData) => {
+export const createInterest = async (name: string) => {
   try {
     const response: AxiosResponse = await api.post(
       '/interests/create',
-      interestData
+      { name }
     );
     return response.data;
   } catch (error) {

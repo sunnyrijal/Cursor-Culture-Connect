@@ -1,18 +1,37 @@
 // project/app/hub-details.tsx
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { theme, spacing, typography } from '@/components/theme';
-import { ArrowLeft, MessageCircle, Users, Calendar, User } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  MessageCircle,
+  Users,
+  Calendar,
+  User,
+} from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getHubDetails } from '@/contexts/user.api';
 
 export default function HubDetails() {
   const [activeTab, setActiveTab] = useState('friends');
 
-  const { data: res, isLoading, error } = useQuery({
+  const {
+    data: res,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['hubDetails'],
     queryFn: () => getHubDetails(),
   });
@@ -23,7 +42,7 @@ export default function HubDetails() {
 
   const renderFriends = () => {
     const friends = res?.data?.friends || [];
-    
+
     if (friends.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -35,10 +54,15 @@ export default function HubDetails() {
     return (
       <View style={styles.contentContainer}>
         {friends.map((friend: any) => (
-          <View key={friend.id} style={styles.friendCard}>
+          <TouchableOpacity 
+          onPress={() => router.push(`/public/profile/${friend.id}`)}
+           key={friend.id} style={styles.friendCard}>
             <View style={styles.friendInfo}>
               {friend.profilePicture ? (
-                <Image source={{ uri: friend.profilePicture }} style={styles.friendAvatar} />
+                <Image
+                  source={{ uri: friend.profilePicture }}
+                  style={styles.friendAvatar}
+                />
               ) : (
                 <View style={styles.friendAvatarPlaceholder}>
                   <User size={24} color={theme.textSecondary} />
@@ -48,7 +72,24 @@ export default function HubDetails() {
                 <Text style={styles.friendName}>
                   {friend.firstName} {friend.lastName}
                 </Text>
-                <Text style={styles.friendEmail}>{friend.email}</Text>
+                {/* <Text style={styles.friendEmail}>{friend.email}</Text> */}
+
+                {friend.major && (
+                  <Text style={styles.friendEmail}>{friend.major}</Text>
+                )}
+                {friend.university && (
+                  <Text style={styles.friendEmail}>
+                    {friend.university.name}
+                  </Text>
+                )}
+                {friend.classYear && (
+                  <Text style={styles.friendEmail}>{friend.classYear}</Text>
+                )}
+                {(friend.countryOfOrigin || friend.city) && (
+                  <Text style={styles.friendEmail}>
+                    {friend.countryOfOrigin || friend.city}
+                  </Text>
+                )}
               </View>
             </View>
             <TouchableOpacity
@@ -58,7 +99,7 @@ export default function HubDetails() {
             >
               <MessageCircle size={20} color={theme.primary} />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     );
@@ -66,7 +107,7 @@ export default function HubDetails() {
 
   const renderGroups = () => {
     const groups = res?.data?.groups || [];
-    
+
     if (groups.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -81,35 +122,42 @@ export default function HubDetails() {
           <TouchableOpacity
             key={group.id}
             onPress={() => router.push(`/group/${group.id}`)}
-            activeOpacity={0.8}>
-          <View key={group.id} style={styles.groupCard}>
-            <View style={styles.groupHeader}>
-              {group.imageUrl ? (
-                <Image source={{ uri: group.imageUrl }} style={styles.groupImage} />
-              ) : (
-                <View style={styles.groupImagePlaceholder}>
-                  <Users size={24} color={theme.textSecondary} />
-                </View>
-              )}
-              <View style={styles.groupInfo}>
-                <Text style={styles.groupName}>{group.name}</Text>
-                <View style={styles.groupMeta}>
-                  <Text style={styles.groupMembers}>
-                    {group._count.members} member{group._count.members !== 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.groupCreator}>
-                    Created by {group.creator.name}
-                  </Text>
+            activeOpacity={0.8}
+          >
+            <View key={group.id} style={styles.groupCard}>
+              <View style={styles.groupHeader}>
+                {group.imageUrl ? (
+                  <Image
+                    source={{ uri: group.imageUrl }}
+                    style={styles.groupImage}
+                  />
+                ) : (
+                  <View style={styles.groupImagePlaceholder}>
+                    <Users size={24} color={theme.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.groupInfo}>
+                  <Text style={styles.groupName}>{group.name}</Text>
+                  <View style={styles.groupMeta}>
+                    <Text style={styles.groupMembers}>
+                      {group._count.members} member
+                      {group._count.members !== 1 ? 's' : ''}
+                    </Text>
+                    <Text style={styles.groupCreator}>
+                      Created by {group.creator.name}
+                    </Text>
+                  </View>
                 </View>
               </View>
+              <Text style={styles.groupDescription} numberOfLines={2}>
+                {group.description || 'No description available'}
+              </Text>
+              {group.meetingLocation && (
+                <Text style={styles.groupLocation}>
+                  📍 {group.meetingLocation}
+                </Text>
+              )}
             </View>
-            <Text style={styles.groupDescription} numberOfLines={2}>
-              {group.description || 'No description available'}
-            </Text>
-            {group.meetingLocation && (
-              <Text style={styles.groupLocation}>📍 {group.meetingLocation}</Text>
-            )}
-          </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -118,7 +166,7 @@ export default function HubDetails() {
 
   const renderEvents = () => {
     const events = res?.data?.events || [];
-    
+
     if (events.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -133,30 +181,34 @@ export default function HubDetails() {
           <TouchableOpacity
             key={event.id}
             onPress={() => router.push(`/event/${event.id}`)}
-            activeOpacity={0.8}>
-          <View key={event.id} style={styles.eventCard}>
-            {event.imageUrl && (
-              <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
-            )}
-            <View style={styles.eventContent}>
-              <Text style={styles.eventName}>{event.name}</Text>
-              <Text style={styles.eventDescription} numberOfLines={2}>
-                {event.description}
-              </Text>
-              <View style={styles.eventMeta}>
-                <Text style={styles.eventLocation}>📍 {event.location}</Text>
-                <Text style={styles.eventDate}>
-                  📅 {new Date(event.date).toLocaleDateString()}
+            activeOpacity={0.8}
+          >
+            <View key={event.id} style={styles.eventCard}>
+              {event.imageUrl && (
+                <Image
+                  source={{ uri: event.imageUrl }}
+                  style={styles.eventImage}
+                />
+              )}
+              <View style={styles.eventContent}>
+                <Text style={styles.eventName}>{event.name}</Text>
+                <Text style={styles.eventDescription} numberOfLines={2}>
+                  {event.description}
+                </Text>
+                <View style={styles.eventMeta}>
+                  <Text style={styles.eventLocation}>📍 {event.location}</Text>
+                  <Text style={styles.eventDate}>
+                    📅 {new Date(event.date).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={styles.eventOrganizer}>
+                  Organized by {event.user.name}
+                </Text>
+                <Text style={styles.eventAttendees}>
+                  {event.attendingUsers?.length || 0} attending
                 </Text>
               </View>
-              <Text style={styles.eventOrganizer}>
-                Organized by {event.user.name}
-              </Text>
-              <Text style={styles.eventAttendees}>
-                {event.attendingUsers?.length || 0} attending
-              </Text>
             </View>
-          </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -195,7 +247,7 @@ export default function HubDetails() {
 
   const getTabCount = () => {
     if (!res?.data) return '';
-    
+
     switch (activeTab) {
       case 'friends':
         return res.data.friends?.length || 0;
@@ -211,7 +263,10 @@ export default function HubDetails() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ArrowLeft size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>Hub Details</Text>
@@ -224,7 +279,12 @@ export default function HubDetails() {
           onPress={() => setActiveTab('friends')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'friends' && styles.activeTabText,
+            ]}
+          >
             Friends
           </Text>
         </TouchableOpacity>
@@ -233,7 +293,12 @@ export default function HubDetails() {
           onPress={() => setActiveTab('groups')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'groups' && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'groups' && styles.activeTabText,
+            ]}
+          >
             Groups
           </Text>
         </TouchableOpacity>
@@ -242,13 +307,21 @@ export default function HubDetails() {
           onPress={() => setActiveTab('events')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'events' && styles.activeTabText,
+            ]}
+          >
             Events
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {renderContent()}
       </ScrollView>
     </SafeAreaView>

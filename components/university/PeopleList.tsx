@@ -36,7 +36,11 @@ interface Person {
   id: string;
   name: string;
   profilePicture: string | null;
-  classYear: string;
+  university:any;
+  classYear:string,
+  countryOfOrigin:string;
+  city:string;
+  major:string;
   friendshipStatus: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'BLOCKED' | null;
   isFriendRequestSender: boolean;
   chatId: string | null;
@@ -49,9 +53,11 @@ interface PeopleListProps {
 const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [message, setMessage] = useState('');
-
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
@@ -139,8 +145,8 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
         <User size={48} color={theme.gray400} />
         <Text style={styles.emptyStateTitle}>No People Found</Text>
         <Text style={styles.emptyStateText}>
-          There are currently no other students from your university on the platform. 
-          Invite your friends to join!
+          There are currently no other students from your university on the
+          platform. Invite your friends to join!
         </Text>
       </View>
     );
@@ -164,7 +170,20 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
           />
           <View style={styles.personInfo}>
             <Text style={styles.personName}>{person.name}</Text>
-            <Text style={styles.personDetails}>{person.classYear}</Text>
+            {person.major && (
+              <Text style={styles.personDetails}>{person.major}</Text>
+            )}
+            {person.university && (
+              <Text style={styles.personDetails}>{person.university.name}</Text>
+            )}
+            {person.classYear && (
+              <Text style={styles.personDetails}>{person.classYear}</Text>
+            )}
+            {(person.countryOfOrigin || person.city) && (
+              <Text style={styles.personDetails}>
+                {person.countryOfOrigin || person.city}
+              </Text>
+            )}
           </View>
           <View style={styles.personActions}>{getActionButton(person)}</View>
           <ChevronRight size={20} color={theme.gray400} />
@@ -180,7 +199,9 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Send a friend request to {selectedUser?.name}?</Text>
+            <Text style={styles.modalText}>
+              Send a friend request to {selectedUser?.name}?
+            </Text>
             <TextInput
               style={styles.messageInput}
               placeholder="Add an optional message..."
@@ -190,10 +211,18 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
               multiline
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={() => setModalVisible(false)}>
-                <Text style={[styles.textStyle, { color: theme.textPrimary }]}>Cancel</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={[styles.textStyle, { color: theme.textPrimary }]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSend]} onPress={handleSendWithMessageHandler}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSend]}
+                onPress={handleSendWithMessageHandler}
+              >
                 <Text style={styles.textStyle}>Send</Text>
               </TouchableOpacity>
             </View>
