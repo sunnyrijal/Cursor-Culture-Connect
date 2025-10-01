@@ -226,7 +226,7 @@ export default function ChatScreen() {
                     ) : (
                       <TouchableOpacity
                         onPress={() =>
-                          router.push(`/profile/public/${otherParticipant?.id}`)
+                          router.push(`/public/profile/${otherParticipant?.id}`)
                         }
                       >
                         <Text style={styles.headerTitle}>{chatName}</Text>

@@ -1309,11 +1309,11 @@ const renderPickerInput = useCallback(
                       <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
                         <Text style={styles.linkText}>Forgot Password?</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={() => router.push(email ? `/(auth)/verify?email=${email}` : '/(auth)/verify')}
                       >
                         <Text style={styles.linkText}>Verify Account</Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                   </>
                 )}
