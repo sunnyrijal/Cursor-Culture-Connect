@@ -49,7 +49,13 @@ export default function Settings() {
   };
 
   const handleViewPublicProfile = () => {
-    router.push(`/public/profile/${myData?.user?.id || '1'}`);
+    router.push({
+      pathname: '/public/profile/[id]',
+      params: {
+        id: String(myData?.user?.id ?? '1'),
+        sameuser: 'true',
+      },
+    });
   };
 
   const profileOptions: SettingsOption[] = [
@@ -175,11 +181,11 @@ export default function Settings() {
   const getLocationString = () => {
     const user = myData?.user;
     if (!user) return '';
-    
+
     const parts = [];
     if (user.city) parts.push(user.city);
     if (user.state) parts.push(user.state);
-    
+
     return parts.join(', ');
   };
 
@@ -187,11 +193,11 @@ export default function Settings() {
   const getAcademicInfo = () => {
     const user = myData?.user;
     if (!user) return '';
-    
+
     const parts = [];
     if (user.major) parts.push(user.major);
     if (user.classYear) parts.push(user.classYear);
-    
+
     return parts.join(' • ');
   };
 
@@ -199,15 +205,15 @@ export default function Settings() {
   const getUserBio = () => {
     const user = myData?.user;
     if (!user) return '';
-    
+
     if (user.bio) return user.bio;
-    
+
     // Create a dynamic bio based on user's interests
     if (user.interests && user.interests.length > 0) {
       const interestsText = user.interests.slice(0, 3).join(', ');
       return `Passionate about ${interestsText.toLowerCase()} and connecting with fellow students! 🌍`;
     }
-    
+
     return 'Student passionate about connecting with fellow students from around the world! 🌍';
   };
 
@@ -228,7 +234,7 @@ export default function Settings() {
         colors={['#F8FAFC', '#E2E8F0', '#F1F5F9']}
         style={styles.gradientBackground}
       />
-      
+
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.headerContainer}>

@@ -188,7 +188,7 @@ const FriendCard = ({ friend, onPress }: { friend: any; onPress: (id: string) =>
 };
 
 export default function UserProfilePage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id , sameuser} = useLocalSearchParams<{ id: string , sameuser?:string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -440,7 +440,7 @@ export default function UserProfilePage() {
       <TouchableOpacity
         style={styles.actionPrimaryButton}
         onPress={handleSendRequest}
-        disabled={sendRequestMutation.isPending}
+        disabled={sendRequestMutation.isPending || sameuser === 'true'}
       >
         {sendRequestMutation.isPending ? (
           <ActivityIndicator color={theme.white} />

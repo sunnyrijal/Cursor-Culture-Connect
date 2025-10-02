@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   title: {
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

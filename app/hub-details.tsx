@@ -23,7 +23,7 @@ export default function HubDetails() {
 
   const renderFriends = () => {
     const friends = res?.data?.friends || [];
-    
+
     if (friends.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -36,21 +36,23 @@ export default function HubDetails() {
       <View style={styles.contentContainer}>
         {friends.map((friend: any) => (
           <View key={friend.id} style={styles.friendCard}>
-            <View style={styles.friendInfo}>
-              {friend.profilePicture ? (
-                <Image source={{ uri: friend.profilePicture }} style={styles.friendAvatar} />
-              ) : (
-                <View style={styles.friendAvatarPlaceholder}>
-                  <User size={24} color={theme.textSecondary} />
+            <TouchableOpacity onPress={() => router.push(`/public/profile/${friend.id}`)} style={{ flex: 1 }} activeOpacity={0.7}>
+              <View style={styles.friendInfo}>
+                {friend.profilePicture ? (
+                  <Image source={{ uri: friend.profilePicture }} style={styles.friendAvatar} />
+                ) : (
+                  <View style={styles.friendAvatarPlaceholder}>
+                    <User size={24} color={theme.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.friendDetails}>
+                  <Text style={styles.friendName}>
+                    {friend.firstName} {friend.lastName}
+                  </Text>
+                  <Text style={styles.friendEmail}>{friend.email}</Text>
                 </View>
-              )}
-              <View style={styles.friendDetails}>
-                <Text style={styles.friendName}>
-                  {friend.firstName} {friend.lastName}
-                </Text>
-                <Text style={styles.friendEmail}>{friend.email}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.chatButton}
               onPress={() => navigateToChat(friend.chatId)}
@@ -66,7 +68,7 @@ export default function HubDetails() {
 
   const renderGroups = () => {
     const groups = res?.data?.groups || [];
-    
+
     if (groups.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -82,34 +84,34 @@ export default function HubDetails() {
             key={group.id}
             onPress={() => router.push(`/group/${group.id}`)}
             activeOpacity={0.8}>
-          <View key={group.id} style={styles.groupCard}>
-            <View style={styles.groupHeader}>
-              {group.imageUrl ? (
-                <Image source={{ uri: group.imageUrl }} style={styles.groupImage} />
-              ) : (
-                <View style={styles.groupImagePlaceholder}>
-                  <Users size={24} color={theme.textSecondary} />
-                </View>
-              )}
-              <View style={styles.groupInfo}>
-                <Text style={styles.groupName}>{group.name}</Text>
-                <View style={styles.groupMeta}>
-                  <Text style={styles.groupMembers}>
-                    {group._count.members} member{group._count.members !== 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.groupCreator}>
-                    Created by {group.creator.name}
-                  </Text>
+            <View key={group.id} style={styles.groupCard}>
+              <View style={styles.groupHeader}>
+                {group.imageUrl ? (
+                  <Image source={{ uri: group.imageUrl }} style={styles.groupImage} />
+                ) : (
+                  <View style={styles.groupImagePlaceholder}>
+                    <Users size={24} color={theme.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.groupInfo}>
+                  <Text style={styles.groupName}>{group.name}</Text>
+                  <View style={styles.groupMeta}>
+                    <Text style={styles.groupMembers}>
+                      {group._count.members} member{group._count.members !== 1 ? 's' : ''}
+                    </Text>
+                    <Text style={styles.groupCreator}>
+                      Created by {group.creator.name}
+                    </Text>
+                  </View>
                 </View>
               </View>
+              <Text style={styles.groupDescription} numberOfLines={2}>
+                {group.description || 'No description available'}
+              </Text>
+              {group.meetingLocation && (
+                <Text style={styles.groupLocation}>📍 {group.meetingLocation}</Text>
+              )}
             </View>
-            <Text style={styles.groupDescription} numberOfLines={2}>
-              {group.description || 'No description available'}
-            </Text>
-            {group.meetingLocation && (
-              <Text style={styles.groupLocation}>📍 {group.meetingLocation}</Text>
-            )}
-          </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -118,7 +120,7 @@ export default function HubDetails() {
 
   const renderEvents = () => {
     const events = res?.data?.events || [];
-    
+
     if (events.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -134,29 +136,29 @@ export default function HubDetails() {
             key={event.id}
             onPress={() => router.push(`/event/${event.id}`)}
             activeOpacity={0.8}>
-          <View key={event.id} style={styles.eventCard}>
-            {event.imageUrl && (
-              <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
-            )}
-            <View style={styles.eventContent}>
-              <Text style={styles.eventName}>{event.name}</Text>
-              <Text style={styles.eventDescription} numberOfLines={2}>
-                {event.description}
-              </Text>
-              <View style={styles.eventMeta}>
-                <Text style={styles.eventLocation}>📍 {event.location}</Text>
-                <Text style={styles.eventDate}>
-                  📅 {new Date(event.date).toLocaleDateString()}
+            <View key={event.id} style={styles.eventCard}>
+              {event.imageUrl && (
+                <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
+              )}
+              <View style={styles.eventContent}>
+                <Text style={styles.eventName}>{event.name}</Text>
+                <Text style={styles.eventDescription} numberOfLines={2}>
+                  {event.description}
+                </Text>
+                <View style={styles.eventMeta}>
+                  <Text style={styles.eventLocation}>📍 {event.location}</Text>
+                  <Text style={styles.eventDate}>
+                    📅 {new Date(event.date).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={styles.eventOrganizer}>
+                  Organized by {event.user.name}
+                </Text>
+                <Text style={styles.eventAttendees}>
+                  {event.attendingUsers?.length || 0} attending
                 </Text>
               </View>
-              <Text style={styles.eventOrganizer}>
-                Organized by {event.user.name}
-              </Text>
-              <Text style={styles.eventAttendees}>
-                {event.attendingUsers?.length || 0} attending
-              </Text>
             </View>
-          </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -195,7 +197,7 @@ export default function HubDetails() {
 
   const getTabCount = () => {
     if (!res?.data) return '';
-    
+
     switch (activeTab) {
       case 'friends':
         return res.data.friends?.length || 0;
