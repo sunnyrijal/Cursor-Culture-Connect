@@ -1,18 +1,21 @@
 'use client';
 
 import { AuthProvider } from '../contexts/AuthContext';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import {
+  QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import getDecodedToken from '@/utils/getMyData';
 import { useEffect, useCallback, useState } from 'react';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 import { SocketProvider } from '@/hooks/useSocket';
+import 'react-native-reanimated';
 
 const queryClient = new QueryClient();
 
 function MainLayout() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [myData, setMyData] = useState<any>(null);
 
   // Socket event handlers
   const handleConnect = useCallback(
@@ -31,16 +34,15 @@ function MainLayout() {
     (data: any) => console.log('✅ Socket authenticated', data),
     []
   );
-
-  const { data: myData } = useQuery({
-    queryKey: ['myData'],
-    queryFn: () => getDecodedToken(),
-    retry: false,
-  });
-
+  
   useEffect(() => {
-    if (myData?.userId) setUserId(myData.userId);
-  }, [myData]);
+    const fetchMyData = async () => {
+      const data = await getDecodedToken();
+      setMyData(data);
+      if (data?.userId) setUserId(data.userId);
+    };
+    fetchMyData();
+  }, []);
 
   return (
     <SocketProvider
@@ -63,10 +65,10 @@ function MainLayout() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
       <QueryClientProvider client={queryClient}>
+    <AuthProvider>
         <MainLayout />
-      </QueryClientProvider>
     </AuthProvider>
+      </QueryClientProvider>
   );
 }

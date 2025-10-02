@@ -22,6 +22,7 @@ import {
   Zap,
   ClipboardList,
   FileText,
+  Plus,
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -29,7 +30,7 @@ import {
   updateActivity,
   deleteActivity,
   CreateActivityData,
-  UpdateActivityData,
+  UpdateActivityData, 
   ActivityResponse,
 } from '@/contexts/activity.api';
 import { getInterests, Interest } from '@/contexts/interest.api';
@@ -40,6 +41,7 @@ interface CreateActivityModalProps {
   editingActivity?: ActivityResponse | null;
 }
 
+import { CreateInterestModal } from './CreateInterestModal';
 export function CreateActivityModal({
   visible,
   onClose,
@@ -57,7 +59,8 @@ export function CreateActivityModal({
   const [showInterestDropdown, setShowInterestDropdown] = useState(false);
   const [selectedInterest, setSelectedInterest] = useState<Interest | null>(
     null
-  );
+  ); 
+  const [isInterestModalVisible, setIsInterestModalVisible] = useState(false);
 
 
   const queryClient = useQueryClient();
@@ -338,6 +341,13 @@ export function CreateActivityModal({
                       </ScrollView>
                     </View>
                   )}
+                  <TouchableOpacity
+                    style={styles.addActivityButton}
+                    onPress={() => setIsInterestModalVisible(true)}
+                  >
+                    <Plus size={16} color="#6366F1" />
+                    <Text style={styles.addActivityButtonText}>Create New Interest</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Description */}
@@ -432,6 +442,10 @@ export function CreateActivityModal({
             </TouchableOpacity>
           </View>
         </View>
+        <CreateInterestModal
+          visible={isInterestModalVisible}
+          onClose={() => setIsInterestModalVisible(false)}
+        />
       </View>
     </Modal>
   );
@@ -441,6 +455,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
+  },
+  addActivityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  addActivityButtonText: {
+    color: '#6366F1',
+    fontWeight: '600',
   },
   scrollContainer: {
     flex: 1,
@@ -625,4 +649,3 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 });
-

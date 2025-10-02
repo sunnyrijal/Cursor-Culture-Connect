@@ -40,6 +40,7 @@ import { uploadFile } from '@/contexts/file.api';
 import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
+import { typography } from './theme';
 
 interface CreateEventModalProps {
   visible: boolean;
@@ -1201,7 +1202,7 @@ const styles = StyleSheet.create({
   // },
   headerContainer: {
     marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 24,
   },
   closeButton: {
@@ -1213,7 +1214,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   title: {
-    fontSize: 27,
+    fontSize: typography.fontSize.xl,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

@@ -10,22 +10,21 @@ import {
 } from 'lucide-react-native';
 import { View, Platform, StyleSheet, Text } from 'react-native';
 import getDecodedToken from '@/utils/getMyData';
-import { useQuery } from '@tanstack/react-query';
 import { SocketProvider } from '@/hooks/useSocket';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 
 export default function TabLayout() {
   const [userId, setUserId] = useState<string | null>(null);
 
-  const { data: myData } = useQuery({
-    queryKey: ['myData'],
-    queryFn: () => getDecodedToken(),
-    retry: false,
-  });
-
   useEffect(() => {
-    if (myData?.userId) setUserId(myData.userId);
-  }, [myData]);
+    const fetchMyData = async () => {
+      const data = await getDecodedToken();
+      if (data?.userId) {
+        setUserId(data.userId);
+      }
+    };
+    fetchMyData();
+  }, []);
 
   const handleConnect = useCallback(
     () => console.log('🔌 Connected to socket'),

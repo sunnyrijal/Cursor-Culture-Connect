@@ -203,7 +203,7 @@ export default function FriendRequestsScreen() {
 
   const currentRequests =
     activeTab === 'received' ? receivedRequests : sentRequests;
-
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Tab Container */}
@@ -285,12 +285,20 @@ export default function FriendRequestsScreen() {
                     {user.major && (
                       <Text style={styles.userEmail}>{user.major}</Text>
                     )}
-                    {user.city && (
-                      <Text style={styles.userLocation}>{user.city}</Text>
-                    )}
+
                     {user.university && (
-                      <Text style={styles.userUniversity}>
+                      <Text style={styles.userEmail}>
                         {user.university.name}
+                      </Text>
+                    )}
+                    {user.classYear && (
+                      <Text style={styles.userEmail}>
+                        {user.classYear}
+                      </Text>
+                    )}
+                    {(user.countryOfOrigin || user.city) && (
+                      <Text style={styles.userLocation}>
+                        {user.countryOfOrigin || user.city}
                       </Text>
                     )}
                     <View style={styles.requestMeta}>

@@ -103,6 +103,7 @@ interface QuickEvent {
   location: string;
   interestedUsers: { id: string }[];
   time: string;
+  endTime?: string;
   user: {
     id: string;
     name: string;
@@ -112,10 +113,8 @@ interface QuickEvent {
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
   const [filters, setFilters] = useState<FilterOptions>({
     location: { country: '', state: '', city: '' },
@@ -241,6 +240,7 @@ export default function Events() {
   });
 
   const quickEvents = quickEventsResponse?.data || [];
+  console.log("QUICK EVENRTS",quickEvents)
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -566,7 +566,9 @@ export default function Events() {
                       <View style={styles.quickEventMeta}>
                         <Clock size={16} color="#F59E0B" />
                         <Text style={styles.quickEventMetaText}>
-                          {formatTo12Hour(quickEvent.time)}
+                          {quickEvent.endTime
+                            ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
+                            : formatTo12Hour(quickEvent.time)}
                         </Text>
                       </View>
                       <View style={styles.quickEventMeta}>
@@ -577,6 +579,14 @@ export default function Events() {
                             : 'No Limit'}
                         </Text>
                       </View>
+                      <View style={styles.quickEventMeta}>
+                        <Users size={16} color="#10B981" />
+                        <Text style={styles.quickEventMetaText}>
+                          {quickEvent.interestedUsers?.length || 0} interested
+                        </Text>
+                      </View>
+
+
                       <View style={styles.quickEventActions}>
                         <View style={styles.quickEventCreator}>
                           <View style={styles.creatorAvatar}>
@@ -643,6 +653,23 @@ export default function Events() {
         onFiltersChange={handleFilterChange}
         onApply={handleApplyFilters}
       />
+
+      {/* <View style={styles.fabContainer}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setShowCreateQuickEventModal(true)}
+          activeOpacity={0.7}
+        >
+          <Zap size={24} color={theme.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.createButton, { marginTop: 12 }]}
+          onPress={() => setShowCreateModal(true)}
+          activeOpacity={0.7}
+        >
+          <PlusCircle size={28} color={theme.primary} />
+        </TouchableOpacity>
+      </View> */}
     </SafeAreaView>
   );
 }
@@ -654,6 +681,32 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 10,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  createButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6d7075',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
 
   filterButton: {
@@ -722,6 +775,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginBottom: 16,
+    // marginBottom: 16, // Removed to allow subtitle to be centered
   },
   headerActions: {
     flexDirection: 'row',

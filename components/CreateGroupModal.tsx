@@ -36,6 +36,7 @@ import { ActivityIndicator } from 'react-native';
 import { Plus, ImageIcon } from 'lucide-react-native';
 import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
+import { theme, typography } from './theme';
 
 interface CreateGroupModalProps {
   visible: boolean;
@@ -196,7 +197,7 @@ export function CreateGroupModal({
   });
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.description) {
+    if (!formData.name) {
       Alert.alert('Error', 'Please fill in all required fields.');
       return;
     }
@@ -335,7 +336,7 @@ export function CreateGroupModal({
                   'Tell people what your group is about...',
                   <GraduationCap size={16} color="#6366F1" />,
                   true,
-                  true
+                  false
                 )}
 
                 {/* Group Image */}
@@ -738,12 +739,12 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 24,
     position: 'relative',
   },
   title: {
-    fontSize: 30,
+    fontSize: typography.fontSize.xl,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

@@ -1,10 +1,12 @@
 import { View, StyleSheet } from 'react-native';
 import AuthForm from '@/components/AuthForm';
+import SignInForm from '@/components/SignInForm';
 
 export default function LoginScreen() {
   return (
     <View style={styles.container}>
-      <AuthForm initialMode="login" />
+      {/* <AuthForm initialMode="login" /> */}
+    <SignInForm />
     </View>
   );
 }

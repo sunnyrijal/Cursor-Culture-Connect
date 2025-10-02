@@ -21,7 +21,6 @@ import {
   Check,
   Sparkles,
   Zap,
-
   Globe,
   GraduationCap,
   UserRoundCog,
@@ -29,6 +28,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQuickEvent } from '@/contexts/quickEvent.api';
 import { TimeSelectInput } from './TimeSelectInput'; // Adjust path as needed
+import { typography } from './theme';
 
 interface CreateQuickEventModalProps {
   visible: boolean;
@@ -46,6 +46,7 @@ export function CreateQuickEventModal({
     description: '',
     location: '',
     time: '', // Added time field
+    endTime: '',
     max: '', // Added max people field
     isPublic: true,
   });
@@ -147,6 +148,7 @@ export function CreateQuickEventModal({
         description: '',
         location: '',
         time: '', // Reset time field
+        endTime:'',
         max: '', // Reset max field
         isPublic: true,
       });
@@ -193,6 +195,12 @@ export function CreateQuickEventModal({
       return;
     }
 
+    if (formData.time && formData.endTime && formData.endTime <= formData.time) {
+      Alert.alert('Invalid Time', 'End time must be after start time.');
+      return;
+    }
+
+
     if (
       formData.max &&
       (isNaN(Number(formData.max)) || Number(formData.max) <= 0)
@@ -209,6 +217,7 @@ export function CreateQuickEventModal({
       description: formData.description.trim(),
       location: formData.location.trim(),
       time: formData.time,
+      endTime: formData.endTime || null,
       max: formData.max,
       isPublic: formData.isPublic,
     };
@@ -365,9 +374,17 @@ export function CreateQuickEventModal({
                 <TimeSelectInput
                   value={formData.time}
                   onTimeChange={(time) => setFormData({ ...formData, time })}
-                  label="Time"
-                  placeholder="Select a time"
+                  label="Start Time"
+                  placeholder="Select a start time"
                   disabled={createEventMutation.isPending}
+                />
+
+                <TimeSelectInput
+                  value={formData.endTime}
+                  onTimeChange={(time) => setFormData({ ...formData, endTime: time })}
+                  label="End Time (Optional)"
+                  placeholder="Select an end time"
+                  disabled={createEventMutation.isPending || !formData.time}
                 />
 
                 {/* <View style={styles.inputContainer}>
@@ -423,7 +440,11 @@ export function CreateQuickEventModal({
                         styles.inputWrapperValid,
                     ]}
                   >
-                    <UserRoundCog size={20} color="#6366F1" style={styles.inputIcon} />
+                    <UserRoundCog
+                      size={20}
+                      color="#6366F1"
+                      style={styles.inputIcon}
+                    />
                     <TextInput
                       style={styles.input}
                       value={formData.max}
@@ -483,7 +504,8 @@ export function CreateQuickEventModal({
                         <Text
                           style={[
                             styles.visibilityButtonText,
-                            formData.isPublic && styles.visibilityButtonTextActive,
+                            formData.isPublic &&
+                              styles.visibilityButtonTextActive,
                           ]}
                         >
                           Public
@@ -518,7 +540,8 @@ export function CreateQuickEventModal({
                         <Text
                           style={[
                             styles.visibilityButtonText,
-                            !formData.isPublic && styles.visibilityButtonTextActive,
+                            !formData.isPublic &&
+                              styles.visibilityButtonTextActive,
                           ]}
                         >
                           University Only
@@ -638,7 +661,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 32,
     alignItems: 'center',
   },
@@ -674,7 +697,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   title: {
-    fontSize: 28,
+    fontSize: typography.fontSize.xl,
+
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 8,

@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,6 +21,7 @@ import {
   ArrowLeft,
   Users,
   Clock,
+  ChevronDown,
   User,
   Trash2,
   RotateCcw,
@@ -59,6 +61,7 @@ interface QuickEventDetailType {
   name: string;
   description: string;
   time: string;
+  endTime?:string
   max: string;
   isPublic: boolean;
   location: string;
@@ -68,13 +71,19 @@ interface QuickEventDetailType {
     name?: string;
     email?: string;
   };
-  interestedUsers?: { id: string; name?: string }[];
+  interestedUsers?: {
+    profilePicture: any;
+    id: string;
+    name?: string;
+    major?: string;
+  }[];
 }
 
 export default function QuickEventDetail() {
   const { id } = useLocalSearchParams();
   const queryClient = useQueryClient();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isUserListVisible, setIsUserListVisible] = useState(false);
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -83,8 +92,7 @@ export default function QuickEventDetail() {
     isLoading,
     isError,
     error,
-  } = useQuery<any, Error, { data: QuickEventDetailType }>({
-    // Explicitly type the data for better intellisense
+  } = useQuery<{ data: QuickEventDetailType }, Error>({
     queryKey: ['quickevent', eventId],
     queryFn: () => getQuickEventById(eventId as string),
     enabled: !!eventId,
@@ -145,9 +153,7 @@ export default function QuickEventDetail() {
       myData
     );
     if (!quickEvent?.interestedUsers || !myData?.userId) return false;
-    return quickEvent.interestedUsers.some(
-      (user: any) => user.id === myData.userId
-    );
+    return quickEvent.interestedUsers.some((user) => user.id === myData.userId);
   }, [quickEvent, myData]);
 
   const { mutate: deleteEventMutation, isPending: isDeletingEvent } =
@@ -155,8 +161,8 @@ export default function QuickEventDetail() {
       mutationFn: (eventIdToDelete: string) =>
         deleteQuickEvent(eventIdToDelete),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['quick-events'] }); // Invalidate all quick events list
-        router.back(); // Navigate back after successful deletion
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+        router.back();
         Alert.alert('Success', 'Quick event deleted successfully.');
       },
       onError: (error) => {
@@ -188,7 +194,6 @@ export default function QuickEventDetail() {
     expressNotInterested();
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -200,7 +205,6 @@ export default function QuickEventDetail() {
     );
   }
 
-  // Error state
   if (isError || !quickEvent) {
     return (
       <SafeAreaView style={styles.container}>
@@ -259,9 +263,6 @@ export default function QuickEventDetail() {
               </TouchableOpacity>
 
               <View style={styles.badgeContainer}>
-                {/* <View style={styles.quickEventBadge}>
-                  <Text style={styles.quickEventBadgeText}>Quick Event</Text>
-                </View> */}
                 <View
                   style={[
                     styles.quickEventBadge,
@@ -286,7 +287,10 @@ export default function QuickEventDetail() {
                 style={styles.headerButton}
               />
               {quickEvent?.userId === myData?.userId && (
-                <TouchableOpacity onPress={() => setIsEditModalVisible(true)} style={styles.headerButton}>
+                <TouchableOpacity
+                  onPress={() => setIsEditModalVisible(true)}
+                  style={styles.headerButton}
+                >
                   <Edit3 size={20} color={theme.primary} />
                 </TouchableOpacity>
               )}
@@ -327,8 +331,16 @@ export default function QuickEventDetail() {
                     <Clock size={24} color={extendedTheme.accent} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoValue}>
+                    {/* <Text style={styles.infoValue}>
                       {formatTo12Hour(quickEvent.time)}
+                    </Text> */}
+
+                    <Text style={styles.infoValue}>
+                      {quickEvent.endTime
+                        ? `${formatTo12Hour(
+                            quickEvent.time
+                          )} - ${formatTo12Hour(quickEvent.endTime)}`
+                        : formatTo12Hour(quickEvent.time)}
                     </Text>
                   </View>
                 </View>
@@ -337,15 +349,13 @@ export default function QuickEventDetail() {
                   <View
                     style={[
                       styles.infoIconWrapper,
-                      { backgroundColor: '#E0F2F1' }, // A light teal color
+                      { backgroundColor: '#E0F2F1' },
                     ]}
                   >
                     <MapPin size={24} color="#26A69A" />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoValue}>
-                      {quickEvent.location}
-                    </Text>
+                    <Text style={styles.infoValue}>{quickEvent.location}</Text>
                   </View>
                 </View>
 
@@ -378,15 +388,24 @@ export default function QuickEventDetail() {
                   </View>
                   <View style={styles.infoContent}>
                     {quickEvent?.userId === myData?.userId &&
-                    quickEvent.interestedUsers &&
-                    quickEvent.interestedUsers.length > 0 ? (
-                      <View>
-                        {quickEvent.interestedUsers.map((user, index) => (
-                          <Text key={user.id} style={styles.infoValue}>
-                            {user.name || `User ${index + 1}`}
-                          </Text>
-                        ))}
-                      </View>
+                    (quickEvent.interestedUsers?.length ?? 0) > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => setIsUserListVisible(!isUserListVisible)}
+                        style={styles.collapsibleHeader}
+                      >
+                        <Text style={styles.infoValue}>
+                          {quickEvent.interestedUsers?.length || 0} interested
+                        </Text>
+                        <ChevronDown
+                          size={20}
+                          color={theme.textPrimary}
+                          style={{
+                            transform: [
+                              { rotate: isUserListVisible ? '180deg' : '0deg' },
+                            ],
+                          }}
+                        />
+                      </TouchableOpacity>
                     ) : (
                       <Text style={styles.infoValue}>
                         {quickEvent.interestedUsers?.length || 0} interested
@@ -395,37 +414,36 @@ export default function QuickEventDetail() {
                   </View>
                 </View>
 
-                {/* <View style={styles.infoRow}>
-                  <View
-                    style={[
-                      styles.infoIconWrapper,
-                      { backgroundColor: '#EEF2FF' },
-                    ]}
-                  >
-                    <User size={24} color={theme.primary} />
+                {isUserListVisible && quickEvent?.userId === myData?.userId && (
+                  <View style={styles.interestedUsersList}>
+                    {quickEvent.interestedUsers?.map((user) => (
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(`/public/profile/${user.id}`)
+                        }
+                        key={user.id}
+                        style={styles.attendeeItem}
+                      >
+                        <Image
+                          source={
+                            user.profilePicture
+                              ? { uri: user.profilePicture }
+                              : require('../../assets/user.png')
+                          }
+                          style={styles.attendeeImage}
+                        />
+                        <View>
+                          <Text style={styles.attendeeName}>{user.name}</Text>
+                          {user.major && (
+                            <Text style={styles.attendeeEmail}>
+                              {user.major}
+                            </Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoValue}>
-                      {quickEvent.user?.name}
-                    </Text>
-                  </View>
-                </View> */}
-
-                {/* <View style={styles.infoRow}>
-                  <View
-                    style={[
-                      styles.infoIconWrapper,
-                      { backgroundColor: '#ECFDF5' },
-                    ]}
-                  >
-                    <Mail size={24} color={extendedTheme.success} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoValue}>
-                      {quickEvent.user?.email}
-                    </Text>
-                  </View>
-                </View> */}
+                )}
               </View>
             </View>
           </View>
@@ -512,7 +530,10 @@ export default function QuickEventDetail() {
       <EditQuickEventModal
         visible={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
-        onSubmit={() => queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] })}
+        onSubmit={() => {
+          setIsEditModalVisible(false);
+          queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] });
+        }}
         quickEvent={quickEvent}
       />
     </SafeAreaView>
@@ -520,6 +541,29 @@ export default function QuickEventDetail() {
 }
 
 const styles = StyleSheet.create({
+  attendeeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  attendeeImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacing.md,
+  },
+  attendeeName: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.semiBold,
+    color: theme.textPrimary,
+  },
+  attendeeEmail: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+  },
+
   organizerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -726,6 +770,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   infoIconWrapper: {
     width: 48,
     height: 48,
@@ -747,6 +796,26 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: '600',
     color: theme.textPrimary,
+  },
+  interestedUsersList: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  interestedUserRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  interestedUserName: {
+    fontSize: typography.fontSize.base,
+    color: theme.textPrimary,
+  },
+  interestedUserMajor: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    fontStyle: 'italic',
   },
 
   descriptionContainer: {

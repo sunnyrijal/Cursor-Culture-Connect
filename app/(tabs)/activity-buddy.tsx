@@ -57,6 +57,7 @@ import {
 } from '@/contexts/activity.api';
 import { Activity } from '@/types/activity';
 import MyPreferencesModal from '@/components/MyPreferenceModal';
+import { createDirectChat } from '@/contexts/chat.api';
 
 const theme = {
   primary: '#6366F1',
@@ -145,7 +146,7 @@ export default function ActivityBuddyPage() {
     },
     enabled: !!selectedActivity,
   });
-  console.log(usersPages)
+  console.log(usersPages);
 
   // Query for user pings
   const { data: pingsData, isLoading: pingsLoading } = useQuery({
@@ -219,10 +220,33 @@ export default function ActivityBuddyPage() {
     },
   });
 
-
   const activities = activitiesData?.data || [];
   const users = usersPages?.pages.flatMap((page) => page.data.users) || [];
   const pings = pingsData?.data || { sent: [], received: [] };
+  console.log('PINGS', pings);
+
+  const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
+    useMutation({
+      mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
+      onSuccess: (data: any) => {
+        if (data?.data?.id) {
+          router.push(`/chat/${data.data.id}`);
+        } else {
+          Alert.alert(
+            'Chat Created',
+            'You can now message the host from your chats list.'
+          );
+          queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+      },
+      onError: (error: any) => {
+        console.error('❌ Error creating chat:', error);
+        Alert.alert(
+          'Error',
+          error.message || 'Could not start a conversation.'
+        );
+      },
+    });
 
   const filteredUsers = users.filter(
     (user: User) =>
@@ -559,115 +583,155 @@ export default function ActivityBuddyPage() {
     </Modal>
   );
 
-  const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => (
-    <View key={ping.id} style={styles.pingCard}>
-      <View style={styles.pingHeader}>
-        <Image
-          source={
-            type === 'sent'
-              ? ping.receiver.profilePicture
-                ? { uri: ping.receiver.profilePicture }
-                : require('../../assets/user.png')
-              : ping.sender.profilePicture
-              ? { uri: ping.sender.profilePicture }
-              : require('../../assets/user.png')
-          }
-          style={styles.pingUserImage}
-          defaultSource={require('../../assets/user.png')}
-        />
-        <View style={styles.pingInfo}>
-          <Text style={styles.pingUserName}>
-            {type === 'sent' ? ping.receiver.name : ping.sender.name}
-          </Text>
-          <Text style={styles.pingActivity}>
-            {ping.activity?.name || ping.interest?.name}
-          </Text>
-          <Text style={styles.pingDate}>
-            {new Date(ping.createdAt).toLocaleDateString()}
-          </Text>
-        </View>
-        <View style={styles.pingStatus}>
-          {ping.status === 'pending' && (
-            <View style={[styles.statusBadge, styles.statusPending]}>
-              <Clock size={12} color={theme.warning} />
-              <Text style={styles.statusText}>Pending</Text>
-            </View>
-          )}
-          {ping.status === 'accepted' && (
-            <View style={[styles.statusBadge, styles.statusAccepted]}>
-              <CheckCircle size={12} color={theme.success} />
-              <Text style={styles.statusText}>Accepted</Text>
-            </View>
-          )}
-          {ping.status === 'declined' && (
-            <View style={[styles.statusBadge, styles.statusDeclined]}>
-              <XCircle size={12} color={theme.gray500} />
-              <Text style={styles.statusText}>Declined</Text>
-            </View>
-          )}
-        </View>
-      </View>
-      {ping.message && <Text style={styles.pingMessage}>"{ping.message}"</Text>}
-      {ping.response && (
-        <Text style={styles.pingResponse}>Response: "{ping.response}"</Text>
-      )}
-      <View style={styles.pingActions}>
-        {type === 'received' && ping.status === 'pending' && (
-          <>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.declineButton]}
-              onPress={() => handlePingResponse(ping.id, 'declined')}
-              disabled={updatePingMutation.isPending}
-            >
-              <Text style={styles.declineButtonText}>Decline</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.acceptButton]}
-              onPress={() => handlePingResponse(ping.id, 'accepted')}
-              disabled={updatePingMutation.isPending}
-            >
-              <Text style={styles.acceptButtonText}>Accept</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {type === 'sent' && ping.status === 'pending' && (
+const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
+    const targetUser = type === 'sent' ? ping.receiver : ping.sender;
+
+    return (
+      <View key={ping.id} style={styles.pingCard}>
+        <View style={styles.pingHeader}>
           <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.declineButton,
-              unsendPingMutation.isPending && styles.disabledButton,
-            ]}
-            onPress={() =>
-              Alert.alert(
-                'Unsend Ping',
-                'Are you sure you want to unsend this ping?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Unsend', style: 'destructive', onPress: () => unsendPingMutation.mutate(ping.id) },
-                ]
-              )
-            }
-            disabled={unsendPingMutation.isPending}>
-            <Text style={styles.declineButtonText}>{unsendPingMutation.isPending && pingTarget?.originalPingId === ping.id ? 'Unsending...' : 'Unsend'}</Text>
-          </TouchableOpacity>
-        )}
-        {type === 'received' && ping.status !== 'declined' && !ping.pingedBack && (
-          <TouchableOpacity
-            style={[styles.actionButton, styles.pingBackButton]}
-            onPress={() => handlePingBack(ping, type)}
-            disabled={pingBackMutation.isPending}
+            onPress={() => router.push(`/public/profile/${targetUser.id}`)}
           >
-            <Text style={styles.pingBackButtonText}>
-              {pingBackMutation.isPending &&
-              pingTarget?.originalPingId === ping.id
-                ? 'Pinging...'
-                : 'Ping Back'}
-            </Text>
+            <Image
+              source={
+                targetUser.profilePicture
+                  ? { uri: targetUser.profilePicture }
+                  : require('../../assets/user.png')
+              }
+              style={styles.pingUserImage}
+              defaultSource={require('../../assets/user.png')}
+            />
           </TouchableOpacity>
+          <View style={styles.pingInfo}>
+            <TouchableOpacity
+              onPress={() => router.push(`/public/profile/${targetUser.id}`)}
+            >
+              <Text style={styles.pingUserName}>{targetUser.name}</Text>
+            </TouchableOpacity>
+            <Text style={styles.pingActivity}>
+              {ping.activity?.name || ping.interest?.name}
+            </Text>
+            <Text style={styles.pingDate}>
+              {new Date(ping.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+          <View style={styles.pingStatus}>
+            {ping.status === 'pending' && (
+              <View style={[styles.statusBadge, styles.statusPending]}>
+                <Clock size={12} color={theme.warning} />
+                <Text style={styles.statusText}>Pending</Text>
+              </View>
+            )}
+            {ping.status === 'accepted' && (
+              <View style={[styles.statusBadge, styles.statusAccepted]}>
+                <CheckCircle size={12} color={theme.success} />
+                <Text style={styles.statusText}>Accepted</Text>
+              </View>
+            )}
+            {ping.status === 'declined' && (
+              <View style={[styles.statusBadge, styles.statusDeclined]}>
+                <XCircle size={12} color={theme.gray500} />
+                <Text style={styles.statusText}>Declined</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        {ping.message && (
+          <Text style={styles.pingMessage}>"{ping.message}"</Text>
         )}
+        {ping.response && (
+          <Text style={styles.pingResponse}>Response: "{ping.response}"</Text>
+        )}
+        <View style={styles.pingActions}>
+          {type === 'received' && ping.status === 'pending' && (
+            <>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.declineButton]}
+                onPress={() => handlePingResponse(ping.id, 'declined')}
+                disabled={updatePingMutation.isPending}
+              >
+                <Text style={styles.declineButtonText}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.acceptButton]}
+                onPress={() => handlePingResponse(ping.id, 'accepted')}
+                disabled={updatePingMutation.isPending}
+              >
+                <Text style={styles.acceptButtonText}>Accept</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {type === 'sent' && ping.status === 'pending' && (
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.declineButton,
+                unsendPingMutation.isPending && styles.disabledButton,
+              ]}
+              onPress={() =>
+                Alert.alert(
+                  'Unsend Ping',
+                  'Are you sure you want to unsend this ping?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Unsend',
+                      style: 'destructive',
+                      onPress: () => unsendPingMutation.mutate(ping.id),
+                    },
+                  ]
+                )
+              }
+              disabled={unsendPingMutation.isPending}
+            >
+              <Text style={styles.declineButtonText}>
+                {unsendPingMutation.isPending &&
+                pingTarget?.originalPingId === ping.id
+                  ? 'Unsending...'
+                  : 'Unsend'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {type === 'received' &&
+            ping.status !== 'declined' &&
+            !ping.pingedBack && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.pingBackButton]}
+                onPress={() => handlePingBack(ping, type)}
+                disabled={pingBackMutation.isPending}
+              >
+                <Text style={styles.pingBackButtonText}>
+                  {pingBackMutation.isPending &&
+                  pingTarget?.originalPingId === ping.id
+                    ? 'Pinging...'
+                    : 'Ping Back'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          {ping.status === 'accepted' && (
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.messageButton,
+                isCreatingChat && styles.disabledButton,
+              ]}
+              onPress={() => {
+                const otherUser = type === 'sent' ? ping.receiver : ping.sender;
+                if (ping.chatId) {
+                  router.push(`/chat/${ping.chatId}`);
+                } else {
+                  createDirectChatMutate(otherUser.id);
+                }
+              }}
+            >
+              <MessageCircle size={14} color={theme.white} />
+              <Text style={styles.messageButtonText}>Message</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderSendPingModal = () => (
     <Modal
@@ -820,7 +884,7 @@ export default function ActivityBuddyPage() {
         }
         contentContainerStyle={styles.contentContainer}
       >
-        {usersLoading && !usersPages?.pages.length ? (
+        {usersLoading && !(usersPages as any)?.pages.length ? (
           <Text style={styles.loadingText}>Loading users...</Text>
         ) : selectedActivity ? (
           <>
@@ -995,7 +1059,7 @@ export default function ActivityBuddyPage() {
   );
 }
 const styles = StyleSheet.create({
-    addActivityButton: {
+  addActivityButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.primary,
@@ -1011,12 +1075,12 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right:20,
-    bottom:16,
+    right: 20,
+    bottom: 16,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#3d40ebff",
+    backgroundColor: '#3d40ebff',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
@@ -1646,6 +1710,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     marginLeft: 8,
+    display:'flex',
+    flexDirection:'row',
+    alignItems:'center',
+    gap:6
   },
   declineButton: {
     backgroundColor: theme.gray100,
@@ -1667,6 +1735,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.accent,
   },
   pingBackButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.white,
+  },
+  messageButton: {
+    backgroundColor: theme.info,
+  },
+  messageButtonText: {
     fontSize: 12,
     fontWeight: '600',
     color: theme.white,
