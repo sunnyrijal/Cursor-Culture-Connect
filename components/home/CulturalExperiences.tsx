@@ -27,6 +27,7 @@ import {
 } from '@/contexts/ad.api';
 import { useRouter } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
+import { discoverExperienceData } from '@/data/discoverExperienceData';
 
 interface Advertisement {
   id: string;
@@ -42,6 +43,7 @@ interface Advertisement {
   location: {
     address: string;
   };
+  listType : string;
   user: {
     id: string;
     name: string;
@@ -84,54 +86,59 @@ const CulturalExperiences = () => {
       const params =
         activeSponsoredCategory !== 'all'
           ? {
-              category:
-                activeSponsoredCategory.charAt(0).toUpperCase() +
-                activeSponsoredCategory.slice(1),
-            }
+            category:
+              activeSponsoredCategory.charAt(0).toUpperCase() +
+              activeSponsoredCategory.slice(1),
+          }
           : {};
       return getAdvertisements(params);
     },
   });
 
-  const { data: myData } = useQuery({
-    queryKey: ['myData'],
-    queryFn: () => getDecodedToken(),
-  });
+  // const { data: myData } = useQuery({
+  //   queryKey: ['myData'],
+  //   queryFn: () => getDecodedToken(),
+  // });
 
   // Transform API data to match your card component format
   const transformAdData = (ads: Advertisement[]) => {
     return ads.map((ad) => ({
-      id: ad.id,
-      title: ad.name,
-      description: ad.description,
+      id: ad?.id,
+      title: ad?.name,
+      description: ad?.description,
       image: ad.imageUrl,
       type: ad.category.toLowerCase(),
       link: ad.link,
-      contactInfo: ad.contactInfo,
+      contactInfo: ad?.contactInfo || "",
       location: ad.location?.address || 'Location not specified',
       author: ad.user?.name || 'Unknown',
-      createdAt: ad.createdAt,
-      metrics: ad.metrics,
-      category: ad.category,
+      createdAt: ad?.createdAt,
+      metrics: ad?.metrics,
+      category: ad?.category,
       // Add all the original ad data for the card component
       originalAd: ad,
+      listType : ad?.listType
     }));
   };
 
+  // console.log('Ad Response kamal:',adResponse?.data, allData);
+  
   // Get the data to display (only API data)
   const getDisplayContent = () => {
-    if (adResponse?.success && adResponse?.data) {
-      const transformedAds = transformAdData(adResponse.data);
+    // if (adResponse?.success && adResponse?.data) {
+    const adResponseData = adResponse?.data || [];
+      const allData = [...adResponseData, ...discoverExperienceData?.data]
+      const transformedAds = transformAdData(allData);
 
       if (activeSponsoredCategory === 'all') {
         return transformedAds;
       } else {
         return transformedAds.filter(
-          (ad) =>
-            ad.type.toLowerCase() === activeSponsoredCategory.toLowerCase()
+          (data) =>
+            data.category.toLowerCase() === activeSponsoredCategory.toLowerCase()
         );
       }
-    }
+    // }
     return [];
   };
 
@@ -139,27 +146,27 @@ const CulturalExperiences = () => {
 
   // Handle ad click with tracking
   const handleSponsoredContentPress = async (content: any) => {
-      // Try to open the link first, then fallback to contact
-      if (content.link && content.link.startsWith('http')) {
-        const supported = await Linking.canOpenURL(content.link);
-        if (supported) {
-          await Linking.openURL(content.link);
-        } else {
-          Alert.alert(
-            'Error',
-            `Don't know how to open this URL: ${content.link}`
-          );
-        }
-      } else if (content.contactInfo) {
-        // Handle contact info (phone number)
-        const phoneUrl = `tel:${content.contactInfo}`;
-        const supported = await Linking.canOpenURL(phoneUrl);
-        if (supported) {
-          await Linking.openURL(phoneUrl);
-        } else {
-          Alert.alert('Contact', `Contact: ${content.contactInfo}`);
-        }
+    // Try to open the link first, then fallback to contact
+    if (content.link && content.link.startsWith('http')) {
+      const supported = await Linking.canOpenURL(content.link);
+      if (supported) {
+        await Linking.openURL(content.link);
+      } else {
+        Alert.alert(
+          'Error',
+          `Don't know how to open this URL: ${content.link}`
+        );
       }
+    } else if (content.contactInfo) {
+      // Handle contact info (phone number)
+      const phoneUrl = `tel:${content.contactInfo}`;
+      const supported = await Linking.canOpenURL(phoneUrl);
+      if (supported) {
+        await Linking.openURL(phoneUrl);
+      } else {
+        Alert.alert('Contact', `Contact: ${content.contactInfo}`);
+      }
+    }
   };
 
   const handleRefresh = () => {
@@ -251,7 +258,7 @@ const CulturalExperiences = () => {
                 style={[
                   styles.categoryText,
                   activeSponsoredCategory === cat.id &&
-                    styles.categoryTextActive,
+                  styles.categoryTextActive,
                 ]}
               >
                 {cat.label}
@@ -384,7 +391,7 @@ const styles = StyleSheet.create({
   // Error State Styles
   errorContainer: {
     paddingVertical: 40,
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
   },

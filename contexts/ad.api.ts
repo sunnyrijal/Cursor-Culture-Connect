@@ -87,6 +87,7 @@ export const createAdvertisement = async (advertisementData: CreateAdvertisement
 
 // Get all advertisements with optional filtering
 export const getAdvertisements = async (params?: GetAdvertisementsParams) => {
+  console.log('Fetching ads with params: kamal', params);
   try {
     const response: AxiosResponse = await api.get(
       '/ad/all',

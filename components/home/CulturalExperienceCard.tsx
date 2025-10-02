@@ -50,7 +50,7 @@ const CulturalExperienceCard = ({
 
   const handlePress = () => {
     // Only record click if user is logged in
-    if (myData) {
+    if (myData && content.type !== "experience") {
       console.log('🔗 Ad clicked:', content.id);
       recordAdClickMutate(content.id);
     }
@@ -66,7 +66,7 @@ const CulturalExperienceCard = ({
       {/* Image on left */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: content.image }} style={styles.image} />
-        {content.type && (
+        {content.type  && content.listType !== "experience" && (
           <View style={styles.sponsoredLabel}>
             <Text style={styles.sponsoredLabelText}>Sponsored</Text>
           </View>
