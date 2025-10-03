@@ -84,6 +84,7 @@ export default function ChatScreen() {
   } = useQuery({
     queryKey: ['chat', id],
     queryFn: () => getChatDetails((id as string) || ''),
+    refetchOnMount:'always'
   });
 
   const sendMessageMutation = useMutation({
@@ -222,7 +223,11 @@ export default function ChatScreen() {
 
                   <View style={styles.chatDetails}>
                     {isGroupChat ? (
-                      <Text style={styles.headerTitle}>{chatName}</Text>
+                      <TouchableOpacity
+                        onPress={() => router.push(`/group/${chat.groupId}`)}
+                      >
+                        <Text style={styles.headerTitle}>{chatName}</Text>
+                      </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
                         onPress={() =>

@@ -212,6 +212,8 @@ export function EditGroupModal({
       queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['group', group?.id] });
+      queryClient.invalidateQueries({ queryKey: ['chats' ] });
+
 
       Alert.alert('Success', 'Group updated successfully!');
 

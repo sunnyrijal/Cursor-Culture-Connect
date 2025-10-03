@@ -682,7 +682,7 @@ export function CreateEventModal({
                             onTimeChange={(time) =>
                               updateTimeSlot(index, 'startTime', time)
                             }
-                            label="Start Time *"
+                            label="Start Time"
                             placeholder="Select start time"
                             disabled={createEventMutation.isPending}
                             required
@@ -695,7 +695,7 @@ export function CreateEventModal({
                             onTimeChange={(time) =>
                               updateTimeSlot(index, 'endTime', time)
                             }
-                            label="End Time *"
+                            label="End Time"
                             placeholder="Select end time"
                             disabled={createEventMutation.isPending}
                             required
