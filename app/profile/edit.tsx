@@ -44,13 +44,7 @@ import {
   Globe,
   Users as UsersIcon,
 } from 'lucide-react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -114,6 +108,12 @@ export default function EditProfile() {
   const [newSocialPlatform, setNewSocialPlatform] = useState<string>('');
   const [newSocialLink, setNewSocialLink] = useState<string>('');
 
+  const [socialPlatformOpen, setSocialPlatformOpen] = useState(false);
+  const [socialPlatformItems, setSocialPlatformItems] = useState(
+    socialPlatforms.map((p) => ({ label: p, value: p }))
+  );
+
+
   const [majorOpen, setMajorOpen] = useState(false);
   const [majorItems, setMajorItems] = useState(
     MAJOR_OPTIONS.map((m) => ({ label: m, value: m }))
@@ -125,7 +125,6 @@ export default function EditProfile() {
   );
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const socialPlatformPickerRef = useRef<Picker<string>>(null);
   const majorPickerRef = useRef<Picker<string>>(null);
   const classYearPickerRef = useRef<Picker<string>>(null);
 
@@ -910,15 +909,18 @@ export default function EditProfile() {
 
             <View style={styles.addSocialContainer}>
               <View style={styles.socialDropdownContainer}>
-                {renderPickerInput(
+                {renderDropdownPicker(
                   Link,
                   'Platform',
                   newSocialPlatform,
                   setNewSocialPlatform,
                   'Select platform...',
-                  socialPlatforms.map((p) => ({ label: p, value: p })),
+                  socialPlatformItems,
+                  setSocialPlatformItems,
+                  socialPlatformOpen,
+                  setSocialPlatformOpen,
                   'socialPlatform',
-                  socialPlatformPickerRef
+                  4000
                 )}
               </View>
 
@@ -1843,7 +1845,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addSocialButtonContainer: {
-    alignItems: 'flex-end',
   },
   socialDropdownContainer: {
     flex: 1,
