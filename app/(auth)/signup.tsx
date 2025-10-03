@@ -5,9 +5,8 @@ import SignUpForm from '@/components/SignUpForm';
 export default function SignupScreen() {
   return (
     <View style={styles.container}>
-      <AuthForm initialMode="signup" />
-
-      {/* <SignUpForm /> */}
+      {/* <AuthForm initialMode="signup" /> */}
+      <SignUpForm />
     </View>
   );
 }

@@ -386,7 +386,7 @@ export function EditEventModal({
       date: formData.date.toISOString(),
       ...(formData.groupId && { associatedGroupId: formData.groupId }),
       isPublic: formData.isPublic,
-      universityOnly: formData.universityOnly,
+      UniversityOnly: formData.universityOnly,
     };
 
     updateEventMutation.mutate({ eventId, eventData });

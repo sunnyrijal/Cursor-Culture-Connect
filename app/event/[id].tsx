@@ -259,13 +259,11 @@ export default function EventDetail() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
-            <Text style={styles.errorText}>
-              {isError ? 'Failed to load event' : 'Event Not Found'}
-            </Text>
+            <Text style={styles.errorText}>Event Not Accessible</Text>
             <Text style={styles.errorSubtext}>
-              {isError
-                ? error?.message || 'Please try again later'
-                : "Sorry, we couldn't find this event."}
+              {(error as any)?.response?.data?.error ||
+                (error as any)?.response?.data?.message ||
+                'This event may be private, university-only, or no longer exist.'}
             </Text>
             <TouchableOpacity
               onPress={() => router.back()}

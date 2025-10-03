@@ -33,7 +33,12 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateActivityModal } from './AddActivityModal';
-import { createUserInterest, updateUserInterest, deleteUserInterest, toggleUserInterestStatus } from '@/contexts/userInterest.api';
+import {
+  createUserInterest,
+  updateUserInterest,
+  deleteUserInterest,
+  toggleUserInterestStatus,
+} from '@/contexts/userInterest.api';
 import { getInterests } from '@/contexts/interest.api';
 import { getActivities } from '@/contexts/activity.api';
 
@@ -71,11 +76,12 @@ export function CreateInterestPreferenceModal({
     isActive: true,
     publicPreference: true,
   });
-  
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showInterestDropdown, setShowInterestDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<ActivityOption | null>(null);
+  const [selectedActivity, setSelectedActivity] =
+    useState<ActivityOption | null>(null);
   const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
 
   const skillLevels = ['Beginner', 'Intermediate', 'Advanced'];
@@ -93,10 +99,10 @@ export function CreateInterestPreferenceModal({
   });
 
   const interests = interestsData?.data || [];
-  const activities= activityData?.data || [];
-  console.log(activities)
+  const activities = activityData?.data || [];
+  console.log(activities);
   const editingPreferenceId = editingPreference?.id;
- useEffect(() => {
+  useEffect(() => {
     if (editingPreference) {
       // Pre-fill form for editing
       setFormData({
@@ -111,11 +117,16 @@ export function CreateInterestPreferenceModal({
         locationRadius: editingPreference.locationRadius,
         additionalNotes: editingPreference.additionalNotes || '',
         isActive: editingPreference.isActive,
-        publicPreference: editingPreference.publicPreference !== undefined ? editingPreference.publicPreference : true,
+        publicPreference:
+          editingPreference.publicPreference !== undefined
+            ? editingPreference.publicPreference
+            : true,
       });
-      
+
       // Set selected interest
-      const activity = activities.find((a: any) => a.id === editingPreference.interestId);
+      const activity = activities.find(
+        (a: any) => a.id === editingPreference.interestId
+      );
       if (activity) {
         setSelectedActivity(activity);
       }
@@ -147,30 +158,40 @@ export function CreateInterestPreferenceModal({
     onSuccess: (data) => {
       console.log('Interest preference created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
+      queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+
       Alert.alert('Success', 'Interest preference created successfully!');
       onSubmit?.(data);
       onClose();
     },
     onError: (error: any) => {
       console.error('Error creating interest preference:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to create preference.';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to create preference.';
       Alert.alert('Error', errorMessage);
     },
   });
 
   const updatePreferenceMutation = useMutation({
-    mutationFn: ({ id, updateData }: { id: string; updateData: any }) => 
+    mutationFn: ({ id, updateData }: { id: string; updateData: any }) =>
       updateUserInterest(id, updateData),
     onSuccess: (data) => {
       console.log('Interest preference updated successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
+      queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+
       Alert.alert('Success', 'Interest preference updated successfully!');
       onSubmit?.(data);
       onClose();
     },
     onError: (error: any) => {
       console.error('Error updating interest preference:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update preference.';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to update preference.';
       Alert.alert('Error', errorMessage);
     },
   });
@@ -180,12 +201,17 @@ export function CreateInterestPreferenceModal({
     onSuccess: () => {
       console.log('Interest preference deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
+      queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+
       Alert.alert('Success', 'Interest preference deleted successfully!');
       onClose();
     },
     onError: (error: any) => {
       console.error('Error deleting interest preference:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete preference.';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete preference.';
       Alert.alert('Error', errorMessage);
     },
   });
@@ -195,19 +221,27 @@ export function CreateInterestPreferenceModal({
     onSuccess: (data) => {
       console.log('Interest preference status toggled successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
+      queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+
       const status = data.isActive ? 'activated' : 'deactivated';
       Alert.alert('Success', `Interest preference ${status} successfully!`);
       onClose();
     },
     onError: (error: any) => {
       console.error('Error toggling interest preference status:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to toggle status.';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to toggle status.';
       Alert.alert('Error', errorMessage);
     },
   });
 
-  const isPending = createPreferenceMutation.isPending || updatePreferenceMutation.isPending || 
-                   deletePreferenceMutation.isPending || toggleStatusMutation.isPending;
+  const isPending =
+    createPreferenceMutation.isPending ||
+    updatePreferenceMutation.isPending ||
+    deletePreferenceMutation.isPending ||
+    toggleStatusMutation.isPending;
 
   const handleSubmit = async () => {
     if (!formData.activityId) {
@@ -216,12 +250,18 @@ export function CreateInterestPreferenceModal({
     }
 
     if (formData.needsEquipment && !formData.equipmentNeeded.trim()) {
-      Alert.alert('Equipment Required', 'Please specify what equipment you need.');
+      Alert.alert(
+        'Equipment Required',
+        'Please specify what equipment you need.'
+      );
       return;
     }
 
     if (formData.needsTransport && !formData.transportDetails.trim()) {
-      Alert.alert('Transport Details Required', 'Please specify your transportation needs.');
+      Alert.alert(
+        'Transport Details Required',
+        'Please specify your transportation needs.'
+      );
       return;
     }
 
@@ -229,10 +269,14 @@ export function CreateInterestPreferenceModal({
       activityId: formData.activityId, // The backend expects 'interestId', so we map activityId to it here.
       hasEquipment: formData.hasEquipment,
       needsEquipment: formData.needsEquipment,
-      equipmentNeeded: formData.needsEquipment ? formData.equipmentNeeded.trim() : undefined,
+      equipmentNeeded: formData.needsEquipment
+        ? formData.equipmentNeeded.trim()
+        : undefined,
       hasTransport: formData.hasTransport,
       needsTransport: formData.needsTransport,
-      transportDetails: formData.needsTransport ? formData.transportDetails.trim() : undefined,
+      transportDetails: formData.needsTransport
+        ? formData.transportDetails.trim()
+        : undefined,
       skillLevel: formData.skillLevel,
       locationRadius: formData.locationRadius,
       additionalNotes: formData.additionalNotes.trim() || undefined,
@@ -252,7 +296,7 @@ export function CreateInterestPreferenceModal({
 
   const handleDelete = () => {
     if (!editingPreference) return;
-    
+
     Alert.alert(
       'Delete Preference',
       'Are you sure you want to delete this interest preference?',
@@ -269,7 +313,7 @@ export function CreateInterestPreferenceModal({
 
   const handleToggleStatus = () => {
     if (!editingPreference) return;
-    
+
     const action = editingPreference.isActive ? 'deactivate' : 'activate';
     Alert.alert(
       `${action.charAt(0).toUpperCase() + action.slice(1)} Preference`,
@@ -306,10 +350,14 @@ export function CreateInterestPreferenceModal({
         >
           <View style={styles.headerContainer}>
             <Text style={styles.title}>
-              {editingPreference ? 'Edit Interest Preference' : 'Activity Buddy'}
+              {editingPreference
+                ? 'Edit Interest Preference'
+                : 'Activity Buddy'}
             </Text>
             <Text style={styles.subtitle}>
-              {editingPreference ? 'Update your preferences' : 'Set your interest preferences'}
+              {editingPreference
+                ? 'Update your preferences'
+                : 'Set your interest preferences'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#64748B" />
@@ -326,10 +374,12 @@ export function CreateInterestPreferenceModal({
                 style={styles.formGradient}
               >
                 {/* Interest Selection */}
-                 <View style={styles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Activity *</Text>
                   <TouchableOpacity
-                    onPress={() => setShowInterestDropdown(!showInterestDropdown)}
+                    onPress={() =>
+                      setShowInterestDropdown(!showInterestDropdown)
+                    }
                     disabled={isPending || activityLoading}
                   >
                     <View
@@ -338,29 +388,40 @@ export function CreateInterestPreferenceModal({
                         selectedActivity && styles.inputWrapperValid,
                       ]}
                     >
-                      <Sparkles size={20} color="#6366F1" style={styles.inputIcon} />
+                      <Sparkles
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
                       <Text
                         style={[
                           styles.input,
                           !selectedActivity && { color: '#9CA3AF' },
                         ]}
                       >
-                        {selectedActivity ? selectedActivity.name : 'Select an activity'}
+                        {selectedActivity
+                          ? selectedActivity.name
+                          : 'Select an activity'}
                       </Text>
                       <ChevronDown size={20} color="#9CA3AF" />
                     </View>
                   </TouchableOpacity>
-                  
+
                   {showInterestDropdown && (
-                     <View style={styles.dropdown}>
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                    <View style={styles.dropdown}>
+                      <ScrollView
+                        style={styles.dropdownScroll}
+                        nestedScrollEnabled
+                      >
                         {activities.map((activity: ActivityOption) => (
                           <TouchableOpacity
                             key={activity.id}
                             style={styles.dropdownItem}
                             onPress={() => selectActivity(activity)}
                           >
-                            <Text style={styles.dropdownItemText}>{activity.name}</Text>
+                            <Text style={styles.dropdownItemText}>
+                              {activity.name}
+                            </Text>
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
@@ -387,22 +448,34 @@ export function CreateInterestPreferenceModal({
                         formData.hasEquipment && styles.optionButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, hasEquipment: true, needsEquipment: false, equipmentNeeded: '' })
+                        setFormData({
+                          ...formData,
+                          hasEquipment: true,
+                          needsEquipment: false,
+                          equipmentNeeded: '',
+                        })
                       }
                     >
                       <LinearGradient
                         colors={
                           formData.hasEquipment
                             ? ['#10B981', '#059669']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.optionButtonGradient}
                       >
-                        <Check size={16} color={formData.hasEquipment ? '#FFFFFF' : '#374151'} />
+                        <Check
+                          size={16}
+                          color={formData.hasEquipment ? '#FFFFFF' : '#374151'}
+                        />
                         <Text
                           style={[
                             styles.optionButtonText,
-                            formData.hasEquipment && styles.optionButtonTextActive,
+                            formData.hasEquipment &&
+                              styles.optionButtonTextActive,
                           ]}
                         >
                           I have equipment
@@ -416,22 +489,35 @@ export function CreateInterestPreferenceModal({
                         formData.needsEquipment && styles.optionButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, hasEquipment: false, needsEquipment: true })
+                        setFormData({
+                          ...formData,
+                          hasEquipment: false,
+                          needsEquipment: true,
+                        })
                       }
                     >
                       <LinearGradient
                         colors={
                           formData.needsEquipment
                             ? ['#F59E0B', '#D97706']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.optionButtonGradient}
                       >
-                        <Package size={16} color={formData.needsEquipment ? '#FFFFFF' : '#374151'} />
+                        <Package
+                          size={16}
+                          color={
+                            formData.needsEquipment ? '#FFFFFF' : '#374151'
+                          }
+                        />
                         <Text
                           style={[
                             styles.optionButtonText,
-                            formData.needsEquipment && styles.optionButtonTextActive,
+                            formData.needsEquipment &&
+                              styles.optionButtonTextActive,
                           ]}
                         >
                           I need equipment
@@ -442,11 +528,14 @@ export function CreateInterestPreferenceModal({
 
                   {formData.needsEquipment && (
                     <View style={styles.conditionalInput}>
-                      <Text style={styles.conditionalLabel}>What equipment do you need?</Text>
+                      <Text style={styles.conditionalLabel}>
+                        What equipment do you need?
+                      </Text>
                       <View
                         style={[
                           styles.inputWrapper,
-                          focusedField === 'equipmentNeeded' && styles.inputWrapperFocused,
+                          focusedField === 'equipmentNeeded' &&
+                            styles.inputWrapperFocused,
                           formData.equipmentNeeded && styles.inputWrapperValid,
                         ]}
                       >
@@ -477,22 +566,34 @@ export function CreateInterestPreferenceModal({
                         formData.hasTransport && styles.optionButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, hasTransport: true, needsTransport: false, transportDetails: '' })
+                        setFormData({
+                          ...formData,
+                          hasTransport: true,
+                          needsTransport: false,
+                          transportDetails: '',
+                        })
                       }
                     >
                       <LinearGradient
                         colors={
                           formData.hasTransport
                             ? ['#10B981', '#059669']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.optionButtonGradient}
                       >
-                        <Car size={16} color={formData.hasTransport ? '#FFFFFF' : '#374151'} />
+                        <Car
+                          size={16}
+                          color={formData.hasTransport ? '#FFFFFF' : '#374151'}
+                        />
                         <Text
                           style={[
                             styles.optionButtonText,
-                            formData.hasTransport && styles.optionButtonTextActive,
+                            formData.hasTransport &&
+                              styles.optionButtonTextActive,
                           ]}
                         >
                           I have transportation
@@ -506,22 +607,35 @@ export function CreateInterestPreferenceModal({
                         formData.needsTransport && styles.optionButtonActive,
                       ]}
                       onPress={() =>
-                        setFormData({ ...formData, hasTransport: false, needsTransport: true })
+                        setFormData({
+                          ...formData,
+                          hasTransport: false,
+                          needsTransport: true,
+                        })
                       }
                     >
                       <LinearGradient
                         colors={
                           formData.needsTransport
                             ? ['#F59E0B', '#D97706']
-                            : ['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']
+                            : [
+                                'rgba(255, 255, 255, 0.9)',
+                                'rgba(248, 250, 252, 0.8)',
+                              ]
                         }
                         style={styles.optionButtonGradient}
                       >
-                        <Users size={16} color={formData.needsTransport ? '#FFFFFF' : '#374151'} />
+                        <Users
+                          size={16}
+                          color={
+                            formData.needsTransport ? '#FFFFFF' : '#374151'
+                          }
+                        />
                         <Text
                           style={[
                             styles.optionButtonText,
-                            formData.needsTransport && styles.optionButtonTextActive,
+                            formData.needsTransport &&
+                              styles.optionButtonTextActive,
                           ]}
                         >
                           I need transportation
@@ -532,11 +646,14 @@ export function CreateInterestPreferenceModal({
 
                   {formData.needsTransport && (
                     <View style={styles.conditionalInput}>
-                      <Text style={styles.conditionalLabel}>Transportation preferences</Text>
+                      <Text style={styles.conditionalLabel}>
+                        Transportation preferences
+                      </Text>
                       <View
                         style={[
                           styles.inputWrapper,
-                          focusedField === 'transportDetails' && styles.inputWrapperFocused,
+                          focusedField === 'transportDetails' &&
+                            styles.inputWrapperFocused,
                           formData.transportDetails && styles.inputWrapperValid,
                         ]}
                       >
@@ -564,13 +681,19 @@ export function CreateInterestPreferenceModal({
                     onPress={() => setShowSkillDropdown(!showSkillDropdown)}
                     disabled={isPending}
                   >
-                    <View style={[styles.inputWrapper, styles.inputWrapperValid]}>
-                      <Star size={20} color="#6366F1" style={styles.inputIcon} />
+                    <View
+                      style={[styles.inputWrapper, styles.inputWrapperValid]}
+                    >
+                      <Star
+                        size={20}
+                        color="#6366F1"
+                        style={styles.inputIcon}
+                      />
                       <Text style={styles.input}>{formData.skillLevel}</Text>
                       <ChevronDown size={20} color="#9CA3AF" />
                     </View>
                   </TouchableOpacity>
-                  
+
                   {showSkillDropdown && (
                     <View style={styles.dropdown}>
                       {skillLevels.map((level) => (
@@ -578,7 +701,10 @@ export function CreateInterestPreferenceModal({
                           key={level}
                           style={styles.dropdownItem}
                           onPress={() => {
-                            setFormData({ ...formData, skillLevel: level as any });
+                            setFormData({
+                              ...formData,
+                              skillLevel: level as any,
+                            });
                             setShowSkillDropdown(false);
                           }}
                         >
@@ -598,14 +724,18 @@ export function CreateInterestPreferenceModal({
                         key={radius}
                         style={[
                           styles.radiusButton,
-                          formData.locationRadius === radius && styles.radiusButtonActive,
+                          formData.locationRadius === radius &&
+                            styles.radiusButtonActive,
                         ]}
-                        onPress={() => setFormData({ ...formData, locationRadius: radius })}
+                        onPress={() =>
+                          setFormData({ ...formData, locationRadius: radius })
+                        }
                       >
                         <Text
                           style={[
                             styles.radiusButtonText,
-                            formData.locationRadius === radius && styles.radiusButtonTextActive,
+                            formData.locationRadius === radius &&
+                              styles.radiusButtonTextActive,
                           ]}
                         >
                           {radius} mi
@@ -621,7 +751,8 @@ export function CreateInterestPreferenceModal({
                   <View
                     style={[
                       styles.inputWrapper,
-                      focusedField === 'additionalNotes' && styles.inputWrapperFocused,
+                      focusedField === 'additionalNotes' &&
+                        styles.inputWrapperFocused,
                       formData.additionalNotes && styles.inputWrapperValid,
                     ]}
                   >
@@ -649,7 +780,9 @@ export function CreateInterestPreferenceModal({
                 <View style={styles.inputContainer}>
                   <View style={styles.toggleRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.inputLabel}>Set Preference Active</Text>
+                      <Text style={styles.inputLabel}>
+                        Set Preference Active
+                      </Text>
                       <Text style={styles.toggleSubtitle}>
                         {formData.isActive
                           ? 'Your preference is currently active and visible.'
@@ -658,7 +791,9 @@ export function CreateInterestPreferenceModal({
                     </View>
                     <Switch
                       value={formData.isActive}
-                      onValueChange={(value) => setFormData({ ...formData, isActive: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, isActive: value })
+                      }
                       trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
                       thumbColor={formData.isActive ? '#6366F1' : '#f4f3f4'}
                       ios_backgroundColor="#E5E7EB"
@@ -693,7 +828,7 @@ export function CreateInterestPreferenceModal({
               </TouchableOpacity>
             </View>
           )}
-          
+
           <View style={styles.mainActionsRow}>
             <TouchableOpacity
               style={styles.cancelButton}
@@ -713,14 +848,14 @@ export function CreateInterestPreferenceModal({
             >
               <LinearGradient
                 colors={
-                  isPending
-                    ? ['#9CA3AF', '#6B7280']
-                    : ['#6366F1', '#8B5CF6']
+                  isPending ? ['#9CA3AF', '#6B7280'] : ['#6366F1', '#8B5CF6']
                 }
                 style={styles.buttonGradient}
               >
                 <View style={styles.buttonContent}>
-                  {isPending && <ActivityIndicator size="small" color="#FFFFFF" />}
+                  {isPending && (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  )}
                   <Text style={styles.primaryButtonText}>
                     {isPending
                       ? 'Saving...'
@@ -806,7 +941,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F3F7',
   },
- 
+
   headerContainer: {
     marginHorizontal: 20,
     marginTop: Platform.OS === 'ios' ? 60 : 40,
@@ -1158,5 +1293,5 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginLeft: 4,
-  }
-})
+  },
+});

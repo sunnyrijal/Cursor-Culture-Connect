@@ -442,6 +442,14 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 9999,
     borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+    }),
     overflow: 'hidden',
     ...Platform.select({
       ios: {

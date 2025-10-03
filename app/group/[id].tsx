@@ -645,7 +645,7 @@ export default function GroupDetailEnhanced() {
                     >
                       <Calendar size={20} color={neomorphColors.accent} />
                     </View>
-                    <Text style={styles.infoValue}>{formatDate(group.meetingDate)}</Text>
+                    <Text style={styles.infoValue}>{group.meetingDate}</Text>
                   </View>
                 )}
                 {group.meetingTime && (

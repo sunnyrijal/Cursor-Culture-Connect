@@ -297,62 +297,6 @@ export default function Events() {
     setShowCreateQuickEventModal(false);
   };
 
-  if (
-    (activeTab === 'events' && isLoading) ||
-    (activeTab === 'quickEvents' && isLoadingQuickEvents)
-  ) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <Text style={styles.loadingText}>
-                {activeTab === 'events'
-                  ? 'Discovering Events...'
-                  : 'Loading Quick Events...'}
-              </Text>
-              <Text style={styles.loadingSubtext}>
-                {activeTab === 'events'
-                  ? 'Finding amazing cultural celebrations for you'
-                  : 'Finding quick meetups and activities'}
-              </Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  if (
-    (activeTab === 'events' && error) ||
-    (activeTab === 'quickEvents' && quickEventsError)
-  ) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.errorContainer}>
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>Oops! Something went wrong</Text>
-              <Text style={styles.errorSubtext}>
-                {activeTab === 'events'
-                  ? 'Unable to load events right now'
-                  : 'Unable to load quick events right now'}
-              </Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() =>
-                  activeTab === 'events' ? refetch() : refetchQuickEvents()
-                }
-              >
-                <Text style={styles.retryButtonText}>Try Again</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <CreateEventModal
@@ -491,59 +435,74 @@ export default function Events() {
         // onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         // scrollEventThrottle={16}
       >
-        {activeTab === 'events' ? (
+        {activeTab === 'events' && (
           <>
-            {filteredEvents.map((event: Event, index: number) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                myUserId={myData?.userId}
-                isFirst={index === 0}
-                isLast={index === filteredEvents.length - 1}
-                onPress={() => router.push(`/event/${event.id}`)}
-                onRSVP={() => {
-                  const isAttending = event.attendingUsers.some(
-                    (u: any) => u.id === myData?.userId
-                  );
-                  isAttending
-                    ? leaveEventMutation(event.id)
-                    : joinEventMutation(event.id);
-                }}
-                isLoading={isJoining || isLeaving}
-              />
-            ))}
-
-            {filteredEvents.length === 0 && (
+            {isLoading ? (
+              <View style={styles.inlineFeedbackContainer}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={styles.loadingText}>Loading Events...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.inlineFeedbackContainer}>
+                <Text style={styles.errorText}>Oops! Something went wrong.</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : filteredEvents.length > 0 ? (
+              filteredEvents.map((event: Event, index: number) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  myUserId={myData?.userId}
+                  isFirst={index === 0}
+                  isLast={index === filteredEvents.length - 1}
+                  onPress={() => router.push(`/event/${event.id}`)}
+                  onRSVP={() => {
+                    const isAttending = event.attendingUsers.some((u: any) => u.id === myData?.userId);
+                    isAttending ? leaveEventMutation(event.id) : joinEventMutation(event.id);
+                  }}
+                  isLoading={isJoining || isLeaving}
+                />
+              ))
+            ) : (
               <View style={styles.emptyState}>
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>No Events Found</Text>
                   <Text style={styles.emptyText}>
-                    Be the first to create a cultural event and start building
-                    your community!
+                    Be the first to create a cultural event and start building your community!
                   </Text>
                 </View>
               </View>
             )}
           </>
-        ) : (
-          // Quick Events
+        )}
+
+        {activeTab === 'quickEvents' && (
           <>
-            {filteredQuickEvents.map(
-              (quickEvent: QuickEvent, index: number) => {
-                const isInterested = quickEvent.interestedUsers.some(
-                  (user) => user.id === myData?.userId
-                );
-                const isMutating =
-                  (isAddingInterest || isRemovingInterest) &&
-                  mutatingQuickEventId === quickEvent.id;
+            {isLoadingQuickEvents ? (
+              <View style={styles.inlineFeedbackContainer}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={styles.loadingText}>Loading Quick Events...</Text>
+              </View>
+            ) : quickEventsError ? (
+              <View style={styles.inlineFeedbackContainer}>
+                <Text style={styles.errorText}>Oops! Something went wrong.</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => refetchQuickEvents()}>
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : filteredQuickEvents.length > 0 ? (
+              filteredQuickEvents.map((quickEvent: QuickEvent, index: number) => {
+                const isInterested = quickEvent.interestedUsers.some((user) => user.id === myData?.userId);
+                const isMutating = (isAddingInterest || isRemovingInterest) && mutatingQuickEventId === quickEvent.id;
                 return (
                   <TouchableOpacity
                     key={quickEvent.id}
                     style={[
                       styles.quickEventCard,
                       index === 0 && styles.firstCard,
-                      index === filteredQuickEvents.length - 1 &&
-                        styles.lastCard,
+                      index === filteredQuickEvents.length - 1 && styles.lastCard,
                     ]}
                     onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
                     activeOpacity={0.8}
@@ -557,10 +516,7 @@ export default function Events() {
                           <Text style={styles.quickEventBadgeText}>Quick</Text>
                         </View>
                       </View>
-                      <Text
-                        style={styles.quickEventDescription}
-                        numberOfLines={2}
-                      >
+                      <Text style={styles.quickEventDescription} numberOfLines={2}>
                         {quickEvent.description}
                       </Text>
                       <View style={styles.quickEventMeta}>
@@ -574,9 +530,7 @@ export default function Events() {
                       <View style={styles.quickEventMeta}>
                         <Users size={16} color="#6366F1" />
                         <Text style={styles.quickEventMetaText}>
-                          {quickEvent.max
-                            ? ` Max ${quickEvent.max} people`
-                            : 'No Limit'}
+                          {quickEvent.max ? ` Max ${quickEvent.max} people` : 'No Limit'}
                         </Text>
                       </View>
                       <View style={styles.quickEventMeta}>
@@ -585,8 +539,6 @@ export default function Events() {
                           {quickEvent.interestedUsers?.length || 0} interested
                         </Text>
                       </View>
-
-
                       <View style={styles.quickEventActions}>
                         <View style={styles.quickEventCreator}>
                           <View style={styles.creatorAvatar}>
@@ -595,17 +547,12 @@ export default function Events() {
                             </Text>
                           </View>
                           <View style={styles.creatorDetails}>
-                            <Text style={styles.creatorName}>
-                              {quickEvent.user.name}
-                            </Text>
+                            <Text style={styles.creatorName}>{quickEvent.user.name}</Text>
                             <Text style={styles.creatorRole}>Host</Text>
                           </View>
                         </View>
                         <TouchableOpacity
-                          style={[
-                            styles.rsvpButtonSmall,
-                            isInterested && styles.rsvpedButtonSmall,
-                          ]}
+                          style={[styles.rsvpButtonSmall, isInterested && styles.rsvpedButtonSmall]}
                           onPress={() =>
                             !isMutating &&
                             (isInterested
@@ -626,16 +573,13 @@ export default function Events() {
                     </View>
                   </TouchableOpacity>
                 );
-              }
-            )}
-
-            {filteredQuickEvents.length === 0 && (
+              })
+            ) : (
               <View style={styles.emptyState}>
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>No Quick Events Found</Text>
                   <Text style={styles.emptyText}>
-                    Quick events are spontaneous meetups and activities. Check
-                    back soon for new opportunities!
+                    Quick events are spontaneous meetups and activities. Check back soon for new opportunities!
                   </Text>
                 </View>
               </View>
@@ -1272,5 +1216,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: theme.textPrimary,
+  },
+  inlineFeedbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
   },
 });

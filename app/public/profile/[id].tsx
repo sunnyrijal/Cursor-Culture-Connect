@@ -36,6 +36,7 @@ import {
   Calendar,
   Clock,
   User,
+  Lock,
 } from 'lucide-react-native';
 import { getUserById } from '@/contexts/user.api';
 import {
@@ -79,12 +80,18 @@ const FriendshipStatus = {
   BLOCKED: 'BLOCKED',
 };
 
-const EventCard = ({ event, onPress }: { event: any; onPress: (id: string) => void }) => {
+const EventCard = ({
+  event,
+  onPress,
+}: {
+  event: any;
+  onPress: (id: string) => void;
+}) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -102,19 +109,29 @@ const EventCard = ({ event, onPress }: { event: any; onPress: (id: string) => vo
       <TouchableOpacity onPress={() => onPress(event.id)} activeOpacity={0.8}>
         <View style={styles.eventCardHeader}>
           <Image
-            source={event.imageUrl ? { uri: event.imageUrl } : require('../../../assets/logo.png')}
+            source={
+              event.imageUrl
+                ? { uri: event.imageUrl }
+                : require('../../../assets/logo.png')
+            }
             style={styles.eventCardImage}
             defaultSource={require('../../../assets/logo.png')}
           />
           <View style={styles.eventCardInfo}>
-            <Text style={styles.eventCardTitle} numberOfLines={2}>{event.name}</Text>
+            <Text style={styles.eventCardTitle} numberOfLines={2}>
+              {event.name}
+            </Text>
             <View style={styles.eventCardMeta}>
               <Calendar size={12} color={theme.textSecondary} />
-              <Text style={styles.eventCardMetaText}>{formatDate(event.date)}</Text>
+              <Text style={styles.eventCardMetaText}>
+                {formatDate(event.date)}
+              </Text>
             </View>
             <View style={styles.eventCardMeta}>
               <MapPin size={12} color={theme.textSecondary} />
-              <Text style={styles.eventCardMetaText} numberOfLines={1}>{event.location}</Text>
+              <Text style={styles.eventCardMetaText} numberOfLines={1}>
+                {event.location}
+              </Text>
             </View>
             {event.eventTimes && event.eventTimes.length > 0 && (
               <View style={styles.eventCardMeta}>
@@ -131,37 +148,55 @@ const EventCard = ({ event, onPress }: { event: any; onPress: (id: string) => vo
   );
 };
 
-const GroupCard = ({ group, onPress }: { group: any; onPress: (id: string) => void }) => {
-  console.log(group)
+const GroupCard = ({
+  group,
+  onPress,
+}: {
+  group: any;
+  onPress: (id: string) => void;
+}) => {
+  console.log(group);
   return (
     <Card style={styles.groupCard}>
       <TouchableOpacity onPress={() => onPress(group.id)} activeOpacity={0.8}>
         <View style={styles.groupHeader}>
           <Image
-            source={group.imageUrl ? { uri: group.imageUrl } : require('../../../assets/logo.png')}
+            source={
+              group.imageUrl
+                ? { uri: group.imageUrl }
+                : require('../../../assets/logo.png')
+            }
             style={styles.groupImage}
             defaultSource={require('../../../assets/logo.png')}
           />
           <View style={styles.groupInfo}>
-            <Text style={styles.groupName} numberOfLines={2}>{group.name}</Text>
+            <Text style={styles.groupName} numberOfLines={2}>
+              {group.name}
+            </Text>
             <View style={styles.groupMeta}>
               <Users size={12} color={theme.textSecondary} />
-              <Text style={styles.groupMetaText}>{group?._count?.members || 0} members</Text>
+              <Text style={styles.groupMetaText}>
+                {group?._count?.members || 0} members
+              </Text>
             </View>
             {group.meetingLocation && (
               <View style={styles.groupMeta}>
                 <MapPin size={12} color={theme.textSecondary} />
-                <Text style={styles.groupMetaText} numberOfLines={2}>{group.meetingLocation}</Text>
+                <Text style={styles.groupMetaText} numberOfLines={2}>
+                  {group.meetingLocation}
+                </Text>
               </View>
             )}
           </View>
         </View>
         <View style={styles.groupBadges}>
-          {group.isPrivate !== undefined && <Badge
-            label={!group.isPrivate ? "Public" : "Private"}
-            variant={!group.isPrivate ? "success" : "warning"}
-            size="md"
-          />}
+          {group.isPrivate !== undefined && (
+            <Badge
+              label={!group.isPrivate ? 'Public' : 'Private'}
+              variant={!group.isPrivate ? 'success' : 'warning'}
+              size="md"
+            />
+          )}
         </View>
         {group.description && (
           <Text style={styles.groupDescription} numberOfLines={2}>
@@ -173,11 +208,24 @@ const GroupCard = ({ group, onPress }: { group: any; onPress: (id: string) => vo
   );
 };
 
-const FriendCard = ({ friend, onPress }: { friend: any; onPress: (id: string) => void }) => {
+const FriendCard = ({
+  friend,
+  onPress,
+}: {
+  friend: any;
+  onPress: (id: string) => void;
+}) => {
   return (
-    <TouchableOpacity onPress={() => onPress(friend.id)} style={styles.friendCard}>
+    <TouchableOpacity
+      onPress={() => onPress(friend.id)}
+      style={styles.friendCard}
+    >
       <Image
-        source={friend.profilePicture ? { uri: friend.profilePicture } : require('../../../assets/user.png')}
+        source={
+          friend.profilePicture
+            ? { uri: friend.profilePicture }
+            : require('../../../assets/user.png')
+        }
         style={styles.friendImage}
         defaultSource={require('../../../assets/user.png')}
       />
@@ -189,14 +237,17 @@ const FriendCard = ({ friend, onPress }: { friend: any; onPress: (id: string) =>
 };
 
 export default function UserProfilePage() {
-  const { id , sameuser} = useLocalSearchParams<{ id: string , sameuser?:string }>();
+  const { id, sameuser } = useLocalSearchParams<{
+    id: string;
+    sameuser?: string;
+  }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [message, setMessage] = useState('');
 
-    const { data: myData } = useQuery({
+  const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
     retry: false,
@@ -216,7 +267,7 @@ export default function UserProfilePage() {
 
   const userData = userResponse?.data;
 
-  console.log(userData)
+  console.log(userData);
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
@@ -238,7 +289,6 @@ export default function UserProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
-
     },
     onError: (err: any) => {
       Alert.alert('Error', err.message || 'Failed to respond to request.');
@@ -254,10 +304,7 @@ export default function UserProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
     },
     onError: (err: any) => {
-      Alert.alert(
-        'Error',
-        err.message || 'Failed to cancel friend request.'
-      );
+      Alert.alert('Error', err.message || 'Failed to cancel friend request.');
     },
   });
 
@@ -288,12 +335,18 @@ export default function UserProfilePage() {
   };
 
   const handleRespondRequest = (action: 'accept' | 'decline') => {
-    // NOTE: The public user profile endpoint needs to return the `friendshipId`
-    // when a request is pending to make this action possible from this page.
-    Alert.alert(
-      'Action Unavailable',
-      'Please respond to friend requests from the "Requests" tab.'
-    );
+    console.log("FRIEND SHIP ID", userData?.friendshipId)
+    if (!userData?.friendshipId) {
+      Alert.alert(
+        'Action Unavailable',
+        'Cannot respond to this request at the moment. Please try from the requests tab.'
+      );
+      return;
+    }
+    respondRequestMutation.mutate({
+      friendshipId: userData.friendshipId,
+      action,
+    });
   };
 
   const handleCancelRequest = (receiverId: string, userName: string) => {
@@ -330,19 +383,27 @@ export default function UserProfilePage() {
     router.push(`/event/${eventId}`);
   };
 
+  const handleMyProfilePress = () => {
+    router.push('/settings'); // Or your main user profile route
+  };
+
   const handleGroupPress = (groupId: string) => {
     router.push(`/group/${groupId}`);
   };
 
   const handleFriendPress = (friendId: string) => {
-    router.push(`/public/profile/${friendId}`);
+    if (friendId === myData?.userId) {
+      router.push('/profile'); // Navigate to the main user profile/settings page
+    } else {
+      router.push(`/public/profile/${friendId}`);
+    }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -392,7 +453,8 @@ export default function UserProfilePage() {
     // Priority 2: Handle pending friendship requests
     if (friendshipStatus === FriendshipStatus.PENDING) {
       if (isFriendRequestSender) {
-        return ( // I sent the request
+        return (
+          // I sent the request
           <TouchableOpacity
             style={[styles.actionPrimaryButton, styles.cancelButton]}
             onPress={() => handleCancelRequest(userData.id, userData.name)}
@@ -403,7 +465,8 @@ export default function UserProfilePage() {
           </TouchableOpacity>
         );
       } else {
-        return ( // I received the request
+        return (
+          // I received the request
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               style={styles.actionAcceptButton}
@@ -417,7 +480,9 @@ export default function UserProfilePage() {
               onPress={() => handleRespondRequest('decline')}
             >
               <UserX size={20} color={theme.textPrimary} />
-              <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>
+              <Text
+                style={[styles.actionButtonText, { color: theme.textPrimary }]}
+              >
                 Decline
               </Text>
             </TouchableOpacity>
@@ -446,7 +511,8 @@ export default function UserProfilePage() {
     }
 
     // Priority 4: Default - Show Add Friend button
-    return ( // No friendship status
+    return (
+      // No friendship status
       <TouchableOpacity
         style={styles.actionPrimaryButton}
         onPress={handleSendRequest}
@@ -538,10 +604,20 @@ export default function UserProfilePage() {
                     multiline
                   />
                   <View style={styles.modalButtons}>
-                    <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={() => setModalVisible(false)}>
-                      <Text style={[styles.textStyle, { color: theme.textPrimary }]}>Cancel</Text>
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonClose]}
+                      onPress={() => setModalVisible(false)}
+                    >
+                      <Text
+                        style={[styles.textStyle, { color: theme.textPrimary }]}
+                      >
+                        Cancel
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, styles.buttonSend]} onPress={handleSendWithMessageHandler}>
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonSend]}
+                      onPress={handleSendWithMessageHandler}
+                    >
                       <Text style={styles.textStyle}>Send</Text>
                     </TouchableOpacity>
                   </View>
@@ -572,182 +648,231 @@ export default function UserProfilePage() {
               )}
             </View>
 
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{userData.friendsCount || 0}</Text>
-                <Text style={styles.statLabel}>Friends</Text>
+            {(userData.friendshipStatus == FriendshipStatus.ACCEPTED ||
+              userData.publicPreference == true) && (
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {userData.friendsCount || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Friends</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {userData.groupsCount || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Groups</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {userData.eventsCount || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Events</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{userData.groupsCount || 0}</Text>
-                <Text style={styles.statLabel}>Groups</Text>
+            )}
+
+            {!(userData.friendshipStatus == FriendshipStatus.ACCEPTED ||
+              userData.publicPreference == true) && (
+              <View style={styles.privateProfileContainer}>
+                <Lock size={24} color={theme.textMuted} />
+                <Text style={styles.privateProfileText}>
+                  This profile is private. Add them as a friend to see more
+                  details.
+                </Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{userData.eventsCount || 0}</Text>
-                <Text style={styles.statLabel}>Events</Text>
-              </View>
-            </View>
+            )}
 
             <View style={styles.actionsContainer}>{getActionButtons()}</View>
           </View>
 
-          {userData.socialMedia && (
-            <SocialMediaLinks socialMedia={userData.socialMedia} />
-          )}
+          {(userData.friendshipStatus == FriendshipStatus.ACCEPTED ||
+            userData.publicPreference == true) && (
+            <View>
+              {userData.socialMedia && (
+                <SocialMediaLinks socialMedia={userData.socialMedia} />
+              )}
 
-          {userData.bio && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>About Me</Text>
-              <View style={styles.infoCard}>
-                <Text style={styles.bioText}>{userData.bio}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Details</Text>
-            <View style={styles.infoCard}>
-              {userData.university && (
-                <View style={styles.infoItem}>
-                  <GraduationCap size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                    {userData.university.name}
-                  </Text>
-                </View>
-              )}
-              {userData.major && (
-                <View style={styles.infoItem}>
-                  <Briefcase size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>{userData.major}</Text>
-                </View>
-              )}
-              {userData.classYear && (
-                <View style={styles.infoItem}>
-                  <Calendar size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                   {userData.classYear}
-                  </Text>
-                </View>
-              )}
-              {(userData.city || userData.state) && (
-                <View style={styles.infoItem}>
-                  <MapPin size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                    {userData.city && userData.state 
-                      ? `${userData.city}, ${userData.state}`
-                      : userData.city || userData.state
-                    }
-                  </Text>
-                </View>
-              )}
-              {userData.countryOfOrigin && (
-                <View style={styles.infoItem}>
-                  <Globe size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                    From {userData.countryOfOrigin}
-                  </Text>
-                </View>
-              )}
-              {userData.ethnicity?.length > 0 && (
-                <View style={styles.infoItem}>
-                  <Users size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                    {userData.ethnicity.join(', ')}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {userData.interests?.length > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Interests & Hobbies</Text>
-              <View style={styles.tagsContainer}>
-                {userData.interests.map((interest: string, index: number) => (
-                  <View key={index} style={styles.tag}>
-                    <Heart size={12} color={theme.primary} />
-                    <Text style={styles.tagText}>{interest}</Text>
+              {userData.bio && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>About Me</Text>
+                  <View style={styles.infoCard}>
+                    <Text style={styles.bioText}>{userData.bio}</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-          )}
+                </View>
+              )}
 
-          {userData.languagesSpoken?.length > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Languages Spoken</Text>
-              <View style={styles.tagsContainer}>
-                {userData.languagesSpoken.map((lang: string, index: number) => (
-                  <View key={index} style={[styles.tag, styles.languageTag]}>
-                    <Globe size={12} color={theme.accent} />
-                    <Text style={[styles.tagText, styles.languageTagText]}>
-                      {lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase()}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {userData.friends?.length > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Friends ({userData.friends.length})</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScrollContainer}
-              >
-                {userData.friends.map((friend: any) => (
-                  <FriendCard key={friend.id} friend={friend} onPress={handleFriendPress} />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {userData.attendingEvents?.length > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Attending Events</Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScrollContainer}
-              >
-                {userData.attendingEvents.map((event:any) => (
-                  <EventCard key={event.id} event={event} onPress={handleEventPress} />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {userData.groups?.length > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Groups</Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScrollContainer}
-              >
-                {userData.groups.map((group:any) => (
-                  <GroupCard key={group.id} group={group} onPress={handleGroupPress} />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {userData.createdAt && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Member Since</Text>
-              <View style={styles.infoCard}>
-                <View style={styles.infoItem}>
-                  <Calendar size={18} color={theme.primary} />
-                  <Text style={styles.infoValue}>
-                    {new Date(userData.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </Text>
+              <View style={styles.infoSection}>
+                <Text style={styles.sectionTitle}>Details</Text>
+                <View style={styles.infoCard}>
+                  {userData.university && (
+                    <View style={styles.infoItem}>
+                      <GraduationCap size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>
+                        {userData.university.name}
+                      </Text>
+                    </View>
+                  )}
+                  {userData.major && (
+                    <View style={styles.infoItem}>
+                      <Briefcase size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>{userData.major}</Text>
+                    </View>
+                  )}
+                  {userData.classYear && (
+                    <View style={styles.infoItem}>
+                      <Calendar size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>{userData.classYear}</Text>
+                    </View>
+                  )}
+                  {(userData.city || userData.state) && (
+                    <View style={styles.infoItem}>
+                      <MapPin size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>
+                        {userData.city && userData.state
+                          ? `${userData.city}, ${userData.state}`
+                          : userData.city || userData.state}
+                      </Text>
+                    </View>
+                  )}
+                  {userData.countryOfOrigin && (
+                    <View style={styles.infoItem}>
+                      <Globe size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>
+                        From {userData.countryOfOrigin}
+                      </Text>
+                    </View>
+                  )}
+                  {userData.ethnicity?.length > 0 && (
+                    <View style={styles.infoItem}>
+                      <Users size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>
+                        {userData.ethnicity.join(', ')}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
+
+              {userData.interests?.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Interests & Hobbies</Text>
+                  <View style={styles.tagsContainer}>
+                    {userData.interests.map(
+                      (interest: string, index: number) => (
+                        <View key={index} style={styles.tag}>
+                          <Heart size={12} color={theme.primary} />
+                          <Text style={styles.tagText}>{interest}</Text>
+                        </View>
+                      )
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {userData.languagesSpoken?.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Languages Spoken</Text>
+                  <View style={styles.tagsContainer}>
+                    {userData.languagesSpoken.map(
+                      (lang: string, index: number) => (
+                        <View
+                          key={index}
+                          style={[styles.tag, styles.languageTag]}
+                        >
+                          <Globe size={12} color={theme.accent} />
+                          <Text
+                            style={[styles.tagText, styles.languageTagText]}
+                          >
+                            {lang.charAt(0).toUpperCase() +
+                              lang.slice(1).toLowerCase()}
+                          </Text>
+                        </View>
+                      )
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {userData.friends?.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>
+                    Friends ({userData.friends.length})
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScrollContainer}
+                  >
+                    {userData.friends.map((friend: any) => (
+                      <FriendCard
+                        key={friend.id}
+                        friend={friend}
+                        onPress={handleFriendPress}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {userData.attendingEvents?.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Attending Events</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScrollContainer}
+                  >
+                    {userData.attendingEvents.map((event: any) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        onPress={handleEventPress}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {userData.groups?.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Groups</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScrollContainer}
+                  >
+                    {userData.groups.map((group: any) => (
+                      <GroupCard
+                        key={group.id}
+                        group={group}
+                        onPress={handleGroupPress}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {userData.createdAt && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Member Since</Text>
+                  <View style={styles.infoCard}>
+                    <View style={styles.infoItem}>
+                      <Calendar size={18} color={theme.primary} />
+                      <Text style={styles.infoValue}>
+                        {new Date(userData.createdAt).toLocaleDateString(
+                          'en-US',
+                          {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          }
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -956,7 +1081,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.primary,
     paddingVertical: 16,
-    paddingHorizontal:16,
+    paddingHorizontal: 16,
     borderRadius: 16,
     shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -1106,7 +1231,6 @@ const styles = StyleSheet.create({
     color: theme.accent,
   },
   horizontalScrollContainer: {
-    paddingHorizontal: 20,
     paddingVertical: 8,
     gap: 16,
   },
@@ -1222,7 +1346,7 @@ const styles = StyleSheet.create({
   },
   groupBadges: {
     position: 'absolute',
-    top: 2,
+    bottom: 2,
     right: 2,
     flexDirection: 'row',
     gap: 4,
@@ -1324,4 +1448,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-})
+  privateProfileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: theme.cardBackground,
+    borderRadius: 20,
+    marginVertical: spacing.md,
+  },
+  privateProfileText: {
+    flex: 1,
+    color: theme.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+});

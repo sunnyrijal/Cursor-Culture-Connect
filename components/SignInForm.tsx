@@ -14,6 +14,7 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Image,
+  Alert,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
@@ -106,8 +107,15 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
       await login(email, password)
       router.replace("/(tabs)")
     } catch (err: any) {
-      console.log(err)
-      setError(err.message || "Authentication failed. Please try again.")
+      const errorMessage = err.response?.data?.message || err.message || "Authentication failed. Please try again.";
+      console.log("Login error:", errorMessage);
+
+      if (errorMessage.includes("Your account is not verified")) {
+        Alert.alert("Verification Required", "Your account is not verified. A new verification code has been sent to your email.");
+        router.push(`/(auth)/verify?email=${email}`);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false)
     }
@@ -224,7 +232,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           {/* Header */}
           <Animated.View style={[styles.header, headerAnimatedStyle]}>
