@@ -29,13 +29,13 @@ export default function TabLayout() {
     fetchMyData();
   }, []);
 
-  const { data: unreadCountData } = useQuery({
-    queryKey: ['unreadChatCount'],
-    queryFn: getUnreadChatCount,
-    enabled: !!userId, // Only fetch if user is logged in
-  });
+  // const { data: unreadCountData } = useQuery({
+  //   queryKey: ['unreadChatCount'],
+  //   queryFn: getUnreadChatCount,
+  //   enabled: !!userId, // Only fetch if user is logged in
+  // });
 
-  const unreadCount = unreadCountData?.data?.count || 0;
+  // const unreadCount = unreadCountData?.data?.count || 0;
 
   const handleConnect = useCallback(
     () => console.log('🔌 Connected to socket'),
