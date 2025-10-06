@@ -5,7 +5,6 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, SlidersHorizontal, P
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyActivityPreferences, deleteUserInterest, toggleUserInterestStatus } from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface MyPreferencesModalProps {
   visible: boolean;
@@ -53,6 +53,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
   onClose,
 }) => {
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
   const [isPreferenceModalVisible, setIsPreferenceModalVisible] = useState(
     false
   );
@@ -75,10 +76,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
     mutationFn: deleteUserInterest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
-      Alert.alert('Success', 'Preference deleted successfully');
+      showAlert({ title: 'Success', message: 'Preference deleted successfully' });
     },
     onError: (error) => {
-      Alert.alert('Error', 'Failed to delete preference');
+      showAlert({ title: 'Error', message: 'Failed to delete preference' });
       console.error('Delete error:', error);
     },
   });
@@ -90,7 +91,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
     },
     onError: (error) => {
-      Alert.alert('Error', 'Failed to toggle preference status');
+      showAlert({ title: 'Error', message: 'Failed to toggle preference status' });
       console.error('Toggle error:', error);
     },
   });
@@ -98,18 +99,18 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
   const preferences: ActivityPreference[] = preferencesData?.data || [];
 
   const handleDelete = (id: string, activityName: string) => {
-    Alert.alert(
-      'Delete Preference',
-      `Are you sure you want to delete your ${activityName} preference?`,
-      [
+    showAlert({
+      title: 'Delete Preference',
+      message: `Are you sure you want to delete your ${activityName} preference?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => deleteMutation.mutate(id),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleToggle = (id: string) => {

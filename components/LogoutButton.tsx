@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { LogOut } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { router } from 'expo-router';
+import { useAlert } from '@/contexts/AlertContext';
 
 export const neomorphColors = {
   background: '#F0F3F7',
@@ -13,6 +14,7 @@ export const neomorphColors = {
 
 export default function LogoutButton() {
   const { logout } = useAuth();
+  const { showAlert } = useAlert();
   const [isPressed, setIsPressed] = useState(false);
 
   const handlePressIn = () => {
@@ -24,10 +26,10 @@ export default function LogoutButton() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
+    showAlert({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      buttons: [
         {
           text: 'Cancel',
           style: 'cancel'
@@ -47,15 +49,18 @@ export default function LogoutButton() {
               router.replace('/login');
             } catch (error) {
               console.error('Logout error:', error);
-              Alert.alert('Logout Error', 'There was a problem logging out. Please try again.');
+              showAlert({
+                title: 'Logout Error',
+                message: 'There was a problem logging out. Please try again.',
+              });
               
               // Even if there's an error, try to redirect to login
               router.replace('/login');
             }
           }
         }
-      ]
-    );
+      ],
+    });
   };
 
   const getButtonStyle = () => {

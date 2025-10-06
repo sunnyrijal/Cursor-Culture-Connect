@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { ActivityQuestionnaire } from '@/types/activity';
 import { getActivityById } from '@/data/activityData';
+import { useAlert } from '@/contexts/AlertContext';
 
 const theme = {
   primary: '#6366F1',
@@ -64,6 +64,7 @@ export default function ActivityBuddyCard({
 }: ActivityBuddyCardProps) {
   const [selectedActivity, setSelectedActivity] = useState<ActivityQuestionnaire | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const { showAlert } = useAlert();
 
   if (!userPreferences || userPreferences.length === 0) {
     return null;
@@ -80,19 +81,19 @@ export default function ActivityBuddyCard({
     const activity = getActivityById(selectedActivity.activityId);
     const activityName = activity?.name || 'this activity';
     
-    Alert.alert(
-      `Contact ${userName}`,
-      method === 'message' 
+    showAlert({
+      title: `Contact ${userName}`,
+      message: method === 'message' 
         ? `Would you like to message ${userName} about ${activityName}?`
         : `Would you like to show interest in doing ${activityName} with ${userName}?`,
-      [
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: method === 'message' ? 'Send Message' : 'Show Interest', 
           onPress: () => onContact(selectedActivity.activityId, method)
         }
       ]
-    );
+    });
   };
 
   const renderActivityCard = (preference: ActivityQuestionnaire) => {

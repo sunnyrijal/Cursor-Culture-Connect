@@ -12,23 +12,23 @@ export interface User {
 }
 
 export interface UpdateProfileData {
-  name?: string
-  email?: string
-  phone?: string
-  avatar?: string
-  bio?: string
-  major?: string
-  graduationYear?: string
-  socialMedia?: { [key: string]: string }
-  dateOfBirth?: string
-  city?: string
-  state?: string
-  classYear?: string
-  countryOfOrigin?: string
-  university?: string
-  interests?: string[]
-  languagesSpoken?: string[]
-  profilePicture?: string
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  bio?: string;
+  major?: string;
+  graduationYear?: string;
+  socialMedia?: { [key: string]: string };
+  dateOfBirth?: string;
+  city?: string;
+  state?: string;
+  classYear?: string;
+  countryOfOrigin?: string;
+  university?: string;
+  interests?: string[];
+  languagesSpoken?: string[];
+  profilePicture?: string;
 }
 
 export interface SendResetPasswordOtpData {
@@ -50,9 +50,6 @@ interface UserFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
-
-
-
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -63,7 +60,7 @@ export interface ApiResponse<T> {
 export const getMyData = async () => {
   try {
     const response = await api.get('/user/me');
-    return response.data
+    return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
@@ -93,7 +90,7 @@ export const resetPassword = async (data: ResetPasswordData) => {
 export const getAllUsers = async () => {
   try {
     const response = await api.get('/user/all');
-    return response.data
+    return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
@@ -116,21 +113,26 @@ export const getUsers = async (filters?: {
   sortBy?: string;
   sortOrder?: string;
   universityId?: string;
+  city?: string;
+  state?: string;
 }) => {
   try {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       if (filters.myUniversity) params.append('myUniversity', 'true');
       if (filters.major) params.append('major', filters.major);
       if (filters.sortBy) params.append('sortBy', filters.sortBy);
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-      if (filters.universityId) params.append('universityId', filters.universityId);
+      if (filters.universityId)
+        params.append('universityId', filters.universityId);
+      if (filters.state) params.append('state', filters.state);
+      if (filters.city) params.append('city', filters.city);
     }
 
     const queryString = params.toString();
     const url = queryString ? `/user/?${queryString}` : '/user/';
-    
+
     const response = await api.get(url);
     return response.data;
   } catch (error) {
@@ -139,20 +141,20 @@ export const getUsers = async (filters?: {
   }
 };
 
-  export const getCounts = async () => {
+export const getCounts = async () => {
   try {
     const response = await api.get('/user/count');
-    return response.data
+    return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
   }
 };
 
-  export const getHubDetails = async () => {
+export const getHubDetails = async () => {
   try {
     const response = await api.get('/user/hub-details');
-    return response.data
+    return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
@@ -162,18 +164,17 @@ export const getUsers = async (filters?: {
 // Update user profile
 export const updateProfile = async (profileData: UpdateProfileData) => {
   try {
-    const response = await api.put("/user/update", profileData)
-    return response.data
+    const response = await api.put('/user/update', profileData);
+    return response.data;
   } catch (error) {
-    console.error("Error updating profile:", error)
-    throw error
+    console.error('Error updating profile:', error);
+    throw error;
   }
-}
+};
 
-
-export const getUserById = async (id:string) => {
+export const getUserById = async (id: string) => {
   try {
-    const response = await api.get(`/user/${id}` );
+    const response = await api.get(`/user/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -183,7 +184,7 @@ export const getUserById = async (id:string) => {
 
 export const deleteMe = async () => {
   try {
-    const response = await api.delete(`/user/me` );
+    const response = await api.delete(`/user/me`);
     return response.data;
   } catch (error) {
     console.error('Error updating profile:', error);

@@ -7,7 +7,6 @@ import {
   Image,
   Platform,
   TextInput,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
@@ -31,6 +30,7 @@ import { PlusCircle } from 'lucide-react-native';
 import getDecodedToken from '@/utils/getMyData';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { GroupFilterModal } from '@/components/GroupFilterModal';
+import { useAlert } from '@/contexts/AlertContext';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -92,6 +92,7 @@ interface ApiGroup {
 
 export default function Groups() {
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
@@ -137,7 +138,7 @@ export default function Groups() {
     },
     onError: (error) => {
       console.error('Error joining group:', error);
-      Alert.alert('Error', 'Failed to join group. Please try again.');
+      showAlert({ title: 'Error', message: 'Failed to join group. Please try again.' });
     },
     onSettled: () => {
       setJoiningGroupId(null);
@@ -279,7 +280,33 @@ export default function Groups() {
                         <Text style={styles.groupName} numberOfLines={2}>
                           {group.name}
                         </Text>
-                        {isCurrentUserAdmin ? (
+                       
+                      </View>
+
+                      {group.description && group.description !== '' && (
+                        <Text style={styles.groupDescription} numberOfLines={3}>
+                          {group.description}
+                        </Text>
+                      )}
+
+                      <View style={styles.creatorSection}>
+                        <View style={styles.creatorInfo}>
+                          <View style={styles.creatorAvatar}>
+                            <Text style={styles.creatorInitial}>
+                              {group.creator.name.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={styles.creatorDetails}>
+                            <Text style={styles.creatorName}>
+                              {group.creator.name}
+                            </Text>
+                            <Text style={styles.creatorRole}>
+                              Group Creator
+                            </Text>
+                          </View>
+                        </View>
+
+                         {isCurrentUserAdmin ? (
                           <View
                             style={[
                               styles.badge,
@@ -305,30 +332,6 @@ export default function Groups() {
                             </Text>
                           </TouchableOpacity>
                         ) : null}
-                      </View>
-
-                      {group.description && group.description !== '' && (
-                        <Text style={styles.groupDescription} numberOfLines={3}>
-                          {group.description}
-                        </Text>
-                      )}
-
-                      <View style={styles.creatorSection}>
-                        <View style={styles.creatorInfo}>
-                          <View style={styles.creatorAvatar}>
-                            <Text style={styles.creatorInitial}>
-                              {group.creator.name.charAt(0).toUpperCase()}
-                            </Text>
-                          </View>
-                          <View style={styles.creatorDetails}>
-                            <Text style={styles.creatorName}>
-                              {group.creator.name}
-                            </Text>
-                            <Text style={styles.creatorRole}>
-                              Group Creator
-                            </Text>
-                          </View>
-                        </View>
                       </View>
 
                       <View style={styles.statsSection}>
@@ -754,11 +757,16 @@ const styles = StyleSheet.create({
 
   // Creator Section Styles
   creatorSection: {
+    width:'100%',
     marginBottom: 12,
+    display:'flex',
+    flexDirection:"row",
+    alignItems:"center",
+    justifyContent:"space-between"
   },
   creatorInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // alignItems: 'center',
   },
   creatorAvatar: {
     width: 36,
@@ -788,7 +796,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   creatorDetails: {
-    flex: 1,
   },
   creatorName: {
     fontSize: 15,

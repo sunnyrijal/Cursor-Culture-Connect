@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   ScrollView,
@@ -22,6 +21,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { useAlert } from '@/contexts/AlertContext';
 import { resetPassword, ResetPasswordData } from '@/contexts/user.api';
 
 const ResetPasswordForm: React.FC = () => {
@@ -35,13 +35,16 @@ const ResetPasswordForm: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const { showAlert } = useAlert();
+
   const { mutate: resetPasswordMutate, isPending } = useMutation({
     mutationFn: (data: ResetPasswordData) => resetPassword(data),
     onSuccess: () => {
-      Alert.alert(
-        'Success',
-        'Your password has been reset successfully. Please log in with your new password.'
-      );
+      showAlert({
+        title: 'Success',
+        message:
+          'Your password has been reset successfully. Please log in with your new password.',
+      });
       router.replace('/(auth)/login');
     },
     onError: (error: any) => {
@@ -50,7 +53,7 @@ const ResetPasswordForm: React.FC = () => {
         error.message ||
         'Failed to reset password. Please try again.';
       setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 

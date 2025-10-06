@@ -9,7 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Image,
   Platform,
@@ -42,6 +41,7 @@ import api, { API_URL } from '@/contexts/axiosConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getUserGroups, getUserMemberGroup } from '@/contexts/group.api';
 import { typography } from './theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface EditEventModalProps {
   visible: boolean;
@@ -57,6 +57,7 @@ export function EditEventModal({
   eventId,
 }: EditEventModalProps) {
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -124,7 +125,7 @@ export function EditEventModal({
         isPublic: event.isPublic !== undefined ? event.isPublic : true,
         universityOnly: event.UniversityOnly !== undefined ? event.UniversityOnly : false,
       });
-    }
+    } 
   }, [event, visible]);
 
   const uploadFileMutation = useMutation({
@@ -138,7 +139,7 @@ export function EditEventModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
     },
   });
 
@@ -153,7 +154,7 @@ export function EditEventModal({
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['counts'] });
 
-      Alert.alert('Success', 'Event updated successfully!');
+      showAlert({ title: 'Success', message: 'Event updated successfully!' });
 
       onSubmit(variables.eventData);
       onClose();
@@ -165,7 +166,7 @@ export function EditEventModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to update event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -180,10 +181,10 @@ export function EditEventModal({
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission needed',
-          'Sorry, we need camera roll permissions to make this work!'
-        );
+        showAlert({
+          title: 'Permission needed',
+          message: 'Sorry, we need camera roll permissions to make this work!',
+        });
         return;
       }
 
@@ -206,7 +207,7 @@ export function EditEventModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
     }
   };
 
@@ -343,26 +344,26 @@ export function EditEventModal({
       hasEmptyTimes ||
       !formData.location
     ) {
-      Alert.alert(
-        'Missing Fields',
-        'Please fill in all required fields including all time slots.'
-      );
+      showAlert({
+        title: 'Missing Fields',
+        message: 'Please fill in all required fields including all time slots.',
+      });
       return;
     }
 
     if (hasInvalidTimes) {
-      Alert.alert(
-        'Invalid Time Format',
-        'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).'
-      );
+      showAlert({
+        title: 'Invalid Time Format',
+        message: 'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).',
+      });
       return;
     }
 
     if (hasEndTimeBeforeStartTime) {
-      Alert.alert(
-        'Invalid Time Slot',
-        'The end time for a time slot must be after its start time.'
-      );
+      showAlert({
+        title: 'Invalid Time Slot',
+        message: 'The end time for a time slot must be after its start time.',
+      });
       return;
     }
 

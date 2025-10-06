@@ -112,7 +112,7 @@ export default function MyHub() {
   );
 
   const renderConnectionItem = (user: MockUser) => (
-    <TouchableOpacity key={user.id} style={styles.listItemTouchable} onPress={() => router.push(`/profile/public/${user.id}`)}>
+    <TouchableOpacity key={user.id} style={styles.listItemTouchable} onPress={() => router.push(`/public/profile/${user.id}`)}>
       <Card style={styles.listItem}>
         <Image source={{ uri: user.image }} style={styles.itemImage} />
         <View style={styles.itemContent}>

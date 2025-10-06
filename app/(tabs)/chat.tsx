@@ -15,8 +15,8 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
 import {
   Search,
   MessageCircle,
@@ -25,6 +25,7 @@ import {
   UserPlus,
   MailPlus,
   X,
+  WifiOff,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -94,6 +95,7 @@ export default function ChatListScreen() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -117,6 +119,8 @@ export default function ChatListScreen() {
 
   const users = usersResponse?.users || [];
 
+  console.log(chatResponse)
+
   // Get socket connection and methods
   const {
     isConnected,
@@ -126,10 +130,6 @@ export default function ChatListScreen() {
     leaveChat,
     reconnect,
   } = useSocket();
-
-  useEffect(() => {
-    if (!isConnected) reconnect();
-  }, [isConnected]);
 
   const processedChats = useMemo(() => {
     if (!chatResponse?.data || !myData?.userId) return [];
@@ -189,10 +189,6 @@ export default function ChatListScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    if (!isConnected) {
-      console.log('Socket not connected, attempting to reconnect on refresh...');
-      reconnect();
-    }
     refetch().finally(() => {
       setRefreshing(false);
     });
@@ -342,30 +338,32 @@ export default function ChatListScreen() {
           </View>
 
           <View style={styles.chatContent}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{item.name}</Text>
-              <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
-            </View>
-            <View style={styles.chatMessage}>
+            <Text style={styles.chatName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <View style={styles.bottomRow}>
               <Text
-                style={[styles.lastMessage, { fontWeight: 'bold' }]}
+                style={[styles.lastMessage, { fontWeight: '500' }]}
                 numberOfLines={1}
               >
                 {item.lastMessage}
               </Text>
-              {item.unreadCount > 0 && (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.unreadBadge}
-                >
-                  <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                </LinearGradient>
-              )}
+              <View style={styles.bottomRight}>
+                <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
+                {item.unreadCount > 0 && (
+                  <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    style={styles.unreadBadge}
+                  >
+                    <Text style={styles.unreadText}>{item.unreadCount}</Text>
+                  </LinearGradient>
+                )}
+              </View>
             </View>
           </View>
 
           <View style={styles.chatArrow}>
-            <ArrowRight size={16} color="#94A3B8" />
+            {/* <ArrowRight size={16} color="#94A3B8" /> */}
           </View>
         </LinearGradient>
       </BlurView>
@@ -464,6 +462,20 @@ export default function ChatListScreen() {
 
   return (
     <View style={styles.container}>
+      {/* {!isConnected && (
+        <View style={[styles.offlineBanner, { paddingTop: insets.top }]}>
+          <LinearGradient
+            colors={['#FCA5A5', '#F87171']}
+            style={styles.offlineBannerGradient}
+          >
+            <WifiOff size={16} color="#7F1D1D" />
+            <Text style={styles.offlineText}>
+              You are offline. Reconnecting...
+            </Text>
+          </LinearGradient>
+        </View>
+      )} */}
+
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <View style={styles.headerContent}>
@@ -487,10 +499,18 @@ export default function ChatListScreen() {
                 <UserPlus size={24} color={theme.primary} />
               </TouchableOpacity>
 
-                <TouchableOpacity
+              <TouchableOpacity
                 onPress={() => router.push('/message-requests')}
-                 >
+                style={styles.mailPlusButton}
+              >
                 <MailPlus size={24} color={theme.primary} />
+                {chatResponse?.chatRequestsCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {chatResponse.chatRequestsCount}
+                    </Text>
+                  </View>
+                )}
                 </TouchableOpacity>
             </View>
           </View>
@@ -612,19 +632,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F3F7',
   },
+  offlineBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  offlineBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  offlineText: {
+    color: '#7F1D1D',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   safeArea: {
     flex: 1,
   },
   connectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   header: {
     marginHorizontal: 20,
+    paddingHorizontal: 4,
     marginTop: 20,
     marginBottom: 16,
-    borderRadius: 20,
     overflow: 'hidden',
   },
   headerContent: {
@@ -646,6 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
+    color: theme.textPrimary,
   },
   searchWrapper: {
     marginHorizontal: 20,
@@ -797,7 +838,7 @@ const styles = StyleSheet.create({
   },
   chatItem: {
     marginBottom: 4,
-    padding: 4,
+    padding: 2,
   },
   chatItemBlur: {
     borderRadius: 20,
@@ -869,22 +910,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E293B',
     letterSpacing: -0.2,
+    flex: 1,
+    marginBottom: 6,
   },
   chatTime: {
     fontSize: 13,
     color: '#64748B',
     fontWeight: '500',
+    textAlign: 'right',
   },
-  chatMessage: {
+  bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  bottomRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   lastMessage: {
     color: '#64748B',
     flex: 1,
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: 'bold',
     lineHeight: 20,
   },
   unreadBadge: {
@@ -930,6 +979,28 @@ const styles = StyleSheet.create({
   },
   userPlusButton: {
     padding: 4,
+  },
+  mailPlusButton: {
+    padding: 4,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444', // A bright red for notifications
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F0F3F7',
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   modalContainer: {
     flex: 1,

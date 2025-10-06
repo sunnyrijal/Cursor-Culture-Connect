@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import {
 } from '@/contexts/notification.api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NotificationCard } from '@/components/NotificationCard';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface NotificationData {
   id: string;
@@ -38,6 +39,7 @@ interface NotificationData {
 
 export default function Notifications() {
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
 
   const { data: notificationResponse, isLoading, refetch } = useQuery({
     queryKey: ['notifications'],
@@ -56,7 +58,7 @@ export default function Notifications() {
     },
     onError: (error) => {
       console.error("Failed to mark notification as read:", error);
-      Alert.alert("Error", "Could not mark notification as read.");
+      showAlert({ title: "Error", message: "Could not mark notification as read." });
     }
   });
 
@@ -68,7 +70,7 @@ export default function Notifications() {
     },
     onError: (error) => {
       console.error("Failed to mark all notifications as read:", error);
-      Alert.alert("Error", "Could not mark all notifications as read.");
+      showAlert({ title: "Error", message: "Could not mark all notifications as read." });
     }
   });
 

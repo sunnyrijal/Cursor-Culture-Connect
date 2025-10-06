@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Platform,
   RefreshControl,
 } from 'react-native';
@@ -22,6 +21,7 @@ import {
 } from '@/contexts/friend.api';
 import { router } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
+import { useAlert } from '@/contexts/AlertContext';
 
 const theme = {
   primary: '#6366F1',
@@ -48,6 +48,7 @@ export default function FriendRequestsScreen() {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -84,7 +85,10 @@ export default function FriendRequestsScreen() {
       queryClient.invalidateQueries({ queryKey: ['counts'] });
 
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
-      Alert.alert('Success', `Friend request ${action}!`);
+      showAlert({
+        title: 'Success',
+        message: `Friend request ${action}!`,
+      });
     },
     onError: (error: any) => {
       console.error('Error responding to friend request:', error);
@@ -92,7 +96,10 @@ export default function FriendRequestsScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to respond to friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
@@ -102,7 +109,10 @@ export default function FriendRequestsScreen() {
       console.log('Friend request cancelled successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      Alert.alert('Success', 'Friend request cancelled.');
+      showAlert({
+        title: 'Success',
+        message: 'Friend request cancelled.',
+      });
     },
     onError: (error: any) => {
       console.error('Error cancelling friend request:', error);
@@ -110,57 +120,64 @@ export default function FriendRequestsScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to cancel friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
   const handleAcceptRequest = (friendshipId: string, senderName: string) => {
-    Alert.alert(
-      'Accept Friend Request',
-      `Accept friend request from ${senderName}?`,
-      [
+    showAlert({
+      title: 'Accept Friend Request',
+      message: `Accept friend request from ${senderName}?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Accept',
-          onPress: () =>
-            respondToRequestMutation.mutate({ friendshipId, action: 'accept' }),
+          onPress: () => {
+            respondToRequestMutation.mutate({ friendshipId, action: 'accept' });
+          },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleRejectRequest = (friendshipId: string, senderName: string) => {
-    Alert.alert(
-      'Reject Friend Request',
-      `Reject friend request from ${senderName}?`,
-      [
+    showAlert({
+      title: 'Reject Friend Request',
+      message: `Reject friend request from ${senderName}?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reject',
           style: 'destructive',
-          onPress: () =>
+          onPress: () => {
             respondToRequestMutation.mutate({
               friendshipId,
               action: 'decline',
-            }),
+            });
+          },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleCancelRequest = (receiverId: string, receiverName: string) => {
-    Alert.alert(
-      'Cancel Request',
-      `Are you sure you want to cancel the friend request to ${receiverName}?`,
-      [
+    showAlert({
+      title: 'Cancel Request',
+      message: `Are you sure you want to cancel the friend request to ${receiverName}?`,
+      buttons: [
         { text: 'No', style: 'cancel' },
         {
           text: 'Yes, Cancel',
           style: 'destructive',
-          onPress: () => cancelRequestMutation.mutate({ receiverId }),
+          onPress: () => {
+            cancelRequestMutation.mutate({ receiverId });
+          },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const formatDate = (dateString: string) => {

@@ -40,6 +40,7 @@ import {
   verifyOTP,
   VerifyOTPData,
 } from '@/contexts/emailVerification.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,6 +53,7 @@ const OtpVerificationForm: React.FC = () => {
 
   const router = useRouter();
   const { email: emailParam } = useLocalSearchParams<{ email: string }>();
+  const { showAlert } = useAlert();
 
   const inputRefs = useRef<TextInput[]>([]);
 
@@ -63,8 +65,9 @@ const OtpVerificationForm: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('❌ Error verifying OTP:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
+      const errorMessage = error.message || 'Invalid OTP. Please try again.';
+      setError(errorMessage);
+      showAlert({ title: 'Error', message: 'Invalid OTP. Please try again.' });
     },
   });
 
@@ -80,8 +83,9 @@ const OtpVerificationForm: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('❌ Error resending OTP:', error);
-      setError('Failed to resend OTP. Please try again.');
-      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+      const errorMessage = 'Failed to resend OTP. Please try again.';
+      setError(errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 

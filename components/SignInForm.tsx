@@ -14,7 +14,6 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Image,
-  Alert,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { BlurView } from "expo-blur"
@@ -32,6 +31,7 @@ import Animated, {
   withRepeat,
 } from "react-native-reanimated"
 
+import { useAlert } from "@/contexts/AlertContext"
 //@ts-ignore
 import logo from "../assets/logo.png"
 
@@ -52,6 +52,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
 
   const { login } = useAuth()
   const router = useRouter()
+  const { showAlert } = useAlert()
 
   // Animation values
   const headerScale = useSharedValue(0)
@@ -110,11 +111,15 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
       const errorMessage = err.response?.data?.message || err.message || "Authentication failed. Please try again.";
       console.log("Login error:", errorMessage);
 
-      if (errorMessage.includes("Your account is not verified")) {
-        Alert.alert("Verification Required", "Your account is not verified. A new verification code has been sent to your email.");
+      if (errorMessage.includes("Your account is not verified") || errorMessage.includes("Email not verified")) {
+        showAlert({
+          title: "Verification Required",
+          message: "Your account is not verified. A new verification code has been sent to your email.",
+        });
         router.push(`/(auth)/verify?email=${email}`);
       } else {
         setError(errorMessage);
+        showAlert({ title: "Login Failed", message: errorMessage });
       }
     } finally {
       setLoading(false)

@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Platform,
   ActivityIndicator,
@@ -18,13 +17,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
-  MapPin,
   Check,
   Sparkles,
   Zap,
   Users,
-  Globe,
-  GraduationCap,
+
   Car,
   Package,
   Star,
@@ -41,6 +38,7 @@ import {
 } from '@/contexts/userInterest.api';
 import { getInterests } from '@/contexts/interest.api';
 import { getActivities } from '@/contexts/activity.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface CreateInterestPreferenceModalProps {
   visible: boolean;
@@ -62,6 +60,7 @@ export function CreateInterestPreferenceModal({
   editingPreference = null,
   onSubmit,
 }: CreateInterestPreferenceModalProps) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     activityId: '',
     hasEquipment: true,
@@ -160,7 +159,10 @@ export function CreateInterestPreferenceModal({
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
 
-      Alert.alert('Success', 'Interest preference created successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Interest preference created successfully!',
+      });
       onSubmit?.(data);
       onClose();
     },
@@ -170,7 +172,7 @@ export function CreateInterestPreferenceModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to create preference.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -182,7 +184,10 @@ export function CreateInterestPreferenceModal({
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
 
-      Alert.alert('Success', 'Interest preference updated successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Interest preference updated successfully!',
+      });
       onSubmit?.(data);
       onClose();
     },
@@ -192,7 +197,7 @@ export function CreateInterestPreferenceModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to update preference.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -203,7 +208,10 @@ export function CreateInterestPreferenceModal({
       queryClient.invalidateQueries({ queryKey: ['user-interests'] });
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
 
-      Alert.alert('Success', 'Interest preference deleted successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Interest preference deleted successfully!',
+      });
       onClose();
     },
     onError: (error: any) => {
@@ -212,7 +220,7 @@ export function CreateInterestPreferenceModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to delete preference.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -224,7 +232,10 @@ export function CreateInterestPreferenceModal({
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
 
       const status = data.isActive ? 'activated' : 'deactivated';
-      Alert.alert('Success', `Interest preference ${status} successfully!`);
+      showAlert({
+        title: 'Success',
+        message: `Interest preference ${status} successfully!`,
+      });
       onClose();
     },
     onError: (error: any) => {
@@ -233,7 +244,7 @@ export function CreateInterestPreferenceModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to toggle status.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -245,23 +256,23 @@ export function CreateInterestPreferenceModal({
 
   const handleSubmit = async () => {
     if (!formData.activityId) {
-      Alert.alert('Missing Interest', 'Please select an interest.');
+      showAlert({ title: 'Missing Interest', message: 'Please select an interest.' });
       return;
     }
 
     if (formData.needsEquipment && !formData.equipmentNeeded.trim()) {
-      Alert.alert(
-        'Equipment Required',
-        'Please specify what equipment you need.'
-      );
+      showAlert({
+        title: 'Equipment Required',
+        message: 'Please specify what equipment you need.',
+      });
       return;
     }
 
     if (formData.needsTransport && !formData.transportDetails.trim()) {
-      Alert.alert(
-        'Transport Details Required',
-        'Please specify your transportation needs.'
-      );
+      showAlert({
+        title: 'Transport Details Required',
+        message: 'Please specify your transportation needs.',
+      });
       return;
     }
 
@@ -297,35 +308,35 @@ export function CreateInterestPreferenceModal({
   const handleDelete = () => {
     if (!editingPreference) return;
 
-    Alert.alert(
-      'Delete Preference',
-      'Are you sure you want to delete this interest preference?',
-      [
+    showAlert({
+      title: 'Delete Preference',
+      message: 'Are you sure you want to delete this interest preference?',
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => deletePreferenceMutation.mutate(editingPreference.id),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleToggleStatus = () => {
     if (!editingPreference) return;
 
     const action = editingPreference.isActive ? 'deactivate' : 'activate';
-    Alert.alert(
-      `${action.charAt(0).toUpperCase() + action.slice(1)} Preference`,
-      `Are you sure you want to ${action} this interest preference?`,
-      [
+    showAlert({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} Preference`,
+      message: `Are you sure you want to ${action} this interest preference?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: action.charAt(0).toUpperCase() + action.slice(1),
           onPress: () => toggleStatusMutation.mutate(editingPreference.id),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const selectActivity = (activity: ActivityOption) => {

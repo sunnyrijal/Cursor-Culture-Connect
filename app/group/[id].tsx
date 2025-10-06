@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Modal,
   TextInput,
   Platform,
@@ -49,6 +48,7 @@ import {
 } from '@/contexts/group.api';
 import { getUsers } from '@/contexts/user.api';
 import getDecodedToken from '@/utils/getMyData';
+import { useAlert } from '@/contexts/AlertContext';
 import { EditGroupModal } from '@/components/UpdateGroupModal';
 import { GroupRole } from '@/types/group.types';
 import { approveEvent } from '@/contexts/event.api';
@@ -127,6 +127,7 @@ export default function GroupDetailEnhanced() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [searchEmail, setSearchEmail] = useState('');
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
 
   const {
     data: groupResponse,
@@ -199,23 +200,23 @@ export default function GroupDetailEnhanced() {
         queryClient.invalidateQueries({ queryKey: ['chats'] });
 
         router.back();
-        Alert.alert('Success', 'Group deleted successfully.');
+        showAlert({ title: 'Success', message: 'Group deleted successfully.' });
       },
       onError: (err) => {
         console.error('Error deleting group:', err);
-        Alert.alert('Error', 'Failed to delete group. Please try again.');
+        showAlert({ title: 'Error', message: 'Failed to delete group. Please try again.' });
       },
     });
 
   const handleDeleteGroup = () => {
     if (!id) {
-      Alert.alert('Error', 'Group ID is missing.');
+      showAlert({ title: 'Error', message: 'Group ID is missing.' });
       return;
     }
-    Alert.alert(
-      'Confirm Deletion',
-      `Are you sure you want to delete "${group?.name}"? This action cannot be undone.`,
-      [
+    showAlert({
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete "${group?.name}"? This action cannot be undone.`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
@@ -223,21 +224,21 @@ export default function GroupDetailEnhanced() {
           onPress: () => deleteGroupMutation(id as string),
         },
       ]
-    );
+    });
   };
 
   const approveEventMutation = useMutation({
     mutationFn: approveEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      Alert.alert('Success', 'Event has been approved.');
+      showAlert({ title: 'Success', message: 'Event has been approved.' });
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to approve the event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -253,10 +254,10 @@ export default function GroupDetailEnhanced() {
     } catch (error:any) {
       console.error('Error sharing group:', error);
       // @ts-ignore
-      Alert.alert(
-        'Error',
-        error.message || 'Unable to share this group at this time.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error.message || 'Unable to share this group at this time.',
+      });
     }
   };
 
@@ -267,11 +268,11 @@ export default function GroupDetailEnhanced() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['group', id] });
         queryClient.invalidateQueries({ queryKey: ['groups'] });
-        Alert.alert('Success', 'Group visibility updated.');
+        showAlert({ title: 'Success', message: 'Group visibility updated.' });
       },
       onError: (err) => {
         console.error('Error updating group:', err);
-        Alert.alert('Error', 'Failed to update group visibility.');
+        showAlert({ title: 'Error', message: 'Failed to update group visibility.' });
       },
     });
 
@@ -319,7 +320,7 @@ export default function GroupDetailEnhanced() {
     },
     onError: (error) => {
       console.error('❌ Error joining group:', error);
-      Alert.alert('Error', 'Failed to join group. Please try again.');
+      showAlert({ title: 'Error', message: 'Failed to join group. Please try again.' });
     },
   });
 
@@ -354,18 +355,18 @@ export default function GroupDetailEnhanced() {
   });
 
   const handleLeaveGroup = () => {
-    Alert.alert(
-      'Leave Group',
-      `Are you sure you want to leave "${group?.name}"? You won't be able to access group content anymore.`,
-      [
+    showAlert({
+      title: 'Leave Group',
+      message: `Are you sure you want to leave "${group?.name}"? You won't be able to access group content anymore.`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Leave',
           style: 'destructive',
           onPress: () => leaveGroupMutate(),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const confirmLeaveGroup = () => {
@@ -1918,6 +1919,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: spacing.md,
+    paddingVertical:spacing.sm,
     backgroundColor: neomorphColors.background,
     borderTopWidth: 1,
     borderTopColor: neomorphColors.lightShadow,

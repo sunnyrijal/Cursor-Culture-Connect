@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Switch,
   Platform,
@@ -37,6 +36,7 @@ import { Plus, ImageIcon } from 'lucide-react-native';
 import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
 import { theme, typography } from './theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface CreateGroupModalProps {
   visible: boolean;
@@ -49,6 +49,7 @@ export function CreateGroupModal({
   onClose,
   onSubmit,
 }: CreateGroupModalProps) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -99,7 +100,7 @@ export function CreateGroupModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
     },
   });
 
@@ -108,10 +109,10 @@ export function CreateGroupModal({
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission needed',
-          'Sorry, we need camera roll permissions to make this work!'
-        );
+        showAlert({
+          title: 'Permission needed',
+          message: 'Sorry, we need camera roll permissions to make this work!',
+        });
         return;
       }
 
@@ -136,7 +137,7 @@ export function CreateGroupModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
     }
   };
 
@@ -177,7 +178,7 @@ export function CreateGroupModal({
       queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
 
-      Alert.alert('Success', 'Group created successfully!');
+      showAlert({ title: 'Success', message: 'Group created successfully!' });
 
       onSubmit(variables);
       setIsSubmitting(false);
@@ -192,20 +193,20 @@ export function CreateGroupModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to create group. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      showAlert({ title: 'Error', message: 'Please fill in all required fields.' });
       return;
     }
 
     // Validate meeting time if provided
     if (formData.hasMeetingDetails && formData.meetingTime) {
       if (!validateTime(formData.meetingTime).isValid) {
-        Alert.alert('Error', 'Please enter a valid meeting time in HH:MM format.');
+        showAlert({ title: 'Error', message: 'Please enter a valid meeting time in HH:MM format.' });
         return;
       }
     }

@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { X, Filter } from 'lucide-react-native';
+import { X, ChevronDown } from 'lucide-react-native';
+import { useQuery } from '@tanstack/react-query';
+import { getUniversities } from '@/contexts/university.api';
 import Checkbox from 'expo-checkbox';
 
 const theme = {
@@ -23,6 +25,7 @@ interface GroupFilters {
   privacy?: 'private' | 'public';
   sortBy?: 'name' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
+  universityId?: string;
 }
 
 interface GroupFilterModalProps {
@@ -33,6 +36,92 @@ interface GroupFilterModalProps {
   onApply: () => void;
 }
 
+interface DropdownProps {
+  title: string;
+  selectedValue?: string;
+  options: Array<{ id: string; name: string }>;
+  onSelect: (value: string | undefined) => void;
+  placeholder: string;
+}
+
+const Dropdown: React.FC<DropdownProps> = ({
+  title,
+  selectedValue,
+  options,
+  onSelect,
+  placeholder,
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const selectedOption = options.find((option) => option.id === selectedValue);
+
+  return (
+    <View style={styles.dropdownContainer}>
+      <Text style={styles.dropdownTitle}>{title}</Text>
+
+      <TouchableOpacity
+        style={[styles.dropdownButton, isOpen && styles.dropdownButtonOpen]}
+        onPress={() => setIsOpen(!isOpen)}
+      >
+        <Text
+          style={[
+            styles.dropdownButtonText,
+            !selectedOption && styles.dropdownPlaceholder,
+          ]}
+        >
+          {selectedOption ? selectedOption.name : placeholder}
+        </Text>
+        <ChevronDown
+          size={20}
+          color={theme.textSecondary}
+          style={[styles.chevron, isOpen && styles.chevronRotated]}
+        />
+      </TouchableOpacity>
+
+      {isOpen && (
+        <View style={styles.dropdownList}>
+          <TouchableOpacity
+            style={styles.dropdownOption}
+            onPress={() => {
+              onSelect(undefined);
+              setIsOpen(false);
+            }}
+          >
+            <Text style={[styles.dropdownOptionText, styles.clearOptionText]}>
+              Clear Selection
+            </Text>
+          </TouchableOpacity>
+
+          <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+            {options.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.dropdownOption,
+                  selectedValue === option.id && styles.selectedOption,
+                ]}
+                onPress={() => {
+                  onSelect(option.id);
+                  setIsOpen(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.dropdownOptionText,
+                    selectedValue === option.id && styles.selectedOptionText,
+                  ]}
+                >
+                  {option.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+};
+
 export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
   visible,
   onClose,
@@ -41,6 +130,19 @@ export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
   onApply,
 }) => {
   const [tempFilters, setTempFilters] = React.useState<GroupFilters>(filters);
+
+  const { data: universities } = useQuery({
+    queryKey: ['universities'],
+    queryFn: getUniversities,
+  });
+
+  const universityOptions = React.useMemo(() => {
+    if (!universities?.data) return [];
+    return universities.data.map((uni: any) => ({
+      id: uni.id,
+      name: uni.name,
+    }));
+  }, [universities]);
 
   React.useEffect(() => {
     // When the modal is opened, sync the temp state with the external state
@@ -79,7 +181,7 @@ export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
             
             <TouchableOpacity
               style={styles.checkboxRow}
-              onPress={() => updateFilter('myUniversity', !filters.myUniversity)}
+              onPress={() => updateFilter('myUniversity', !tempFilters.myUniversity)}
             >
               <Checkbox
                 style={styles.checkbox}
@@ -89,6 +191,14 @@ export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
               />
               <Text style={styles.checkboxLabel}>My University Only</Text>
             </TouchableOpacity>
+
+            <Dropdown
+              title="Select Specific University"
+              selectedValue={tempFilters.universityId}
+              options={universityOptions}
+              onSelect={(value) => updateFilter('universityId', value)}
+              placeholder="All Universities"
+            />
           </View>
 
           {/* Privacy Filter */}
@@ -363,5 +473,85 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdownTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.textPrimary,
+    marginBottom: 8,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    minHeight: 48,
+  },
+  dropdownButtonOpen: {
+    borderColor: theme.primary,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  dropdownButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.textPrimary,
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: theme.textSecondary,
+  },
+  chevron: {
+    marginLeft: 8,
+  },
+  chevronRotated: {
+    transform: [{ rotate: '180deg' }],
+  },
+  dropdownList: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: theme.primary,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownScroll: {
+    maxHeight: 160,
+  },
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  selectedOption: {
+    backgroundColor: '#EEF2FF',
+  },
+  dropdownOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.textPrimary,
+  },
+  selectedOptionText: {
+    color: theme.primary,
+    fontWeight: '600',
+  },
+  clearOptionText: {
+    color: theme.textSecondary,
+    fontStyle: 'italic',
   },
 });

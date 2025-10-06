@@ -244,11 +244,11 @@ export default function ChatScreen() {
                 </View>
               </View>
 
-              <View style={styles.headerActions}>
+              {/* <View style={styles.headerActions}>
                 <TouchableOpacity style={styles.actionButton}>
                   <MoreVertical size={20} color={theme.gray500} />
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           </LinearGradient>
         </View>

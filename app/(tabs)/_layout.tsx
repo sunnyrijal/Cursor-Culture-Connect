@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
+import { AppState } from 'react-native';
 import {
   Home,
   Search,
@@ -10,8 +11,10 @@ import {
 } from 'lucide-react-native';
 import { View, Platform, StyleSheet, Text } from 'react-native';
 import getDecodedToken from '@/utils/getMyData';
-import { SocketProvider } from '@/hooks/useSocket';
+import { SocketProvider, useSocket } from '@/hooks/useSocket';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
+import { useQuery } from '@tanstack/react-query';
+import { getUnreadChatCount } from '@/contexts/chat.api';
 
 export default function TabLayout() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -25,6 +28,14 @@ export default function TabLayout() {
     };
     fetchMyData();
   }, []);
+
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['unreadChatCount'],
+    queryFn: getUnreadChatCount,
+    enabled: !!userId, // Only fetch if user is logged in
+  });
+
+  const unreadCount = unreadCountData?.data?.count || 0;
 
   const handleConnect = useCallback(
     () => console.log('🔌 Connected to socket'),
@@ -43,6 +54,33 @@ export default function TabLayout() {
     []
   );
 
+  // A wrapper component to handle socket reconnection logic
+  const SocketConnectionManager = ({ children }: { children: React.ReactNode }) => {
+    const { isConnected, reconnect } = useSocket();
+
+    useEffect(() => {
+      const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active') {
+          console.log('App has come to the foreground!');
+          if (!isConnected) {
+            console.log('Socket not connected, attempting to reconnect...');
+            reconnect();
+          }
+        }
+      });
+
+      // Initial check
+      if (!isConnected) {
+        reconnect();
+      }
+
+      return () => {
+        subscription.remove();
+      };
+    }, [isConnected, reconnect]);
+
+    return <>{children}</>;
+  };
   if (!userId) return null; // wait for userId before rendering tabs
 
   return (
@@ -54,6 +92,7 @@ export default function TabLayout() {
       onError={handleError}
       onAuthenticated={handleAuthenticated}
     >
+      <SocketConnectionManager>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -139,6 +178,7 @@ export default function TabLayout() {
                     strokeWidth={2}
                   />
                 </View>
+               
                 <Text
                   style={[
                     styles.tabLabel,
@@ -229,6 +269,14 @@ export default function TabLayout() {
                     strokeWidth={2}
                   />
                 </View>
+{/* 
+                 {unreadCount > 0 && (
+                  <View style={styles.badgeContainer}>
+                    <Text style={styles.badgeText}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Text>
+                  </View>
+                )} */}
                 <Text
                   style={[
                     styles.tabLabel,
@@ -272,6 +320,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      </SocketConnectionManager>
     </SocketProvider>
   );
 }
@@ -326,6 +375,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.2,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white', // Match active tab background
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 2,
   },
 });
 

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Platform,
   RefreshControl,
   TextInput,
@@ -16,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, MessageCircle, UserMinus, Search } from 'lucide-react-native';
 import { getFriends, removeFriend } from '@/contexts/friend.api';
 import { router } from 'expo-router';
+import { useAlert } from '@/contexts/AlertContext';
 
 const theme = {
   primary: '#6366F1',
@@ -40,7 +40,7 @@ export default function FriendsListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-
+  const { showAlert } = useAlert();
   const {
     data: friendsResponse,
     isLoading,
@@ -77,7 +77,10 @@ export default function FriendsListScreen() {
     onSuccess: (data, variables) => {
       console.log('Friend removed successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['friends'] });
-      Alert.alert('Success', data.message || 'Friend removed successfully!');
+      showAlert({
+        title: 'Success',
+        message: data.message || 'Friend removed successfully!',
+      });
     },
     onError: (error: any) => {
       console.error('Error removing friend:', error);
@@ -85,23 +88,26 @@ export default function FriendsListScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to remove friend. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
   const handleRemoveFriend = (friendId: string, friendName: string) => {
-    Alert.alert(
-      'Remove Friend',
-      `Are you sure you want to remove ${friendName} from your friends?`,
-      [
+    showAlert({
+      title: 'Remove Friend',
+      message: `Are you sure you want to remove ${friendName} from your friends?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: () => removeFriendMutation.mutate({ friendId }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleMessage = (friendId: string) => {

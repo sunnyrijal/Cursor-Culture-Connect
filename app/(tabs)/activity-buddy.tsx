@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  Alert,
   RefreshControl,
   Modal,
   ActivityIndicator,
@@ -57,6 +56,7 @@ import {
 } from '@/contexts/activity.api';
 import { Activity } from '@/types/activity';
 import MyPreferencesModal from '@/components/MyPreferenceModal';
+import { useAlert } from '@/contexts/AlertContext';
 import { createDirectChat } from '@/contexts/chat.api';
 
 const theme = {
@@ -102,6 +102,7 @@ export default function ActivityBuddyPage() {
     {}
   );
 
+  const { showAlert } = useAlert();
   const queryClient = useQueryClient();
   const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
   const [isPreferenceModalVisible, setIsPreferenceModalVisible] =
@@ -159,14 +160,14 @@ export default function ActivityBuddyPage() {
   const sendPingMutation = useMutation({
     mutationFn: sendActivityPing,
     onSuccess: () => {
-      Alert.alert('Success', 'Activity ping sent successfully!');
+      showAlert({ title: 'Success', message: 'Activity ping sent successfully!' });
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error?.response.data.message || 'Failed to send ping. Please try again.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error?.response.data.message || 'Failed to send ping. Please try again.',
+      });
       console.error('Send ping error:', error);
     },
   });
@@ -174,16 +175,16 @@ export default function ActivityBuddyPage() {
   const pingBackMutation = useMutation({
     mutationFn: pingBack,
     onSuccess: () => {
-      Alert.alert('Success', 'Ping back sent!');
+      showAlert({ title: 'Success', message: 'Ping back sent!' });
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
       setShowPingModal(false);
       setPingMessage('');
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error?.response?.data?.message || 'Failed to send ping back.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error?.response?.data?.message || 'Failed to send ping back.',
+      });
     },
   });
 
@@ -195,11 +196,10 @@ export default function ActivityBuddyPage() {
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error?.response.data.message ||
-          'Failed to update ping. Please try again.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error?.response.data.message || 'Failed to update ping. Please try again.',
+      });
       console.error('Update ping error:', error);
     },
   });
@@ -208,14 +208,14 @@ export default function ActivityBuddyPage() {
   const unsendPingMutation = useMutation({
     mutationFn: unsendInterestPing,
     onSuccess: () => {
-      Alert.alert('Success', 'Ping unsent successfully!');
+      showAlert({ title: 'Success', message: 'Ping unsent successfully!' });
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error?.response?.data?.message || 'Failed to unsend ping.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error?.response?.data?.message || 'Failed to unsend ping.',
+      });
       console.error('Unsend ping error:', error);
     },
   });
@@ -232,19 +232,19 @@ export default function ActivityBuddyPage() {
         if (data?.data?.id) {
           router.push(`/chat/${data.data.id}`);
         } else {
-          Alert.alert(
-            'Chat Created',
-            'You can now message the host from your chats list.'
-          );
+          showAlert({
+            title: 'Chat Created',
+            message: 'You can now message the host from your chats list.',
+          });
           queryClient.invalidateQueries({ queryKey: ['chats'] });
         }
       },
       onError: (error: any) => {
         console.error('❌ Error creating chat:', error);
-        Alert.alert(
-          'Error',
-          error.message || 'Could not start a conversation.'
-        );
+        showAlert({
+          title: 'Error',
+          message: error.message || 'Could not start a conversation.',
+        });
       },
     });
 
@@ -335,24 +335,6 @@ export default function ActivityBuddyPage() {
     status: 'accepted' | 'declined'
   ) => {
     if (status === 'accepted') {
-      // Alert.prompt(
-      //   'Accept Ping',
-      //   'Add a response message (optional):',
-      //   [
-      //     { text: 'Cancel', style: 'cancel' },
-      //     {
-      //       text: 'Accept',
-      //       onPress: (response) => {
-      //         updatePingMutation.mutate({
-      //           pingId,
-      //           updateData: { status, response: response || undefined },
-      //         });
-      //       },
-      //     },
-      //   ],
-      //   'plain-text',
-      //   "Great! I'd love to connect over this activity!"
-      // );
       updatePingMutation.mutate({
         pingId,
         updateData: { status },
@@ -668,20 +650,20 @@ const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
                 styles.declineButton,
                 unsendPingMutation.isPending && styles.disabledButton,
               ]}
-              onPress={() =>
-                Alert.alert(
-                  'Unsend Ping',
-                  'Are you sure you want to unsend this ping?',
-                  [
+              onPress={() => {
+                showAlert({
+                  title: 'Unsend Ping',
+                  message: 'Are you sure you want to unsend this ping?',
+                  buttons: [
                     { text: 'Cancel', style: 'cancel' },
                     {
                       text: 'Unsend',
                       style: 'destructive',
                       onPress: () => unsendPingMutation.mutate(ping.id),
                     },
-                  ]
-                )
-              }
+                  ],
+                });
+              }}
               disabled={unsendPingMutation.isPending}
             >
               <Text style={styles.declineButtonText}>

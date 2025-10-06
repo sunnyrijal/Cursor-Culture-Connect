@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +16,7 @@ import { X, ChevronRight, MapPin, Clock, Users, Car, Package, Star } from 'lucid
 import { Picker } from '@react-native-picker/picker';
 import { Activity, ActivityQuestionnaire, EquipmentStatus, TransportationStatus } from '@/types/activity';
 import { activities, getActivitiesByCategory } from '@/data/activityData';
+import { useAlert } from '@/contexts/AlertContext';
 
 const theme = {
   primary: '#6366F1',
@@ -52,6 +52,7 @@ export default function ActivityBuddyModal({ visible, onClose, onSave }: Activit
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [questionnaires, setQuestionnaires] = useState<ActivityQuestionnaire[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { showAlert } = useAlert();
 
   const categories = [
     { id: 'all', name: 'All Activities', icon: '🎯' },
@@ -78,7 +79,7 @@ export default function ActivityBuddyModal({ visible, onClose, onSave }: Activit
 
   const handleNextStep = () => {
     if (currentStep === 0 && selectedActivities.length === 0) {
-      Alert.alert('Select Activities', 'Please select at least one activity to continue.');
+      showAlert({ title: 'Select Activities', message: 'Please select at least one activity to continue.' });
       return;
     }
     setCurrentStep(prev => prev + 1);
@@ -90,7 +91,7 @@ export default function ActivityBuddyModal({ visible, onClose, onSave }: Activit
 
   const handleSave = () => {
     if (questionnaires.length === 0) {
-      Alert.alert('Complete Setup', 'Please complete the activity setup before saving.');
+      showAlert({ title: 'Complete Setup', message: 'Please complete the activity setup before saving.' });
       return;
     }
     onSave(questionnaires);

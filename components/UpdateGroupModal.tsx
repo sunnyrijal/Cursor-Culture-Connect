@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Platform,
   Image,
@@ -33,6 +32,7 @@ import { ImageIcon } from 'lucide-react-native';
 import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
 import { typography } from './theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface Group {
   id: string;
@@ -67,6 +67,7 @@ export function EditGroupModal({
   onSubmit,
   group,
 }: EditGroupModalProps) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -132,7 +133,7 @@ export function EditGroupModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
     },
   });
 
@@ -141,10 +142,10 @@ export function EditGroupModal({
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission needed',
-          'Sorry, we need camera roll permissions to make this work!'
-        );
+        showAlert({
+          title: 'Permission needed',
+          message: 'Sorry, we need camera roll permissions to make this work!',
+        });
         return;
       }
 
@@ -170,7 +171,7 @@ export function EditGroupModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
     }
   };
 
@@ -214,8 +215,7 @@ export function EditGroupModal({
       queryClient.invalidateQueries({ queryKey: ['group', group?.id] });
       queryClient.invalidateQueries({ queryKey: ['chats' ] });
 
-
-      Alert.alert('Success', 'Group updated successfully!');
+      showAlert({ title: 'Success', message: 'Group updated successfully!' });
 
       onSubmit(variables.data);
       setIsSubmitting(false);
@@ -229,18 +229,18 @@ export function EditGroupModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to update group. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
   const handleSubmit = async () => {
     if (!group) {
-      Alert.alert('Error', 'Group data not available.');
+      showAlert({ title: 'Error', message: 'Group data not available.' });
       return;
     }
 
     if (!formData.name) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      showAlert({ title: 'Error', message: 'Please fill in all required fields.' });
       return;
     }
 
@@ -248,11 +248,11 @@ export function EditGroupModal({
     if (formData.hasMeetingDetails && formData.meetingTime) {
       const timeValidation = validateTime(formData.meetingTime);
       if (!timeValidation.isValid) {
-        Alert.alert(
-          'Invalid Time',
-          timeValidation.error ||
-            'Please enter a valid meeting time in HH:MM format.'
-        );
+        showAlert({
+          title: 'Invalid Time',
+          message:
+            timeValidation.error || 'Please enter a valid meeting time in HH:MM format.',
+        });
         return;
       }
     }
