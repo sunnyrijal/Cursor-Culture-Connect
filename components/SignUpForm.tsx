@@ -14,7 +14,6 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Modal,
-  Alert,
   Image,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
@@ -60,6 +59,7 @@ import * as ImagePicker from "expo-image-picker"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { uploadFile } from "@/contexts/file.api"
 import TermsModal from "./TermsModal"
+import { useAlert } from "@/contexts/AlertContext"
 
 import statesData from "../data/US_States_list.json"
 import citiesData from "../data/US_Cities.json"
@@ -186,6 +186,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
   const { signup } = useAuth()
   const router = useRouter()
+  const { showAlert } = useAlert()
 
   // Animation values
   const headerScale = useSharedValue(0)
@@ -207,7 +208,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     },
     onError: (error) => {
       console.error("Error uploading file:", error)
-      Alert.alert("Upload Error", "Failed to upload image. Please try again.")
+      showAlert({
+        title: "Upload Error",
+        message: "Failed to upload image. Please try again.",
+      })
     },
   })
 
@@ -302,7 +306,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
         isValid = value.length > 0
         break
       case "dateOfBirth":
-        isValid = /^\d{4}-\d{2}-\d{2}$/.test(value)
+        // Optional: valid if empty or in correct format
+        isValid = value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)
         break
       case "termsAccepted":
       case "privacyAccepted":
@@ -390,7 +395,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
-        Alert.alert("Permission needed", "Sorry, we need camera roll permissions to make this work!")
+        showAlert({
+          title: "Permission needed",
+          message: "Sorry, we need camera roll permissions to make this work!",
+        })
         return
       }
 
@@ -413,7 +421,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
       }
     } catch (error: any) {
       console.error("Error picking image:", error)
-      Alert.alert("Error", `Failed to pick image: ${error.message}`)
+      showAlert({ title: "Error", message: `Failed to pick image: ${error.message}` })
     }
   }
 
@@ -724,7 +732,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
     return (
       <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.inputLabel}>Date of Birth *</Text>
+        <Text style={styles.inputLabel}>Date of Birth</Text>
         <TouchableOpacity
           style={[
             styles.inputWrapper,

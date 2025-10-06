@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  Alert,
   Platform,
   Modal,
   RefreshControl,
@@ -32,6 +31,7 @@ import {
   cancelFriendRequest,
   respondToFriendRequest,
 } from '@/contexts/friend.api';
+import { useAlert } from '@/contexts/AlertContext';
 import { FriendFilterModal } from '../UserFilterModal';
 
 const theme = {
@@ -80,7 +80,7 @@ export default function SendFriendRequestScreen() {
     name: string;
   } | null>(null);
   const [message, setMessage] = useState('');
-
+  const { showAlert } = useAlert();
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [filters, setFilters] = useState<FriendFilters>({});
 
@@ -118,7 +118,10 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
-      Alert.alert('Success', 'Friend request sent successfully!');
+      showAlert({
+        title: 'Success',
+        message: 'Friend request sent successfully!',
+      });
     },
     onError: (error: any) => {
       console.error('Error sending friend request:', error);
@@ -126,7 +129,10 @@ export default function SendFriendRequestScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to send friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
@@ -138,7 +144,10 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
-      Alert.alert('Success', 'Friend request cancelled.');
+      showAlert({
+        title: 'Success',
+        message: 'Friend request cancelled.',
+      });
     },
     onError: (error: any) => {
       console.error('Error cancelling friend request:', error);
@@ -146,7 +155,10 @@ export default function SendFriendRequestScreen() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to cancel friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
@@ -160,14 +172,20 @@ export default function SendFriendRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ['counts'] });
 
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
-      Alert.alert('Success', `Friend request ${action}!`);
+      showAlert({
+        title: 'Success',
+        message: `Friend request ${action}!`,
+      });
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to respond to friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({
+        title: 'Error',
+        message: errorMessage,
+      });
     },
   });
 
@@ -198,33 +216,34 @@ export default function SendFriendRequestScreen() {
   };
 
   const handleCancelRequest = (userId: string, userName: string) => {
-    Alert.alert(
-      'Cancel Request',
-      `Are you sure you want to cancel the friend request to ${userName}?`,
-      [
+    showAlert({
+      title: 'Cancel Request',
+      message: `Are you sure you want to cancel the friend request to ${userName}?`,
+      buttons: [
         { text: 'No', style: 'cancel' },
         {
           text: 'Yes, Cancel',
           style: 'destructive',
           onPress: () => cancelRequestMutation.mutate({ receiverId: userId }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleAcceptRequest = (friendshipId: string, userName: string) => {
-    Alert.alert(
-      'Accept Friend Request',
-      `Accept friend request from ${userName}?`,
-      [
+    showAlert({
+      title: 'Accept Friend Request',
+      message: `Accept friend request from ${userName}?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Accept',
-          onPress: () =>
-            respondToRequestMutation.mutate({ friendshipId, action: 'accept' }),
+          onPress: () => {
+            respondToRequestMutation.mutate({ friendshipId, action: 'accept' });
+          },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const getActionButton = (user: any) => {
@@ -383,21 +402,14 @@ export default function SendFriendRequestScreen() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#94A3B8"
           />
-        </View>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          {Object.keys(filters).length > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>
-                {Object.keys(filters).length}
-              </Text>
-            </View>
-          )}
+          </View>
+          <TouchableOpacity
+            style={[styles.filterButton, Object.keys(filters).length > 0 && styles.activeFilterButton]}
+            onPress={() => setFilterModalVisible(true)}
+          >
           <Filter
             size={20}
-            color={Object.keys(filters).length > 0 ? theme.primary : '#64748B'}
+            color={Object.keys(filters).length > 0 ? theme.white : '#64748B'}
           />
         </TouchableOpacity>
       </View>
@@ -583,6 +595,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  activeFilterButton: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
 
   searchInput: {

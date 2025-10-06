@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   Linking,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Platform,
@@ -27,6 +26,7 @@ import {
 } from '@/contexts/ad.api';
 import { useRouter } from 'expo-router';
 import getDecodedToken from '@/utils/getMyData';
+import { useAlert } from '@/contexts/AlertContext';
 import { discoverExperienceData } from '@/data/discoverExperienceData';
 
 interface Advertisement {
@@ -64,6 +64,7 @@ interface AdResponse {
 const CulturalExperiences = () => {
   const [activeSponsoredCategory, setActiveSponsoredCategory] = useState('all');
   const router = useRouter();
+  const { showAlert } = useAlert();
   const flatListRef = useRef(null);
 
   // Define categories
@@ -152,10 +153,10 @@ const CulturalExperiences = () => {
       if (supported) {
         await Linking.openURL(content.link);
       } else {
-        Alert.alert(
-          'Error',
-          `Don't know how to open this URL: ${content.link}`
-        );
+        showAlert({
+          title: 'Error',
+          message: `Don't know how to open this URL: ${content.link}`,
+        });
       }
     } else if (content.contactInfo) {
       // Handle contact info (phone number)
@@ -164,7 +165,7 @@ const CulturalExperiences = () => {
       if (supported) {
         await Linking.openURL(phoneUrl);
       } else {
-        Alert.alert('Contact', `Contact: ${content.contactInfo}`);
+        showAlert({ title: 'Contact', message: `Contact: ${content.contactInfo}` });
       }
     }
   };

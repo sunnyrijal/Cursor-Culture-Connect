@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Platform,
   ActivityIndicator,
@@ -29,6 +28,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQuickEvent } from '@/contexts/quickEvent.api';
 import { TimeSelectInput } from './TimeSelectInput'; // Adjust path as needed
 import { typography } from './theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface CreateQuickEventModalProps {
   visible: boolean;
@@ -41,6 +41,7 @@ export function CreateQuickEventModal({
   onClose,
   onSubmit,
 }: CreateQuickEventModalProps) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -165,7 +166,7 @@ export function CreateQuickEventModal({
 
       queryClient.invalidateQueries({ queryKey: ['quick-events'] });
 
-      Alert.alert('Success', 'Quick Event created successfully!');
+      showAlert({ title: 'Success', message: 'Quick Event created successfully!' });
 
       onSubmit(variables);
 
@@ -180,23 +181,23 @@ export function CreateQuickEventModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to create event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
   const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.location.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields.');
+      showAlert({ title: 'Missing Fields', message: 'Please fill in all required fields.' });
       return;
     }
 
     if (formData.time && !validateTime(formData.time).isValid) {
-      Alert.alert('Invalid Time', validateTime(formData.time).error);
+      showAlert({ title: 'Invalid Time', message: validateTime(formData.time).error || "" });
       return;
     }
 
     if (formData.time && formData.endTime && formData.endTime <= formData.time) {
-      Alert.alert('Invalid Time', 'End time must be after start time.');
+      showAlert({ title: 'Invalid Time', message: 'End time must be after start time.' });
       return;
     }
 
@@ -205,10 +206,10 @@ export function CreateQuickEventModal({
       formData.max &&
       (isNaN(Number(formData.max)) || Number(formData.max) <= 0)
     ) {
-      Alert.alert(
-        'Invalid Max People',
-        'Please enter a valid number for max people.'
-      );
+      showAlert({
+        title: 'Invalid Max People',
+        message: 'Please enter a valid number for max people.',
+      });
       return;
     }
 

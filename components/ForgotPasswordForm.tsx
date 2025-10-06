@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   ScrollView,
@@ -26,20 +25,22 @@ import {
   sendResetPasswordOtp,
   SendResetPasswordOtpData,
 } from '@/contexts/user.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 const ForgotPasswordForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const { showAlert } = useAlert();
 
   const { mutate: sendOtpMutate, isPending } = useMutation({
     mutationFn: (data: SendResetPasswordOtpData) => sendResetPasswordOtp(data),
     onSuccess: (data) => {
       console.log('✅ Reset password OTP sent:', data);
-      Alert.alert(
-        'OTP Sent',
-        'A password reset OTP has been sent to your email.'
-      );
+      showAlert({
+        title: 'OTP Sent',
+        message: 'A password reset OTP has been sent to your email.',
+      });
       router.push({
         pathname: '/(auth)/reset-password',
         params: { email },
@@ -52,7 +53,7 @@ const ForgotPasswordForm: React.FC = () => {
         error.message ||
         'Failed to send OTP. Please try again.';
       setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 

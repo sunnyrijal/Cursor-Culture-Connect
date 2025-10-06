@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  Alert,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -29,11 +28,13 @@ import {
   LogOutIcon,
   Globe,
   User,
+  Settings,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import SocialMediaLinks from '@/components/SocialMediaLinks';
 import { getMyData, deleteMe } from '@/contexts/user.api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAlert } from '@/contexts/AlertContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 const clayTheme = {
@@ -66,6 +67,7 @@ const neumorphTheme = {
 
 export default function Profile() {
   const { logout: authLogout } = useAuth();
+  const { showAlert } = useAlert();
   const {
     data: userData,
     isLoading: queryLoading,
@@ -134,34 +136,46 @@ export default function Profile() {
 
   const { mutate: deleteAccountMutation, isPending: isDeleting } = useMutation({
     mutationFn: deleteMe,
-    onSuccess: async () => {
-      Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
-      await authLogout();
-      router.replace('/(auth)/login');
-    },
     onError: (err: any) => {
       console.error('Delete account error:', err);
-      Alert.alert('Error', err.message || 'Failed to delete account. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: err.message || 'Failed to delete account. Please try again.',
+      });
     },
   });
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
-      [
+    showAlert({
+      title: 'Delete Account',
+      message:
+        'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteAccountMutation(),
+          onPress: () =>
+            deleteAccountMutation(undefined, {
+              onSuccess: async () => {
+                await authLogout();
+                router.replace('/(auth)/login');
+                showAlert({
+                  title: 'Account Deleted',
+                  message: 'Your account has been successfully deleted.',
+                });
+              },
+            }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
+    showAlert({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      buttons: [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
@@ -171,7 +185,8 @@ export default function Profile() {
           router.replace('/(auth)/login');
         }
       },
-    ]);
+    ],
+    });
   };
 
   const calculateAge = (dateString: string) => {
@@ -231,6 +246,15 @@ export default function Profile() {
           <Text style={styles.headerTitle}>Profile</Text>
 
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/settings')}
+            >
+              <Settings
+                size={20}
+                color={clayTheme.textPrimary}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push('/profile/edit')}
@@ -583,7 +607,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
   },
   safeArea: {
     flex: 1,

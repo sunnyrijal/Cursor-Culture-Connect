@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import {
   Facebook,
   Instagram,
@@ -10,6 +10,7 @@ import {
   Globe,
   Link as LinkIcon,
 } from 'lucide-react-native';
+import { useAlert } from '@/contexts/AlertContext';
 
 const socialIcons: { [key: string]: React.ElementType } = {
   facebook: Facebook,
@@ -40,6 +41,7 @@ interface SocialMediaLinksProps {
 }
 
 const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
+  const { showAlert } = useAlert();
   if (!socialMedia || Object.keys(socialMedia).length === 0) {
     return null;
   }
@@ -52,7 +54,10 @@ const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
     if (supported) {
       await Linking.openURL(fullUrl);
     } else {
-      Alert.alert(`Don't know how to open this URL: ${fullUrl}`);
+      showAlert({
+        title: 'Unsupported URL',
+        message: `Could not open the link: ${fullUrl}`,
+      });
     }
   };
 

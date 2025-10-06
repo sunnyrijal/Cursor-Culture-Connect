@@ -10,7 +10,6 @@ import {
   Image,
   Platform,
   ActivityIndicator,
-  Alert,
   Pressable,
   Share,
 } from 'react-native';
@@ -24,9 +23,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Heart,
-  Star,
-  Bookmark,
   Music,
   Edit3,
   Trash2,
@@ -46,7 +42,8 @@ import {
 import getDecodedToken from '@/utils/getMyData';
 import { createDirectChat } from '@/contexts/chat.api';
 import { EditEventModal } from '@/components/EditEventModal';
-import { AxiosResponse } from 'axios';
+import { useAlert } from '@/contexts/AlertContext';
+import * as Linking from 'expo-linking';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -70,6 +67,8 @@ export default function EventDetail() {
   const [showAttendees, setShowAttendees] = React.useState(false);
   const [showEditEventModal, setShowEditEventModal] = React.useState(false);
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
+    const url = Linking.useURL();
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -96,23 +95,23 @@ export default function EventDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       router.back();
-      Alert.alert('Success', 'Event deleted successfully.');
+      showAlert({ title: 'Success', message: 'Event deleted successfully.' });
     },
     onError: (err) => {
       console.error('Error deleting event:', err);
-      Alert.alert('Error', 'Failed to delete event. Please try again.');
+      showAlert({ title: 'Error', message: 'Failed to delete event. Please try again.' });
     },
   });
 
   const handleDeleteEvent = () => {
     if (!eventId) {
-      Alert.alert('Error', 'Event ID is missing.');
+      showAlert({ title: 'Error', message: 'Event ID is missing.' });
       return;
     }
-    Alert.alert(
-      'Confirm Deletion',
-      `Are you sure you want to delete "${event?.name}"? This action cannot be undone.`,
-      [
+    showAlert({
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete "${event?.name}"? This action cannot be undone.`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
@@ -120,7 +119,7 @@ export default function EventDetail() {
           onPress: () => deleteEventMutation(eventId),
         },
       ]
-    );
+    });
   };
 
   const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
@@ -131,7 +130,7 @@ export default function EventDetail() {
     },
     onError: (error) => {
       console.error('Error joining event:', error);
-      Alert.alert('Error', 'Failed to RSVP for the event.');
+      showAlert({ title: 'Error', message: 'Failed to RSVP for the event.' });
     },
   });
 
@@ -142,19 +141,16 @@ export default function EventDetail() {
         if (data?.data?.id) {
           router.push(`/chat/${data.data.id}`);
         } else {
-          Alert.alert(
-            'Chat Created',
-            'You can now message the host from your chats list.'
-          );
+          showAlert({
+            title: 'Chat Created',
+            message: 'You can now message the host from your chats list.',
+          });
           queryClient.invalidateQueries({ queryKey: ['chats'] });
         }
       },
       onError: (error: any) => {
         console.error('❌ Error creating chat:', error);
-        Alert.alert(
-          'Error',
-          error.message || 'Could not start a conversation.'
-        );
+        showAlert({ title: 'Error', message: error.message || 'Could not start a conversation.' });
       },
     });
 
@@ -166,7 +162,7 @@ export default function EventDetail() {
     },
     onError: (error) => {
       console.error('Error leaving event:', error);
-      Alert.alert('Error', 'Failed to cancel RSVP.');
+      showAlert({ title: 'Error', message: 'Failed to cancel RSVP.' });
     },
   });
 
@@ -176,14 +172,14 @@ export default function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['event', id] });
 
-      Alert.alert('Success', 'Event has been approved.');
+      showAlert({ title: 'Success', message: 'Event has been approved.' });
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to approve the event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -289,17 +285,21 @@ export default function EventDetail() {
   const organizer = event.user?.name || 'Unknown Organizer';
 
   const canApprove = event?.canApprove;
+
+  
   const handleShareEvent = async () => {
     if (!event) return;
     try {
-      const eventUrl = `https://cultureconnect.app/event/${event.id}`;
+      // const eventUrl = `${url}/event/${event.id}`;
+      const eventUrl = `${url}/event/${event.id}`;
+
       await Share.share({
         message: `Check out this event on Culture Connect: "${event.name}" on ${eventDate}.\n\n${event.description}\n\nJoin here: ${eventUrl}`,
         url: eventUrl,
         title: `Culture Connect Event: ${event.name}`,
       });
     } catch (error) {
-      Alert.alert('Error', 'Unable to share this event at this time.');
+      showAlert({ title: 'Error', message: 'Unable to share this event at this time.' });
     }
   };
 
@@ -461,10 +461,10 @@ export default function EventDetail() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoValue}>{event.location}</Text>
                   </View>
-                  <TouchableOpacity style={styles.mapButton}>
+                  {/* <TouchableOpacity style={styles.mapButton}>
                     <Navigation size={16} color={theme.white} />
                     <Text style={styles.mapButtonText}>Map</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
                 {/* 
                 <View style={styles.infoRow}>
@@ -523,7 +523,17 @@ export default function EventDetail() {
                     {showAttendees && (
                       <View style={styles.attendeesList}>
                         {event.attendingUsers?.map((attendee: any) => (
-                          <TouchableOpacity onPress={()=>router.push(`/public/profile/${attendee.id}`)}  key={attendee.id} style={styles.attendeeItem}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              if (attendee.id === myData?.userId) {
+                                router.push('/profile');
+                              } else {
+                                router.push(`/public/profile/${attendee.id}`);
+                              }
+                            }}
+                            key={attendee.id}
+                            style={styles.attendeeItem}
+                          >
                             <Image
                               source={
                                 attendee.profilePicture

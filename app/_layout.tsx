@@ -1,16 +1,16 @@
 'use client';
 
 import { AuthProvider } from '../contexts/AuthContext';
-import {
-  QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import getDecodedToken from '@/utils/getMyData';
 import { useEffect, useCallback, useState } from 'react';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 import { SocketProvider } from '@/hooks/useSocket';
-import 'react-native-reanimated';
-
+import 'react-native-reanimated'; // This should be at the top
+import { AlertProvider } from '@/contexts/AlertContext';
+import * as Linking from 'expo-linking';
 const queryClient = new QueryClient();
 
 function MainLayout() {
@@ -34,7 +34,7 @@ function MainLayout() {
     (data: any) => console.log('✅ Socket authenticated', data),
     []
   );
-  
+
   useEffect(() => {
     const fetchMyData = async () => {
       const data = await getDecodedToken();
@@ -44,15 +44,26 @@ function MainLayout() {
     fetchMyData();
   }, []);
 
+  const linking = {
+    prefixes: [Linking.createURL('/'), 'myapp://', 'https://trivo.app/*'],
+    config: {
+      screens: {
+        '(tabs)': {
+          screens: {
+            index: 'home',
+          },
+        },
+        'event/[id]': 'event/:id',
+        'public/profile/[id]': 'public/profile/:id',
+        '(auth)/login': 'login',
+        '+not-found': '*',
+      },
+    },
+  };
+
+
   return (
-    <SocketProvider
-      serverUrl={API_BASE_URL}
-      userId={userId || ''}
-      onConnect={handleConnect}
-      onDisconnect={handleDisconnect}
-      onError={handleError}
-      onAuthenticated={handleAuthenticated}
-    >
+    <SocketProvider serverUrl={API_BASE_URL} userId={userId || ''} onConnect={handleConnect} onDisconnect={handleDisconnect} onError={handleError} onAuthenticated={handleAuthenticated}>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -65,10 +76,12 @@ function MainLayout() {
 
 export default function RootLayout() {
   return (
-      <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-        <MainLayout />
-    </AuthProvider>
-      </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AlertProvider>
+        <AuthProvider>
+          <MainLayout />
+        </AuthProvider>
+      </AlertProvider>
+    </QueryClientProvider>
   );
 }

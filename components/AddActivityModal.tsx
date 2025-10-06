@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Platform,
   ActivityIndicator,
@@ -35,6 +34,7 @@ import {
 } from '@/contexts/activity.api';
 import { getInterests, Interest } from '@/contexts/interest.api';
 
+import { useAlert } from '@/contexts/AlertContext';
 interface CreateActivityModalProps {
   visible: boolean;
   onClose: () => void;
@@ -48,6 +48,7 @@ export function CreateActivityModal({
   editingActivity = null,
 }: CreateActivityModalProps) {
   const [formData, setFormData] = useState<
+    // Add useAlert import
     CreateActivityData & { interestId: string }
   >({
     name: '',
@@ -62,6 +63,7 @@ export function CreateActivityModal({
   ); 
   const [isInterestModalVisible, setIsInterestModalVisible] = useState(false);
 
+  const { showAlert } = useAlert(); // Initialize useAlert
 
   const queryClient = useQueryClient();
 
@@ -120,7 +122,7 @@ export function CreateActivityModal({
     mutationFn: createActivity,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
-      Alert.alert('Success', 'Activity created successfully!');
+      showAlert({ title: 'Success', message: 'Activity created successfully!' }); // Use custom alert
       onClose();
     },
     onError: (error: any) => {
@@ -128,7 +130,7 @@ export function CreateActivityModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to create activity.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage }); // Use custom alert
     },
   });
 
@@ -142,7 +144,7 @@ export function CreateActivityModal({
     }) => updateActivity(id, updateData),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
-      Alert.alert('Success', 'Activity updated successfully!');
+      showAlert({ title: 'Success', message: 'Activity updated successfully!' }); // Use custom alert
       onClose();
     },
     onError: (error: any) => {
@@ -150,7 +152,7 @@ export function CreateActivityModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to update activity.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage }); // Use custom alert
     },
   });
 
@@ -158,7 +160,7 @@ export function CreateActivityModal({
     mutationFn: deleteActivity,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
-      Alert.alert('Success', 'Activity deleted successfully!');
+      showAlert({ title: 'Success', message: 'Activity deleted successfully!' }); // Use custom alert
       onClose();
     },
     onError: (error: any) => {
@@ -166,7 +168,7 @@ export function CreateActivityModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to delete activity.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage }); // Use custom alert
     },
   });
 
@@ -177,11 +179,11 @@ export function CreateActivityModal({
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.name.trim()) {
-      Alert.alert('Missing Name', 'Please enter an activity name.');
+      showAlert({ title: 'Missing Name', message: 'Please enter an activity name.' }); // Use custom alert
       return;
     }
     if (!formData.interestId) {
-      Alert.alert('Missing Interest', 'Please select an interest.');
+      showAlert({ title: 'Missing Interest', message: 'Please select an interest.' }); // Use custom alert
       return;
     }
 
@@ -204,18 +206,18 @@ export function CreateActivityModal({
   const handleDelete = () => {
     if (!editingActivity) return;
 
-    Alert.alert(
-      'Delete Activity',
-      'Are you sure you want to delete this activity?',
-      [
+    showAlert({
+      title: 'Delete Activity',
+      message: 'Are you sure you want to delete this activity?',
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => deleteActivityMutation.mutate(editingActivity.id),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const selectInterest = useCallback((interest: Interest) => {

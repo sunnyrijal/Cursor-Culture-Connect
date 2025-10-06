@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +23,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { respondToFriendRequest } from '@/contexts/friend.api';
 import { updateInterestPing } from '@/contexts/interest.api';
 import { approveEvent } from '@/contexts/event.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface NotificationData {
   id: string;
@@ -58,6 +58,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onPress,
   onMarkAsRead,
 }) => {
+  const { showAlert } = useAlert();
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'FRIEND_REQUEST_RECEIVED':
@@ -99,37 +100,37 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['counts'] });
 
       const action = variables.action === 'accept' ? 'accepted' : 'declined';
-      Alert.alert('Success', `Friend request ${action}!`);
+      showAlert({ title: 'Success', message: `Friend request ${action}!` });
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to respond to friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
   const handleAcceptRequest = (friendshipId: string, senderName: string) => {
-    Alert.alert(
-      'Accept Friend Request',
-      `Accept friend request from ${senderName}?`,
-      [
+    showAlert({
+      title: 'Accept Friend Request',
+      message: `Accept friend request from ${senderName}?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Accept',
           onPress: () =>
             respondToRequestMutation.mutate({ friendshipId, action: 'accept' }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleRejectRequest = (friendshipId: string, senderName: string) => {
-    Alert.alert(
-      'Reject Friend Request',
-      `Reject friend request from ${senderName}?`,
-      [
+    showAlert({
+      title: 'Reject Friend Request',
+      message: `Reject friend request from ${senderName}?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reject',
@@ -140,8 +141,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               action: 'decline',
             }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const updatePingMutation = useMutation({
@@ -153,11 +154,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error?.response.data.message ||
-          'Failed to update ping. Please try again.'
-      );
+      showAlert({
+        title: 'Error',
+        message: error?.response.data.message || 'Failed to update ping. Please try again.',
+      });
       console.error('Update ping error:', error);
     },
   });
@@ -203,14 +203,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['myUniversity'] });
-      Alert.alert('Success', 'Event has been approved.');
+      showAlert({ title: 'Success', message: 'Event has been approved.' });
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to approve the event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 

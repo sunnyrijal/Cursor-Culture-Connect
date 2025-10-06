@@ -1,7 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Alert, Share, Platform } from 'react-native';
+import { TouchableOpacity, Share, Platform } from 'react-native';
 import { Share2 } from 'lucide-react-native';
 import { theme } from '../theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface ShareButtonProps {
   title: string;
@@ -20,6 +21,7 @@ export function ShareButton({
   color = theme.textSecondary,
   style 
 }: ShareButtonProps) {
+  const { showAlert } = useAlert();
   const handleShare = async () => {
     try {
       const shareContent: any = {
@@ -40,7 +42,7 @@ export function ShareButton({
       }
     } catch (error) {
       console.error('Error sharing content:', error);
-      Alert.alert('Error', 'Unable to share content at this time');
+      showAlert({ title: 'Error', message: 'Unable to share content at this time' });
     }
   };
 

@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Linking,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +16,7 @@ import CulturalExperienceCard from '@/components/home/CulturalExperienceCard';
 import { theme, spacing, typography } from '@/components/theme';
 import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface Advertisement {
   id: string;
@@ -50,6 +50,7 @@ interface AdResponse {
 }
 
 export default function AllAdsScreen() {
+  const { showAlert } = useAlert();
   const {
     data: adResponse,
     isLoading,
@@ -89,7 +90,10 @@ export default function AllAdsScreen() {
       if (supported) {
         await Linking.openURL(content.link);
       } else {
-        Alert.alert('Error', `Don't know how to open this URL: ${content.link}`);
+        showAlert({
+          title: 'Error',
+          message: `Don't know how to open this URL: ${content.link}`,
+        });
       }
     } else if (content.contactInfo) {
       const phoneUrl = `tel:${content.contactInfo}`;
@@ -97,7 +101,7 @@ export default function AllAdsScreen() {
       if (supported) {
         await Linking.openURL(phoneUrl);
       } else {
-        Alert.alert('Contact', `Contact: ${content.contactInfo}`);
+        showAlert({ title: 'Contact', message: `Contact: ${content.contactInfo}` });
       }
     }
   };

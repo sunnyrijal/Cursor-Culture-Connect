@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Modal } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
 import { X, Camera, Image as ImageIcon, Globe, Lock, Users, Plus } from 'lucide-react-native';
+import { useAlert } from '@/contexts/AlertContext';
 import { heritageOptions } from '@/data/heritageLanguageData';
 
 interface ShareCultureModalProps {
@@ -21,6 +22,7 @@ const culturalTags = [
 ];
 
 export function ShareCultureModal({ visible, onClose, onSubmit }: ShareCultureModalProps) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     title: '',
     story: '',
@@ -55,19 +57,19 @@ export function ShareCultureModal({ visible, onClose, onSubmit }: ShareCultureMo
 
   const handleSubmit = () => {
     if (!formData.title.trim()) {
-      Alert.alert('Error', 'Please enter a title for your story');
+      showAlert({ title: 'Error', message: 'Please enter a title for your story' });
       return;
     }
     if (!formData.story.trim()) {
-      Alert.alert('Error', 'Please share your cultural story');
+      showAlert({ title: 'Error', message: 'Please share your cultural story' });
       return;
     }
     if (!formData.heritage) {
-      Alert.alert('Error', 'Please select your heritage');
+      showAlert({ title: 'Error', message: 'Please select your heritage' });
       return;
     }
     if (formData.tags.length === 0) {
-      Alert.alert('Error', 'Please select at least one tag');
+      showAlert({ title: 'Error', message: 'Please select at least one tag' });
       return;
     }
 

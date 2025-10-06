@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   Platform,
   ActivityIndicator,
@@ -29,6 +28,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateQuickEvent } from '@/contexts/quickEvent.api';
 import { TimeSelectInput } from './TimeSelectInput';
 import { typography } from './theme';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface QuickEvent {
   id: string;
@@ -55,6 +55,7 @@ export function EditQuickEventModal({
   quickEvent,
 }: EditQuickEventModalProps) {
   const [formData, setFormData] = useState({
+    // ... (rest of state remains the same)
     name: '',
     description: '',
     location: '',
@@ -65,6 +66,7 @@ export function EditQuickEventModal({
   });
 
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
@@ -137,7 +139,7 @@ export function EditQuickEventModal({
         queryKey: ['quick-event', quickEvent?.id],
       });
 
-      Alert.alert('Success', 'Quick Event updated successfully!');
+      showAlert({ title: 'Success', message: 'Quick Event updated successfully!' });
 
       onSubmit(variables.data);
       setIsSubmitting(false);
@@ -151,18 +153,18 @@ export function EditQuickEventModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to update event. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
   const handleSubmit = async () => {
     if (!quickEvent) {
-      Alert.alert('Error', 'Event data not available.');
+      showAlert({ title: 'Error', message: 'Event data not available.' });
       return;
     }
 
     if (!formData.name || !formData.location) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      showAlert({ title: 'Error', message: 'Please fill in all required fields.' });
       return;
     }
 
@@ -170,10 +172,10 @@ export function EditQuickEventModal({
     if (formData.time) {
       const timeValidation = validateTime(formData.time);
       if (!timeValidation.isValid) {
-        Alert.alert(
-          'Invalid Time',
-          timeValidation.error || 'Please enter a valid time in HH:MM format.'
-        );
+        showAlert({
+          title: 'Invalid Time',
+          message: timeValidation.error || 'Please enter a valid time in HH:MM format.',
+        });
         return;
       }
     }
@@ -183,10 +185,10 @@ export function EditQuickEventModal({
       formData.max &&
       (isNaN(Number(formData.max)) || Number(formData.max) <= 0)
     ) {
-      Alert.alert(
-        'Invalid Max People',
-        'Please enter a valid number for max people.'
-      );
+      showAlert({
+        title: 'Invalid Max People',
+        message: 'Please enter a valid number for max people.',
+      });
       return;
     }
 

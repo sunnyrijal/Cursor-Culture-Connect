@@ -58,9 +58,10 @@ import {
   MAJOR_OPTIONS,
   CLASS_YEAR_OPTIONS,
   ETHNICITY_OPTIONS,
-} from '@/components/AuthForm';
+} from '@/components/SignUpForm';
+import statesData from '../../data/US_States_list.json';
+import citiesData from '../../data/US_Cities.json';
 
-const { width, height } = Dimensions.get('window');
 
 export const socialPlatforms = [
   'Facebook',
@@ -124,6 +125,13 @@ export default function EditProfile() {
     CLASS_YEAR_OPTIONS.map((y) => ({ label: y, value: y }))
   );
 
+  const [stateOpen, setStateOpen] = useState(false);
+  const [stateItems, setStateItems] = useState(
+    Object.values(statesData).map((s) => ({ label: s, value: s }))
+  );
+  const [cityOpen, setCityOpen] = useState(false);
+  const [cityItems, setCityItems] = useState<{ label: string; value: string }[]>([]);
+
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const majorPickerRef = useRef<Picker<string>>(null);
   const classYearPickerRef = useRef<Picker<string>>(null);
@@ -168,6 +176,17 @@ export default function EditProfile() {
     opacity: formOpacity.value,
     transform: [{ translateY: formTranslateY.value }],
   }));
+
+  useEffect(() => {
+    if (profile.state) {
+      const citiesForState = (citiesData as any)[profile.state] || [];
+      setCityItems(citiesForState.map((city: string) => ({ label: city, value: city })));
+      // Reset city if it's not in the new list of cities
+      if (!citiesForState.includes(profile.city)) {
+        updateProfileValue('city', '');
+      }
+    }
+  }, [profile.state]);
 
   const validateField = (fieldName: string, value: string) => {
     let isValid = false;
@@ -1025,16 +1044,26 @@ export default function EditProfile() {
 
                 <TouchableOpacity
                   onPress={handleSave}
-                  style={styles.headerButton}
+                  style={[
+                    styles.headerButton,
+                    (updateProfileMutation.isPending ||
+                      uploadFileMutation.isPending) &&
+                      styles.disabledButton,
+                  ]}
+                  disabled={
+                    updateProfileMutation.isPending ||
+                    uploadFileMutation.isPending
+                  }
                 >
                   <LinearGradient
-                    colors={[
-                      'rgba(99, 102, 241, 0.9)',
-                      'rgba(99, 102, 241, 0.8)',
-                    ]}
+                    colors={['#6366F1', '#8B5CF6']}
                     style={styles.headerButtonGradient}
                   >
-                    <Save size={18} color="#FFFFFF" />
+                    {updateProfileMutation.isPending ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Save size={18} color="#FFFFFF" />
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -1042,6 +1071,17 @@ export default function EditProfile() {
           </BlurView>
         </View>
 
+        {isLoading ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <ActivityIndicator size="large" color="#6366F1" />
+          </View>
+        ) : (
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1231,25 +1271,58 @@ export default function EditProfile() {
                   </View>
 
                   <View style={styles.row}>
-                    <View style={styles.halfField}>
-                      {renderAnimatedInput(
-                        MapPin,
-                        'City',
-                        profile.city || '',
-                        (text) => updateProfileValue('city', text),
-                        'Enter your city',
-                        'city'
-                      )}
+                    <View style={[styles.halfField, { zIndex: 2000 }]}>
+                      <Text style={styles.inputLabel}>State</Text>
+                      <DropDownPicker
+                        open={stateOpen}
+                        value={profile.state || null}
+                        items={stateItems}
+                        setOpen={setStateOpen}
+                        setValue={(callback) => {
+                          const newValue = typeof callback === 'function' ? callback(profile.state) : callback;
+                          updateProfileValue('state', newValue || '');
+                        }}
+                        setItems={setStateItems}
+                        placeholder="Select state"
+                        searchable={true}
+                        searchPlaceholder="Search states..."
+                        listMode="MODAL"
+                        zIndexInverse={5000}
+                        style={styles.dropdownStyle}
+                        dropDownContainerStyle={styles.dropdownContainerStyle}
+                        textStyle={styles.dropdownTextStyle}
+                        placeholderStyle={styles.dropdownPlaceholderStyle}
+                        searchTextInputStyle={styles.dropdownSearchStyle}
+                        ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                        ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />}
+                      />
                     </View>
-                    <View style={styles.halfField}>
-                      {renderAnimatedInput(
-                        MapPin,
-                        'State/Province',
-                        profile.state || '',
-                        (text) => updateProfileValue('state', text),
-                        'Enter your state',
-                        'state'
-                      )}
+                    <View style={[styles.halfField, { zIndex: 1000 }]}>
+                      <Text style={styles.inputLabel}>City</Text>
+                      <DropDownPicker
+                        open={cityOpen}
+                        value={profile.city || null}
+                        items={cityItems}
+                        setOpen={setCityOpen}
+                        setValue={(callback) => {
+                          const newValue = typeof callback === 'function' ? callback(profile.city) : callback;
+                          updateProfileValue('city', newValue || '');
+                        }}
+                        setItems={setCityItems}
+                        placeholder={profile.state ? 'Select city' : 'Select state first'}
+                        disabled={!profile.state}
+                        searchable={true}
+                        searchPlaceholder="Search cities..."
+                        listMode="MODAL"
+                        zIndexInverse={4000}
+                        style={[styles.dropdownStyle, !profile.state && styles.dropdownDisabled]}
+                        dropDownContainerStyle={styles.dropdownContainerStyle}
+                        textStyle={styles.dropdownTextStyle}
+                        placeholderStyle={styles.dropdownPlaceholderStyle}
+                        searchTextInputStyle={styles.dropdownSearchStyle}
+                        ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                        ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />}
+                      />
                     </View>
                   </View>
 
@@ -1359,12 +1432,14 @@ export default function EditProfile() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+        )}
       </SafeAreaView>
     </View>
   );
 }
 
 const pickerSelectStyles = StyleSheet.create({
+
   inputIOS: {
     fontSize: 16,
     paddingVertical: 12,
@@ -1383,6 +1458,10 @@ const pickerSelectStyles = StyleSheet.create({
   },
 });
 const styles = StyleSheet.create({
+    disabledButton: {
+    color: '#FFFFFF',
+    opacity: 0.7,
+  },
   ethnicityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1895,5 +1974,38 @@ const styles = StyleSheet.create({
   dropdownArrowText: {
     color: '#9CA3AF',
     fontSize: 12,
+  },
+  dropdownStyle: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 56,
+    paddingHorizontal: 16,
+  },
+  dropdownContainerStyle: {
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  dropdownTextStyle: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  dropdownPlaceholderStyle: {
+    fontSize: 16,
+    color: '#9CA3AF',
+  },
+  dropdownSearchStyle: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+  },
+  dropdownDisabled: {
+    backgroundColor: '#F3F4F6',
   },
 });

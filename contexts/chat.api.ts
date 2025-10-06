@@ -92,3 +92,14 @@ export const getChatRequests = async () => {
     throw error;
   }
 };
+
+// 8. GET UNREAD CHAT COUNT
+export const getUnreadChatCount = async () => {
+  try {
+    const response = await api.get('/chat/unread-count');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching unread chat count:', error);
+    throw error;
+  }
+};

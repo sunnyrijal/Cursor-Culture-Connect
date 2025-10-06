@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,6 +38,7 @@ import {
 } from '@/contexts/quickEvent.api';
 import getDecodedToken from '@/utils/getMyData';
 import { formatTo12Hour } from '@/utils/formatDate';
+import { useAlert } from '@/contexts/AlertContext';
 import { EditQuickEventModal } from '@/components/UpdateQuickEventModal'; // Corrected import path
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -84,6 +84,7 @@ export default function QuickEventDetail() {
   const queryClient = useQueryClient();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isUserListVisible, setIsUserListVisible] = useState(false);
+  const { showAlert } = useAlert();
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -126,7 +127,7 @@ export default function QuickEventDetail() {
       },
       onError: (error) => {
         console.error('Error removing interest:', error);
-        Alert.alert('Error', 'Failed to remove interest. Please try again.');
+        showAlert({ title: 'Error', message: 'Failed to remove interest. Please try again.' });
       },
     }
   );
@@ -163,31 +164,31 @@ export default function QuickEventDetail() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['quick-events'] });
         router.back();
-        Alert.alert('Success', 'Quick event deleted successfully.');
+        showAlert({ title: 'Success', message: 'Quick event deleted successfully.' });
       },
       onError: (error) => {
         console.error('Error deleting quick event:', error);
-        Alert.alert('Error', 'Failed to delete quick event. Please try again.');
+        showAlert({ title: 'Error', message: 'Failed to delete quick event. Please try again.' });
       },
     });
 
   const handleDeleteQuickEvent = () => {
     if (!eventId) {
-      Alert.alert('Error', 'Event ID is missing.');
+      showAlert({ title: 'Error', message: 'Event ID is missing.' });
       return;
     }
-    Alert.alert(
-      'Confirm Deletion',
-      `Are you sure you want to delete "${quickEvent?.name}"? This action cannot be undone.`,
-      [
+    showAlert({
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete "${quickEvent?.name}"? This action cannot be undone.`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => deleteEventMutation(eventId as string),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleNotForMe = () => {

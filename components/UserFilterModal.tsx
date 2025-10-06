@@ -1,5 +1,3 @@
-// Create this as a new file: components/FriendFilterModal.tsx
-
 import React from 'react';
 import {
   View,
@@ -12,7 +10,10 @@ import {
 import { X, Filter, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { useQuery } from '@tanstack/react-query';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { getUniversities } from '@/contexts/university.api'; // Adjust import path
+import statesData from '../data/US_States_list.json';
+import citiesData from '../data/US_Cities.json';
 
 const theme = {
   primary: '#667EEA',
@@ -51,6 +52,8 @@ interface FriendFilters {
   sortBy?: 'name' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
   universityId?: string;
+  state?: string;
+  city?: string;
 }
 
 interface FriendFilterModalProps {
@@ -151,6 +154,12 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
   onApply,
 }) => {
   const [tempFilters, setTempFilters] = React.useState<FriendFilters>(filters);
+  
+  // State and City dropdown states
+  const [stateOpen, setStateOpen] = React.useState(false);
+  const [cityOpen, setCityOpen] = React.useState(false);
+  const [stateItems, setStateItems] = React.useState<Array<{label: string; value: string}>>([]);
+  const [cityItems, setCityItems] = React.useState<Array<{label: string; value: string}>>([]);
 
   const { data: universities } = useQuery({
     queryKey: ['universities'],
@@ -172,6 +181,29 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
     }));
   }, []);
 
+  // Initialize state items
+  React.useEffect(() => {
+    const states = Object.values(statesData).map((stateName) => ({
+      label: stateName,
+      value: stateName,
+    }));
+    setStateItems(states);
+  }, []);
+
+  // Update city items when state changes
+  React.useEffect(() => {
+    if (tempFilters.state) {
+      const citiesForState = (citiesData as any)[tempFilters.state] || [];
+      const cities = citiesForState.map((cityName: string) => ({
+        label: cityName,
+        value: cityName,
+      }));
+      setCityItems(cities);
+    } else {
+      setCityItems([]);
+    }
+  }, [tempFilters.state]);
+
   React.useEffect(() => {
     if (visible) {
       setTempFilters(filters);
@@ -179,7 +211,16 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
   }, [visible, filters]);
 
   const updateFilter = (key: keyof FriendFilters, value: any) => {
-    setTempFilters((prev) => ({ ...prev, [key]: value }));
+    setTempFilters((prev) => {
+      const newFilters = { ...prev, [key]: value };
+      
+      // Clear city when state changes
+      if (key === 'state' && value !== prev.state) {
+        newFilters.city = undefined;
+      }
+      
+      return newFilters;
+    });
   };
 
   const clearAllFilters = () => {
@@ -226,6 +267,77 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
               onSelect={(value) => updateFilter('universityId', value)}
               placeholder="All Universities"
             />
+          </View>
+
+          {/* Location Filter */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            
+            {/* State Dropdown */}
+            <View style={[styles.inputContainer, { zIndex: 2000 }]}>
+              <Text style={styles.inputLabel}>State (Optional)</Text>
+              <DropDownPicker
+                open={stateOpen}
+                value={tempFilters.state || null}
+                items={stateItems}
+                setOpen={setStateOpen}
+                setValue={(callback) => {
+                  const newValue = typeof callback === 'function' ? callback(tempFilters.state || null) : callback;
+                  updateFilter('state', newValue);
+                }}
+                setItems={setStateItems}
+                placeholder="Select state"
+                searchable={true}
+                searchPlaceholder="Search states..."
+                listMode="MODAL"
+                zIndexInverse={5000}
+                modalProps={{
+                  animationType: 'slide',
+                }}
+                style={styles.pickerStyle}
+                dropDownContainerStyle={styles.pickerDropDownContainerStyle}
+                textStyle={styles.pickerTextStyle}
+                placeholderStyle={styles.pickerPlaceholderStyle}
+                searchTextInputStyle={styles.pickerSearchStyle}
+                ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={3000} 
+              />
+            </View>
+
+            {/* City Dropdown */}
+            <View style={[styles.inputContainer, { zIndex: 1000 }]}>
+              <Text style={styles.inputLabel}>City (Optional)</Text>
+              <DropDownPicker
+                open={cityOpen}
+                value={tempFilters.city || null}
+                items={cityItems}
+                setOpen={setCityOpen}
+                setValue={(callback) => {
+                  const newValue = typeof callback === 'function' ? callback(tempFilters.city || null) : callback;
+                  updateFilter('city', newValue);
+                }}
+                setItems={setCityItems}
+                placeholder={tempFilters.state ? 'Select city' : 'Select a state first'}
+                disabled={!tempFilters.state}
+                searchable={true}
+                searchPlaceholder="Search cities..."
+                listMode="MODAL"
+                zIndexInverse={4000}
+                modalProps={{
+                  animationType: 'slide',
+                }}
+                scrollViewProps={{
+                  nestedScrollEnabled: true,
+                }}
+                style={[styles.pickerStyle, !tempFilters.state && styles.pickerDisabled]}
+                dropDownContainerStyle={styles.pickerDropDownContainerStyle}
+                textStyle={styles.pickerTextStyle}
+                placeholderStyle={styles.pickerPlaceholderStyle}
+                searchTextInputStyle={styles.pickerSearchStyle}
+                ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={2000} 
+              />
+            </View>
           </View>
 
           {/* Major Filter */}
@@ -336,8 +448,9 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
     </Modal>
   );
 };
-
 const styles = StyleSheet.create({
+
+  
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
@@ -533,4 +646,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
   },
+  pickerStyle: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  pickerDropDownContainerStyle: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+  },
+  pickerPlaceholderStyle: {
+    color: '#4A5568',
+    fontWeight: '500',
+  },
+  pickerDisabled: {
+    backgroundColor: '#F1F5F9',
+  },
+  pickerTextStyle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.textPrimary,
+  },
+  pickerSearchStyle: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: { fontSize: 16, fontWeight: '600', color: theme.textPrimary, marginBottom: 8 },
 });

@@ -14,7 +14,6 @@ import {
   StatusBar,
   KeyboardAvoidingView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   Mail,
@@ -34,6 +33,7 @@ import {
   GraduationCap,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { useRouter } from 'expo-router';
 import Animated, {
   useSharedValue,
@@ -53,7 +53,7 @@ import Location from './Location';
 import { Picker } from '@react-native-picker/picker';
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Image } from 'react-native';
+import { Image } from 'react-native';
 import { Plus, X } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -61,6 +61,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import logo from '../assets/logo.png';
 import { uploadFile } from '@/contexts/file.api';
 import TermsModal from './TermsModal';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -176,7 +177,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
     },
   });
 
@@ -185,10 +186,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission needed',
-          'Sorry, we need camera roll permissions to make this work!'
-        );
+        showAlert({
+          title: 'Permission needed',
+          message: 'Sorry, we need camera roll permissions to make this work!',
+        });
         return;
       }
 
@@ -211,7 +212,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
     }
   };
 
@@ -295,6 +296,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'login' }) => {
   const [fieldValidation, setFieldValidation] = useState<
     Record<string, boolean>
   >({});
+  const { showAlert } = useAlert();
 
   const { login, signup } = useAuth();
   const router = useRouter();

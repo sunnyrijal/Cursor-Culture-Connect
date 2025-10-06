@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Modal,
@@ -50,6 +49,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import getDecodedToken from '@/utils/getMyData';
 
+import { useAlert } from '@/contexts/AlertContext';
 const theme = {
   white: 'white',
   background: '#F0F0F3',
@@ -243,6 +243,7 @@ export default function UserProfilePage() {
   }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [message, setMessage] = useState('');
@@ -274,50 +275,50 @@ export default function UserProfilePage() {
     onSuccess: (data, variables) => {
       setModalVisible(false);
       setMessage('');
-      Alert.alert('Success', 'Friend request sent!');
+      showAlert({ title: 'Success', message: 'Friend request sent!' });
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.message || 'Failed to send friend request.');
+      showAlert({ title: 'Error', message: err.message || 'Failed to send friend request.' });
     },
   });
 
   const respondRequestMutation = useMutation({
     mutationFn: respondToFriendRequest,
     onSuccess: (data, variables) => {
-      Alert.alert('Success', `Request ${variables.action}ed.`);
+      showAlert({ title: 'Success', message: `Request ${variables.action}ed.` });
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.message || 'Failed to respond to request.');
+      showAlert({ title: 'Error', message: err.message || 'Failed to respond to request.' });
     },
   });
 
   const cancelRequestMutation = useMutation({
     mutationFn: cancelFriendRequest,
     onSuccess: () => {
-      Alert.alert('Success', 'Friend request cancelled.');
+      showAlert({ title: 'Success', message: 'Friend request cancelled.' });
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.message || 'Failed to cancel friend request.');
+      showAlert({ title: 'Error', message: err.message || 'Failed to cancel friend request.' });
     },
   });
 
   const removeFriendMutation = useMutation({
     mutationFn: removeFriend,
     onSuccess: () => {
-      Alert.alert('Success', 'Friend removed.');
+      showAlert({ title: 'Success', message: 'Friend removed.' });
       queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.message || 'Failed to remove friend.');
+      showAlert({ title: 'Error', message: err.message || 'Failed to remove friend.' });
     },
   });
 
@@ -337,10 +338,10 @@ export default function UserProfilePage() {
   const handleRespondRequest = (action: 'accept' | 'decline') => {
     console.log("FRIEND SHIP ID", userData?.friendshipId)
     if (!userData?.friendshipId) {
-      Alert.alert(
-        'Action Unavailable',
-        'Cannot respond to this request at the moment. Please try from the requests tab.'
-      );
+      showAlert({
+        title: 'Action Unavailable',
+        message: 'Cannot respond to this request at the moment. Please try from the requests tab.',
+      });
       return;
     }
     respondRequestMutation.mutate({
@@ -350,33 +351,33 @@ export default function UserProfilePage() {
   };
 
   const handleCancelRequest = (receiverId: string, userName: string) => {
-    Alert.alert(
-      'Cancel Request',
-      `Are you sure you want to cancel the friend request to ${userName}?`,
-      [
+    showAlert({
+      title: 'Cancel Request',
+      message: `Are you sure you want to cancel the friend request to ${userName}?`,
+      buttons: [
         { text: 'No', style: 'cancel' },
         {
           text: 'Yes, Cancel',
           style: 'destructive',
           onPress: () => cancelRequestMutation.mutate({ receiverId }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleRemoveFriend = (friendId: string, friendName: string) => {
-    Alert.alert(
-      'Remove Friend',
-      `Are you sure you want to remove ${friendName} from your friends?`,
-      [
+    showAlert({
+      title: 'Remove Friend',
+      message: `Are you sure you want to remove ${friendName} from your friends?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: () => removeFriendMutation.mutate({ friendId }),
         },
-      ]
-    );
+      ],
+    });
   };
 
   const handleEventPress = (eventId: string) => {

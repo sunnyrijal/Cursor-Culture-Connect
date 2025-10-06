@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  Alert,
   Modal,
   TextInput,
 } from 'react-native';
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendFriendRequest } from '@/contexts/friend.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 const FriendshipStatus = {
   PENDING: 'PENDING',
@@ -51,6 +51,7 @@ interface PeopleListProps {
 }
 
 const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
+  const { showAlert } = useAlert();
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
@@ -64,7 +65,7 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
     onSuccess: (data, variables) => {
       console.log('Friend request sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['myUniversity'] });
-      Alert.alert('Success', 'Friend request sent successfully!');
+      showAlert({ title: 'Success', message: 'Friend request sent successfully!' });
     },
     onError: (error: any) => {
       console.error('Error sending friend request:', error);
@@ -72,7 +73,7 @@ const PeopleList: React.FC<PeopleListProps> = ({ people }) => {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to send friend request. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 

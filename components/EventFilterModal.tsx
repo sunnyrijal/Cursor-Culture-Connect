@@ -72,7 +72,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             
             <TouchableOpacity
               style={styles.checkboxRow}
-              onPress={() => updateFilter('ofMyUniversity', !filters.ofMyUniversity)}
+              onPress={() => updateFilter('ofMyUniversity', !tempFilters.ofMyUniversity)}
             >
               <Checkbox
                 style={styles.checkbox}
@@ -85,7 +85,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
             <TouchableOpacity
               style={styles.checkboxRow}
-              onPress={() => updateFilter('myGroups', !filters.myGroups)}
+              onPress={() => updateFilter('myGroups', !tempFilters.myGroups)}
             >
               <Checkbox
                 style={styles.checkbox}

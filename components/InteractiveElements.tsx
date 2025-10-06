@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { Bell, Share2, Calendar, Users, ChevronRight, Filter, Search, Plus } from 'lucide-react-native';
+import { Bell, Share2, Calendar, Users, ChevronRight } from 'lucide-react-native';
 
 const theme = {
   primary: '#6366F1',

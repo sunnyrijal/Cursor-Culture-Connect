@@ -8,18 +8,22 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  // Remove Alert import
   Modal,
   Platform,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { X, Sparkles, Tag } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createInterest } from '@/contexts/interest.api';
+import { useAlert } from '@/contexts/AlertContext';
 
 interface CreateInterestModalProps {
+  // Add useAlert import
   visible: boolean;
   onClose: () => void;
 }
@@ -28,6 +32,7 @@ export function CreateInterestModal({
   visible,
   onClose,
 }: CreateInterestModalProps) {
+  const { showAlert } = useAlert(); // Initialize useAlert
   const [name, setName] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -43,7 +48,7 @@ export function CreateInterestModal({
     mutationFn: createInterest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['interests'] });
-      Alert.alert('Success', 'Interest created successfully!');
+      showAlert({ title: 'Success', message: 'Interest created successfully!' }); // Use custom alert
       onClose();
     },
     onError: (error: any) => {
@@ -51,13 +56,13 @@ export function CreateInterestModal({
         error?.response?.data?.message ||
         error?.message ||
         'Failed to create interest.';
-      Alert.alert('Error', errorMessage);
+      showAlert({ title: 'Error', message: errorMessage }); // Use custom alert
     },
   });
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      Alert.alert('Missing Name', 'Please enter an interest name.');
+      showAlert({ title: 'Missing Name', message: 'Please enter an interest name.' }); // Use custom alert
       return;
     }
     createInterestMutation.mutate(name.trim());

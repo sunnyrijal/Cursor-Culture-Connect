@@ -1,18 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Share,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
-import { ArrowLeft, User, CreditCard as Edit3, Share2, Eye, Shield, Bell, Lock, CircleHelp as HelpCircle, ChevronRight, Settings as SettingsIcon, Globe, Smartphone, Mail } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  User,
+  CreditCard as Edit3,
+  Share2,
+  Eye,
+  Shield,
+  Bell,
+  Lock,
+  CircleHelp as HelpCircle,
+  ChevronRight,
+  Settings as SettingsIcon,
+  Globe,
+  Smartphone,
+  Mail,
+} from 'lucide-react-native';
 import LogoutButton from '@/components/LogoutButton';
-import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
+import { useAlert } from '@/contexts/AlertContext';
 import { getMyData } from '@/contexts/user.api';
+import * as Linking from 'expo-linking';
 
 interface SettingsOption {
   id: string;
@@ -25,6 +45,7 @@ interface SettingsOption {
 }
 
 export default function Settings() {
+  const { showAlert } = useAlert();
   const handleEditProfile = () => {
     router.push('/profile/edit');
   };
@@ -34,17 +55,22 @@ export default function Settings() {
     queryFn: () => getMyData(),
   });
 
+  const url = Linking.useURL();
   const handleShareProfile = async () => {
+
     try {
-      const profileUrl = `https://cultureconnect.app/profile/${myData?.user?.id || 'user'}`;
+      const profileUrl = `${url}/public/profile/${myData?.userId || 'user'}`;
       await Share.share({
-        message: `Check out my TRiVO profile! Connect with me to explore our shared cultural heritage: ${profileUrl}`,
+        message: `Check out my TRiVO profile! Connect with me to explore: ${profileUrl}`,
         url: profileUrl,
-        title: 'My TRiVO Profile'
+        title: 'My TRiVO Profile',
       });
     } catch (error) {
       console.error('Error sharing profile:', error);
-      Alert.alert('Error', 'Unable to share profile at this time');
+      showAlert({
+        title: 'Error',
+        message: 'Unable to share profile at this time',
+      });
     }
   };
 
@@ -66,7 +92,7 @@ export default function Settings() {
       description: 'Update your personal information and cultural identity',
       color: '#6366F1',
       onPress: handleEditProfile,
-      showChevron: true
+      showChevron: true,
     },
     {
       id: 'share-profile',
@@ -74,7 +100,7 @@ export default function Settings() {
       label: 'Share Profile',
       description: 'Share your profile with friends and connections',
       color: '#3B82F6',
-      onPress: handleShareProfile
+      onPress: handleShareProfile,
     },
     {
       id: 'view-public',
@@ -83,8 +109,8 @@ export default function Settings() {
       description: 'See how others view your profile',
       color: '#10B981',
       onPress: handleViewPublicProfile,
-      showChevron: true
-    }
+      showChevron: true,
+    },
   ];
 
   const accountOptions: SettingsOption[] = [
@@ -94,8 +120,12 @@ export default function Settings() {
       label: 'Privacy Settings',
       description: 'Control who can see your information',
       color: '#3B82F6',
-      onPress: () => Alert.alert('Coming Soon', 'Privacy settings will be available soon'),
-      showChevron: true
+      onPress: () =>
+        showAlert({
+          title: 'Coming Soon',
+          message: 'Privacy settings will be available soon',
+        }),
+      showChevron: true,
     },
     {
       id: 'notifications',
@@ -103,8 +133,13 @@ export default function Settings() {
       label: 'Notifications',
       description: 'Manage your notification preferences',
       color: '#F59E0B',
-      onPress: () => Alert.alert('Notification Settings', 'Here you will be able to manage your notification preferences (e.g., push, email, event reminders, etc.).'),
-      showChevron: true
+      onPress: () =>
+        showAlert({
+          title: 'Notification Settings',
+          message:
+            'Here you will be able to manage your notification preferences (e.g., push, email, event reminders, etc.).',
+        }),
+      showChevron: true,
     },
     {
       id: 'security',
@@ -112,9 +147,13 @@ export default function Settings() {
       label: 'Account Security',
       description: 'Password and security settings',
       color: '#10B981',
-      onPress: () => Alert.alert('Coming Soon', 'Security settings will be available soon'),
-      showChevron: true
-    }
+      onPress: () =>
+        showAlert({
+          title: 'Coming Soon',
+          message: 'Security settings will be available soon',
+        }),
+      showChevron: true,
+    },
   ];
 
   const supportOptions: SettingsOption[] = [
@@ -124,9 +163,13 @@ export default function Settings() {
       label: 'Help & Support',
       description: 'Get help and contact support',
       color: '#8B5CF6',
-      onPress: () => Alert.alert('Help & Support', 'Contact us at support@cultureconnect.app'),
-      showChevron: true
-    }
+      onPress: () =>
+        showAlert({
+          title: 'Help & Support',
+          message: 'Contact us at support@cultureconnect.app',
+        }),
+      showChevron: true,
+    },
   ];
 
   const renderSettingsSection = (title: string, options: SettingsOption[]) => (
@@ -143,7 +186,7 @@ export default function Settings() {
                 key={option.id}
                 style={[
                   styles.neomorphicOption,
-                  index === options.length - 1 && styles.lastOption
+                  index === options.length - 1 && styles.lastOption,
                 ]}
                 onPress={option.onPress}
                 activeOpacity={0.7}
@@ -158,10 +201,10 @@ export default function Settings() {
                     </LinearGradient>
                   </View>
                   <View style={styles.optionContent}>
-                    <Text style={styles.optionLabel}>
-                      {option.label}
+                    <Text style={styles.optionLabel}>{option.label}</Text>
+                    <Text style={styles.optionDescription}>
+                      {option.description}
                     </Text>
-                    <Text style={styles.optionDescription}>{option.description}</Text>
                   </View>
                 </View>
                 {option.showChevron && (
@@ -219,7 +262,12 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -244,9 +292,15 @@ export default function Settings() {
               style={styles.headerGradient}
             >
               <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.neomorphicBackButton}>
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  style={styles.neomorphicBackButton}
+                >
                   <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.9)', 'rgba(241, 245, 249, 0.8)']}
+                    colors={[
+                      'rgba(255, 255, 255, 0.9)',
+                      'rgba(241, 245, 249, 0.8)',
+                    ]}
                     style={styles.backButtonGradient}
                   >
                     <ArrowLeft size={20} color="#475569" />
@@ -266,13 +320,19 @@ export default function Settings() {
           <View style={styles.profileContainer}>
             <BlurView intensity={25} tint="light" style={styles.profileBlur}>
               <LinearGradient
-                colors={['rgba(255, 255, 255, 0.95)', 'rgba(248, 250, 252, 0.9)']}
+                colors={[
+                  'rgba(255, 255, 255, 0.95)',
+                  'rgba(248, 250, 252, 0.9)',
+                ]}
                 style={styles.profileGradient}
               >
                 <View style={styles.profileHeader}>
                   <View style={styles.neomorphicAvatar}>
                     <LinearGradient
-                      colors={['rgba(99, 102, 241, 0.15)', 'rgba(99, 102, 241, 0.1)']}
+                      colors={[
+                        'rgba(99, 102, 241, 0.15)',
+                        'rgba(99, 102, 241, 0.1)',
+                      ]}
                       style={styles.avatarGradient}
                     >
                       <User size={36} color="#6366F1" />
@@ -280,9 +340,15 @@ export default function Settings() {
                   </View>
                   <View style={styles.profileInfo}>
                     <Text style={styles.profileName}>
-                      {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
+                      {user?.name ||
+                        `${user?.firstName || ''} ${
+                          user?.lastName || ''
+                        }`.trim() ||
+                        'User'}
                     </Text>
-                    <Text style={styles.profileEmail}>{user?.email || 'No email'}</Text>
+                    <Text style={styles.profileEmail}>
+                      {user?.email || 'No email'}
+                    </Text>
                     <View style={styles.profileBadgesRow}>
                       {user?.isVerified && (
                         <View style={styles.neomorphicBadge}>
@@ -290,25 +356,33 @@ export default function Settings() {
                         </View>
                       )}
                       {user?.classYear && (
-                        <View style={[styles.neomorphicBadge, styles.studentBadge]}>
-                          <Text style={[styles.badgeText, styles.studentBadgeText]}>
+                        <View
+                          style={[styles.neomorphicBadge, styles.studentBadge]}
+                        >
+                          <Text
+                            style={[styles.badgeText, styles.studentBadgeText]}
+                          >
                             {user.classYear}
                           </Text>
                         </View>
                       )}
                     </View>
                     {getAcademicInfo() && (
-                      <Text style={styles.profileMeta}>{getAcademicInfo()}</Text>
+                      <Text style={styles.profileMeta}>
+                        {getAcademicInfo()}
+                      </Text>
                     )}
                     {user?.university?.name && (
-                      <Text style={styles.profileMeta}>{user.university.name}</Text>
+                      <Text style={styles.profileMeta}>
+                        {user.university.name}
+                      </Text>
                     )}
                     {getLocationString() && (
-                      <Text style={styles.profileMeta}>{getLocationString()}</Text>
+                      <Text style={styles.profileMeta}>
+                        {getLocationString()}
+                      </Text>
                     )}
-                    <Text style={styles.profileBio}>
-                      {getUserBio()}
-                    </Text>
+                    <Text style={styles.profileBio}>{getUserBio()}</Text>
                   </View>
                 </View>
               </LinearGradient>

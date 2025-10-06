@@ -1,8 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, View, Platform, Alert } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Platform } from 'react-native';
 import { Menu, LogOut } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { router } from 'expo-router';
+import { useAlert } from '@/contexts/AlertContext';
 
 export default function FloatingNavButton({ onPress }: { onPress: () => void }) {
   return (
@@ -22,15 +23,16 @@ export default function FloatingNavButton({ onPress }: { onPress: () => void }) 
 
 export function FloatingLogoutButton() {
   const { logout } = useAuth();
+  const { showAlert } = useAlert();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
+    showAlert({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      buttons: [
         {
           text: 'Cancel',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: 'Logout',
@@ -41,12 +43,12 @@ export function FloatingLogoutButton() {
               router.replace('/(auth)/login');
             } catch (error) {
               console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              showAlert({ title: 'Error', message: 'Failed to logout. Please try again.' });
             }
-          }
-        }
-      ]
-    );
+          },
+        },
+      ],
+    });
   };
 
   return (
