@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { theme, spacing, typography, neomorphColors } from '../theme'; 
 import { MapPin, Clock } from 'lucide-react-native';
 import { useMutation } from '@tanstack/react-query';
@@ -24,6 +24,11 @@ const CulturalExperienceCard = ({
     queryFn: () => getDecodedToken(),
   });
 
+  const cardRef = useRef<View>(null);
+  const [hasRecordedImpression, setHasRecordedImpression] = useState(false);
+
+  console.log(content)
+
   const { mutate: recordAdImpressionMutate } = useMutation({
     mutationFn: (adId: string) => recordAdImpression(adId),
     onSuccess: (data, adId) => console.log('✅ Ad Impression Recorded for ad:', adId, data),
@@ -36,17 +41,21 @@ const CulturalExperienceCard = ({
     onError: (error, adId) => console.error('❌ Error recording ad click for ad:', adId, error),
   });
 
-  useEffect(() => {
-    // Only record impression if user is logged in
-    if (myData) {
-      const timer = setTimeout(() => {
-        console.log('📊 Ad became visible:', content.id);
-        recordAdImpressionMutate(content.id);
-      }, 1000); // 1-second delay to ensure card is actually visible
-
-      return () => clearTimeout(timer);
+  const handleCardLayout = () => {
+    if (!hasRecordedImpression && myData && cardRef.current) {
+      cardRef.current.measureInWindow((x, y, width, height) => {
+        // Check if card is in viewport
+        const screenHeight = Platform.OS === 'ios' ? 812 : 640; // Approximate screen heights
+        const isVisible = y >= 0 && y + height <= screenHeight;
+        
+        if (isVisible) {
+          console.log('📊 Ad became visible:', content.id);
+          recordAdImpressionMutate(content.id);
+          setHasRecordedImpression(true);
+        }
+      });
     }
-  }, [content.id, myData, recordAdImpressionMutate]);
+  };
 
   const handlePress = () => {
     // Only record click if user is logged in
@@ -59,8 +68,10 @@ const CulturalExperienceCard = ({
 
   return (
     <TouchableOpacity
+      ref={cardRef}
       style={styles.card}
       onPress={handlePress}
+      onLayout={handleCardLayout}
       activeOpacity={0.9}
     >
       {/* Image on left */}

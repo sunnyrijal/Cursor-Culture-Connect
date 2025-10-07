@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { X, Filter, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
@@ -46,6 +47,29 @@ export const MAJOR_OPTIONS = [
   'Other',
 ];
 
+export const LANGUAGE_OPTIONS = [
+  "English",
+  "Spanish",
+  "Mandarin",
+  "Hindi",
+  "French",
+  "Arabic",
+  "Bengali",
+  "Russian",
+  "Portuguese",
+  "Indonesian",
+  "Urdu",
+  "German",
+  "Japanese",
+  "Swahili",
+  "Marathi",
+  "Telugu",
+  "Turkish",
+  "Korean",
+  "Vietnamese",
+  "Tamil",
+];
+
 interface FriendFilters {
   myUniversity?: boolean;
   major?: string;
@@ -53,6 +77,7 @@ interface FriendFilters {
   sortOrder?: 'asc' | 'desc';
   universityId?: string;
   state?: string;
+  language?: string;
   city?: string;
 }
 
@@ -178,6 +203,13 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
     return MAJOR_OPTIONS.map(major => ({
       id: major,
       name: major,
+    }));
+  }, []);
+
+  const languageOptions = React.useMemo(() => {
+    return LANGUAGE_OPTIONS.map(lang => ({
+      id: lang,
+      name: lang,
     }));
   }, []);
 
@@ -349,6 +381,34 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
               onSelect={(value) => updateFilter('major', value)}
               placeholder="All Majors"
             />
+          </View>
+
+          {/* Language Filter */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Language</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g., Spanish, Hindi"
+              value={tempFilters.language || ''}
+              onChangeText={(text) => updateFilter('language', text)}
+              placeholderTextColor="#A0AEC0"
+            />
+            <View style={styles.suggestionContainer}>
+              {LANGUAGE_OPTIONS.slice(0, 5).map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[
+                    styles.suggestionChip,
+                    tempFilters.language === lang && styles.activeSuggestionChip,
+                  ]}
+                  onPress={() => updateFilter('language', lang === tempFilters.language ? undefined : lang)}
+                >
+                  <Text style={[styles.suggestionChipText, tempFilters.language === lang && styles.activeSuggestionChipText]}>
+                    {lang}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Sort Options */}
@@ -645,6 +705,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  textInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.textPrimary,
+    minHeight: 48,
+  },
+  suggestionContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  suggestionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeSuggestionChip: {
+    backgroundColor: '#EEF2FF',
+    borderColor: theme.primary,
+  },
+  suggestionChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.textSecondary,
+  },
+  activeSuggestionChipText: {
+    color: theme.primary,
+    fontWeight: '600',
   },
   pickerStyle: {
     backgroundColor: '#F8FAFC',
