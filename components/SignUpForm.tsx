@@ -266,12 +266,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   useEffect(() => {
     // Entry animations
     headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }))
-    headerScale.value = withDelay(200, withSpring(1, { damping: 15, stiffness: 100 }))
+    headerScale.value = withDelay(200, withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) }))
 
     formOpacity.value = withDelay(600, withTiming(1, { duration: 800 }))
-    formTranslateY.value = withDelay(600, withSpring(0, { damping: 15, stiffness: 120 }))
+    formTranslateY.value = withDelay(600, withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) }))
 
-    switchScale.value = withDelay(1000, withSpring(1, { damping: 12, stiffness: 100 }))
+    switchScale.value = withDelay(1000, withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) }))
     particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }))
 
     backgroundRotation.value = withRepeat(withTiming(360, { duration: 60000, easing: Easing.linear }), -1, false)
@@ -335,6 +335,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
       ].every(Boolean)
 
       if (step1Valid) {
+        setError("")
         setCurrentStep(2)
         scrollViewRef.current?.scrollTo({ y: 0, animated: true })
         return
