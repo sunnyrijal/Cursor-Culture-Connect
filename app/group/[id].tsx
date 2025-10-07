@@ -681,12 +681,7 @@ export default function GroupDetailEnhanced() {
               </View>
             </View>
           )}
-          {/* Social Media Section - Add this after Meeting Details and before Details Section */}
-          {group.socialMedia && Object.keys(group.socialMedia).length > 0 && (
-            <View style={styles.section}>
-              <SocialMediaLinks socialMedia={group.socialMedia} />
-            </View>
-          )}
+         
 
           {/* Details Section */}
           <View style={styles.section}>
@@ -733,6 +728,10 @@ export default function GroupDetailEnhanced() {
                   </Text>
                 </View>
               </View> */}
+
+         
+         
+
 
               <View style={styles.infoRow}>
                 <View
@@ -822,6 +821,12 @@ export default function GroupDetailEnhanced() {
               )}
             </View>
           </View>
+           {/* Social Media Section - Add this after Meeting Details and before Details Section */}
+          {group.socialMedia && Object.keys(group.socialMedia).length > 0 && (
+            <View style={styles.section}>
+              <SocialMediaLinks socialMedia={group.socialMedia} />
+            </View>
+          )}
 
           {/* Admin Settings Section */}
           {isCurrentUserAdmin && (
