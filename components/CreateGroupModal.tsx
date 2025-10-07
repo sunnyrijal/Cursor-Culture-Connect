@@ -23,6 +23,7 @@ import {
   Calendar,
   Clock,
   ChevronDown,
+  Link, // Add this import
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -37,6 +38,9 @@ import { uploadFile } from '@/contexts/file.api';
 import { TimeSelectInput } from './TimeSelectInput';
 import { theme, typography } from './theme';
 import { useAlert } from '@/contexts/AlertContext';
+import DropDownPicker from 'react-native-dropdown-picker';
+import {socialPlatforms} from '../data/socialPlatforms'
+
 
 interface CreateGroupModalProps {
   visible: boolean;
@@ -69,6 +73,15 @@ export function CreateGroupModal({
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
 
+  // Add social media state variables
+  const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({});
+  const [newSocialPlatform, setNewSocialPlatform] = useState<string>('');
+  const [newSocialLink, setNewSocialLink] = useState<string>('');
+  const [socialPlatformOpen, setSocialPlatformOpen] = useState(false);
+  const [socialPlatformItems, setSocialPlatformItems] = useState(
+    socialPlatforms.map((p) => ({ label: p, value: p }))
+  );
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -84,6 +97,10 @@ export function CreateGroupModal({
     });
     setImageUrl('');
     setFocusedInput(null);
+    // Reset social media state
+    setSocialMedia({});
+    setNewSocialPlatform('');
+    setNewSocialLink('');
   };
 
   useEffect(() => {
@@ -220,6 +237,11 @@ export function CreateGroupModal({
       imageUrl: imageUrl,
     };
 
+    // Add social media if exists
+    if (Object.keys(socialMedia).length > 0) {
+      groupData.socialMedia = socialMedia;
+    }
+
     // Only add meeting details if they exist
     if (formData.hasMeetingDetails) {
       if (formData.meetingDate) {
@@ -279,6 +301,127 @@ export function CreateGroupModal({
             </View>
           )}
         </View>
+      </View>
+    );
+  };
+
+  const renderSocialMediaSection = () => {
+    const addSocialMedia = () => {
+      if (newSocialPlatform && newSocialLink) {
+        setSocialMedia((prev) => ({
+          ...prev,
+          [newSocialPlatform.toLowerCase()]: newSocialLink,
+        }));
+        setNewSocialPlatform('');
+        setNewSocialLink('');
+      }
+    };
+
+    const removeSocialMedia = (platform: string) => {
+      setSocialMedia((prev) => {
+        const updated = { ...prev };
+        delete updated[platform];
+        return updated;
+      });
+    };
+
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Social Media (Optional)</Text>
+        
+        {/* Display existing social media links */}
+        {Object.entries(socialMedia).map(([platform, link]) => (
+          <View key={platform} style={styles.socialMediaItem}>
+            <Text style={styles.socialPlatform}>
+              {platform.charAt(0).toUpperCase() + platform.slice(1)}
+            </Text>
+            <Text style={styles.socialLink} numberOfLines={1}>
+              {link}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => removeSocialMedia(platform)}
+              disabled={isSubmitting || createGroupMutation.isPending}
+            >
+              <X size={16} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* Add new social media */}
+        <View style={styles.addSocialContainer}>
+          <View style={[styles.socialDropdownContainer, { zIndex: 5000 }]}>
+            <Text style={styles.inputLabel}>Platform</Text>
+            <DropDownPicker
+              open={socialPlatformOpen}
+              value={newSocialPlatform}
+              items={socialPlatformItems}
+              setOpen={setSocialPlatformOpen}
+              setValue={(callback) => {
+                const newValue = typeof callback === 'function' ? callback(newSocialPlatform) : callback;
+                setNewSocialPlatform(newValue || '');
+              }}
+              setItems={setSocialPlatformItems}
+              placeholder="Select platform..."
+              disabled={isSubmitting || createGroupMutation.isPending}
+              searchable={true}
+              searchPlaceholder="Search platforms..."
+              listMode="MODAL"
+              zIndexInverse={2000}
+              modalProps={{
+                animationType: 'slide',
+              }}
+              style={styles.dropdownStyle}
+              dropDownContainerStyle={styles.dropdownContainerStyle}
+              textStyle={styles.dropdownTextStyle}
+              placeholderStyle={styles.dropdownPlaceholderStyle}
+              searchTextInputStyle={styles.dropdownSearchStyle}
+              ArrowDownIconComponent={() => (
+                <ChevronDown size={20} color="#9CA3AF" />
+              )}
+              ArrowUpIconComponent={() => (
+                <ChevronDown
+                  size={20}
+                  color="#9CA3AF"
+                  style={{ transform: [{ rotate: '180deg' }] }}
+                />
+              )}
+              TickIconComponent={() => <Check size={16} color="#6366F1" />}
+            />
+          </View>
+
+          <View style={styles.socialLinkContainer}>
+            {renderInput(
+              'Profile Link',
+              newSocialLink,
+              setNewSocialLink,
+              'https://...',
+              <Link size={16} color="#6366F1" />,
+              false,
+              false
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.addSocialButton,
+            (!newSocialPlatform || !newSocialLink) && styles.addSocialButtonDisabled,
+          ]}
+          onPress={addSocialMedia}
+          disabled={!newSocialPlatform || !newSocialLink || isSubmitting || createGroupMutation.isPending}
+        >
+          <LinearGradient
+            colors={
+              (!newSocialPlatform || !newSocialLink || isSubmitting || createGroupMutation.isPending)
+                ? ['#9CA3AF', '#6B7280']
+                : ['#6366F1', '#8B5CF6']
+            }
+            style={styles.addSocialButtonGradient}
+          >
+            <Plus size={16} color="#FFFFFF" />
+            <Text style={styles.addSocialButtonText}>Add Social Media</Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -478,6 +621,9 @@ export function CreateGroupModal({
                     </View>
                   )}
                 </View>
+
+                {/* Social Media Section - Add this before Visibility Settings */}
+                {renderSocialMediaSection()}
 
                 {/* Visibility Settings */}
                 <View style={styles.inputContainer}>
@@ -1054,5 +1200,104 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginLeft: 4,
+  },
+
+  // Add social media styles
+  socialMediaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  socialPlatform: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    minWidth: 80,
+  },
+  socialLink: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  addSocialContainer: {
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  socialDropdownContainer: {
+    marginBottom: 16,
+  },
+  socialLinkContainer: {
+    marginBottom: 16,
+  },
+  addSocialButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  addSocialButtonDisabled: {
+    opacity: 0.7,
+  },
+  addSocialButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  addSocialButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dropdownStyle: {
+    backgroundColor: '#F0F3F7',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CDD2D8',
+    minHeight: 56,
+    paddingHorizontal: 16,
+  },
+  dropdownContainerStyle: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CDD2D8',
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  dropdownTextStyle: {
+    fontSize: 16,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  dropdownPlaceholderStyle: {
+    fontSize: 16,
+    color: '#94A3B8',
+  },
+  dropdownSearchStyle: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
   },
 });

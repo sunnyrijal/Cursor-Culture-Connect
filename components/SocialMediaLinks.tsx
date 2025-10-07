@@ -1,28 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import {
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Github,
-  Youtube,
-  Globe,
-  Link as LinkIcon,
-} from 'lucide-react-native';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useAlert } from '@/contexts/AlertContext';
 
-const socialIcons: { [key: string]: React.ElementType } = {
-  facebook: Facebook,
-  instagram: Instagram,
-  twitter: Twitter,
-  linkedin: Linkedin,
-  github: Github,
-  youtube: Youtube,
-  portfolio: Globe,
-  tiktok: LinkIcon, // Using LinkIcon as a fallback for TikTok
-  snapchat: LinkIcon, // Using LinkIcon as a fallback for Snapchat
-  discord: LinkIcon, // Using LinkIcon as a fallback for Discord
+const socialIcons: { [key: string]: { name: string; type: 'fa' | 'fa5' } } = {
+  facebook: { name: 'facebook', type: 'fa' },
+  instagram: { name: 'instagram', type: 'fa' },
+  twitter: { name: 'twitter', type: 'fa' },
+  linkedin: { name: 'linkedin', type: 'fa' },
+  github: { name: 'github', type: 'fa' },
+  youtube: { name: 'youtube', type: 'fa' },
+  portfolio: { name: 'globe', type: 'fa' },
+  tiktok: { name: 'tiktok', type: 'fa5' },
+  snapchat: { name: 'snapchat-ghost', type: 'fa' },
+  discord: { name: 'discord', type: 'fa5' },
+  whatsapp: { name: 'whatsapp', type: 'fa' },
+  telegram: { name: 'telegram', type: 'fa' },
+  pinterest: { name: 'pinterest', type: 'fa' },
+  reddit: { name: 'reddit', type: 'fa' },
+  twitch: { name: 'twitch', type: 'fa' },
 };
 
 const socialColors: { [key: string]: string } = {
@@ -33,6 +30,14 @@ const socialColors: { [key: string]: string } = {
   github: '#333',
   youtube: '#FF0000',
   portfolio: '#34495E',
+  tiktok: '#000000',
+  snapchat: '#FFFC00',
+  discord: '#5865F2',
+  whatsapp: '#25D366',
+  telegram: '#0088cc',
+  pinterest: '#E60023',
+  reddit: '#FF4500',
+  twitch: '#9146FF',
   default: '#6366F1',
 };
 
@@ -42,12 +47,12 @@ interface SocialMediaLinksProps {
 
 const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
   const { showAlert } = useAlert();
+  
   if (!socialMedia || Object.keys(socialMedia).length === 0) {
     return null;
   }
 
   const handlePress = async (url: string) => {
-    // Prepend https:// if it's missing
     const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
     const supported = await Linking.canOpenURL(fullUrl);
 
@@ -66,9 +71,12 @@ const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
       <Text style={styles.sectionTitle}>Social Links</Text>
       <View style={styles.linksContainer}>
         {Object.entries(socialMedia).map(([platform, link]) => {
-          const Icon = socialIcons[platform.toLowerCase()] || LinkIcon;
+          const iconConfig = socialIcons[platform.toLowerCase()];
           const color = socialColors[platform.toLowerCase()] || socialColors.default;
-          if (!link) return null;
+          
+          if (!link || !iconConfig) return null;
+
+          const IconComponent = iconConfig.type === 'fa5' ? FontAwesome5 : FontAwesome;
 
           return (
             <TouchableOpacity
@@ -76,7 +84,7 @@ const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
               style={[styles.iconWrapper, { backgroundColor: color }]}
               onPress={() => handlePress(link)}
             >
-              <Icon color="white" size={20} />
+              <IconComponent name={iconConfig.name} color="white" size={20} />
             </TouchableOpacity>
           );
         })}
@@ -93,7 +101,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937', // clayTheme.textPrimary
+    color: '#1F2937',
     marginBottom: 16,
   },
   linksContainer: {
