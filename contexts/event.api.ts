@@ -70,6 +70,11 @@ export interface EventFilters {
   timeFrame?: "thisWeek" | "thisMonth"; // Filter by time frame
   sortBy?: "date" | "name"; // Sort by event date or name
   sortOrder?: "asc" | "desc"; // Sort order: ascending or descending
+  universityId?: string; // Filter by specific university
+  groupId?: string; // Filter by specific group
+  search?: string; // Search 
+  state?:string;
+  city?:string;
 }
 
 export interface ApiResponse<T> {

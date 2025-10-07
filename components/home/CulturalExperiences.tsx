@@ -9,23 +9,19 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef,  } from 'react';
 import {
   theme,
   spacing,
   typography,
-  borderRadius,
   neomorphColors,
 } from '../theme';
 import CulturalExperienceCard from './CulturalExperienceCard';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {  useQuery } from '@tanstack/react-query';
 import {
   getAdvertisements,
-  recordAdClick,
-  recordAdImpression,
 } from '@/contexts/ad.api';
 import { useRouter } from 'expo-router';
-import getDecodedToken from '@/utils/getMyData';
 import { useAlert } from '@/contexts/AlertContext';
 import { discoverExperienceData } from '@/data/discoverExperienceData';
 
@@ -95,6 +91,8 @@ const CulturalExperiences = () => {
       return getAdvertisements(params);
     },
   });
+
+  console.log(adResponse)
 
   // const { data: myData } = useQuery({
   //   queryKey: ['myData'],

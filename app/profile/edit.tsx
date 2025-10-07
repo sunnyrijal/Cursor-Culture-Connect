@@ -61,20 +61,7 @@ import {
 } from '@/components/SignUpForm';
 import statesData from '../../data/US_States_list.json';
 import citiesData from '../../data/US_Cities.json';
-
-
-export const socialPlatforms = [
-  'Facebook',
-  'Instagram',
-  'Twitter',
-  'LinkedIn',
-  'GitHub',
-  'TikTok',
-  'YouTube',
-  'Snapchat',
-  'Discord',
-  'Portfolio',
-];
+import {socialPlatforms} from '../../data/socialPlatforms'
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({

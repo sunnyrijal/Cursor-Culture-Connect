@@ -1,0 +1,16 @@
+export const socialPlatforms = [
+  'Facebook',
+  'Instagram',
+  'Twitter',
+  'LinkedIn',
+  'GitHub',
+  'TikTok',
+  'YouTube',
+  'Snapchat',
+  'Discord',
+  'Portfolio',
+  'twitch',
+  'reddit',
+  'telegram',
+  'whatsapp',
+];

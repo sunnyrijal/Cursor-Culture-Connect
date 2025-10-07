@@ -10,13 +10,14 @@ import {
   Platform 
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MessageSquarePlus, ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { MessageSquarePlus, ArrowLeft, Check, X } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 
-import { getChatRequests } from '@/contexts/chat.api';
+import { getChatRequests, deleteChat } from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
 
 interface User {
@@ -58,6 +59,7 @@ interface ChatRequest {
 
 const MessageRequestsScreen = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -73,6 +75,13 @@ const MessageRequestsScreen = () => {
   } = useQuery({
     queryKey: ['chatRequests'],
     queryFn: getChatRequests,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (chatId: string) => deleteChat(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
+    },
   });
   console.log(chatRequestsResponse)
 
@@ -91,6 +100,7 @@ const MessageRequestsScreen = () => {
         id: chat.id,
         name: otherParticipant?.user.name || 'Unknown User',
         email: otherParticipant?.user.email || '',
+        participantCount: chat.participants.length,
         profilePicture: otherParticipant?.user.profilePicture || '',
         lastMessage: messageContent,
         requestDirection:chat.requestDirection,
@@ -122,6 +132,15 @@ const MessageRequestsScreen = () => {
     router.push(`/chat/${chatId}`);
   };
 
+  const handleDecline = (chatId: string) => {
+    deleteMutation.mutate(chatId);
+  };
+
+  const handleAccept = (chatId: string) => {
+    // TODO: Implement accept functionality
+    console.log('Accepting chat:', chatId);
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <MessageSquarePlus size={64} color="#9CA3AF" />
@@ -135,11 +154,10 @@ const MessageRequestsScreen = () => {
   );
 
   const renderRequestItem = (item: typeof processedRequests[0], index: number) => (
-    <TouchableOpacity
+    <View
       key={item.id}
       style={[styles.requestItem, { marginTop: index === 0 ? 8 : 0 }]}
-      onPress={() => handleRequestPress(item.id)}
-      activeOpacity={0.7}
+      
     >
       <BlurView intensity={10} style={styles.requestItemBlur}>
         <LinearGradient
@@ -147,34 +165,79 @@ const MessageRequestsScreen = () => {
           style={styles.requestItemGradient}
         >
           <View style={styles.avatarContainer}>
-            <Image
-              source={
-                item.profilePicture
-                  ? { uri: item.profilePicture }
-                  : require('../assets/user.png')
-              }
-              style={styles.avatar}
-            />
+            <TouchableOpacity onPress={() => handleRequestPress(item.id)} activeOpacity={0.8}>
+              <Image
+                source={
+                  item.profilePicture
+                    ? { uri: item.profilePicture }
+                    : require('../assets/user.png')
+                }
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.requestContent}>
-            <View style={styles.requestHeader}>
-              <Text style={styles.userName}>{item.name}</Text>
-              <Text style={styles.requestTime}>{item.lastMessageTime}</Text>
-            </View>
-            <View style={styles.requestMessage}>
-              <Text style={styles.lastMessage} numberOfLines={1}>
-                {item.lastMessage}
-              </Text>
-            </View>
+            <TouchableOpacity onPress={() => handleRequestPress(item.id)} activeOpacity={0.8}>
+              <View style={styles.requestHeader}>
+                <Text style={styles.userName}>{item.name}</Text>
+                <Text style={styles.requestTime}>{item.lastMessageTime}</Text>
+              </View>
+              <View style={styles.requestMessage}>
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                  {item.lastMessage}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {item.name === 'Unknown User' && item.participantCount === 1 ? (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.declineButton, { flex: 1, backgroundColor: '#FECACA' }]} 
+                  onPress={() => handleDecline(item.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending && deleteMutation.variables === item.id ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <Text style={[styles.actionButtonText, { color: '#DC2626' }]}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : activeTab === 'received' ? (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={() => handleAccept(item.id)}>
+                  <Check size={16} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionButton, styles.declineButton]} onPress={() => handleDecline(item.id)}>
+                  <X size={16} color="#475569" />
+                  <Text style={[styles.actionButtonText, { color: '#475569' }]}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.declineButton, { flex: 1 }]} 
+                  onPress={() => handleDecline(item.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending && deleteMutation.variables === item.id ? (
+                    <ActivityIndicator size="small" color="#475569" />
+                  ) : (
+                    <>
+                      <X size={16} color="#475569" />
+                      <Text style={[styles.actionButtonText, { color: '#475569' }]}>Cancel Request</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
-          <View style={styles.requestArrow}>
-            <ArrowRight size={16} color="#94A3B8" />
-          </View>
         </LinearGradient>
       </BlurView>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -395,6 +458,7 @@ const styles = StyleSheet.create({
   },
   requestContent: {
     flex: 1,
+    width: '100%',
   },
   requestHeader: {
     flexDirection: 'row',
@@ -415,7 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   requestMessage: {
-    marginBottom: 4,
+    marginBottom: 12,
   },
   lastMessage: {
     color: '#64748B',
@@ -428,9 +492,30 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontWeight: '500',
   },
-  requestArrow: {
-    marginLeft: 12,
-    padding: 4,
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+  },
+  acceptButton: {
+    backgroundColor: '#4F46E5',
+  },
+  declineButton: {
+    backgroundColor: '#E2E8F0',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

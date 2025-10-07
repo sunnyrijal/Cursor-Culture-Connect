@@ -26,11 +26,12 @@ import {
   MailPlus,
   X,
   WifiOff,
+  Trash2,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { theme } from '@/components/theme';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createDirectChat, getUserChats } from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
 import {  getUsers } from '@/contexts/user.api';
@@ -86,6 +87,7 @@ interface Chat {
   participants: Participant[];
   group: Group | null;
   messages: Message[];
+  isActive: boolean;
 }
 
 export default function ChatListScreen() {
@@ -96,6 +98,7 @@ export default function ChatListScreen() {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -118,6 +121,14 @@ export default function ChatListScreen() {
   });
 
   const users = usersResponse?.users || [];
+
+  const deleteChatMutation = useMutation({
+    mutationFn: (chatId: string) => createDirectChat({ otherUserId: chatId }), // Assuming deleteChat is in chat.api
+    onSuccess: () => {
+      console.log('✅ Chat Deleted');
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+    },
+  });
 
   console.log(chatResponse)
 
@@ -162,6 +173,7 @@ export default function ChatListScreen() {
             unreadCount: 0, // You might want to calculate this based on your data
             type: 'GROUP' as const,
             isMyLastMessage: isMyMessage,
+            isActive: chat.isActive,
           };
         } else {
           const otherParticipant = chat.participants.find(
@@ -182,6 +194,7 @@ export default function ChatListScreen() {
             unreadCount: 0, // You might want to calculate this based on your data
             type: 'DIRECT' as const,
             isMyLastMessage: isMyMessage,
+            isActive: chat.isActive,
           };
         }
       });
@@ -305,62 +318,77 @@ export default function ChatListScreen() {
     item,
     index,
   }: {
-    item: (typeof processedChats)[0];
+    item: (typeof processedChats)[number];
     index: number;
   }) => (
     <TouchableOpacity
       style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]}
-      onPress={() => router.push(`/chat/${item.id}`)}
-      activeOpacity={0.7}
+      onPress={item.isActive ? () => router.push(`/chat/${item.id}`) : undefined}
+      activeOpacity={item.isActive ? 0.7 : 1}
     >
       <BlurView intensity={10} style={styles.chatItemBlur}>
         <LinearGradient
           colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
           style={styles.chatItemGradient}
         >
-          <View style={styles.avatarContainer}>
-            <Image
-              source={
-                item.image
-                  ? { uri: item.image }
-                  : require('../../assets/user.png')
-              }
-              style={styles.avatar}
-            />
+          <View style={{ opacity: item.isActive ? 1 : 0.5, flexDirection: 'row', flex: 1, alignItems: 'center' }}>
+            <View style={styles.avatarContainer}>
+              <Image
+                source={
+                  item.image
+                    ? { uri: item.image }
+                    : require('../../assets/user.png')
+                }
+                style={styles.avatar}
+              />
 
-            {item.type === 'GROUP' ? (
-              <View style={styles.groupBadge}>
-                <Users size={12} color="#FFFFFF" />
-              </View>
-            ) : (
-              <></>
-            )}
-          </View>
+              {item.type === 'GROUP' ? (
+                <View style={styles.groupBadge}>
+                  <Users size={12} color="#FFFFFF" />
+                </View>
+              ) : (
+                <></>
+              )}
+            </View>
 
-          <View style={styles.chatContent}>
-            <Text style={styles.chatName} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <View style={styles.bottomRow}>
-              <Text
-                style={[styles.lastMessage, { fontWeight: '500' }]}
-                numberOfLines={1}
-              >
-                {item.lastMessage}
+            <View style={styles.chatContent}>
+              <Text style={styles.chatName} numberOfLines={1}>
+                {item.name}
               </Text>
-              <View style={styles.bottomRight}>
-                <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
-                {item.unreadCount > 0 && (
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    style={styles.unreadBadge}
-                  >
-                    <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                  </LinearGradient>
-                )}
+              <View style={styles.bottomRow}>
+                <Text
+                  style={[styles.lastMessage, { fontWeight: '500' }]}
+                  numberOfLines={1}
+                >
+                  {item.lastMessage}
+                </Text>
+                <View style={styles.bottomRight}>
+                  <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
+                  {item.unreadCount > 0 && (
+                    <LinearGradient
+                      colors={['#6366F1', '#8B5CF6']}
+                      style={styles.unreadBadge}
+                    >
+                      <Text style={styles.unreadText}>{item.unreadCount}</Text>
+                    </LinearGradient>
+                  )}
+                </View>
               </View>
             </View>
           </View>
+          {!item.isActive && (
+            <TouchableOpacity
+              style={styles.deleteButtonSmall}
+              onPress={() => deleteChatMutation.mutate(item.id)}
+              disabled={deleteChatMutation.isPending}
+            >
+              {deleteChatMutation.isPending && deleteChatMutation.variables === item.id ? (
+                <ActivityIndicator size="small" color="#DC2626" />
+              ) : (
+                <Trash2 size={16} color="#DC2626" />
+              )}
+            </TouchableOpacity>
+          )}
 
           <View style={styles.chatArrow}>
             {/* <ArrowRight size={16} color="#94A3B8" /> */}
@@ -1118,5 +1146,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deleteButtonSmall: {
+    backgroundColor: '#FECACA',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
   },
 });

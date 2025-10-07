@@ -532,6 +532,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 22,
     width: '80%',
+    fontWeight: '600',
+
   },
   statsContainer: {
     flexDirection: 'row',

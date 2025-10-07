@@ -53,6 +53,7 @@ import { EditGroupModal } from '@/components/UpdateGroupModal';
 import { GroupRole } from '@/types/group.types';
 import { approveEvent } from '@/contexts/event.api';
 import { formatDate, formatTo12Hour } from '@/utils/formatDate';
+import SocialMediaLinks from '@/components/SocialMediaLinks'; // Add this import
 
 // Neomorphic color palette
 const neomorphColors = {
@@ -680,6 +681,8 @@ export default function GroupDetailEnhanced() {
               </View>
             </View>
           )}
+         
+
           {/* Details Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -725,6 +728,10 @@ export default function GroupDetailEnhanced() {
                   </Text>
                 </View>
               </View> */}
+
+         
+         
+
 
               <View style={styles.infoRow}>
                 <View
@@ -814,6 +821,12 @@ export default function GroupDetailEnhanced() {
               )}
             </View>
           </View>
+           {/* Social Media Section - Add this after Meeting Details and before Details Section */}
+          {group.socialMedia && Object.keys(group.socialMedia).length > 0 && (
+            <View style={styles.section}>
+              <SocialMediaLinks socialMedia={group.socialMedia} />
+            </View>
+          )}
 
           {/* Admin Settings Section */}
           {isCurrentUserAdmin && (

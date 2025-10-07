@@ -103,3 +103,14 @@ export const getUnreadChatCount = async () => {
     throw error;
   }
 };
+
+// 9. DELETE CHAT
+export const deleteChat = async (chatId: string) => {
+  try {
+    const response = await api.delete(`/chat/${chatId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    throw error;
+  }
+};

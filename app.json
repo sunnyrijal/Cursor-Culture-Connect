@@ -3,7 +3,7 @@
     "name": "TRiVO",
     "slug": "trivo-connect-ios",
     "version": "0.0.2",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/logo.png",
     "scheme": "myapp",
     "owner": "kamalaryal",
