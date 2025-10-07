@@ -734,11 +734,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 20,
+    fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 22,
-    width: '66%',
+    width: '70%',
     fontWeight: '600',
   },
   createButtonHero: {
