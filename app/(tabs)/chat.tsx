@@ -173,7 +173,7 @@ export default function ChatListScreen() {
             unreadCount: 0, // You might want to calculate this based on your data
             type: 'GROUP' as const,
             isMyLastMessage: isMyMessage,
-            isActive: chat.isActive,
+            isActive: true, // Always active for now
           };
         } else {
           const otherParticipant = chat.participants.find(
@@ -376,7 +376,7 @@ export default function ChatListScreen() {
               </View>
             </View>
           </View>
-          {!item.isActive && (
+          {!item.isActive && item.type !== 'GROUP' && (
             <TouchableOpacity
               style={styles.deleteButtonSmall}
               onPress={() => deleteChatMutation.mutate(item.id)}
