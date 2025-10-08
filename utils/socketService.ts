@@ -1,4 +1,5 @@
 import io, { Socket } from 'socket.io-client';
+import { QueryClient } from '@tanstack/react-query';
 
 // Types for socket events
 interface UserData {
@@ -31,8 +32,31 @@ interface SocketError {
   timestamp: string;
 }
 
+interface NotificationData {
+  id: string;
+  isRead: boolean;
+  createdAt: string;
+  type: string;
+  title: string;
+  content: string | null;
+  data: any;
+  recipientId: string;
+  senderId: string | null;
+  friendshipId: string | null;
+  eventId: string | null;
+  groupId: string | null;
+  interestPingId: string | null;
+  sender?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
+  };
+}
+
 // Callback types
 type MessageCallback = (message: MessageData) => void;
+type NotificationCallback = (notification: NotificationData) => void;
 type ConnectionCallback = () => void;
 type ErrorCallback = (error: string) => void;
 type AuthCallback = (data: AuthenticatedData) => void;
@@ -41,14 +65,21 @@ class SocketService {
   private socket: Socket | null = null;
   private isConnected: boolean = false;
   private onNewMessage?: MessageCallback;
+  private onNewNotification?: NotificationCallback;
   private onConnect?: ConnectionCallback;
   private onDisconnect?: ConnectionCallback;
   private onError?: ErrorCallback;
   private onAuthenticated?: AuthCallback;
+  private queryClient: QueryClient | undefined;
 
   constructor() {
     this.socket = null;
     this.isConnected = false;
+  }
+
+  // Set the QueryClient instance
+  setQueryClient(queryClient: QueryClient): void {
+    this.queryClient = queryClient;
   }
 
   connect(serverUrl: string, userId: string): void {
@@ -67,7 +98,6 @@ class SocketService {
 
     this.setupEventListeners();
 
-    // Authenticate user after connection
     this.socket.on('connect', () => {
       console.log('Connected to server');
       this.isConnected = true;
@@ -76,7 +106,6 @@ class SocketService {
         this.onConnect();
       }
       
-      // Authenticate user
       this.socket?.emit('authenticate', {
         userId,
       } as UserData);
@@ -101,10 +130,14 @@ class SocketService {
       }
     });
 
-    // Listen for new messages
     this.socket.on('new_message', (messageData: MessageData) => {
       console.log('New message received:', messageData);
       this.handleNewMessage(messageData);
+    });
+
+    this.socket.on('new_notification', (notificationData: NotificationData) => {
+      console.log('New notification received:', notificationData);
+      this.handleNewNotification(notificationData);
     });
 
     this.socket.on('chat_joined', (data: ChatJoinedData) => {
@@ -130,7 +163,6 @@ class SocketService {
     });
   }
 
-  // Join a specific chat room
   joinChat(chatId: string): void {
     if (this.socket && this.isConnected) {
       this.socket.emit('join_chat', chatId);
@@ -139,7 +171,6 @@ class SocketService {
     }
   }
 
-  // Leave a specific chat room
   leaveChat(chatId: string): void {
     if (this.socket && this.isConnected) {
       this.socket.emit('leave_chat', chatId);
@@ -148,16 +179,35 @@ class SocketService {
     }
   }
 
-  // Handle new message (update your app state)
   private handleNewMessage(messageData: MessageData): void {
     if (this.onNewMessage) {
+      if (this.queryClient) {
+        this.queryClient.invalidateQueries({ queryKey: ['messages', messageData.chatId] });
+        this.queryClient.invalidateQueries({ queryKey: ['chats'] });
+      }
       this.onNewMessage(messageData);
+    }
+  }
+
+  private handleNewNotification(notificationData: NotificationData): void {
+
+    if (this.queryClient) {
+      this.queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      this.queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
+   
+    }
+    if (this.onNewNotification) {
+      this.onNewNotification(notificationData);
     }
   }
 
   // Callback setters
   setOnNewMessage(callback: MessageCallback): void {
     this.onNewMessage = callback;
+  }
+
+  setOnNewNotification(callback: NotificationCallback): void {
+    this.onNewNotification = callback;
   }
 
   setOnConnect(callback: ConnectionCallback): void {
@@ -176,7 +226,6 @@ class SocketService {
     this.onAuthenticated = callback;
   }
 
-  // Getters
   getConnectionStatus(): boolean {
     return this.isConnected && this.socket?.connected === true;
   }
@@ -185,14 +234,12 @@ class SocketService {
     return this.socket?.id;
   }
 
-  // Reconnect manually
   reconnect(): void {
     if (this.socket) {
       this.socket.connect();
     }
   }
 
-  // Disconnect
   disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();
@@ -201,9 +248,9 @@ class SocketService {
     }
   }
 
-  // Remove all listeners
   removeAllListeners(): void {
     this.onNewMessage = undefined;
+    this.onNewNotification = undefined;
     this.onConnect = undefined;
     this.onDisconnect = undefined;
     this.onError = undefined;

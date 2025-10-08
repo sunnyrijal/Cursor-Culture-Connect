@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { theme, spacing, typography, borderRadius } from '@/components/theme';
@@ -22,7 +16,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { respondToFriendRequest } from '@/contexts/friend.api';
 import { updateInterestPing } from '@/contexts/interest.api';
-import { approveEvent } from '@/contexts/event.api';
+import { approveEvent, joinEvent } from '@/contexts/event.api';
 import { useAlert } from '@/contexts/AlertContext';
 
 interface NotificationData {
@@ -156,7 +150,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     onError: (error: any) => {
       showAlert({
         title: 'Error',
-        message: error?.response.data.message || 'Failed to update ping. Please try again.',
+        message:
+          error?.response.data.message ||
+          'Failed to update ping. Please try again.',
       });
       console.error('Update ping error:', error);
     },
@@ -278,7 +274,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     return (
       notification.type === 'FRIEND_REQUEST_RECEIVED' ||
       notification.type === 'GROUP_EVENT_APPROVAL' ||
-      notification.type === 'INTEREST_PING_RECEIVED'
+      notification.type === 'INTEREST_PING_RECEIVED' ||
+      notification.type === 'EVENT_INVITE'
     );
   };
 
@@ -326,6 +323,32 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
           'No navigation for this notification type:',
           notification.type
         );
+    }
+  };
+
+  const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
+    mutationFn: (eventId: string) => joinEvent(eventId),
+    onSuccess: () => {
+      showAlert({ title: 'Success', message: 'You have RSVPed to the event!' });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (notification.eventId) {
+        queryClient.invalidateQueries({
+          queryKey: ['event', notification.eventId],
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Error joining event:', error);
+      showAlert({ title: 'Error', message: 'Failed to RSVP for the event.' });
+    },
+  });
+
+  const handleJoinEvent = (e: any) => {
+    e.stopPropagation();
+    if (notification.eventId) {
+      joinEventMutation(notification.eventId);
     }
   };
 
@@ -426,17 +449,35 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 )}
                 {notification.type === 'GROUP_EVENT_APPROVAL' &&
                   !notification.title.includes('Approved') && (
+                    <>
+                      <TouchableOpacity
+                        onPress={handleApproveEvent}
+                        style={[
+                          styles.acceptButton,
+                          approveEventMutation.isPending &&
+                            styles.disabledButton,
+                        ]}
+                        disabled={approveEventMutation.isPending}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.acceptButtonText}>Approve</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                {notification.type === 'EVENT_INVITE' && (
                   <>
                     <TouchableOpacity
-                      onPress={handleApproveEvent}
+                      onPress={handleJoinEvent}
                       style={[
                         styles.acceptButton,
-                        approveEventMutation.isPending && styles.disabledButton,
+                        isJoining && styles.disabledButton,
                       ]}
-                      disabled={approveEventMutation.isPending}
+                      disabled={isJoining}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.acceptButtonText}>Approve</Text>
+                      <Text style={styles.acceptButtonText}>
+                        {isJoining ? 'Joining...' : 'RSVP'}
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )}

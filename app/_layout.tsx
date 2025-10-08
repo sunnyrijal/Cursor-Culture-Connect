@@ -7,10 +7,12 @@ import { StatusBar } from 'expo-status-bar';
 import getDecodedToken from '@/utils/getMyData';
 import { useEffect, useCallback, useState } from 'react';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
-import { SocketProvider } from '@/hooks/useSocket';
+import socketService from '@/utils/socketService'; // Import the singleton instance
+import { SocketProvider } from '@/hooks/useSocket'; // Keep this for the provider component
 import 'react-native-reanimated'; // This should be at the top
 import { AlertProvider } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
+
 const queryClient = new QueryClient();
 
 function MainLayout() {
@@ -43,6 +45,9 @@ function MainLayout() {
     };
     fetchMyData();
   }, []);
+
+  // Set the queryClient for the socket service singleton
+  socketService.setQueryClient(queryClient);
 
   const linking = {
     prefixes: [Linking.createURL('/'), 'myapp://', 'https://trivo.app/*'],

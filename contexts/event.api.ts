@@ -219,7 +219,20 @@ export const leaveEvent = async (id: string) => {
     const response: AxiosResponse = await api.post(`/event/${id}/leave`);
     return response.data;
   } catch (error) {
-    console.error('Error joining event:', error);
+    console.error('Error leaving event:', error);
+    throw error;
+  }
+};
+
+// Invite users to an event
+export const inviteToEvent = async (eventId: string, inviteeIds: string[]) => {
+
+  console.log(inviteeIds)
+  try {
+    const response = await api.post(`/event/${eventId}/invite`, { inviteeIds });
+    return response.data;
+  } catch (error) {
+    console.error('Error inviting to event:', error);
     throw error;
   }
 };
