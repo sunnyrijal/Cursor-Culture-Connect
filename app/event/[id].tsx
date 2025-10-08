@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Pressable,
   Share,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -31,11 +33,13 @@ import {
   ChevronDown,
   MessageCircle as MessageCircleIcon,
   Share2,
+  UserPlus,
 } from 'lucide-react-native';
 import {
   approveEvent,
   deleteEvent,
   getEvent,
+  inviteToEvent,
   joinEvent,
   leaveEvent,
 } from '@/contexts/event.api';
@@ -44,6 +48,8 @@ import { createDirectChat } from '@/contexts/chat.api';
 import { EditEventModal } from '@/components/EditEventModal';
 import { useAlert } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
+import { getUsers, User } from '@/contexts/user.api';
+import { Button } from '@/components/ui/Button';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -65,6 +71,9 @@ export default function EventDetail() {
   const { id } = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [showAttendees, setShowAttendees] = React.useState(false);
+  const [showInviteModal, setShowInviteModal] = React.useState(false);
+  const [searchEmail, setSearchEmail] = React.useState('');
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
   const [showEditEventModal, setShowEditEventModal] = React.useState(false);
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
@@ -88,6 +97,11 @@ export default function EventDetail() {
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
+  });
+
+  const { data: usersResponse } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => getUsers(),
   });
 
   const { mutate: deleteEventMutation } = useMutation({
@@ -186,6 +200,56 @@ export default function EventDetail() {
   const handleApproveEvent = ()=>{
     approveEventMutation.mutate(event.id)
   }
+
+  const { mutate: inviteToEventMutation, isPending: isInviting } = useMutation({
+    mutationFn: (inviteeIds: string[]) => inviteToEvent(eventId as string, inviteeIds),
+    onSuccess: () => {
+      showAlert({ title: 'Success', message: 'Invitations sent successfully!' });
+      setShowInviteModal(false);
+      setSelectedUserIds([]);
+      setSearchEmail('');
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+    },
+    onError: (error: any) => {
+      console.error('Error inviting users:', error);
+      showAlert({
+        title: 'Error',
+        message: error?.response?.data?.message || 'Failed to send invitations.',
+      });
+    },
+  });
+
+  const handleInviteUsers = () => {
+    if (selectedUserIds.length > 0) {
+      inviteToEventMutation(selectedUserIds);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const availableUsers = React.useMemo(() => {
+    if (!usersResponse?.users || !event?.attendingUsers) {
+      return [];
+    }
+    const attendingUserIds = new Set(event.attendingUsers.map((u: any) => u.id));
+    return usersResponse.users.filter((user: User) => {
+      const isAttending = attendingUserIds.has(user.id);
+      const matchesSearch = user.name.toLowerCase().includes(searchEmail.toLowerCase()) || user.email.toLowerCase().includes(searchEmail.toLowerCase());
+      return !isAttending && matchesSearch;
+    });
+  }, [usersResponse, event, searchEmail]);
+
+  const handleModalOverlayPress = (modalSetter: (value: boolean) => void) => {
+    modalSetter(false);
+    setSelectedUserIds([]);
+    setSearchEmail('');
+  };
 
   const isAttending = React.useMemo(() => {
     return event?.attendingUsers?.some(
@@ -335,6 +399,14 @@ export default function EventDetail() {
               >
                 <Share2 size={18} color={theme.textPrimary} />
               </TouchableOpacity>
+              {isHost && (
+                <TouchableOpacity
+                  onPress={() => setShowInviteModal(true)}
+                  style={styles.headerButton}
+                >
+                  <UserPlus size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
               {event?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={() => setShowEditEventModal(true)}
@@ -706,6 +778,86 @@ export default function EventDetail() {
           }
         />
       )}
+
+      <Modal
+        visible={showInviteModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowInviteModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => handleModalOverlayPress(setShowInviteModal)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={() => {}}
+            disabled={isInviting}
+          >
+            <Text style={styles.modalTitle}>
+              {isInviting ? 'Inviting...' : 'Invite to Event'}
+            </Text>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name or email..."
+                value={searchEmail}
+                onChangeText={setSearchEmail}
+                autoCapitalize="none"
+              />
+            </View>
+
+            <ScrollView style={styles.usersList}>
+              {availableUsers.map((user: User) => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={[
+                    styles.userItem,
+                    selectedUserIds.includes(user.id) &&
+                      styles.selectedUserItem,
+                  ]}
+                  onPress={() => toggleUserSelection(user.id)}
+                >
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userEmail}>{user.email}</Text>
+                  </View>
+                  {selectedUserIds.includes(user.id) && (
+                    <View style={styles.selectedIndicator}>
+                      <Text style={styles.selectedText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+              {availableUsers.length === 0 && (
+                <Text style={styles.noUsersText}>
+                  {searchEmail
+                    ? 'No users found matching your search'
+                    : 'No available users to invite'}
+                </Text>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => handleModalOverlayPress(setShowInviteModal)}
+                style={styles.cancelButton}
+              />
+              <Button
+                title={isInviting ? 'Inviting...' : `Invite ${selectedUserIds.length}`}
+                onPress={handleInviteUsers}
+                disabled={selectedUserIds.length === 0 || isInviting}
+                style={[styles.addButton, (selectedUserIds.length === 0 || isInviting) && styles.disabledButton]}
+              />
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1364,5 +1516,129 @@ const styles = StyleSheet.create({
   attendeeEmail: {
     fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 24, 39, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.xl,
+    width: '90%',
+    maxHeight: '80%',
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.shadowDark,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.bold,
+    color: theme.textPrimary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  searchContainer: {
+    marginBottom: spacing.lg,
+  },
+  searchInput: {
+    borderWidth: 2,
+    borderColor: theme.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: typography.fontSize.base,
+    backgroundColor: theme.white,
+  },
+  usersList: {
+    maxHeight: 300,
+  },
+  userItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.xs,
+  },
+  selectedUserItem: {
+    backgroundColor: theme.primaryLight,
+    borderColor: theme.primary,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.semiBold,
+    color: theme.textPrimary,
+  },
+  userEmail: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+  },
+  selectedIndicator: {
+    backgroundColor: theme.primary,
+    borderRadius: 14,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedText: {
+    color: theme.white,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+  },
+  noUsersText: {
+    textAlign: 'center',
+    color: theme.textSecondary,
+    fontSize: typography.fontSize.base,
+    padding: spacing.lg,
+    fontStyle: 'italic',
+  },
+  modalActions: {
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+  },
+  cancelButton: {
+    backgroundColor: theme.gray200,
+    flex: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+  },
+  addButton: {
+    backgroundColor: theme.primary,
+    flex: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
 });

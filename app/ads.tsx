@@ -17,6 +17,7 @@ import { theme, spacing, typography } from '@/components/theme';
 import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAlert } from '@/contexts/AlertContext';
+import { discoverExperienceData } from '@/data/discoverExperienceData';
 
 interface Advertisement {
   id: string;
@@ -32,6 +33,7 @@ interface Advertisement {
   location: {
     address: string;
   };
+  listType?: string;
   user: {
     id: string;
     name: string;
@@ -76,6 +78,7 @@ export default function AllAdsScreen() {
       metrics: ad.metrics,
       category: ad.category,
       originalAd: ad,
+      listType: ad.listType,
     }));
   };
 
@@ -83,8 +86,10 @@ export default function AllAdsScreen() {
     adResponse?.success && adResponse.data
       ? transformAdData(adResponse.data)
       : [];
-
-  const handleSponsoredContentPress = async (content: any) => {
+  const allData = [...allAds, ...transformAdData(discoverExperienceData.data as any)];
+  
+    const handleSponsoredContentPress = async (content: any) => {
+    // Only handle sponsored content with a link or contact info
     if (content.link && content.link.startsWith('http')) {
       const supported = await Linking.canOpenURL(content.link);
       if (supported) {
@@ -118,7 +123,7 @@ export default function AllAdsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={styles.infoText}>Loading Experiences...</Text>
@@ -129,7 +134,7 @@ export default function AllAdsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.centered}>
           <Text style={styles.errorText}>Failed to load experiences.</Text>
           <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
@@ -141,7 +146,7 @@ export default function AllAdsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color={theme.textPrimary} />
@@ -150,7 +155,7 @@ export default function AllAdsScreen() {
         <View style={{ width: 24 }} />
       </View>
       <FlatList
-        data={allAds}
+        data={allData}
         renderItem={renderAdItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

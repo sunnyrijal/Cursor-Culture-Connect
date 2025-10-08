@@ -1,3 +1,4 @@
+import { FriendFilters } from '@/components/UserFilterModal';
 import api from './axiosConfig'; // adjust path as needed
 import { AxiosResponse } from 'axios';
 
@@ -107,23 +108,17 @@ export const getAllUsers = async () => {
 //   }
 // };
 // In your user.api.ts file
-export const getUsers = async (filters?: {
-  myUniversity?: boolean;
-  major?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  universityId?: string;
-  city?: string;
-  state?: string;
-}) => {
+export const getUsers = async (filters?:FriendFilters) => {
   try {
     const params = new URLSearchParams();
-
+    console.log(filters)
     if (filters) {
       if (filters.myUniversity) params.append('myUniversity', 'true');
       if (filters.major) params.append('major', filters.major);
       if (filters.sortBy) params.append('sortBy', filters.sortBy);
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (filters.language) params.append('language', filters.language);
+
       if (filters.universityId)
         params.append('universityId', filters.universityId);
       if (filters.state) params.append('state', filters.state);

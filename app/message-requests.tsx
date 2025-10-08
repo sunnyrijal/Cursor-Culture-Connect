@@ -81,6 +81,7 @@ const MessageRequestsScreen = () => {
     mutationFn: (chatId: string) => deleteChat(chatId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
+
     },
   });
   console.log(chatRequestsResponse)
