@@ -70,7 +70,7 @@ export const LANGUAGE_OPTIONS = [
   "Tamil",
 ];
 
-interface FriendFilters {
+export interface FriendFilters {
   myUniversity?: boolean;
   major?: string;
   sortBy?: 'name' | 'createdAt';
@@ -242,11 +242,16 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
     }
   }, [visible, filters]);
 
-  const updateFilter = (key: keyof FriendFilters, value: any) => {
+const updateFilter = (key: keyof FriendFilters, value: any) => {
     setTempFilters((prev) => {
-      const newFilters = { ...prev, [key]: value };
+      const newFilters = { ...prev };
       
-      // Clear city when state changes
+      if (key === 'language') {
+        newFilters[key] = value;
+      } else {
+        newFilters[key] = value || undefined;
+      }
+      
       if (key === 'state' && value !== prev.state) {
         newFilters.city = undefined;
       }

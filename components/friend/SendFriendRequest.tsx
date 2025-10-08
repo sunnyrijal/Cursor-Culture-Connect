@@ -32,7 +32,7 @@ import {
   respondToFriendRequest,
 } from '@/contexts/friend.api';
 import { useAlert } from '@/contexts/AlertContext';
-import { FriendFilterModal } from '../UserFilterModal';
+import { FriendFilterModal, FriendFilters } from '../UserFilterModal';
 
 const theme = {
   primary: '#6366F1',
@@ -62,13 +62,7 @@ const FriendshipStatus = {
   BLOCKED: 'BLOCKED',
 };
 
-interface FriendFilters {
-  myUniversity?: boolean;
-  major?: string;
-  sortBy?: 'name' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-  universityId?: string;
-}
+
 
 export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');

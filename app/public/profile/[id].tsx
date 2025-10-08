@@ -687,6 +687,60 @@ export default function UserProfilePage() {
             <View style={styles.actionsContainer}>{getActionButtons()}</View>
           </View>
 
+          <View style={styles.infoSection}>
+            <Text style={styles.sectionTitle}>Details</Text>
+            <View style={styles.infoCard}>
+              {userData.university && (
+                <View style={styles.infoItem}>
+                  <GraduationCap size={18} color={theme.primary} />
+                  <Text style={styles.infoValue}>
+                    {userData.university.name}
+                  </Text>
+                </View>
+              )}
+              {userData.major && (
+                <View style={styles.infoItem}>
+                  <Briefcase size={18} color={theme.primary} />
+                  <Text style={styles.infoValue}>{userData.major}</Text>
+                </View>
+              )}
+              {userData.classYear && (
+                <View style={styles.infoItem}>
+                  <Calendar size={18} color={theme.primary} />
+                  <Text style={styles.infoValue}>{userData.classYear}</Text>
+                </View>
+              )}
+              {(userData.city || userData.state) && (
+                <View style={styles.infoItem}>
+                  <MapPin size={18} color={theme.primary} />
+                  <Text style={styles.infoValue}>
+                    {userData.city && userData.state
+                      ? `${userData.city}, ${userData.state}`
+                      : userData.city || userData.state}
+                  </Text>
+                </View>
+              )}
+              {userData.countryOfOrigin && (
+                <View style={styles.infoItem}>
+                  <Globe size={18} color={theme.primary} />
+                  <Text style={styles.infoValue}>
+                    From {userData.countryOfOrigin}
+                  </Text>
+                </View>
+              )}
+              {(userData.friendshipStatus == FriendshipStatus.ACCEPTED ||
+                userData.publicPreference == true) &&
+                userData.ethnicity?.length > 0 && (
+                  <View style={styles.infoItem}>
+                    <Users size={18} color={theme.primary} />
+                    <Text style={styles.infoValue}>
+                      {userData.ethnicity.join(', ')}
+                    </Text>
+                  </View>
+                )}
+            </View>
+          </View>
+
           {(userData.friendshipStatus == FriendshipStatus.ACCEPTED ||
             userData.publicPreference == true) && (
             <View>
@@ -702,58 +756,6 @@ export default function UserProfilePage() {
                   </View>
                 </View>
               )}
-
-              <View style={styles.infoSection}>
-                <Text style={styles.sectionTitle}>Details</Text>
-                <View style={styles.infoCard}>
-                  {userData.university && (
-                    <View style={styles.infoItem}>
-                      <GraduationCap size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>
-                        {userData.university.name}
-                      </Text>
-                    </View>
-                  )}
-                  {userData.major && (
-                    <View style={styles.infoItem}>
-                      <Briefcase size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>{userData.major}</Text>
-                    </View>
-                  )}
-                  {userData.classYear && (
-                    <View style={styles.infoItem}>
-                      <Calendar size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>{userData.classYear}</Text>
-                    </View>
-                  )}
-                  {(userData.city || userData.state) && (
-                    <View style={styles.infoItem}>
-                      <MapPin size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>
-                        {userData.city && userData.state
-                          ? `${userData.city}, ${userData.state}`
-                          : userData.city || userData.state}
-                      </Text>
-                    </View>
-                  )}
-                  {userData.countryOfOrigin && (
-                    <View style={styles.infoItem}>
-                      <Globe size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>
-                        From {userData.countryOfOrigin}
-                      </Text>
-                    </View>
-                  )}
-                  {userData.ethnicity?.length > 0 && (
-                    <View style={styles.infoItem}>
-                      <Users size={18} color={theme.primary} />
-                      <Text style={styles.infoValue}>
-                        {userData.ethnicity.join(', ')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
 
               {userData.interests?.length > 0 && (
                 <View style={styles.infoSection}>
@@ -1151,7 +1153,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.error,
   },
   infoSection: {
-    marginTop: 24,
+    marginVertical: 12,
     paddingHorizontal: 20,
   },
   sectionTitle: {

@@ -15,7 +15,10 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import {
   Search,
@@ -32,9 +35,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { theme } from '@/components/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createDirectChat, getUserChats } from '@/contexts/chat.api';
+import {
+  createDirectChat,
+  deleteChat,
+  getUserChats,
+} from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
-import {  getUsers } from '@/contexts/user.api';
+import { getUsers } from '@/contexts/user.api';
 import useSocket from '@/hooks/useSocket';
 
 type FilterType = 'DIRECT' | 'GROUP';
@@ -97,7 +104,6 @@ export default function ChatListScreen() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
@@ -123,14 +129,15 @@ export default function ChatListScreen() {
   const users = usersResponse?.users || [];
 
   const deleteChatMutation = useMutation({
-    mutationFn: (chatId: string) => createDirectChat({ otherUserId: chatId }), // Assuming deleteChat is in chat.api
+    mutationFn: (chatId: string) => deleteChat(chatId), 
     onSuccess: () => {
       console.log('✅ Chat Deleted');
       queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
     },
   });
 
-  console.log(chatResponse)
+  console.log(chatResponse);
 
   // Get socket connection and methods
   const {
@@ -323,7 +330,9 @@ export default function ChatListScreen() {
   }) => (
     <TouchableOpacity
       style={[styles.chatItem, { marginTop: index === 0 ? 8 : 0 }]}
-      onPress={item.isActive ? () => router.push(`/chat/${item.id}`) : undefined}
+      onPress={
+        item.isActive ? () => router.push(`/chat/${item.id}`) : undefined
+      }
       activeOpacity={item.isActive ? 0.7 : 1}
     >
       <BlurView intensity={10} style={styles.chatItemBlur}>
@@ -331,7 +340,14 @@ export default function ChatListScreen() {
           colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
           style={styles.chatItemGradient}
         >
-          <View style={{ opacity: item.isActive ? 1 : 0.5, flexDirection: 'row', flex: 1, alignItems: 'center' }}>
+          <View
+            style={{
+              opacity: item.isActive ? 1 : 0.5,
+              flexDirection: 'row',
+              flex: 1,
+              alignItems: 'center',
+            }}
+          >
             <View style={styles.avatarContainer}>
               <Image
                 source={
@@ -382,7 +398,8 @@ export default function ChatListScreen() {
               onPress={() => deleteChatMutation.mutate(item.id)}
               disabled={deleteChatMutation.isPending}
             >
-              {deleteChatMutation.isPending && deleteChatMutation.variables === item.id ? (
+              {deleteChatMutation.isPending &&
+              deleteChatMutation.variables === item.id ? (
                 <ActivityIndicator size="small" color="#DC2626" />
               ) : (
                 <Trash2 size={16} color="#DC2626" />
@@ -460,9 +477,11 @@ export default function ChatListScreen() {
               </View>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{user.name}</Text>
-                {user?.university?.name && <Text style={styles.userUniversity}>
-                  {user.university.name}
-                </Text>}
+                {user?.university?.name && (
+                  <Text style={styles.userUniversity}>
+                    {user.university.name}
+                  </Text>
+                )}
               </View>
               <View style={styles.userArrow}>
                 <ArrowRight size={16} color="#94A3B8" />
@@ -514,7 +533,7 @@ export default function ChatListScreen() {
               <View
                 style={[
                   styles.connectionDot,
-                  { backgroundColor: isConnected ? theme.success : "red" },
+                  { backgroundColor: isConnected ? theme.success : 'red' },
                 ]}
               />
             </View>
@@ -539,7 +558,7 @@ export default function ChatListScreen() {
                     </Text>
                   </View>
                 )}
-                </TouchableOpacity>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
