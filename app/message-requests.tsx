@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  Image, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
   ScrollView,
-  Platform 
+  Platform,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -54,7 +54,7 @@ interface ChatRequest {
   updatedAt: string;
   participants: Participant[];
   messages: Message[];
-  requestDirection:'SENT' | 'RECEIVED' | 'NONE'
+  requestDirection: 'SENT' | 'RECEIVED' | 'NONE';
 }
 
 const MessageRequestsScreen = () => {
@@ -66,12 +66,12 @@ const MessageRequestsScreen = () => {
     queryFn: () => getDecodedToken(),
   });
 
-  const { 
-    data: chatRequestsResponse, 
-    isLoading, 
-    isError, 
-    error, 
-    refetch 
+  const {
+    data: chatRequestsResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
   } = useQuery({
     queryKey: ['chatRequests'],
     queryFn: getChatRequests,
@@ -81,10 +81,11 @@ const MessageRequestsScreen = () => {
     mutationFn: (chatId: string) => deleteChat(chatId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
-
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
-  console.log(chatRequestsResponse)
+  console.log(chatRequestsResponse);
 
   const processedRequests = useMemo(() => {
     if (!chatRequestsResponse?.data || !myData?.userId) return [];
@@ -93,10 +94,11 @@ const MessageRequestsScreen = () => {
       const otherParticipant = chat.participants.find(
         (p) => p.userId !== myData.userId
       );
-      
+
       const lastMessage = chat.messages[0];
-      const messageContent = lastMessage?.content || 'Wants to connect with you';
-      
+      const messageContent =
+        lastMessage?.content || 'Wants to connect with you';
+
       return {
         id: chat.id,
         name: otherParticipant?.user.name || 'Unknown User',
@@ -104,7 +106,7 @@ const MessageRequestsScreen = () => {
         participantCount: chat.participants.length,
         profilePicture: otherParticipant?.user.profilePicture || '',
         lastMessage: messageContent,
-        requestDirection:chat.requestDirection,
+        requestDirection: chat.requestDirection,
         lastMessageTime: lastMessage
           ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
               hour: '2-digit',
@@ -121,13 +123,17 @@ const MessageRequestsScreen = () => {
 
   const filteredRequests = useMemo(() => {
     if (activeTab === 'sent') {
-      return processedRequests.filter((req:ChatRequest)=> req.requestDirection === 'SENT');
+      return processedRequests.filter(
+        (req: ChatRequest) => req.requestDirection === 'SENT'
+      );
     }
     // Default to received
-    return processedRequests.filter((req:ChatRequest)=> req.requestDirection === 'RECEIVED');
+    return processedRequests.filter(
+      (req: ChatRequest) => req.requestDirection === 'RECEIVED'
+    );
   }, [processedRequests, activeTab]);
 
-  console.log("Chat Requests", filteredRequests);
+  console.log('Chat Requests', filteredRequests);
 
   const handleRequestPress = (chatId: string) => {
     router.push(`/chat/${chatId}`);
@@ -149,16 +155,20 @@ const MessageRequestsScreen = () => {
         {activeTab === 'received' ? 'No Received Requests' : 'No Sent Requests'}
       </Text>
       <Text style={styles.emptySubtitle}>
-        {activeTab === 'received' ? "When someone sends you a message request, it will appear here." : "Your sent message requests will appear here."}
+        {activeTab === 'received'
+          ? 'When someone sends you a message request, it will appear here.'
+          : 'Your sent message requests will appear here.'}
       </Text>
     </View>
   );
 
-  const renderRequestItem = (item: typeof processedRequests[0], index: number) => (
+  const renderRequestItem = (
+    item: (typeof processedRequests)[0],
+    index: number
+  ) => (
     <View
       key={item.id}
       style={[styles.requestItem, { marginTop: index === 0 ? 8 : 0 }]}
-      
     >
       <BlurView intensity={10} style={styles.requestItemBlur}>
         <LinearGradient
@@ -166,7 +176,10 @@ const MessageRequestsScreen = () => {
           style={styles.requestItemGradient}
         >
           <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={() => handleRequestPress(item.id)} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={() => handleRequestPress(item.id)}
+              activeOpacity={0.8}
+            >
               <Image
                 source={
                   item.profilePicture
@@ -179,7 +192,10 @@ const MessageRequestsScreen = () => {
           </View>
 
           <View style={styles.requestContent}>
-            <TouchableOpacity onPress={() => handleRequestPress(item.id)} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={() => handleRequestPress(item.id)}
+              activeOpacity={0.8}
+            >
               <View style={styles.requestHeader}>
                 <Text style={styles.userName}>{item.name}</Text>
                 <Text style={styles.requestTime}>{item.lastMessageTime}</Text>
@@ -193,49 +209,74 @@ const MessageRequestsScreen = () => {
 
             {item.name === 'Unknown User' && item.participantCount === 1 ? (
               <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.declineButton, { flex: 1, backgroundColor: '#FECACA' }]} 
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.declineButton,
+                    { flex: 1, backgroundColor: '#FECACA' },
+                  ]}
                   onPress={() => handleDecline(item.id)}
                   disabled={deleteMutation.isPending}
                 >
-                  {deleteMutation.isPending && deleteMutation.variables === item.id ? (
+                  {deleteMutation.isPending &&
+                  deleteMutation.variables === item.id ? (
                     <ActivityIndicator size="small" color="#DC2626" />
                   ) : (
-                    <Text style={[styles.actionButtonText, { color: '#DC2626' }]}>Delete</Text>
+                    <Text
+                      style={[styles.actionButtonText, { color: '#DC2626' }]}
+                    >
+                      Delete
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
             ) : activeTab === 'received' ? (
               <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={() => handleAccept(item.id)}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.acceptButton]}
+                  onPress={() => handleAccept(item.id)}
+                >
                   <Check size={16} color="#FFFFFF" />
                   <Text style={styles.actionButtonText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.declineButton]} onPress={() => handleDecline(item.id)}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.declineButton]}
+                  onPress={() => handleDecline(item.id)}
+                >
                   <X size={16} color="#475569" />
-                  <Text style={[styles.actionButtonText, { color: '#475569' }]}>Decline</Text>
+                  <Text style={[styles.actionButtonText, { color: '#475569' }]}>
+                    Decline
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.declineButton, { flex: 1 }]} 
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.declineButton,
+                    { flex: 1 },
+                  ]}
                   onPress={() => handleDecline(item.id)}
                   disabled={deleteMutation.isPending}
                 >
-                  {deleteMutation.isPending && deleteMutation.variables === item.id ? (
+                  {deleteMutation.isPending &&
+                  deleteMutation.variables === item.id ? (
                     <ActivityIndicator size="small" color="#475569" />
                   ) : (
                     <>
                       <X size={16} color="#475569" />
-                      <Text style={[styles.actionButtonText, { color: '#475569' }]}>Cancel Request</Text>
+                      <Text
+                        style={[styles.actionButtonText, { color: '#475569' }]}
+                      >
+                        Cancel Request
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
             )}
           </View>
-
         </LinearGradient>
       </BlurView>
     </View>
@@ -276,11 +317,17 @@ const MessageRequestsScreen = () => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'sent' && styles.activeTabButton]}
+            style={[
+              styles.tabButton,
+              activeTab === 'sent' && styles.activeTabButton,
+            ]}
             onPress={() => setActiveTab('sent')}
           >
             <Text
-              style={[styles.tabButtonText, activeTab === 'sent' && styles.activeTabButtonText]}
+              style={[
+                styles.tabButtonText,
+                activeTab === 'sent' && styles.activeTabButtonText,
+              ]}
             >
               Sent
             </Text>
@@ -298,7 +345,10 @@ const MessageRequestsScreen = () => {
               <Text style={styles.errorText}>
                 Error: {error?.message || 'Failed to load requests'}
               </Text>
-              <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+              <TouchableOpacity
+                onPress={() => refetch()}
+                style={styles.retryButton}
+              >
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
                   style={styles.retryButtonGradient}
@@ -310,12 +360,14 @@ const MessageRequestsScreen = () => {
           ) : filteredRequests.length === 0 ? (
             renderEmptyState()
           ) : (
-            <ScrollView 
+            <ScrollView
               style={styles.scrollView}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
-              {filteredRequests.map((item:any, index:number) => renderRequestItem(item, index))}
+              {filteredRequests.map((item: any, index: number) =>
+                renderRequestItem(item, index)
+              )}
             </ScrollView>
           )}
         </View>

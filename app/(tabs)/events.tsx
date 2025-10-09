@@ -298,7 +298,7 @@ export default function Events() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <CreateEventModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -614,7 +614,7 @@ export default function Events() {
           <PlusCircle size={28} color={theme.primary} />
         </TouchableOpacity>
       </View> */}
-    </SafeAreaView>
+    </View>
   );
 }
 

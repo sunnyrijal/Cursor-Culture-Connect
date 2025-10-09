@@ -12,6 +12,7 @@ import { SocketProvider } from '@/hooks/useSocket'; // Keep this for the provide
 import 'react-native-reanimated'; // This should be at the top
 import { AlertProvider } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
+import SafeScreen from '@/components/SafeScreen';
 
 const queryClient = new QueryClient();
 

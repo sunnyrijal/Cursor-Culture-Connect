@@ -7,7 +7,6 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { ShareCultureModal } from '@/components/ShareCultureModal';
@@ -76,7 +75,7 @@ export default function Dashboard() {
   }, [queryClient]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -94,6 +93,7 @@ export default function Dashboard() {
         <CulturalExperiences />
 
         <UpcommingEvents />
+
       </ScrollView>
 
       {/* Modals */}
@@ -123,7 +123,7 @@ export default function Dashboard() {
         onClose={() => setShowStoriesModal(false)}
         onPostStory={handlePostStory}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

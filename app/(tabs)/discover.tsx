@@ -90,7 +90,7 @@ export default function Page() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Hero Section */}
       <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
@@ -159,7 +159,7 @@ export default function Page() {
       {/* Content */}
 
       <View style={styles.contentWrapper}>{renderContent()}</View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F3F7', // Updated to match groups page background
     marginBottom: 0,
     paddingBottom: 0,
+    
   },
   contentWrapper: {
     flex: 1,

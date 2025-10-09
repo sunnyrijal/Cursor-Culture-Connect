@@ -71,6 +71,7 @@ class SocketService {
   private onError?: ErrorCallback;
   private onAuthenticated?: AuthCallback;
   private queryClient: QueryClient | undefined;
+  private currentUserId: string | null = null;
 
   constructor() {
     this.socket = null;
@@ -84,9 +85,12 @@ class SocketService {
 
   connect(serverUrl: string, userId: string): void {
     if (this.socket?.connected) {
-      console.log('Already connected to server');
+      console.log('✅ Already connected to server');
       return;
     }
+
+    console.log('🔌 Initiating connection to:', serverUrl);
+    this.currentUserId = userId;
 
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -97,33 +101,43 @@ class SocketService {
     });
 
     this.setupEventListeners();
-
-    this.socket.on('connect', () => {
-      console.log('Connected to server');
-      this.isConnected = true;
-      
-      if (this.onConnect) {
-        this.onConnect();
-      }
-      
-      this.socket?.emit('authenticate', {
-        userId,
-      } as UserData);
-    });
   }
 
   private setupEventListeners(): void {
     if (!this.socket) return;
 
+    // CRITICAL: Handle connect event
+    this.socket.on('connect', () => {
+      console.log('🟢 Socket.IO connect event fired');
+      console.log('📡 Socket ID:', this.socket?.id);
+      this.isConnected = true;
+      
+      // Call the callback AFTER setting isConnected
+      if (this.onConnect) {
+        console.log('✅ Calling onConnect callback');
+        this.onConnect();
+      } else {
+        console.warn('⚠️ No onConnect callback registered yet');
+      }
+      
+      // Authenticate after connection
+      if (this.currentUserId) {
+        console.log('🔐 Authenticating with userId:', this.currentUserId);
+        this.socket?.emit('authenticate', {
+          userId: this.currentUserId,
+        } as UserData);
+      }
+    });
+
     this.socket.on('authenticated', (data: AuthenticatedData) => {
-      console.log('Authenticated:', data);
+      console.log('✅ Authenticated:', data);
       if (this.onAuthenticated) {
         this.onAuthenticated(data);
       }
     });
 
     this.socket.on('disconnect', (reason: string) => {
-      console.log('Disconnected from server:', reason);
+      console.log('❌ Disconnected from server:', reason);
       this.isConnected = false;
       if (this.onDisconnect) {
         this.onDisconnect();
@@ -131,32 +145,33 @@ class SocketService {
     });
 
     this.socket.on('new_message', (messageData: MessageData) => {
-      console.log('New message received:', messageData);
+      console.log('💬 New message received:', messageData);
       this.handleNewMessage(messageData);
     });
 
     this.socket.on('new_notification', (notificationData: NotificationData) => {
-      console.log('New notification received:', notificationData);
+      console.log('🔔 New notification received:', notificationData);
       this.handleNewNotification(notificationData);
     });
 
     this.socket.on('chat_joined', (data: ChatJoinedData) => {
-      console.log('Successfully joined chat:', data.chatId);
+      console.log('🏠 Successfully joined chat:', data.chatId);
     });
 
     this.socket.on('chat_left', (data: ChatJoinedData) => {
-      console.log('Successfully left chat:', data.chatId);
+      console.log('🚪 Successfully left chat:', data.chatId);
     });
 
     this.socket.on('socket_error', (error: SocketError) => {
-      console.error('Socket error:', error.error);
+      console.error('⚠️ Socket error:', error.error);
       if (this.onError) {
         this.onError(error.error);
       }
     });
 
     this.socket.on('connect_error', (error: Error) => {
-      console.error('Connection error:', error.message);
+      console.error('❌ Connection error:', error.message);
+      this.isConnected = false;
       if (this.onError) {
         this.onError(error.message);
       }
@@ -165,24 +180,26 @@ class SocketService {
 
   joinChat(chatId: string): void {
     if (this.socket && this.isConnected) {
+      console.log('🏠 Joining chat:', chatId);
       this.socket.emit('join_chat', chatId);
     } else {
-      console.warn('Socket not connected. Cannot join chat.');
+      console.warn('⚠️ Socket not connected. Cannot join chat.');
     }
   }
 
   leaveChat(chatId: string): void {
     if (this.socket && this.isConnected) {
+      console.log('🚪 Leaving chat:', chatId);
       this.socket.emit('leave_chat', chatId);
     } else {
-      console.warn('Socket not connected. Cannot leave chat.');
+      console.warn('⚠️ Socket not connected. Cannot leave chat.');
     }
   }
 
   private handleNewMessage(messageData: MessageData): void {
     if (this.onNewMessage) {
       if (this.queryClient) {
-        this.queryClient.invalidateQueries({ queryKey: ['messages', messageData.chatId] });
+        this.queryClient.invalidateQueries({ queryKey: ['messages'] });
         this.queryClient.invalidateQueries({ queryKey: ['chats'] });
       }
       this.onNewMessage(messageData);
@@ -190,11 +207,9 @@ class SocketService {
   }
 
   private handleNewNotification(notificationData: NotificationData): void {
-
     if (this.queryClient) {
       this.queryClient.invalidateQueries({ queryKey: ['notifications'] });
       this.queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
-   
     }
     if (this.onNewNotification) {
       this.onNewNotification(notificationData);
@@ -203,31 +218,49 @@ class SocketService {
 
   // Callback setters
   setOnNewMessage(callback: MessageCallback): void {
+    console.log('📝 Setting onNewMessage callback');
     this.onNewMessage = callback;
   }
 
   setOnNewNotification(callback: NotificationCallback): void {
+    console.log('📝 Setting onNewNotification callback');
     this.onNewNotification = callback;
   }
 
   setOnConnect(callback: ConnectionCallback): void {
+    console.log('📝 Setting onConnect callback');
     this.onConnect = callback;
+    
+    // CRITICAL FIX: If already connected, call the callback immediately
+    if (this.isConnected && this.socket?.connected) {
+      console.log('🟢 Already connected! Calling callback immediately');
+      callback();
+    }
   }
 
   setOnDisconnect(callback: ConnectionCallback): void {
+    console.log('📝 Setting onDisconnect callback');
     this.onDisconnect = callback;
   }
 
   setOnError(callback: ErrorCallback): void {
+    console.log('📝 Setting onError callback');
     this.onError = callback;
   }
 
   setOnAuthenticated(callback: AuthCallback): void {
+    console.log('📝 Setting onAuthenticated callback');
     this.onAuthenticated = callback;
   }
 
   getConnectionStatus(): boolean {
-    return this.isConnected && this.socket?.connected === true;
+    const status = this.isConnected && this.socket?.connected === true;
+    console.log('📊 Connection status check:', {
+      isConnected: this.isConnected,
+      socketConnected: this.socket?.connected,
+      finalStatus: status
+    });
+    return status;
   }
 
   getSocketId(): string | undefined {
@@ -235,12 +268,16 @@ class SocketService {
   }
 
   reconnect(): void {
+    console.log('🔄 Reconnecting socket...');
     if (this.socket) {
       this.socket.connect();
+    } else {
+      console.warn('⚠️ No socket instance to reconnect');
     }
   }
 
   disconnect(): void {
+    console.log('🔌 Disconnecting socket...');
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -249,6 +286,7 @@ class SocketService {
   }
 
   removeAllListeners(): void {
+    console.log('🧹 Removing all listeners');
     this.onNewMessage = undefined;
     this.onNewNotification = undefined;
     this.onConnect = undefined;

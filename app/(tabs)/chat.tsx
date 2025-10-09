@@ -15,10 +15,7 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+
 import { router, useFocusEffect } from 'expo-router';
 import {
   Search,
@@ -430,7 +427,7 @@ export default function ChatListScreen() {
       presentationStyle="pageSheet"
       onRequestClose={() => setShowUserModal(false)}
     >
-      <SafeAreaView style={styles.modalContainer}>
+      <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Select User to Message</Text>
           <TouchableOpacity
@@ -503,7 +500,7 @@ export default function ChatListScreen() {
             <Text style={styles.loadingText}>Creating chat...</Text>
           </View>
         )}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 
@@ -523,7 +520,7 @@ export default function ChatListScreen() {
         </View>
       )} */}
 
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
@@ -538,13 +535,13 @@ export default function ChatListScreen() {
               />
             </View>
             <View style={styles.headerRight}>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => setShowUserModal(true)}
                 style={styles.userPlusButton}
                 activeOpacity={0.7}
               >
                 <UserPlus size={24} color={theme.primary} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <TouchableOpacity
                 onPress={() => router.push('/message-requests')}
@@ -667,7 +664,7 @@ export default function ChatListScreen() {
             />
           )}
         </View>
-      </SafeAreaView>
+      </View>
 
       {renderUserSelectionModal()}
     </View>
