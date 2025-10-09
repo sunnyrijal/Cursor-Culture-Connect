@@ -99,7 +99,6 @@ export default function SendFriendRequestScreen() {
   }, [refetch]);
 
   const users = usersResponse?.users || [];
-  console.log(users)
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,
@@ -384,7 +383,7 @@ export default function SendFriendRequestScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchWrapper}>
         <View style={styles.searchBarContainer}>
@@ -518,7 +517,7 @@ export default function SendFriendRequestScreen() {
         onFiltersChange={setFilters}
         onApply={() => setFilterModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -526,6 +525,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+    paddingTop:12,
+    margin:0
   },
 
   searchWrapper: {
@@ -605,6 +606,8 @@ const styles = StyleSheet.create({
 
   scrollView: {
     flex: 1,
+    padding:0,
+    margin:0
   },
 
   loadingContainer: {

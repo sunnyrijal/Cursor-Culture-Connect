@@ -15,6 +15,7 @@ import { SocketProvider, useSocket } from '@/hooks/useSocket';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 import { useQuery } from '@tanstack/react-query';
 import { getUnreadChatCount } from '@/contexts/chat.api';
+import SafeScreen from '@/components/SafeScreen';
 
 export default function TabLayout() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -55,19 +56,26 @@ export default function TabLayout() {
   );
 
   // A wrapper component to handle socket reconnection logic
-  const SocketConnectionManager = ({ children }: { children: React.ReactNode }) => {
+  const SocketConnectionManager = ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => {
     const { isConnected, reconnect } = useSocket();
 
     useEffect(() => {
-      const subscription = AppState.addEventListener('change', (nextAppState) => {
-        if (nextAppState === 'active') {
-          console.log('App has come to the foreground!');
-          if (!isConnected) {
-            console.log('Socket not connected, attempting to reconnect...');
-            reconnect();
+      const subscription = AppState.addEventListener(
+        'change',
+        (nextAppState) => {
+          if (nextAppState === 'active') {
+            console.log('App has come to the foreground!');
+            if (!isConnected) {
+              console.log('Socket not connected, attempting to reconnect...');
+              reconnect();
+            }
           }
         }
-      });
+      );
 
       // Initial check
       if (!isConnected) {
@@ -92,184 +100,185 @@ export default function TabLayout() {
       onError={handleError}
       onAuthenticated={handleAuthenticated}
     >
-      <SocketConnectionManager>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-          tabBarActiveTintColor: '#fff',
-          tabBarInactiveTintColor: '#8B8B8B',
-          tabBarStyle: {
-            height: 80,
-            paddingBottom: 12,
-            paddingTop: 16,
-            backgroundColor: '#F0F3F7',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255, 255, 255, 0.8)',
-            ...Platform.select({
-              ios: {
-                shadowColor: '#CDD2D8',
-                shadowOffset: { width: 0, height: -8 },
-                shadowOpacity: 1,
-                shadowRadius: 16,
+      <SafeScreen>
+        <SocketConnectionManager>
+          <Tabs
+            screenOptions={{
+              headerShown: false,
+              tabBarShowLabel: false,
+              tabBarActiveTintColor: '#fff',
+              tabBarInactiveTintColor: '#8B8B8B',
+              tabBarStyle: {
+                height: 80,
+                paddingBottom: 12,
+                paddingTop: 16,
+                backgroundColor: '#F0F3F7',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                borderTopWidth: 1,
+                borderTopColor: 'rgba(255, 255, 255, 0.8)',
+                ...Platform.select({
+                  ios: {
+                    shadowColor: '#CDD2D8',
+                    shadowOffset: { width: 0, height: -8 },
+                    shadowOpacity: 1,
+                    shadowRadius: 16,
+                  },
+                  android: {
+                    elevation: 20,
+                    shadowColor: '#CDD2D8',
+                  },
+                }),
               },
-              android: {
-                elevation: 20,
-                shadowColor: '#CDD2D8',
+              tabBarIconStyle: {
+                marginBottom: -2,
               },
-            }),
-          },
-          tabBarIconStyle: {
-            marginBottom: -2,
-          },
-          tabBarLabelStyle: {
-            fontSize: 12,
-            marginTop: 4,
-          },
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <Home
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  Home
-                </Text>
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="discover"
-          options={{
-            title: 'Discover',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <Search
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-               
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  People
-                </Text>
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="groups"
-          options={{
-            title: 'Groups',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <Users
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  Groups
-                </Text>
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="events"
-          options={{
-            title: 'Events',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <Calendar
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  Events
-                </Text>
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="chat"
-          options={{
-            title: 'Chat',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <MessageSquare
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-{/* 
+              tabBarLabelStyle: {
+                fontSize: 12,
+                marginTop: 4,
+              },
+            }}
+          >
+            <Tabs.Screen
+              name="index"
+              options={{
+                title: 'Home',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Home
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      Home
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="discover"
+              options={{
+                title: 'Discover',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Search
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      People
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="groups"
+              options={{
+                title: 'Groups',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Users
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      Groups
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="events"
+              options={{
+                title: 'Events',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Calendar
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      Events
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="chat"
+              options={{
+                title: 'Chat',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <MessageSquare
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+                    {/* 
                  {unreadCount > 0 && (
                   <View style={styles.badgeContainer}>
                     <Text style={styles.badgeText}>
@@ -277,50 +286,51 @@ export default function TabLayout() {
                     </Text>
                   </View>
                 )} */}
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  Chat
-                </Text>
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="activity-buddy"
-          options={{
-            title: 'Activity',
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={[
-                  styles.tabContainer,
-                  focused ? styles.activeTab : styles.inactiveTab,
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <Activity
-                    color={focused ? '#fff' : '#64748B'}
-                    size={22}
-                    strokeWidth={2}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: focused ? '#fff' : '#64748B' },
-                  ]}
-                >
-                  Activity
-                </Text>
-              </View>
-            ),
-          }}
-        />
-      </Tabs>
-      </SocketConnectionManager>
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      Chat
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="activity-buddy"
+              options={{
+                title: 'Activity',
+                tabBarIcon: ({ focused, color }) => (
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      focused ? styles.activeTab : styles.inactiveTab,
+                    ]}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Activity
+                        color={focused ? '#fff' : '#64748B'}
+                        size={22}
+                        strokeWidth={2}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        { color: focused ? '#fff' : '#64748B' },
+                      ]}
+                    >
+                      Activity
+                    </Text>
+                  </View>
+                ),
+              }}
+            />
+          </Tabs>
+        </SocketConnectionManager>
+      </SafeScreen>
     </SocketProvider>
   );
 }

@@ -165,7 +165,7 @@ export default function Groups() {
   return (
     <>
       <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
           <View style={styles.heroSection}>
             <View style={styles.headerContainer}>
               <View style={styles.headerRow}>
@@ -380,7 +380,7 @@ export default function Groups() {
           >
             <PlusCircle size={28} color={theme.primary} />
           </TouchableOpacity>
-        </SafeAreaView>
+        </View>
 
         <CreateGroupModal
           visible={showCreateGroupModal}

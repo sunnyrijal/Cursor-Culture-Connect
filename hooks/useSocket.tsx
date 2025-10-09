@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, ReactNode, useState, useCallback } from 'react';
 import SocketService from '../utils/socketService';
 
 // Types
@@ -46,9 +46,25 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   onAuthenticated,
 }) => {
   const messageCallbackRef = useRef<((message: MessageData) => void) | null>(null);
-  const [isConnected, setIsConnected] = useState(SocketService.getConnectionStatus());
+  const [isConnected, setIsConnected] = useState(false);
+  
+  // Use refs for callbacks to avoid dependency issues
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  const onErrorRef = useRef(onError);
+  const onAuthenticatedRef = useRef(onAuthenticated);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+    onDisconnectRef.current = onDisconnect;
+    onErrorRef.current = onError;
+    onAuthenticatedRef.current = onAuthenticated;
+  }, [onConnect, onDisconnect, onError, onAuthenticated]);
 
   useEffect(() => {
+    console.log('🔧 Setting up socket connection...');
+
     const globalMessageHandler = (message: MessageData) => {
       if (messageCallbackRef.current) {
         messageCallbackRef.current(message);
@@ -58,21 +74,25 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     SocketService.setOnNewMessage(globalMessageHandler);
 
     const handleConnect = () => {
+      console.log('✅ Socket connected in context');
       setIsConnected(true);
-      if (onConnect) onConnect();
+      if (onConnectRef.current) onConnectRef.current();
     };
 
     const handleDisconnect = () => {
+      console.log('❌ Socket disconnected in context');
       setIsConnected(false);
-      if (onDisconnect) onDisconnect();
+      if (onDisconnectRef.current) onDisconnectRef.current();
     };
 
     const handleError = (error: string) => {
-      if (onError) onError(error);
+      console.error('⚠️ Socket error:', error);
+      if (onErrorRef.current) onErrorRef.current(error);
     };
 
     const handleAuthenticated = (data: { success: boolean; userId: string; socketId: string }) => {
-      if (onAuthenticated) onAuthenticated(data);
+      console.log('🔐 Socket authenticated:', data);
+      if (onAuthenticatedRef.current) onAuthenticatedRef.current(data);
     };
 
     // Set up all socket event handlers
@@ -84,22 +104,41 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     // Initial connection
     SocketService.connect(serverUrl, userId);
 
+    // Check initial connection status
+    const initialStatus = SocketService.getConnectionStatus();
+    console.log('📡 Initial connection status:', initialStatus);
+    setIsConnected(initialStatus);
+
     // Cleanup function
     return () => {
+      console.log('🧹 Cleaning up socket connection...');
       SocketService.removeAllListeners();
       SocketService.disconnect();
       setIsConnected(false);
     };
-  }, [serverUrl, userId, onConnect, onDisconnect, onError, onAuthenticated]);
+  }, [serverUrl, userId]); // Only depend on serverUrl and userId
+
+  // Monitor connection status changes
+  useEffect(() => {
+    console.log('🔵 Connection status changed to:', isConnected);
+  }, [isConnected]);
+
+  const reconnect = useCallback(() => {
+    console.log('🔄 Reconnecting socket...');
+    setIsConnected(false);
+    const response = SocketService.reconnect();
+    console.log(response)
+    // The handleConnect callback will update isConnected to true
+  }, []);
 
   const contextValue: SocketContextType = {
     isConnected: isConnected,
     joinChat: (chatId: string) => SocketService.joinChat(chatId),
     leaveChat: (chatId: string) => SocketService.leaveChat(chatId),
     disconnect: () => {
-      SocketService.disconnect()
+      SocketService.disconnect();
     },
-    reconnect: () => SocketService.reconnect(),
+    reconnect: reconnect,
     socketId: SocketService.getSocketId(),
     onNewMessage: (callback: (message: MessageData) => void) => {
       messageCallbackRef.current = callback;

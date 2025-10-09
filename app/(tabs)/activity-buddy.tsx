@@ -969,7 +969,7 @@ const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <Text style={styles.headerTitle}>Activity Buddy</Text>
@@ -1037,7 +1037,7 @@ const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
         visible={isMyPreferenceVisible}
         onClose={() => setIsMyPreferenceVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 const styles = StyleSheet.create({
