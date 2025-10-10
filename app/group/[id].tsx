@@ -580,13 +580,13 @@ export default function GroupDetailEnhanced() {
 
           {/* Hero Bottom Info */}
           <View style={styles.heroBottomInfo}>
-            {/* <View style={styles.heroTitleContainer}>
+            <View style={styles.heroTitleContainer}>
               <Text style={styles.heroTitle}>{group.name}</Text>
-              <View style={styles.heroRating}>
+              {/* <View style={styles.heroRating}>
                 <Star size={14} color="#fbbf24" fill="#fbbf24" />
                 <Text style={styles.heroRatingText}>4.8</Text>
-              </View>
-            </View> */}
+              </View> */}
+            </View>
 
             <View style={styles.heroMetaContainer}>
               <View style={styles.creatorInfo}>
