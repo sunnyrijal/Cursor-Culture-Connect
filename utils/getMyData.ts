@@ -12,11 +12,9 @@ interface JwtPayload {
 async function getDecodedToken(): Promise<JwtPayload | null> {
   try {
     const token = await AsyncStorage.getItem("token");
-    console.log(token)
     if (!token) return null;
 
     const decoded = jwtDecode<JwtPayload>(token);
-    console.log(decoded)
     // optional: check if token expired
     if (decoded.exp && Date.now() >= decoded.exp * 1000) {
       console.warn("Token expired");

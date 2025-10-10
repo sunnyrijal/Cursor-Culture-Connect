@@ -118,6 +118,7 @@ export default function ChatListScreen() {
     queryFn: () => getUserChats(),
   });
 
+
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
     queryFn: () => getUsers(),
@@ -134,7 +135,6 @@ export default function ChatListScreen() {
     },
   });
 
-  console.log(chatResponse);
 
   // Get socket connection and methods
   const {
@@ -186,8 +186,7 @@ export default function ChatListScreen() {
           return {
             id: chat.id,
             name: otherParticipant?.user.name || 'Unknown User',
-            image:
-              'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+            image: otherParticipant?.user.profilePicture,
             lastMessage: displayMessage,
             lastMessageTime: lastMessage
               ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
@@ -347,13 +346,13 @@ export default function ChatListScreen() {
           >
             <View style={styles.avatarContainer}>
               <Image
-                source={
-                  item.image
-                    ? { uri: item.image }
-                    : require('../../assets/user.png')
-                }
-                style={styles.avatar}
-              />
+                  source={{
+                    uri:
+                      item.image ||
+                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                  }}
+                  style={styles.userAvatar}
+                />
 
               {item.type === 'GROUP' ? (
                 <View style={styles.groupBadge}>

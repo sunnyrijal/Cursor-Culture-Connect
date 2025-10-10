@@ -78,7 +78,6 @@ export function CreateEventModal({
   });
   const groups = groupResponse?.groups || [];
 
-  console.log(groups);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
@@ -130,7 +129,6 @@ export function CreateEventModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-        console.log('Asset details:', asset);
 
         // Use the mutation instead of direct API call
         uploadFileMutation.mutate({
@@ -191,7 +189,6 @@ export function CreateEventModal({
     }
   }, [visible]);
 
-  console.log(formData.images);
 
   const addTimeSlot = () => {
     setFormData({

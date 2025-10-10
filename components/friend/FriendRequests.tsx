@@ -73,7 +73,6 @@ export default function FriendRequestsScreen() {
   const receivedRequests = requestsResponse?.data?.received || [];
   const sentRequests = requestsResponse?.data?.sent || [];
 
-  console.log(requestsResponse);
 
   const respondToRequestMutation = useMutation({
     mutationFn: respondToFriendRequest,

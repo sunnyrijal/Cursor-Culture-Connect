@@ -92,7 +92,6 @@ const CulturalExperiences = () => {
     },
   });
 
-  console.log(adResponse)
 
   // const { data: myData } = useQuery({
   //   queryKey: ['myData'],

@@ -47,7 +47,6 @@ export default function Notifications() {
   });
 
   const notifications: NotificationData[] = notificationResponse?.data || [];
-  console.log(notifications)
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => markNotificationAsRead([notificationId]),
     onSuccess: () => {

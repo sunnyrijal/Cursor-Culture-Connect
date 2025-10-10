@@ -27,7 +27,6 @@ const CulturalExperienceCard = ({
   const cardRef = useRef<View>(null);
   const [hasRecordedImpression, setHasRecordedImpression] = useState(false);
 
-  console.log(content)
 
   const { mutate: recordAdImpressionMutate } = useMutation({
     mutationFn: (adId: string) => recordAdImpression(adId),

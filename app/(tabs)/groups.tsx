@@ -83,6 +83,7 @@ interface ApiGroup {
     id: string;
     email: string;
     name: string;
+    profilePicture?: string | null;
   };
   members: any[];
   _count: {
@@ -117,6 +118,7 @@ export default function Groups() {
   });
   const allGroups = groupResponse?.groups || [];
 
+
   const handleGroupFilterChange = (newFilters: typeof groupFilters) => {
     setGroupFilters(newFilters);
   };
@@ -138,7 +140,10 @@ export default function Groups() {
     },
     onError: (error) => {
       console.error('Error joining group:', error);
-      showAlert({ title: 'Error', message: 'Failed to join group. Please try again.' });
+      showAlert({
+        title: 'Error',
+        message: 'Failed to join group. Please try again.',
+      });
     },
     onSettled: () => {
       setJoiningGroupId(null);
@@ -278,24 +283,40 @@ export default function Groups() {
                     <View style={styles.groupContent}>
                       <View style={styles.groupHeader}>
                         <Text style={styles.groupName} numberOfLines={2}>
-                          {group.name}
+                          {group.name} 
                         </Text>
-                       
                       </View>
 
                       {group.description && group.description !== '' && (
                         <Text style={styles.groupDescription} numberOfLines={3}>
-                          {group.description}
+                          {group.description} 
                         </Text>
                       )}
 
                       <View style={styles.creatorSection}>
                         <View style={styles.creatorInfo}>
-                          <View style={styles.creatorAvatar}>
-                            <Text style={styles.creatorInitial}>
-                              {group.creator.name.charAt(0).toUpperCase()}
-                            </Text>
-                          </View>
+                          {group.creator.profilePicture ? (
+                            // <Image
+                            //   source={{ uri: group.creator.profilePicture }}
+                            //   style={styles.creatorAvatar}
+                            //   defaultSource={require('../../assets/user.png')}
+                            // />
+                            <Image
+                              source={{
+                                uri:
+                                  group.creator.profilePicture ||
+                                  'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                              }}
+                              style={styles.creatorAvatar}
+                              defaultSource={require('../../assets/user.png')}
+                            />
+                          ) : (
+                            <View style={styles.creatorAvatar}>
+                              <Text style={styles.creatorInitial}>
+                                {group.creator.name.charAt(0).toUpperCase()}
+                              </Text>
+                            </View>
+                          )}
                           <View style={styles.creatorDetails}>
                             <Text style={styles.creatorName}>
                               {group.creator.name}
@@ -306,7 +327,7 @@ export default function Groups() {
                           </View>
                         </View>
 
-                         {isCurrentUserAdmin ? (
+                        {isCurrentUserAdmin ? (
                           <View
                             style={[
                               styles.badge,
@@ -425,7 +446,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-   retryButtonText: {
+  retryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -533,7 +554,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     width: '80%',
     fontWeight: '600',
-
   },
   statsContainer: {
     flexDirection: 'row',
@@ -759,12 +779,12 @@ const styles = StyleSheet.create({
 
   // Creator Section Styles
   creatorSection: {
-    width:'100%',
+    width: '100%',
     marginBottom: 12,
-    display:'flex',
-    flexDirection:"row",
-    alignItems:"center",
-    justifyContent:"space-between"
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   creatorInfo: {
     flexDirection: 'row',
@@ -797,8 +817,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  creatorDetails: {
-  },
+  creatorDetails: {},
   creatorName: {
     fontSize: 15,
     fontWeight: '700',

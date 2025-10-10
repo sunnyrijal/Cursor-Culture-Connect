@@ -70,7 +70,6 @@ export const apiClient = {
       // if (!isValidEduEmail(email)) {
       //   throw new Error('Only .edu email addresses are allowed');
       // }
-      console.log(email, password);
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -134,7 +133,6 @@ export const apiClient = {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Signup failed');
       }
-      console.log(response);
       return await response.json();
     } catch (error) {
       console.error('Signup error:', error);

@@ -33,6 +33,7 @@ interface Event {
     id: string;
     email: string;
     name: string;
+    profilePicture?: string | null;
   };
 }
 
@@ -108,11 +109,28 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         <View style={styles.creatorSection}>
           <View style={styles.creatorInfo}>
-            <View style={styles.creatorAvatar}>
-              <Text style={styles.creatorInitial}>
-                {event.user.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {event.user.profilePicture ? (
+              // <Image
+              //   source={{ uri: event.user.profilePicture  }}
+              //   style={styles.creatorAvatar}
+              //   defaultSource={require('../../assets/user.png')}
+              // />
+               <Image
+              source={{
+                uri:
+                  event.user.profilePicture ||
+                  'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+              }}
+              style={styles.creatorAvatar}
+              defaultSource={require('../assets/user.png')}
+            />
+            ) : (
+              <View style={styles.creatorAvatar}>
+                <Text style={styles.creatorInitial}>
+                  {event.user.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.creatorDetails}>
               <Text style={styles.creatorName}>
                 {event.user.name}

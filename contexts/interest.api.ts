@@ -172,7 +172,6 @@ export const updateInterestPing = async (
   updateData: UpdatePingData
 ) => {
   try {
-    console.log(updateData)
     const response: AxiosResponse = await api.patch(
       `/interests/ping/${pingId}`,
       updateData
@@ -200,7 +199,6 @@ export const pingBack = async ({
   originalPingId,
   message,
 }: SendPingBackInput) => {
-  console.log(originalPingId)
   try {
     const response: AxiosResponse = await api.post(
       `/interests/ping/${originalPingId}/ping-back`,

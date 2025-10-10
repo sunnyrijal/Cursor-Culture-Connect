@@ -60,7 +60,6 @@ export default function MyUniversity() {
 
     const { events, groups, people } = res.data;
 
-    console.log(people)
 
     switch (activeTab) {
       case 'events':

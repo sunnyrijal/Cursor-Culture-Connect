@@ -37,7 +37,6 @@ export const verifyOTP = async (data: VerifyOTPData) => {
       data
     );
     const { accessToken, userId } = response.data;
-    console.log(response);
     await AsyncStorage.setItem('token', accessToken);
     await AsyncStorage.setItem('userId', userId.toString());
     return response.data;

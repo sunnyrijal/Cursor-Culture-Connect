@@ -147,7 +147,6 @@ export default function ActivityBuddyPage() {
     },
     enabled: !!selectedActivity,
   });
-  console.log(usersPages);
 
   // Query for user pings
   const { data: pingsData, isLoading: pingsLoading } = useQuery({
@@ -160,13 +159,18 @@ export default function ActivityBuddyPage() {
   const sendPingMutation = useMutation({
     mutationFn: sendActivityPing,
     onSuccess: () => {
-      showAlert({ title: 'Success', message: 'Activity ping sent successfully!' });
+      showAlert({
+        title: 'Success',
+        message: 'Activity ping sent successfully!',
+      });
       queryClient.invalidateQueries({ queryKey: ['userPings'] });
     },
     onError: (error: any) => {
       showAlert({
         title: 'Error',
-        message: error?.response.data.message || 'Failed to send ping. Please try again.',
+        message:
+          error?.response.data.message ||
+          'Failed to send ping. Please try again.',
       });
       console.error('Send ping error:', error);
     },
@@ -198,7 +202,9 @@ export default function ActivityBuddyPage() {
     onError: (error: any) => {
       showAlert({
         title: 'Error',
-        message: error?.response.data.message || 'Failed to update ping. Please try again.',
+        message:
+          error?.response.data.message ||
+          'Failed to update ping. Please try again.',
       });
       console.error('Update ping error:', error);
     },
@@ -223,7 +229,6 @@ export default function ActivityBuddyPage() {
   const activities = activitiesData?.data || [];
   const users = usersPages?.pages.flatMap((page) => page.data.users) || [];
   const pings = pingsData?.data || { sent: [], received: [] };
-  console.log('PINGS', pings);
 
   const { mutate: createDirectChatMutate, isPending: isCreatingChat } =
     useMutation({
@@ -379,13 +384,13 @@ export default function ActivityBuddyPage() {
       <View key={user.id} style={styles.userCard}>
         <View style={styles.userHeader}>
           <Image
-            source={
-              user.profilePicture
-                ? { uri: user.profilePicture }
-                : require('../../assets/user.png')
-            }
-            style={styles.userImage}
+            source={{
+              uri:
+                user.profilePicture ||
+                'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+            }}
             defaultSource={require('../../assets/user.png')}
+            style={styles.userImage}
           />
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user.name}</Text>
@@ -565,7 +570,7 @@ export default function ActivityBuddyPage() {
     </Modal>
   );
 
-const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
+  const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
     const targetUser = type === 'sent' ? ping.receiver : ping.sender;
 
     return (
@@ -575,11 +580,11 @@ const renderPingCard = (ping: InterestPing, type: 'sent' | 'received') => {
             onPress={() => router.push(`/public/profile/${targetUser.id}`)}
           >
             <Image
-              source={
-                targetUser.profilePicture
-                  ? { uri: targetUser.profilePicture }
-                  : require('../../assets/user.png')
-              }
+              source={{
+                uri:
+                  targetUser.profilePicture ||
+                  'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+              }}
               style={styles.pingUserImage}
               defaultSource={require('../../assets/user.png')}
             />
@@ -1692,10 +1697,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     marginLeft: 8,
-    display:'flex',
-    flexDirection:'row',
-    alignItems:'center',
-    gap:6
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   declineButton: {
     backgroundColor: theme.gray100,

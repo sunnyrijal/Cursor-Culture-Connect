@@ -63,7 +63,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   }, [onConnect, onDisconnect, onError, onAuthenticated]);
 
   useEffect(() => {
-    console.log('🔧 Setting up socket connection...');
 
     const globalMessageHandler = (message: MessageData) => {
       if (messageCallbackRef.current) {

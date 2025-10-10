@@ -179,7 +179,6 @@ export function EditGroupModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-        console.log('Asset details:', asset);
 
         uploadFileMutation.mutate({
           uri: asset.uri,

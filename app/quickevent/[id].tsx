@@ -101,7 +101,6 @@ export default function QuickEventDetail() {
 
   const quickEvent = eventResponse?.data;
 
-  console.log(quickEvent);
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],

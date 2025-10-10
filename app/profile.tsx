@@ -79,7 +79,6 @@ export default function Profile() {
     queryFn: async () => {
       try {
         const response = await getMyData()
-        console.log(response)
         const data = {
           id: response.user.id,
           name: response.user.name,
