@@ -111,7 +111,6 @@ export const getAllUsers = async () => {
 export const getUsers = async (filters?:FriendFilters) => {
   try {
     const params = new URLSearchParams();
-    console.log(filters)
     if (filters) {
       if (filters.myUniversity) params.append('myUniversity', 'true');
       if (filters.major) params.append('major', filters.major);

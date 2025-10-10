@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -59,6 +60,7 @@ interface ChatRequest {
 
 const MessageRequestsScreen = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: myData } = useQuery({
@@ -85,7 +87,11 @@ const MessageRequestsScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
-  console.log(chatRequestsResponse);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch().finally(() => setRefreshing(false));
+  }, [refetch]);
 
   const processedRequests = useMemo(() => {
     if (!chatRequestsResponse?.data || !myData?.userId) return [];
@@ -133,7 +139,6 @@ const MessageRequestsScreen = () => {
     );
   }, [processedRequests, activeTab]);
 
-  console.log('Chat Requests', filteredRequests);
 
   const handleRequestPress = (chatId: string) => {
     router.push(`/chat/${chatId}`);
@@ -141,11 +146,6 @@ const MessageRequestsScreen = () => {
 
   const handleDecline = (chatId: string) => {
     deleteMutation.mutate(chatId);
-  };
-
-  const handleAccept = (chatId: string) => {
-    // TODO: Implement accept functionality
-    console.log('Accepting chat:', chatId);
   };
 
   const renderEmptyState = () => (
@@ -232,15 +232,12 @@ const MessageRequestsScreen = () => {
               </View>
             ) : activeTab === 'received' ? (
               <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.acceptButton]}
-                  onPress={() => handleAccept(item.id)}
-                >
-                  <Check size={16} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Accept</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.declineButton]}
+                 <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.declineButton,
+                    { flex: 1 },
+                  ]}
                   onPress={() => handleDecline(item.id)}
                 >
                   <X size={16} color="#475569" />
@@ -364,6 +361,9 @@ const MessageRequestsScreen = () => {
               style={styles.scrollView}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             >
               {filteredRequests.map((item: any, index: number) =>
                 renderRequestItem(item, index)

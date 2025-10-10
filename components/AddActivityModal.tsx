@@ -73,7 +73,6 @@ export function CreateActivityModal({
   });
 
   const interests = interestsData?.data || [];
-  console.log(interests)
 
 
   // Reset form when modal opens/closes or when switching between create/edit modes

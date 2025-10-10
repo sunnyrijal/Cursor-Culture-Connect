@@ -121,12 +121,6 @@ const processEventTimes = (
 };
 
 export const createEvent = async (eventData: CreateEventData) => {
-  console.log(
-    'Original eventTimes:',
-    eventData.eventTimes,
-    'Date:',
-    eventData.date
-  );
 
   try {
     const processedEventTimes = processEventTimes(
@@ -206,7 +200,6 @@ export const deleteEvent = async (eventId: string) => {
 export const joinEvent = async (id: string) => {
   try {
     const response: AxiosResponse = await api.post(`/event/${id}/join`);
-    console.log(response)
     return response.data;
   } catch (error) {
     console.error('Error joining event:', error);
@@ -227,7 +220,6 @@ export const leaveEvent = async (id: string) => {
 // Invite users to an event
 export const inviteToEvent = async (eventId: string, inviteeIds: string[]) => {
 
-  console.log(inviteeIds)
   try {
     const response = await api.post(`/event/${eventId}/invite`, { inviteeIds });
     return response.data;

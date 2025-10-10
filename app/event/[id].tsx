@@ -93,7 +93,6 @@ export default function EventDetail() {
   });
 
   const event = eventResponse?.event;
-  console.log('EVENT REPSONSE', eventResponse);
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),

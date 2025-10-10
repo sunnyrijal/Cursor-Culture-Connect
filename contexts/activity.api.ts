@@ -84,7 +84,6 @@ export const getActivities = async (interestId?: string) => {
 };
 
 export const getActivityById = async (activityId: string) => {
-  console.log(activityId)
   try {
     const response = await api.get(
       `/activities/${activityId}`
@@ -114,7 +113,6 @@ export const getUsersByActivity = async (
   page: number = 1,
   limit: number = 10
 ) => {
-  console.log(id)
   try {
     const response: AxiosResponse = await api.get(
       `/activities/${id}/users?page=${page}&limit=${limit}`

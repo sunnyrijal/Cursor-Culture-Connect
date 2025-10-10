@@ -75,7 +75,6 @@ export default function FriendsListScreen() {
   const removeFriendMutation = useMutation({
     mutationFn: removeFriend,
     onSuccess: (data, variables) => {
-      console.log('Friend removed successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['friends'] });
       showAlert({
         title: 'Success',

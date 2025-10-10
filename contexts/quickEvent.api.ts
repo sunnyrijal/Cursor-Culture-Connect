@@ -85,7 +85,6 @@ export const getQuickEventsByUserId = async (userId: string) => {
 };
 
 export const updateQuickEvent = async (id: string, quickEventData: UpdateQuickEventData) => {
-  console.log(quickEventData)
   try {
     const response: AxiosResponse = await api.put(
       `/quickevents/${id}`,

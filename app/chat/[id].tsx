@@ -90,7 +90,6 @@ export default function ChatScreen() {
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
     onSuccess: (data, variables) => {
-      console.log('Message sent successfully:', data);
       refetch();
       setNewMessage('');
       setIsSending(false)
@@ -132,6 +131,7 @@ export default function ChatScreen() {
   const chat = chatResponse.data;
   const isGroupChat = chat.type === 'GROUP';
 
+
   // Get the other participant for direct chats
   const otherParticipant = !isGroupChat
     ? chat.participants.find((p: any) => p.userId !== myData?.userId)?.user
@@ -140,9 +140,9 @@ export default function ChatScreen() {
   const chatName = isGroupChat
     ? chat.name || 'Group Chat'
     : otherParticipant?.name || 'Unknown User';
-  const chatImage = isGroupChat
-    ? chat.group?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png'
-    : otherParticipant?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png';
+  const chatImageUri = isGroupChat
+    ? chat.group?.image
+    : otherParticipant?.profilePicture;
 
   const renderMessage = ({ item }: { item: any }) => {
     const isMyMessage = item.senderId === myData?.userId;
@@ -160,9 +160,11 @@ export default function ChatScreen() {
         {!isMyMessage && (
           <View style={styles.avatarContainer}>
             <Image
-              source={{
-                uri: sender?.image || 'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-              }}
+              source={
+                sender?.profilePicture
+                  ? { uri: sender.profilePicture }
+                  : require('../../assets/user.png')
+              }
               style={styles.avatar}
             />
           </View>
@@ -215,7 +217,11 @@ export default function ChatScreen() {
                 <View style={styles.chatInfo}>
                   <View style={styles.avatarWrapper}>
                     <Image
-                      source={{ uri: chatImage }}
+                      source={
+                        chatImageUri
+                          ? { uri: chatImageUri }
+                          : require('../../assets/user.png')
+                      }
                       style={styles.headerImage}
                     />
                     {!isGroupChat && <View style={styles.onlineIndicator} />}

@@ -99,7 +99,6 @@ export function CreateInterestPreferenceModal({
 
   const interests = interestsData?.data || [];
   const activities = activityData?.data || [];
-  console.log(activities);
   const editingPreferenceId = editingPreference?.id;
   useEffect(() => {
     if (editingPreference) {

@@ -108,6 +108,7 @@ interface QuickEvent {
     id: string;
     name: string;
     email: string;
+    profilePicture?:string
   };
 }
 
@@ -218,6 +219,7 @@ export default function Events() {
 
   const events = eventsResponse?.events || [];
 
+
   const handleFilterChange = (newFilters: typeof eventFilters) => {
     setEventFilters(newFilters);
   };
@@ -240,7 +242,6 @@ export default function Events() {
   });
 
   const quickEvents = quickEventsResponse?.data || [];
-  console.log("QUICK EVENRTS",quickEvents)
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -271,7 +272,6 @@ export default function Events() {
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
-  console.log(filteredEvents)
 
   const filteredQuickEvents = useMemo(() => {
     let tempQuickEvents = [...quickEvents];
@@ -541,11 +541,17 @@ export default function Events() {
                       </View>
                       <View style={styles.quickEventActions}>
                         <View style={styles.quickEventCreator}>
-                          <View style={styles.creatorAvatar}>
-                            <Text style={styles.creatorInitial}>
-                              {quickEvent.user.name.charAt(0).toUpperCase()}
-                            </Text>
-                          </View>
+                          <Image
+                            source={
+                              quickEvent.user.profilePicture
+                                ? { uri: quickEvent.user.profilePicture }
+                                : require('../../assets/user.png')
+                            }
+                            style={styles.creatorAvatar}
+                            defaultSource={require('../../assets/user.png')}
+                          />
+
+                          
                           <View style={styles.creatorDetails}>
                             <Text style={styles.creatorName}>{quickEvent.user.name}</Text>
                             <Text style={styles.creatorRole}>Host</Text>

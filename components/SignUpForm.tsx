@@ -382,7 +382,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
         marketingOptIn,
       }
 
-      console.log("Signup data:", signupData)
       await signup(signupData)
     } catch (err: any) {
       console.log(err)
@@ -772,6 +771,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
             onChange={onDateChange}
             maximumDate={new Date()}
             minimumDate={new Date(1900, 0, 1)}
+            textColor="black"
           />
         )}
 

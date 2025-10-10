@@ -104,12 +104,10 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
 
     try {
       const loginData = { email, password }
-      console.log("Login data:", loginData)
       await login(email, password)
       router.replace("/(tabs)")
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || "Authentication failed. Please try again.";
-      console.log("Login error:", errorMessage);
 
       if (errorMessage.includes("Your account is not verified") || errorMessage.includes("Email not verified")) {
         showAlert({

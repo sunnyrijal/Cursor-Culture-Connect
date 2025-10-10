@@ -91,6 +91,7 @@ export default function EditProfile() {
   const [newLanguage, setNewLanguage] = useState<string>('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [pronouns, setPronouns] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({});
   const [newSocialPlatform, setNewSocialPlatform] = useState<string>('');
@@ -203,9 +204,7 @@ export default function EditProfile() {
   const { isLoading, error: queryError } = useQuery({
     queryKey: ['userProfile'],
     queryFn: async () => {
-      console.log('[v0] Fetching user data...');
       const response = await getMyData();
-      console.log('[v0] User data response:', response);
 
       if (response.success && response.user) {
         const userData = response.user;
@@ -244,6 +243,9 @@ export default function EditProfile() {
         }
         if (userData.ethnicity) {
           setEthnicity(userData.ethnicity);
+        }
+        if (userData.pronouns) {
+          setPronouns(userData.pronouns);
         }
 
         return userData;
@@ -329,6 +331,7 @@ export default function EditProfile() {
       updateData.socialMedia = socialMedia;
     if (ethnicity.length > 0) updateData.ethnicity = ethnicity;
     if (profile.publicPreference !== undefined)
+    if (pronouns) updateData.pronouns = pronouns;
       updateData.publicPreference = profile.publicPreference;
 
     updateProfileMutation.mutate(updateData);
@@ -484,6 +487,43 @@ export default function EditProfile() {
     },
     [fieldValidation, focusedInput, loading, formOpacity]
   );
+
+
+  const renderPronounsSection = () => {
+    const pronounOptions = ['she/her', 'he/him', 'they/them', 'other'];
+    return (
+      <Animated.View style={[styles.section, { opacity: formOpacity }]}>
+        <Text style={styles.sectionTitle}>Pronouns</Text>
+        <Text style={styles.sectionSubtitle}>
+          Let others know how to refer to you.
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScrollView}
+        >
+          <View style={styles.tagsContainer}>
+            {pronounOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.tag, pronouns === option && styles.tagSelected]}
+                onPress={() => setPronouns(option)}
+              >
+                <Text
+                  style={[styles.tagText, pronouns === option && styles.tagTextSelected]}
+                >
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+        {pronouns === 'other' && (
+          <TextInput style={styles.customInterestInput} placeholder="Please specify your pronouns" onChangeText={setPronouns} autoFocus />
+        )}
+      </Animated.View>
+    );
+  };
 
   const renderDropdownPicker = (
     icon: React.ElementType,
@@ -855,6 +895,7 @@ export default function EditProfile() {
             onChange={onDateChange}
             maximumDate={new Date()} // Prevent future dates
             minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+            textColor="black"
           />
         )}
 
@@ -1106,6 +1147,9 @@ export default function EditProfile() {
 
             {/* Profile Pictures */}
             {renderProfilePictureSection()}
+
+            {/* Pronouns */}
+            {renderPronounsSection()}
 
             {/* Basic Information */}
             <Animated.View
@@ -1674,7 +1718,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginVertical: 10,
   },
   inputLabel: {
     fontSize: 14,
@@ -1816,6 +1860,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginBottom:4,
   },
   tag: {
     paddingHorizontal: 16,
@@ -1847,6 +1892,9 @@ const styles = StyleSheet.create({
   },
   tagTextSelected: {
     color: '#FFFFFF',
+  },
+  horizontalScrollView: {
+    marginBottom: 10,
   },
   saveContainer: {
     marginTop: 20,

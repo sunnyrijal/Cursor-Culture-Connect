@@ -132,7 +132,6 @@ export function EditQuickEventModal({
     mutationFn: ({ eventId, data }: { eventId: string; data: any }) =>
       updateQuickEvent(eventId, data),
     onSuccess: (data, variables) => {
-      console.log('Quick Event updated successfully:', data);
 
       queryClient.invalidateQueries({ queryKey: ['quick-events'] });
       queryClient.invalidateQueries({
@@ -204,7 +203,6 @@ export function EditQuickEventModal({
       isPublic: formData.isPublic,
     };
 
-    console.log('Updating quick event with data:', eventData);
     updateQuickEventMutation.mutate({
       eventId: quickEvent.id,
       data: eventData,

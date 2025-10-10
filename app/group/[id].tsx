@@ -78,6 +78,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  profilePicture?: string | null;
   phone?: string;
 }
 
@@ -109,16 +110,13 @@ export default function GroupDetailEnhanced() {
   const { id } = useLocalSearchParams();
   // const myData = getDecodedToken()
 
-  const { data: myData } = useQuery({
-    queryKey: ['myData', id],
-    queryFn: () => getDecodedToken(),
-  });
+  const { data: myData } = useQuery({ queryKey: ['myData'], queryFn: getDecodedToken });
+
 
   // Modal states
   const [showAddMembersModal, setShowAddMembersModal] = useState(false);
   const [showKickModal, setShowKickModal] = useState(false);
   const [showUpdateRoleModal, setShowUpdateRoleModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
   const [showMembersList, setShowMembersList] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
@@ -145,7 +143,6 @@ export default function GroupDetailEnhanced() {
   });
 
   const group = groupResponse?.group;
-  console.log(group);
   const currentUserMembership = groupResponse?.group?.members?.find(
     (member: any) => member.userId === myData?.userId
   );
@@ -190,7 +187,18 @@ export default function GroupDetailEnhanced() {
   };
 
   const handleJoinGroup = () => {
-    setShowJoinModal(true);
+    showAlert({
+      title: 'Join Group',
+      message: `Are you sure you want to join "${group?.name}"? You'll be able to interact with other members.`,
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Join',
+          style: 'default',
+          onPress: () => joinGroupMutate(),
+        },
+      ],
+    });
   };
 
   const { mutate: deleteGroupMutation, isPending: isDeletingGroup } =
@@ -316,7 +324,6 @@ export default function GroupDetailEnhanced() {
     mutationFn: () => joinGroup(id as string),
     onSuccess: (data) => {
       console.log('✅ Joined group:', data);
-      setShowJoinModal(false);
       refetch();
     },
     onError: (error) => {
@@ -335,10 +342,6 @@ export default function GroupDetailEnhanced() {
     if (memberToUpdate) {
       updateRoleMutate({ userId: memberToUpdate.userId, newRole });
     }
-  };
-
-  const confirmJoinGroup = () => {
-    joinGroupMutate();
   };
 
   const { mutate: leaveGroupMutate } = useMutation({
@@ -368,11 +371,6 @@ export default function GroupDetailEnhanced() {
         },
       ],
     });
-  };
-
-  const confirmLeaveGroup = () => {
-    leaveGroupMutate();
-    console.log('leave group');
   };
 
   const handleModalOverlayPress = (modalSetter: (value: boolean) => void) => {
@@ -591,9 +589,20 @@ export default function GroupDetailEnhanced() {
             </View> */}
 
             <View style={styles.heroMetaContainer}>
-              <Text style={styles.heroSubtitle}>
-                Created by {group.creator.name}
-              </Text>
+              <View style={styles.creatorInfo}>
+                <Image
+                  source={{
+                    uri:
+                      group.creator.profilePicture ||
+                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                  }}
+                  style={styles.creatorAvatar}
+                  defaultSource={require('../../assets/user.png')}
+                />
+                <Text style={styles.heroSubtitle}>
+                  Created by {group.creator.name}
+                </Text>
+              </View>
               <View style={styles.heroStatusBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.heroStatusText}>
@@ -780,14 +789,17 @@ export default function GroupDetailEnhanced() {
                   </Text>
                   {group.members.map((member: any) => (
                     <View key={member.id} style={styles.infoRow}>
-                      <View
-                        style={[
-                          styles.infoIconWrapper,
-                          { backgroundColor: `${theme.primary}15` },
-                        ]}
-                      >
-                        <Users size={20} color={theme.primary} />
-                      </View>
+                      <Image
+                        source={{
+                          uri:
+                            member.user.profilePicture ||
+                            'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                        }}
+                        style={styles.memberAvatar}
+                        defaultSource={require('../../assets/user.png')}
+                      />
+
+                      
                       <View style={styles.infoContent}>
                         <Text style={styles.infoValue}>{member.user.name}</Text>
                         {/* <Text style={styles.infoLabel}>{member.user.email}</Text> */}
@@ -1035,46 +1047,6 @@ export default function GroupDetailEnhanced() {
         </View>
       )}
 
-      {/* Join Confirmation Modal */}
-      <Modal
-        visible={showJoinModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowJoinModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowJoinModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.confirmModalContent}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <Text style={styles.confirmModalTitle}>Join Group</Text>
-            <Text style={styles.confirmModalText}>
-              {' '}
-              Are you sure you want to join "{group.name}"? You'll be able to
-              interact with other members.
-            </Text>
-            <View style={styles.confirmModalActions}>
-              <Button
-                title="Cancel"
-                variant="secondary"
-                onPress={() => setShowJoinModal(false)}
-                style={styles.cancelButton}
-              />
-              <Button
-                title="Join"
-                onPress={confirmJoinGroup}
-                style={styles.addButton}
-              />
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
       {/* Existing Modals */}
       <Modal
         visible={showAddMembersModal}
@@ -1315,6 +1287,20 @@ export default function GroupDetailEnhanced() {
 }
 
 const styles = StyleSheet.create({
+  creatorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  creatorAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+
+
   groupDescriptionText: {
     paddingHorizontal: 16,
   },
@@ -1816,6 +1802,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacing.sm,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
   },
   infoIconWrapper: {
     width: 48,

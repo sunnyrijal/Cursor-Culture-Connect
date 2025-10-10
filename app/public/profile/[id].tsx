@@ -155,7 +155,6 @@ const GroupCard = ({
   group: any;
   onPress: (id: string) => void;
 }) => {
-  console.log(group);
   return (
     <Card style={styles.groupCard}>
       <TouchableOpacity onPress={() => onPress(group.id)} activeOpacity={0.8}>
@@ -268,7 +267,6 @@ export default function UserProfilePage() {
 
   const userData = userResponse?.data;
 
-  console.log(userData);
 
   const sendRequestMutation = useMutation({
     mutationFn: sendFriendRequest,

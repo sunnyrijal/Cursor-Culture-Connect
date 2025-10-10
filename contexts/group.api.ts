@@ -94,7 +94,6 @@ export const addMember = async (groupId: string, userId: string) => {
 };
 
 export const addMultipleMembers = async (groupId: string, userIds: string[]) => {
-  console.log(userIds)
   try {
     const response = await api.post(`/groups/${groupId}/members/bulk`, { userIds });
     return response.data;
