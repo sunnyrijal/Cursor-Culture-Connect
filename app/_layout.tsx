@@ -13,7 +13,7 @@ import 'react-native-reanimated'; // This should be at the top
 import { AlertProvider } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
 import SafeScreen from '@/components/SafeScreen';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 const queryClient = new QueryClient();
 
 function MainLayout() {
@@ -84,9 +84,11 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AlertProvider>
+        <SafeAreaProvider>
         <AuthProvider>
           <MainLayout />
         </AuthProvider>
+        </SafeAreaProvider>
       </AlertProvider>
     </QueryClientProvider>
   );

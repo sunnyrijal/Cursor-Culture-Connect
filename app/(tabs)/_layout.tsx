@@ -14,11 +14,13 @@ import getDecodedToken from '@/utils/getMyData';
 import { SocketProvider, useSocket } from '@/hooks/useSocket';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 import { useQuery } from '@tanstack/react-query';
-import { getUnreadChatCount } from '@/contexts/chat.api';
 import SafeScreen from '@/components/SafeScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const [userId, setUserId] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = 60;
 
   useEffect(() => {
     const fetchMyData = async () => {
@@ -29,14 +31,6 @@ export default function TabLayout() {
     };
     fetchMyData();
   }, []);
-
-  // const { data: unreadCountData } = useQuery({
-  //   queryKey: ['unreadChatCount'],
-  //   queryFn: getUnreadChatCount,
-  //   enabled: !!userId, // Only fetch if user is logged in
-  // });
-
-  // const unreadCount = unreadCountData?.data?.count || 0;
 
   const handleConnect = useCallback(
     () => console.log('🔌 Connected to socket'),
@@ -109,9 +103,9 @@ export default function TabLayout() {
               tabBarActiveTintColor: '#fff',
               tabBarInactiveTintColor: '#8B8B8B',
               tabBarStyle: {
-                height: 80,
-                paddingBottom: 12,
-                paddingTop: 16,
+                height: TAB_BAR_HEIGHT + insets.bottom,
+                paddingBottom: insets.bottom,
+                paddingTop: 12,
                 backgroundColor: '#F0F3F7',
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
