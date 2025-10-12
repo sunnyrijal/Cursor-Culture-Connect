@@ -43,6 +43,7 @@ import {
   respondToFriendRequest,
   cancelFriendRequest,
   removeFriend,
+  blockUser,
 } from '@/contexts/friend.api';
 import SocialMediaLinks from '@/components/SocialMediaLinks';
 import { Card } from '@/components/ui/Card';
@@ -320,6 +321,23 @@ export default function UserProfilePage() {
     },
   });
 
+  const blockUserMutation = useMutation({
+    mutationFn: blockUser,
+    onSuccess: () => {
+      showAlert({ title: 'Success', message: 'User has been blocked.' });
+      queryClient.invalidateQueries({ queryKey: ['userProfile', id] });
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: 'Error',
+        message: err.message || 'Failed to block user.',
+      });
+    },
+  });
+
   const handleSendRequest = () => {
     if (!userData?.id) return;
     setModalVisible(true);
@@ -363,20 +381,43 @@ export default function UserProfilePage() {
     });
   };
 
-  const handleRemoveFriend = (friendId: string, friendName: string) => {
+  const handleRemoveFriend = (friendId: string, userName: string) => {
     showAlert({
       title: 'Remove Friend',
-      message: `Are you sure you want to remove ${friendName} from your friends?`,
+      message: `Are you sure you want to remove ${userName} from your friends?`,
       buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => removeFriendMutation.mutate({ friendId }),
+          onPress: () => {
+            console.log('Unfriending user:', friendId);
+            removeFriendMutation.mutate({ friendId });
+          },
         },
       ],
     });
   };
+
+  const handleBlockUser = (targetUserId: string, userName: string) => {
+    console.log('Attempting to block user:', targetUserId);
+    showAlert({
+      title: 'Block User',
+      message: `Are you sure you want to block ${userName}? This will remove them from your friends and prevent any future interaction.`,
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Block',
+          style: 'destructive',
+          onPress: () => {
+            console.log('Confirming block for user:', targetUserId);
+            blockUserMutation.mutate({ targetUserId });
+          },
+        },
+      ],
+    });
+  };
+
 
   const handleEventPress = (eventId: string) => {
     router.push(`/event/${eventId}`);
@@ -434,16 +475,37 @@ export default function UserProfilePage() {
             <Text style={styles.actionButtonText}>Message</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionDeclineButton}
-            onPress={() => handleRemoveFriend(userData.id, userData.name)}
-            disabled={removeFriendMutation.isPending}
+            style={styles.actionMoreButton}
+            onPress={() =>
+              showAlert({
+                title: `Manage ${userData.name}`,
+                message: 'Choose an action. This cannot be undone.',
+                buttons: [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Unfriend',
+                    style: 'destructive',
+                    onPress: () => {
+                      console.log('Unfriending user:', userData.id);
+                      removeFriendMutation.mutate({ friendId: userData.id });
+                    },
+                  },
+                  {
+                    text: 'Block User',
+                    style: 'destructive',
+                    onPress: () => {
+                      console.log('Blocking user:', userData.id);
+                      blockUserMutation.mutate({ targetUserId: userData.id });
+                    },
+                  },
+                ],
+              })
+            }
           >
-            <UserX size={20} color={theme.textPrimary} />
-            <Text
-              style={[styles.actionButtonText, { color: theme.textPrimary }]}
-            >
-              Remove
-            </Text>
+            <AlertCircle size={20} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
       );
@@ -511,19 +573,45 @@ export default function UserProfilePage() {
 
     // Priority 4: Default - Show Add Friend button
     return (
-      // No friendship status
-      <TouchableOpacity
-        style={styles.actionPrimaryButton}
-        onPress={handleSendRequest}
-        disabled={sendRequestMutation.isPending || sameuser === 'true'}
-      >
-        {sendRequestMutation.isPending ? (
-          <ActivityIndicator color={theme.white} />
-        ) : (
-          <UserPlus size={20} color={theme.white} />
-        )}
-        <Text style={styles.actionButtonText}>Add Friend</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity
+          style={styles.actionPrimaryButton}
+          onPress={handleSendRequest}
+          disabled={sendRequestMutation.isPending || sameuser === 'true'}
+        >
+          {sendRequestMutation.isPending ? (
+            <ActivityIndicator color={theme.white} />
+          ) : (
+            <UserPlus size={20} color={theme.white} />
+          )}
+          <Text style={styles.actionButtonText}>Add Friend</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionMoreButton}
+          onPress={() =>
+            showAlert({
+              title: `Manage ${userData.name}`,
+              message: 'Choose an action. This cannot be undone.',
+              buttons: [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Block User',
+                  style: 'destructive',
+                  onPress: () => {
+                    console.log('Blocking user:', userData.id);
+                    blockUserMutation.mutate({ targetUserId: userData.id });
+                  },
+                },
+              ],
+            })
+          }
+        >
+          <AlertCircle size={20} color={theme.textPrimary} />
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -1080,6 +1168,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
     backgroundColor: theme.primary,
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -1125,6 +1214,22 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: theme.error,
+  },
+  actionMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+    shadowColor: theme.shadowDark,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   cancelButton: {
     backgroundColor: theme.warning,

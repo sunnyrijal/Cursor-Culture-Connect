@@ -98,10 +98,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
     if (newState) {
       onFocus();
       // Use fixed height for consistent scrolling behavior
-      dropdownHeight.value = withSpring(MAX_DROPDOWN_HEIGHT, {
-        damping: 15,
-        stiffness: 100,
-      });
+      dropdownHeight.value = withTiming(MAX_DROPDOWN_HEIGHT, { duration: 250 });
       dropdownOpacity.value = withTiming(1, { duration: 200 });
       rotateAnimation.value = withTiming(180, { duration: 200 });
     } else {
@@ -137,10 +134,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
       onFocus();
 
       // Use fixed height for consistent behavior
-      dropdownHeight.value = withSpring(MAX_DROPDOWN_HEIGHT, {
-        damping: 15,
-        stiffness: 100,
-      });
+      dropdownHeight.value = withTiming(MAX_DROPDOWN_HEIGHT, { duration: 250 });
       dropdownOpacity.value = withTiming(1, { duration: 200 });
       rotateAnimation.value = withTiming(180, { duration: 200 });
     }

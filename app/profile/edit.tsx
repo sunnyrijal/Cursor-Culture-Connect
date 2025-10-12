@@ -53,6 +53,7 @@ import { getMyData, updateProfile } from '@/contexts/user.api';
 import { getUniversities } from '@/contexts/university.api';
 import { uploadFile } from '@/contexts/file.api';
 import UniversityDropdown from '@/components/UniversityDropdown';
+import MajorDropdown from '@/components/MajorDropdown';
 import {
   INTERESTS_OPTIONS,
   MAJOR_OPTIONS,
@@ -100,12 +101,6 @@ export default function EditProfile() {
   const [socialPlatformOpen, setSocialPlatformOpen] = useState(false);
   const [socialPlatformItems, setSocialPlatformItems] = useState(
     socialPlatforms.map((p) => ({ label: p, value: p }))
-  );
-
-
-  const [majorOpen, setMajorOpen] = useState(false);
-  const [majorItems, setMajorItems] = useState(
-    MAJOR_OPTIONS.map((m) => ({ label: m, value: m }))
   );
 
   const [classYearOpen, setClassYearOpen] = useState(false);
@@ -191,6 +186,7 @@ export default function EditProfile() {
         isValid = value.length >= 10;
         break;
       case 'major':
+        isValid=true
       case 'graduationYear':
         break;
       default:
@@ -831,8 +827,11 @@ export default function EditProfile() {
   const renderDateOfBirthPicker = () => {
     const formatDate = (date: Date): string => {
       try {
-        if (!date || !(date instanceof Date)) return '';
-        return date.toISOString().split('T')[0];
+        if (!date || !(date instanceof Date)) return "";
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
       } catch {
         return '';
       }
@@ -895,6 +894,7 @@ export default function EditProfile() {
             onChange={onDateChange}
             maximumDate={new Date()} // Prevent future dates
             minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+            themeVariant='light'
             textColor="black"
           />
         )}
@@ -1212,7 +1212,7 @@ export default function EditProfile() {
 
             {/* Academic Information */}
             <Animated.View
-              style={[styles.formSection, { opacity: formOpacity }]}
+              style={[styles.formSection, { opacity: formOpacity, zIndex:1000 }]}
             >
               <BlurView
                 intensity={20}
@@ -1250,20 +1250,22 @@ export default function EditProfile() {
                     />
                   </Animated.View>
 
-                  {renderDropdownPicker(
-                    BookOpen,
-                    'Major',
-                    profile.major || '',
-                    (value) => updateProfileValue('major', value),
-                    'Select your major',
-                    majorItems,
-                    setMajorItems,
-                    majorOpen,
-                    setMajorOpen,
-                    'major',
-                    2000
-                  )}
-
+                  <Animated.View style={[{ opacity: formOpacity, zIndex: 2000 }]}>
+                    <MajorDropdown
+                      value={profile.major || ''}
+                      onValueChange={(value) => updateProfileValue('major', value)}
+                      label="Major/Field of Study"
+                      placeholder="Search for your major..."
+                      isValid={fieldValidation['major']}
+                      isFocused={focusedInput === 'major'}
+                      onFocus={() => setFocusedInput('major')}
+                      onBlur={() => {
+                        setFocusedInput('');
+                        if (profile.major) validateField('major', profile.major);
+                      }}
+                      loading={updateProfileMutation.isPending}
+                    />
+                  </Animated.View>
                   {renderDropdownPicker(
                     Calendar,
                     'Class Year',
@@ -1283,7 +1285,7 @@ export default function EditProfile() {
 
             {/* Location & Contact */}
             <Animated.View
-              style={[styles.formSection, { opacity: formOpacity }]}
+              style={[styles.formSection, { opacity: formOpacity, zIndex:100 }]}
             >
               <BlurView
                 intensity={20}
@@ -1687,7 +1689,6 @@ const styles = StyleSheet.create({
   },
   blurContainer: {
     borderRadius: 20,
-    overflow: 'hidden',
   },
   gradientContainer: {
     padding: 24,
@@ -1898,6 +1899,7 @@ const styles = StyleSheet.create({
   },
   saveContainer: {
     marginTop: 20,
+    marginBottom:40
   },
   saveButton: {
     borderRadius: 16,

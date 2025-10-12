@@ -53,6 +53,7 @@ import Animated, {
 import { useQuery } from "@tanstack/react-query"
 import { getUniversities } from "@/contexts/university.api"
 import UniversityDropdown from "./UniversityDropdown"
+import MajorDropdown from "./MajorDropdown"
 import DropDownPicker from "react-native-dropdown-picker"
 import { useMutation } from "@tanstack/react-query"
 import * as ImagePicker from "expo-image-picker"
@@ -160,9 +161,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
 
-  const [majorOpen, setMajorOpen] = useState(false)
-  const [majorItems, setMajorItems] = useState(MAJOR_OPTIONS.map((m) => ({ label: m, value: m })))
-
   const [classYearOpen, setClassYearOpen] = useState(false)
   const [classYearItems, setClassYearItems] = useState(CLASS_YEAR_OPTIONS.map((y) => ({ label: y, value: y })))
 
@@ -232,24 +230,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   }, [location.state])
 
   useEffect(() => {
-    if (majorOpen) {
-      setClassYearOpen(false)
-      setStateOpen(false)
-      setCityOpen(false)
-    }
-  }, [majorOpen])
-
-  useEffect(() => {
-    if (classYearOpen) {
-      setMajorOpen(false)
-      setStateOpen(false)
-      setCityOpen(false)
-    }
-  }, [classYearOpen])
-
-  useEffect(() => {
     if (stateOpen) {
-      setMajorOpen(false)
       setClassYearOpen(false)
       setCityOpen(false)
     }
@@ -257,7 +238,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
   useEffect(() => {
     if (cityOpen) {
-      setMajorOpen(false)
       setClassYearOpen(false)
       setStateOpen(false)
     }
@@ -769,6 +749,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={onDateChange}
+            themeVariant='light'
+
             maximumDate={new Date()}
             minimumDate={new Date(1900, 0, 1)}
             textColor="black"
@@ -1198,19 +1180,22 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                       />
                     </Animated.View>
 
-                    {renderNativeDropdown(
-                      GraduationCap,
-                      "Major/Field of Study *",
-                      major,
-                      setMajor,
-                      "Select your major",
-                      majorItems,
-                      setMajorItems,
-                      majorOpen,
-                      setMajorOpen,
-                      "major",
-                      1000,
-                    )}
+                    <Animated.View style={[{ opacity: formOpacity, zIndex: 4000 }]}>
+                      <MajorDropdown
+                        value={major}
+                        onValueChange={setMajor}
+                        label="Major/Field of Study *"
+                        placeholder="Search for your major..."
+                        isValid={fieldValidation["major"]}
+                        isFocused={focusedInput === "major"}
+                        onFocus={() => setFocusedInput("major")}
+                        onBlur={() => {
+                          setFocusedInput("")
+                          if (major) validateField("major", major)
+                        }}
+                        loading={loading}
+                      />
+                    </Animated.View>
 
                     {renderNativeDropdown(
                       Calendar,

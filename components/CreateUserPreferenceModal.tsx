@@ -255,23 +255,30 @@ export function CreateInterestPreferenceModal({
 
   const handleSubmit = async () => {
     if (!formData.activityId) {
-      showAlert({ title: 'Missing Interest', message: 'Please select an interest.' });
+      setTimeout(() => {
+        showAlert({ title: 'Missing Interest', message: 'Please select an interest.' });
+      }, 250);
       return;
     }
 
     if (formData.needsEquipment && !formData.equipmentNeeded.trim()) {
-      showAlert({
-        title: 'Equipment Required',
-        message: 'Please specify what equipment you need.',
-      });
+      console.log('here')
+      setTimeout(() => {
+        showAlert({
+          title: 'Equipment Required',
+          message: 'Please specify what equipment you need.',
+        });
+      }, 250);
       return;
     }
 
     if (formData.needsTransport && !formData.transportDetails.trim()) {
-      showAlert({
-        title: 'Transport Details Required',
-        message: 'Please specify your transportation needs.',
-      });
+      setTimeout(() => {
+        showAlert({
+          title: 'Transport Details Required',
+          message: 'Please specify your transportation needs.',
+        });
+      }, 250);
       return;
     }
 

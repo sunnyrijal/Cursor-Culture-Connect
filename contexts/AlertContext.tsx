@@ -1,5 +1,6 @@
 // contexts/AlertContext.tsx or utils/AlertContext.tsx
 import { Alert, AlertButton } from '@/utils/Alert';
+import { Alert as NativeAlert, Platform } from 'react-native';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface AlertOptions {
@@ -41,18 +42,24 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
   });
 
   const showAlert = ({ title, message, buttons = [{ text: 'OK' }] }: AlertOptions) => {
-    setAlertState({
-      visible: true,
-      title,
-      message,
-      buttons: buttons.map(button => ({
-        ...button,
-        onPress: () => {
-          button.onPress?.();
-          hideAlert();
-        },
-      })),
-    });
+    if (Platform.OS === 'ios') {
+      // Use native alert for iOS for better integration and to avoid modal issues.
+      NativeAlert.alert(title, message, buttons);
+    } else {
+      // Use custom alert for Android.
+      setAlertState({
+        visible: true,
+        title,
+        message,
+        buttons: buttons.map((button) => ({
+          ...button,
+          onPress: () => {
+            button.onPress?.();
+            hideAlert();
+          },
+        })),
+      });
+    }
   };
 
   const hideAlert = () => {
@@ -62,12 +69,14 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
   return (
     <AlertContext.Provider value={{ showAlert, hideAlert }}>
       {children}
-      <Alert
-        visible={alertState.visible}
-        title={alertState.title}
-        message={alertState.message}
-        buttons={alertState.buttons}
-      />
+      {Platform.OS !== 'ios' && (
+        <Alert
+          visible={alertState.visible}
+          title={alertState.title}
+          message={alertState.message}
+          buttons={alertState.buttons}
+        />
+      )}
     </AlertContext.Provider>
   );
 };

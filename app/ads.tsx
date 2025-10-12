@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -52,13 +52,24 @@ interface AdResponse {
 }
 
 export default function AllAdsScreen() {
+  const [activeCategory, setActiveCategory] = useState('all');
   const { showAlert } = useAlert();
+
+  const categories = [
+    { id: 'all', label: 'All' },
+    { id: 'Food', label: 'Food' },
+    { id: 'Arts', label: 'Arts' },
+    { id: 'Volunteer', label: 'Volunteer' },
+    { id: 'Faith', label: 'Faith' },
+  ];
+
   const {
     data: adResponse,
     isLoading,
     error,
     refetch,
   } = useQuery<AdResponse>({
+    // Fetch all advertisements once, without category parameter
     queryKey: ['allAdvertisements'],
     queryFn: () => getAdvertisements({}),
   });
@@ -82,13 +93,22 @@ export default function AllAdsScreen() {
     }));
   };
 
-  const allAds =
+  // Combine fetched ads with local data
+  const allFetchedAds =
     adResponse?.success && adResponse.data
       ? transformAdData(adResponse.data)
       : [];
-  const allData = [...allAds, ...transformAdData(discoverExperienceData.data as any)];
-  
-    const handleSponsoredContentPress = async (content: any) => {
+  const allData = [...allFetchedAds, ...transformAdData(discoverExperienceData.data as any)];
+
+  // Apply client-side filtering
+  const filteredData =
+    activeCategory === 'all'
+      ? allData
+      : allData.filter(
+          (item) => item.category.toLowerCase() === activeCategory.toLowerCase()
+        );
+
+  const handleSponsoredContentPress = async (content: any) => {
     // Only handle sponsored content with a link or contact info
     if (content.link && content.link.startsWith('http')) {
       const supported = await Linking.canOpenURL(content.link);
@@ -117,7 +137,8 @@ export default function AllAdsScreen() {
       content={item}
       handleSponsoredContentPress={handleSponsoredContentPress}
       index={index}
-      activeSponsoredCategory="all"
+      activeSponsoredCategory={activeCategory}
+      recordImpression={false}
     />
   );
 
@@ -154,8 +175,38 @@ export default function AllAdsScreen() {
         <Text style={styles.title}>All Experiences</Text>
         <View style={{ width: 24 }} />
       </View>
+
+      {/* Category Tabs */}
+      <View style={styles.categoryRow}>
+        <FlatList
+          horizontal
+          data={categories}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ alignItems: 'center' }}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: cat }) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.categoryTab,
+                activeCategory === cat.id && styles.categoryTabActive,
+              ]}
+              onPress={() => setActiveCategory(cat.id)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  activeCategory === cat.id && styles.categoryTextActive,
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
       <FlatList
-        data={allData}
+        data={filteredData}
         renderItem={renderAdItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -194,6 +245,35 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
     color: theme.textPrimary,
+  },
+  categoryRow: {
+    paddingLeft: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  categoryTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: theme.gray100,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  categoryTabActive: {
+    backgroundColor: theme.primary,
+    borderWidth: 1,
+    borderColor: theme.primary,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.textSecondary,
+  },
+  categoryTextActive: {
+    color: theme.white,
+    fontWeight: '600',
   },
   listContent: {
     padding: spacing.md,

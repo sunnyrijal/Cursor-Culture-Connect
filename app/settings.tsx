@@ -27,7 +27,9 @@ import {
   Globe,
   Smartphone,
   Mail,
+  UserX,
 } from 'lucide-react-native';
+import { FileWarning } from 'lucide-react-native';
 import LogoutButton from '@/components/LogoutButton';
 import { useQuery } from '@tanstack/react-query';
 import { useAlert } from '@/contexts/AlertContext';
@@ -152,6 +154,24 @@ export default function Settings() {
           title: 'Coming Soon',
           message: 'Security settings will be available soon',
         }),
+      showChevron: true,
+    },
+    {
+      id: 'blocked-users',
+      icon: UserX,
+      label: 'Blocked Users',
+      description: 'Manage users you have blocked',
+      color: '#EF4444',
+      onPress: () => router.push('/blocked-users'),
+      showChevron: true,
+    },
+    {
+      id: 'my-reports',
+      icon: FileWarning,
+      label: 'My Reports',
+      description: 'View your submitted reports',
+      color: '#F59E0B',
+      onPress: () => router.push('/my-reports'),
       showChevron: true,
     },
   ];

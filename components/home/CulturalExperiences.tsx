@@ -126,6 +126,7 @@ const CulturalExperiences = () => {
     // if (adResponse?.success && adResponse?.data) {
     const adResponseData = adResponse?.data || [];
       const allData = [...adResponseData, ...discoverExperienceData?.data]
+      //@ts-ignore
       const transformedAds = transformAdData(allData);
 
       if (activeSponsoredCategory === 'all') {
@@ -223,6 +224,7 @@ const CulturalExperiences = () => {
       handleSponsoredContentPress={handleSponsoredContentPress}
       index={index}
       activeSponsoredCategory={activeSponsoredCategory}
+      recordImpression={true}
     />
   );
 

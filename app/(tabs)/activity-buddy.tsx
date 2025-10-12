@@ -84,6 +84,7 @@ type TabType = 'activities' | 'pings';
 
 export default function ActivityBuddyPage() {
   const [activeTab, setActiveTab] = useState<TabType>('activities');
+  const [activePingTab, setActivePingTab] = useState<'received' | 'sent'>('received');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string | null>(
     'all'
@@ -935,40 +936,52 @@ export default function ActivityBuddyPage() {
   );
 
   const renderPingsTab = () => (
-    <View style={styles.tabContent}>
+    <View style={styles.tabContent}>      
+      <View style={styles.subTabContainer}>
+        <View style={styles.tabSelector}>
+          <TouchableOpacity
+            style={[styles.tab, activePingTab === 'received' && styles.tabActive]}
+            onPress={() => setActivePingTab('received')}
+          >
+            <Text style={[styles.tabText, activePingTab === 'received' && styles.tabTextActive]}>
+              Received ({pings.received?.length || 0})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activePingTab === 'sent' && styles.tabActive]}
+            onPress={() => setActivePingTab('sent')}
+          >
+            <Text style={[styles.tabText, activePingTab === 'sent' && styles.tabTextActive]}>
+              Sent ({pings.sent?.length || 0})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.contentContainer}>
-          {/* Received Pings */}
-          <Text style={styles.sectionTitle}>
-            Received Pings ({pings.received?.length || 0})
-          </Text>
-          {pingsLoading ? (
-            <Text style={styles.loadingText}>Loading pings...</Text>
-          ) : pings.received?.length === 0 ? (
-            <Text style={styles.emptyText}>No received pings</Text>
-          ) : (
-            pings.received?.map((ping: InterestPing) =>
-              renderPingCard(ping, 'received')
-            )
-          )}
-
-          {/* Sent Pings */}
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
-            Sent Pings ({pings.sent?.length || 0})
-          </Text>
-          {pings.sent?.length === 0 ? (
-            <Text style={styles.emptyText}>No sent pings</Text>
-          ) : (
-            pings.sent?.map((ping: InterestPing) =>
-              renderPingCard(ping, 'sent')
-            )
-          )}
-        </View>
+        {pingsLoading ? (
+          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
+        ) : activePingTab === 'received' ? (
+          <View style={styles.contentContainer}>
+            {pings.received?.length === 0 ? (
+              <Text style={styles.emptyText}>No received pings</Text>
+            ) : (
+              pings.received?.map((ping: InterestPing) => renderPingCard(ping, 'received'))
+            )}
+          </View>
+        ) : (
+          <View style={styles.contentContainer}>
+            {pings.sent?.length === 0 ? (
+              <Text style={styles.emptyText}>No sent pings</Text>
+            ) : (
+              pings.sent?.map((ping: InterestPing) => renderPingCard(ping, 'sent'))
+            )}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -1826,5 +1839,12 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  subTabContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
 });

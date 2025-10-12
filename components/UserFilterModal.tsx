@@ -12,7 +12,8 @@ import { X, Filter, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { useQuery } from '@tanstack/react-query';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { getUniversities } from '@/contexts/university.api'; // Adjust import path
+import { getUniversities } from '@/contexts/university.api';
+import { getMajors } from '@/contexts/major.api';
 import statesData from '../data/US_States_list.json';
 import citiesData from '../data/US_Cities.json';
 
@@ -21,31 +22,6 @@ const theme = {
   textPrimary: '#2D3748',
   textSecondary: '#4A5568',
 };
-
-export const MAJOR_OPTIONS = [
-  'Accounting',
-  'Art',
-  'Biology',
-  'Business',
-  'Chemistry',
-  'Communications',
-  'Computer Science',
-  'Economics',
-  'Education',
-  'Engineering',
-  'English',
-  'History',
-  'Law',
-  'Marketing',
-  'Mathematics',
-  'Medicine',
-  'Nursing',
-  'Physics',
-  'Political Science',
-  'Psychology',
-  'Sociology',
-  'Other',
-];
 
 export const LANGUAGE_OPTIONS = [
   "English",
@@ -191,6 +167,11 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
     queryFn: getUniversities,
   });
 
+  const { data: majorsResponse } = useQuery({
+    queryKey: ['majors'],
+    queryFn: () => getMajors(),
+  });
+
   const universityOptions = React.useMemo(() => {
     if (!universities?.data) return [];
     return universities.data.map((uni: any) => ({
@@ -200,11 +181,12 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
   }, [universities]);
 
   const majorOptions = React.useMemo(() => {
-    return MAJOR_OPTIONS.map(major => ({
-      id: major,
-      name: major,
+    if (!majorsResponse?.data) return [];
+    return majorsResponse.data.map((major: any) => ({
+      id: major.name, // Using name as ID for filter state
+      name: major.name,
     }));
-  }, []);
+  }, [majorsResponse]);
 
   const languageOptions = React.useMemo(() => {
     return LANGUAGE_OPTIONS.map(lang => ({
