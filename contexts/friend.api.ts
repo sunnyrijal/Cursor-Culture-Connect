@@ -43,6 +43,10 @@ export interface BlockUserData {
   targetUserId: string;
 }
 
+export interface UnblockUserData {
+  targetUserId: string;
+}
+
 // API Response interfaces
 export interface ApiResponse<T> {
   success: boolean;
@@ -115,6 +119,18 @@ export const getPendingFriendRequests = async () => {
   }
 };
 
+export const getBlockedUsers = async () => {
+  try {
+    const response = await api.get(
+      '/friend/blocked'
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
+    throw error;
+  }
+};
+
 export const removeFriend = async (removeData: RemoveFriendData) => {
   try {
     const response= await api.delete(
@@ -129,6 +145,7 @@ export const removeFriend = async (removeData: RemoveFriendData) => {
 };
 
 export const blockUser = async (blockData: BlockUserData) => {
+  console.log("CALLING BLOCK USER", blockData)
   try {
     const response= await api.post(
       '/friend/block',
@@ -141,6 +158,18 @@ export const blockUser = async (blockData: BlockUserData) => {
   }
 };
 
+export const unblockUser = async (unblockData: UnblockUserData) => {
+  try {
+    const response = await api.post(
+      '/friend/unblock',
+      unblockData
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+};
 // Helper functions for easier usage
 export const acceptFriendRequest = async (friendshipId: string) => {
   return await respondToFriendRequest({ friendshipId, action: 'accept' });

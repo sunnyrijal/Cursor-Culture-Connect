@@ -831,8 +831,11 @@ export default function EditProfile() {
   const renderDateOfBirthPicker = () => {
     const formatDate = (date: Date): string => {
       try {
-        if (!date || !(date instanceof Date)) return '';
-        return date.toISOString().split('T')[0];
+        if (!date || !(date instanceof Date)) return "";
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
       } catch {
         return '';
       }
@@ -895,6 +898,7 @@ export default function EditProfile() {
             onChange={onDateChange}
             maximumDate={new Date()} // Prevent future dates
             minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+            themeVariant='light'
             textColor="black"
           />
         )}

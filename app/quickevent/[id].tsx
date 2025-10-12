@@ -28,6 +28,7 @@ import {
   UserRoundCog,
   MapPin,
   Edit3,
+  AlertTriangle,
 } from 'lucide-react-native';
 import {
   getQuickEventById,
@@ -40,6 +41,7 @@ import getDecodedToken from '@/utils/getMyData';
 import { formatTo12Hour } from '@/utils/formatDate';
 import { useAlert } from '@/contexts/AlertContext';
 import { EditQuickEventModal } from '@/components/UpdateQuickEventModal'; // Corrected import path
+import { ReportModal } from '@/components/ReportModal';
 // Enhanced theme for neumorphism
 const neomorphColors = {
   background: '#F8FAFC',
@@ -84,6 +86,7 @@ export default function QuickEventDetail() {
   const queryClient = useQueryClient();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isUserListVisible, setIsUserListVisible] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const { showAlert } = useAlert();
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
@@ -286,6 +289,14 @@ export default function QuickEventDetail() {
                 color={theme.textPrimary}
                 style={styles.headerButton}
               />
+              {quickEvent?.userId !== myData?.userId && (
+                <TouchableOpacity
+                  onPress={() => setShowReportModal(true)}
+                  style={styles.headerButton}
+                >
+                  <AlertTriangle size={20} color={extendedTheme.warning} />
+                </TouchableOpacity>
+              )}
               {quickEvent?.userId === myData?.userId && (
                 <TouchableOpacity
                   onPress={() => setIsEditModalVisible(true)}
@@ -535,6 +546,13 @@ export default function QuickEventDetail() {
           queryClient.invalidateQueries({ queryKey: ['quickevent', eventId] });
         }}
         quickEvent={quickEvent}
+      />
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        entityId={eventId as string}
+        entityType="quickEvent"
+        entityName={quickEvent.name}
       />
     </SafeAreaView>
   );

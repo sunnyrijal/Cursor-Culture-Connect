@@ -12,12 +12,14 @@ const CulturalExperienceCard = ({
   content,
   handleSponsoredContentPress,
   index,
-  activeSponsoredCategory
+  activeSponsoredCategory,
+  recordImpression,
 }: {
   content: any,
   index: number,
   activeSponsoredCategory: string,
-  handleSponsoredContentPress: (value: any) => void
+  handleSponsoredContentPress: (value: any) => void,
+  recordImpression?: boolean,
 }) => {
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -41,7 +43,7 @@ const CulturalExperienceCard = ({
   });
 
   const handleCardLayout = () => {
-    if (!hasRecordedImpression && myData && cardRef.current) {
+    if (recordImpression && !hasRecordedImpression && myData && cardRef.current) {
       cardRef.current.measureInWindow((x, y, width, height) => {
         // Check if card is in viewport
         const screenHeight = Platform.OS === 'ios' ? 812 : 640; // Approximate screen heights

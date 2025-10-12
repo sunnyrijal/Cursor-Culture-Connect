@@ -34,6 +34,7 @@ import {
   MessageSquare,
   Clock,
   Share2,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -54,6 +55,7 @@ import { GroupRole } from '@/types/group.types';
 import { approveEvent } from '@/contexts/event.api';
 import { formatDate, formatTo12Hour } from '@/utils/formatDate';
 import SocialMediaLinks from '@/components/SocialMediaLinks'; // Add this import
+import { ReportModal } from '@/components/ReportModal';
 
 // Neomorphic color palette
 const neomorphColors = {
@@ -119,6 +121,7 @@ export default function GroupDetailEnhanced() {
   const [showUpdateRoleModal, setShowUpdateRoleModal] = useState(false);
   const [showMembersList, setShowMembersList] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [memberToKick, setMemberToKick] = useState<Member | null>(null);
   const [memberToUpdate, setMemberToUpdate] = useState<Member | null>(null);
@@ -473,6 +476,14 @@ export default function GroupDetailEnhanced() {
                   style={styles.headerButton}
                 >
                   <Share2 size={20} color={theme.textPrimary} />
+                </TouchableOpacity>
+              )}
+              { (
+                <TouchableOpacity
+                  onPress={() => setShowReportModal(true)}
+                  style={styles.headerButton}
+                >
+                  <AlertTriangle size={20} color={theme.warning} />
                 </TouchableOpacity>
               )}
               {isCurrentUserAdmin && (
@@ -1281,6 +1292,14 @@ export default function GroupDetailEnhanced() {
         onClose={() => setShowEditGroupModal(false)}
         group={group}
         onSubmit={() => refetch()}
+      />
+
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        entityId={id as string}
+        entityType="group"
+        entityName={group.name}
       />
     </SafeAreaView>
   );

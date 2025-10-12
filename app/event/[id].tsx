@@ -33,6 +33,7 @@ import {
   ChevronDown,
   MessageCircle as MessageCircleIcon,
   Share2,
+  AlertTriangle,
   UserPlus,
 } from 'lucide-react-native';
 import {
@@ -48,6 +49,7 @@ import { createDirectChat } from '@/contexts/chat.api';
 import { EditEventModal } from '@/components/EditEventModal';
 import { useAlert } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
+import { ReportModal } from '@/components/ReportModal';
 import { getUsers, User } from '@/contexts/user.api';
 import { Button } from '@/components/ui/Button';
 
@@ -74,6 +76,7 @@ export default function EventDetail() {
   const [showInviteModal, setShowInviteModal] = React.useState(false);
   const [searchEmail, setSearchEmail] = React.useState('');
   const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
+  const [showReportModal, setShowReportModal] = React.useState(false);
   const [showEditEventModal, setShowEditEventModal] = React.useState(false);
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
@@ -345,7 +348,8 @@ export default function EventDetail() {
     eventTime?.startTime,
     eventTime?.endTime
   );
-  const organizer = event.user?.name || 'Unknown Organizer';
+  const organizer =
+    event.associatedGroup?.name || event.user?.name || 'Unknown Organizer';
 
   const canApprove = event?.canApprove;
 
@@ -398,6 +402,14 @@ export default function EventDetail() {
               >
                 <Share2 size={18} color={theme.textPrimary} />
               </TouchableOpacity>
+              {!isHost && (
+                <TouchableOpacity
+                  onPress={() => setShowReportModal(true)}
+                  style={styles.headerButton}
+                >
+                  <AlertTriangle size={18} color={theme.warning} />
+                </TouchableOpacity>
+              )}
               {isHost && (
                 <TouchableOpacity
                   onPress={() => setShowInviteModal(true)}
@@ -777,6 +789,14 @@ export default function EventDetail() {
           }
         />
       )}
+
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        entityId={eventId as string}
+        entityType="event"
+        entityName={event.name}
+      />
 
       <Modal
         visible={showInviteModal}

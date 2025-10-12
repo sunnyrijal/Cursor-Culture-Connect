@@ -3,7 +3,7 @@ export const theme = {
   primary: "#6366F1", // Vibrant indigo purple
   primaryLight: "#A5B4FC", // Soft lavender tint
   primaryDark: "#4338CA", // Deep royal purple
-
+  textMuted:'black',
   // Accent Colors (keeping your calm green accent)
   accent: "#38B2AC",
   accentLight: "#81E6D9",

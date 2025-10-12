@@ -769,6 +769,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={onDateChange}
+            themeVariant='light'
+
             maximumDate={new Date()}
             minimumDate={new Date(1900, 0, 1)}
             textColor="black"

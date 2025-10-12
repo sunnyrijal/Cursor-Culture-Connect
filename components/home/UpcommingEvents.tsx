@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import React, { useState } from 'react';
 import { LayoutGrid, List as ListIcon } from 'lucide-react-native';
@@ -16,8 +17,10 @@ import {
   neomorphColors,
 } from '../theme'; // adjust if needed
 import { router } from 'expo-router'; // or your navigation lib
-import { useQuery } from '@tanstack/react-query';
-import { getEvents } from '@/contexts/event.api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
+import getDecodedToken from '@/utils/getMyData';
+import { useAlert } from '@/contexts/AlertContext';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -42,6 +45,48 @@ const formatTime = (dateString: string) => {
 
 const UpcomingEvents = () => {
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
+  const queryClient = useQueryClient();
+  const { showAlert } = useAlert();
+
+  const { data: myData } = useQuery({
+    queryKey: ['myData'],
+    queryFn: getDecodedToken,
+  });
+
+  const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
+    mutationFn: (eventId: string) => joinEvent(eventId),
+    onSuccess: (data, eventId) => {
+      showAlert({ title: 'Success', message: 'You have RSVPed to the event!' });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+    },
+    onError: (error: any) => {
+      showAlert({
+        title: 'Error',
+        message:
+          error?.response?.data?.message || 'Failed to RSVP for the event.',
+      });
+    },
+  });
+
+  const { mutate: leaveEventMutation, isPending: isLeaving } = useMutation({
+    mutationFn: (eventId: string) => leaveEvent(eventId),
+    onSuccess: (data, eventId) => {
+      showAlert({
+        title: 'Success',
+        message: 'You have cancelled your RSVP.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+    },
+    onError: (error: any) => {
+      showAlert({
+        title: 'Error',
+        message:
+          error?.response?.data?.message || 'Failed to cancel your RSVP.',
+      });
+    },
+  });
 
   // Use Tanstack Query to fetch events
   const {
@@ -128,6 +173,10 @@ const UpcomingEvents = () => {
             const eventTime = event.eventTimes?.[0];
             const date = eventTime ? formatDate(eventTime.startTime) : 'TBA';
             const time = eventTime ? formatTime(eventTime.startTime) : 'TBA';
+            const isAttending = event.attendingUsers?.some(
+              (attendee: any) => attendee.id === myData?.userId
+            );
+            const isMutationPending = isJoining || isLeaving;
 
             return (
               <TouchableOpacity
@@ -156,6 +205,37 @@ const UpcomingEvents = () => {
                   <Text style={styles.eventGridMeta} numberOfLines={1}>
                     by {event.user?.name}
                   </Text>
+                  {myData && (
+                    <TouchableOpacity
+                      style={[
+                        styles.rsvpButtonGrid,
+                        isAttending && styles.rsvpButtonAttending,
+                        isMutationPending && styles.rsvpButtonDisabled,
+                      ]}
+                      onPress={(e) => {
+                        e.stopPropagation(); // Prevent card press
+                        if (isAttending) {
+                          leaveEventMutation(event.id);
+                        } else {
+                          joinEventMutation(event.id);
+                        }
+                      }}
+                      disabled={isMutationPending}
+                    >
+                      {isMutationPending ? (
+                        <ActivityIndicator size="small" color={theme.white} />
+                      ) : (
+                        <Text
+                          style={[
+                            styles.rsvpButtonText,
+                            isAttending && styles.rsvpButtonTextAttending,
+                          ]}
+                        >
+                          {isAttending ? 'Going' : 'RSVP'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -167,6 +247,10 @@ const UpcomingEvents = () => {
             const eventTime = event.eventTimes?.[0];
             const date = eventTime ? formatDate(eventTime.startTime) : 'TBA';
             const time = eventTime ? formatTime(eventTime.startTime) : 'TBA';
+            const isAttending = event.attendingUsers?.some(
+              (attendee: any) => attendee.id === myData?.userId
+            );
+            const isMutationPending = isJoining || isLeaving;
 
             return (
               <TouchableOpacity
@@ -193,6 +277,34 @@ const UpcomingEvents = () => {
                     <Text style={styles.eventListPrice}>
                       by {event.user?.name}
                     </Text>
+                    {myData && (
+                      <TouchableOpacity
+                        style={[
+                          styles.rsvpButtonList,
+                          isAttending && styles.rsvpButtonAttending,
+                          isMutationPending && styles.rsvpButtonDisabled,
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation(); // Prevent card press
+                          if (isAttending) {
+                            leaveEventMutation(event.id);
+                          } else {
+                            joinEventMutation(event.id);
+                          }
+                        }}
+                        disabled={isMutationPending}
+                      >
+                        {isMutationPending ? (
+                          <ActivityIndicator size="small" color={theme.white} />
+                        ) : (
+                          <Text
+                            style={styles.rsvpButtonText}
+                          >
+                            {isAttending ? 'Going' : 'RSVP'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -479,5 +591,33 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
+  },
+  rsvpButtonGrid: {
+    marginTop: spacing.sm,
+    backgroundColor: theme.primary,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  rsvpButtonList: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  rsvpButtonAttending: {
+    backgroundColor: theme.success,
+  },
+  rsvpButtonDisabled: {
+    backgroundColor: theme.gray400,
+  },
+  rsvpButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+    fontSize: typography.fontSize.sm,
+  },
+  rsvpButtonTextAttending: {
+    color: theme.white,
   },
 });
