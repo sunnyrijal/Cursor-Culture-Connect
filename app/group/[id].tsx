@@ -157,7 +157,7 @@ export default function GroupDetailEnhanced() {
     isCurrentUserMember ||
     group?.creatorId === myData?.userId;
 
-  const canJoinGroup = !isCurrentUserMember && !group?.isPrivate;
+  const canJoinGroup = !isCurrentUserMember;
 
   const availableUsers =
     usersResponse?.users?.filter((user: User) => {
@@ -323,7 +323,7 @@ export default function GroupDetailEnhanced() {
       },
     });
 
-  const { mutate: joinGroupMutate } = useMutation({
+  const { mutate: joinGroupMutate, isPending: isJoiningGroup } = useMutation({
     mutationFn: () => joinGroup(id as string),
     onSuccess: (data) => {
       console.log('✅ Joined group:', data);
@@ -478,7 +478,7 @@ export default function GroupDetailEnhanced() {
                   <Share2 size={20} color={theme.textPrimary} />
                 </TouchableOpacity>
               )}
-              { (
+              {group?.creatorId !== myData?.userId && (
                 <TouchableOpacity
                   onPress={() => setShowReportModal(true)}
                   style={styles.headerButton}
@@ -585,7 +585,7 @@ export default function GroupDetailEnhanced() {
           <View style={styles.eventBadge}>
             <Users size={16} color="white" />
             <Text style={styles.eventBadgeText}>
-              {group.isPrivate ? 'Private Group' : 'Public Group'}
+              {group.isPrivate ? 'University Only' : 'Public Group'}
             </Text>
           </View>
 
@@ -600,20 +600,22 @@ export default function GroupDetailEnhanced() {
             </View>
 
             <View style={styles.heroMetaContainer}>
-              <View style={styles.creatorInfo}>
-                <Image
-                  source={{
-                    uri:
-                      group.creator.profilePicture ||
-                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                  }}
-                  style={styles.creatorAvatar}
-                  defaultSource={require('../../assets/user.png')}
-                />
-                <Text style={styles.heroSubtitle}>
-                  Created by {group.creator.name}
-                </Text>
-              </View>
+              {group?.creatorId !== myData?.userId && (
+                <View style={styles.creatorInfo}>
+                  <Image
+                    source={{
+                      uri:
+                        group.creator.profilePicture ||
+                        'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                    }}
+                    style={styles.creatorAvatar}
+                    defaultSource={require('../../assets/user.png')}
+                  />
+                  <Text style={styles.heroSubtitle}>
+                    Created by {group.creator.name}
+                  </Text>
+                </View>
+              )}
               <View style={styles.heroStatusBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.heroStatusText}>
@@ -647,60 +649,6 @@ export default function GroupDetailEnhanced() {
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Meeting Details Section */}
-          {(group.meetingDate ||
-            group.meetingTime ||
-            group.meetingLocation) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Meeting Details</Text>
-              </View>
-              <View style={styles.infoCard}>
-                {group.meetingDate && (
-                  <View style={styles.infoRow}>
-                    <View
-                      style={[
-                        styles.infoIconWrapper,
-                        { backgroundColor: `${neomorphColors.accent}15` },
-                      ]}
-                    >
-                      <Calendar size={20} color={neomorphColors.accent} />
-                    </View>
-                    <Text style={styles.infoValue}>{group.meetingDate}</Text>
-                  </View>
-                )}
-                {group.meetingTime && (
-                  <View style={styles.infoRow}>
-                    <View
-                      style={[
-                        styles.infoIconWrapper,
-                        { backgroundColor: `${extendedTheme.success}15` },
-                      ]}
-                    >
-                      <Clock size={20} color={extendedTheme.success} />
-                    </View>
-                    <Text style={styles.infoValue}>{formatTo12Hour(group.meetingTime)}</Text>
-                  </View>
-                )}
-                {group.meetingLocation && (
-                  <View style={styles.infoRow}>
-                    <View
-                      style={[
-                        styles.infoIconWrapper,
-                        { backgroundColor: `${extendedTheme.warning}15` },
-                      ]}
-                    >
-                      <MapPin size={20} color={extendedTheme.warning} />
-                    </View>
-                    <Text style={styles.infoValue}>
-                      {group.meetingLocation}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
          
 
           {/* Details Section */}
@@ -844,6 +792,63 @@ export default function GroupDetailEnhanced() {
               )}
             </View>
           </View>
+
+
+
+           {/* Meeting Details Section */}
+          {(group.meetingDate ||
+            group.meetingTime ||
+            group.meetingLocation) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Meeting Details</Text>
+              </View>
+              <View style={styles.infoCard}>
+                {group.meetingDate && (
+                  <View style={styles.infoRow}>
+                    <View
+                      style={[
+                        styles.infoIconWrapper,
+                        { backgroundColor: `${neomorphColors.accent}15` },
+                      ]}
+                    >
+                      <Calendar size={20} color={neomorphColors.accent} />
+                    </View>
+                    <Text style={styles.infoValue}>{group.meetingDate}</Text>
+                  </View>
+                )}
+                {group.meetingTime && (
+                  <View style={styles.infoRow}>
+                    <View
+                      style={[
+                        styles.infoIconWrapper,
+                        { backgroundColor: `${extendedTheme.success}15` },
+                      ]}
+                    >
+                      <Clock size={20} color={extendedTheme.success} />
+                    </View>
+                    <Text style={styles.infoValue}>{formatTo12Hour(group.meetingTime)}</Text>
+                  </View>
+                )}
+                {group.meetingLocation && (
+                  <View style={styles.infoRow}>
+                    <View
+                      style={[
+                        styles.infoIconWrapper,
+                        { backgroundColor: `${extendedTheme.warning}15` },
+                      ]}
+                    >
+                      <MapPin size={20} color={extendedTheme.warning} />
+                    </View>
+                    <Text style={styles.infoValue}>
+                      {group.meetingLocation}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
            {/* Social Media Section - Add this after Meeting Details and before Details Section */}
           {group.socialMedia && Object.keys(group.socialMedia).length > 0 && (
             <View style={styles.section}>
@@ -870,7 +875,7 @@ export default function GroupDetailEnhanced() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Group Privacy</Text>
                     <Text style={styles.infoValue}>
-                      {group.isPrivate ? 'Private' : 'Public'}
+                      {group.isPrivate ? 'University Only' : 'Public'}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -885,7 +890,7 @@ export default function GroupDetailEnhanced() {
                         ? 'Updating...'
                         : group.isPrivate
                         ? 'Make Public'
-                        : 'Make Private'}
+                        : 'Make University Only'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1301,6 +1306,20 @@ export default function GroupDetailEnhanced() {
         entityType="group"
         entityName={group.name}
       />
+      <Modal
+        transparent={true}
+        animationType="fade"
+        visible={isJoiningGroup}
+      >
+        <View style={styles.loadingModalOverlay}>
+          <View style={styles.loadingModalContent}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={styles.loadingModalText}>
+              Joining Group...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2329,4 +2348,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
+  loadingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    gap: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  loadingModalText: { fontSize: 16, fontWeight: '600', color: theme.textPrimary },
 });

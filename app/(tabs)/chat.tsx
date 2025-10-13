@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
   },
   filterWrapper: {
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   filterContainer: {
     flexDirection: 'row',

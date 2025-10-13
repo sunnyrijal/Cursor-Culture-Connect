@@ -700,7 +700,7 @@ export function CreateGroupModal({
                               styles.visibilityButtonTextActive,
                           ]}
                         >
-                          Private
+                          University Only
                         </Text>
                       </LinearGradient>
                     </TouchableOpacity>

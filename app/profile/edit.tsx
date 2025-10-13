@@ -92,7 +92,9 @@ export default function EditProfile() {
   const [newLanguage, setNewLanguage] = useState<string>('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [pronouns, setPronouns] = useState<string>('');
+    const [pronouns, setPronouns] = useState<string>('');
+  const initialDate = profile.dateOfBirth ? new Date(profile.dateOfBirth) : new Date();
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({});
   const [newSocialPlatform, setNewSocialPlatform] = useState<string>('');
@@ -244,6 +246,9 @@ export default function EditProfile() {
           setPronouns(userData.pronouns);
         }
 
+         if (userData.dateOfBirth) {
+           setSelectedDate(new Date(userData.dateOfBirth));
+         }
         return userData;
       }
       throw new Error('Failed to load profile data');
@@ -840,7 +845,7 @@ export default function EditProfile() {
 
     const onDateChange = (event: any, selectedDate?: Date): void => {
       const currentDate = selectedDate || new Date();
-      setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+      setShowDatePicker(!showDatePicker); // Keep open on iOS, close on Android
       setSelectedDate(currentDate);
       const formattedDate = formatDate(currentDate);
       updateProfileValue('dateOfBirth', formattedDate);
@@ -898,6 +903,17 @@ export default function EditProfile() {
             textColor="black"
           />
         )}
+
+        {/* {showDatePicker && Platform.OS === 'ios' && (
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => {
+              setShowDatePicker(false);
+            }}
+          >
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        )} */}
 
         {fieldValidation['dateOfBirth'] === false && profile.dateOfBirth && (
           <Text style={styles.validationText}>
@@ -2045,4 +2061,18 @@ const styles = StyleSheet.create({
   dropdownDisabled: {
     backgroundColor: '#F3F4F6',
   },
+  doneButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+
 });

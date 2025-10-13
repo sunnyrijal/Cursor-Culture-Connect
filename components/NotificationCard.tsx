@@ -77,6 +77,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         return <Heart size={20} color={theme.error} />;
       case 'GROUP_EVENT_APPROVAL':
         return <UserCheck size={20} color={theme.success} />;
+      case 'REPORT_UPDATE':
+        return <Shield size={20} color={theme.info} />;
       default:
         return <Bell size={20} color={theme.gray500} />;
     }
@@ -317,6 +319,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         if (notification.senderId) {
           router.push(`/public/profile/${notification.senderId}`);
         }
+        break;
+      case 'REPORT_UPDATE':
+        router.push('/my-reports');
         break;
       default:
         console.log(

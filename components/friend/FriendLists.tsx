@@ -135,7 +135,7 @@ export default function FriendsListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.searchWrapper}>
         <View style={styles.searchBarContainer}>
           <Search size={20} color="#94A3B8" style={styles.searchIcon} />
@@ -228,7 +228,7 @@ export default function FriendsListScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -236,6 +236,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+    paddingTop:12,
+
   },
 
   searchWrapper: {

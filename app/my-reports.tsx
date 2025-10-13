@@ -87,7 +87,7 @@ export default function MyReportsScreen() {
   });
 
   const reports = reportsResponse?.data || [];
-
+console.log(reports)
   const deleteReportMutation = useMutation({
     mutationFn: deleteMyReport,
     onSuccess: () => {
@@ -129,7 +129,7 @@ export default function MyReportsScreen() {
     if (report.quickEvent)
       return {
         icon: Calendar,
-        name: report.quickEvent.title,
+        name: report.quickEvent.name,
         type: 'Quick Event',
       };
     if (report.reportedUser)
@@ -147,12 +147,24 @@ export default function MyReportsScreen() {
     return { icon: FileText, name: 'Content', type: 'Unknown' };
   };
 
+  const handleNavigation = (report: Report) => {
+    if (report.event?.id) {
+      router.push(`/event/${report.event.id}`);
+    } else if (report?.group?.id) {
+      router.push(`/group/${report.group.id}`);
+    } else if (report?.quickEvent?.id) {
+      router.push(`/quickevent/${report.quickEvent.id}`);
+    }
+  };
+
   const renderReportItem = ({ item }: { item: Report }) => {
     const entityInfo = getEntityInfo(item);
     const EntityIcon = entityInfo.icon;
     
     return (
-      <View style={styles.reportCard}>
+      <TouchableOpacity
+        style={styles.reportCard}
+        activeOpacity={0.8}>
         <LinearGradient
           colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.85)']}
           style={styles.reportCardGradient}
@@ -162,12 +174,15 @@ export default function MyReportsScreen() {
               <View style={styles.entityIconContainer}>
                 <EntityIcon size={18} color="#6366F1" />
               </View>
-              <View style={styles.entityTextContainer}>
+              <TouchableOpacity 
+        onPress={() => handleNavigation(item)}
+              style={styles.entityTextContainer}>
+                
                 <Text style={styles.entityName} numberOfLines={1}>
                   {entityInfo.name}
                 </Text>
                 <Text style={styles.entityType}>{entityInfo.type}</Text>
-              </View>
+              </TouchableOpacity>
             </View>
             <TouchableOpacity
               style={styles.deleteButton}
@@ -234,7 +249,7 @@ export default function MyReportsScreen() {
             </View>
           </View>
         </LinearGradient>
-      </View>
+      </TouchableOpacity>
     );
   };
 

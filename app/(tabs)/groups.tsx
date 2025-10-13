@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  Modal,
   TextInput,
   RefreshControl,
 } from 'react-native';
@@ -139,6 +140,10 @@ export default function Groups() {
       queryClient.invalidateQueries({ queryKey: ['groups'] });
     },
     onError: (error) => {
+      showAlert({
+        title: 'Error',
+        message: 'Failed to join group. Please try again.',
+      });
       console.error('Error joining group:', error);
       showAlert({
         title: 'Error',
@@ -274,7 +279,7 @@ export default function Groups() {
                         ) : (
                           <View style={[styles.badge, styles.privateBadge]}>
                             <Lock size={10} color={theme.white} />
-                            <Text style={styles.badgeText}>Private</Text>
+                            <Text style={styles.badgeText}>University Only</Text>
                           </View>
                         )}
                       </View>
@@ -340,7 +345,7 @@ export default function Groups() {
                           >
                             <Text style={styles.badgeText}>Admin</Text>
                           </View>
-                        ) : !isCurrentUserMember && !group.isPrivate ? (
+                        ) : !isCurrentUserMember ? (
                           <TouchableOpacity
                             style={styles.joinButton}
                             onPress={() => joinGroupMutation(group.id)}
@@ -417,6 +422,20 @@ export default function Groups() {
           onApply={handleApplyGroupFilters}
         />
       </View>
+      <Modal
+        transparent={true}
+        animationType="fade"
+        visible={isJoining}
+      >
+        <View style={styles.loadingModalOverlay}>
+          <View style={styles.loadingModalContent}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={styles.loadingText}>
+              Joining Group...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -704,10 +723,10 @@ const styles = StyleSheet.create({
     }),
   },
   privateBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    backgroundColor: theme.primary,
     ...Platform.select({
       ios: {
-        shadowColor: '#EF4444',
+        shadowColor: theme.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -1128,6 +1147,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#64748B',
+  },
+  loadingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    gap: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   activeFilterText: {
     color: '#FFFFFF',
