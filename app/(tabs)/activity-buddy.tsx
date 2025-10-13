@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 20,
@@ -1480,7 +1480,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 8,
+    // paddingHorizontal: 8,
     paddingVertical: 12,
   },
 
@@ -1498,7 +1498,7 @@ const styles = StyleSheet.create({
   },
   categoryFilter: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingBottom: 8,
     backgroundColor: theme.white,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
@@ -1555,6 +1555,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.textSecondary,
     marginBottom: 12,
+    paddingHorizontal:16,
     fontWeight: '500',
   },
   emptyState: {

@@ -221,7 +221,7 @@ export default function FriendRequestsScreen() {
     activeTab === 'received' ? receivedRequests : sentRequests;
   
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Tab Container */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -364,7 +364,7 @@ export default function FriendRequestsScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+    paddingTop:12,
   },
 
   tabContainer: {

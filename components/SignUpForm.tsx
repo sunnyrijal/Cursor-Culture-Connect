@@ -707,7 +707,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
     const onDateChange = (event: any, selectedDate?: Date): void => {
       const currentDate = selectedDate || new Date()
-      setShowDatePicker(Platform.OS === "ios")
+      setShowDatePicker(!showDatePicker)
       setSelectedDate(currentDate)
       setDateOfBirth(formatDate(currentDate))
       validateField("dateOfBirth", formatDate(currentDate))
@@ -756,6 +756,16 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
             textColor="black"
           />
         )}
+        {/* {showDatePicker && Platform.OS === 'ios' && (
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => {
+              setShowDatePicker(false);
+            }}
+          >
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        )} */}
 
         {fieldValidation["dateOfBirth"] === false && dateOfBirth && (
           <Text style={styles.validationText}>Please select a valid date of birth</Text>
@@ -1978,6 +1988,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  doneButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+
+
 })
 
 export default SignUpForm

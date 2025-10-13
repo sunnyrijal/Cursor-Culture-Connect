@@ -35,7 +35,7 @@ import { TimeSelectInput } from './TimeSelectInput';
 import { typography } from './theme';
 import { useAlert } from '@/contexts/AlertContext';
 import DropDownPicker from 'react-native-dropdown-picker'; // Add this import
-import {socialPlatforms} from '../data/socialPlatforms'
+import { socialPlatforms } from '../data/socialPlatforms';
 
 interface Group {
   id: string;
@@ -152,7 +152,10 @@ export function EditGroupModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
+      showAlert({
+        title: 'Upload Error',
+        message: 'Failed to upload image. Please try again.',
+      });
     },
   });
 
@@ -179,7 +182,6 @@ export function EditGroupModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-
         uploadFileMutation.mutate({
           uri: asset.uri,
           type: asset.type,
@@ -189,7 +191,10 @@ export function EditGroupModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
+      showAlert({
+        title: 'Error',
+        message: `Failed to pick image: ${error.message}`,
+      });
     }
   };
 
@@ -231,7 +236,7 @@ export function EditGroupModal({
       queryClient.invalidateQueries({ queryKey: ['counts'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['group', group?.id] });
-      queryClient.invalidateQueries({ queryKey: ['chats' ] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
 
       showAlert({ title: 'Success', message: 'Group updated successfully!' });
 
@@ -258,7 +263,10 @@ export function EditGroupModal({
     }
 
     if (!formData.name) {
-      showAlert({ title: 'Error', message: 'Please fill in all required fields.' });
+      showAlert({
+        title: 'Error',
+        message: 'Please fill in all required fields.',
+      });
       return;
     }
 
@@ -269,7 +277,8 @@ export function EditGroupModal({
         showAlert({
           title: 'Invalid Time',
           message:
-            timeValidation.error || 'Please enter a valid meeting time in HH:MM format.',
+            timeValidation.error ||
+            'Please enter a valid meeting time in HH:MM format.',
         });
         return;
       }
@@ -380,7 +389,7 @@ export function EditGroupModal({
     return (
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Social Media (Optional)</Text>
-        
+
         {/* Display existing social media links */}
         {Object.entries(socialMedia).map(([platform, link]) => (
           <View key={platform} style={styles.socialMediaItem}>
@@ -390,7 +399,7 @@ export function EditGroupModal({
             <Text style={styles.socialLink} numberOfLines={1}>
               {link}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => removeSocialMedia(platform)}
               disabled={isSubmitting || updateGroupMutation.isPending}
             >
@@ -409,7 +418,10 @@ export function EditGroupModal({
               items={socialPlatformItems}
               setOpen={setSocialPlatformOpen}
               setValue={(callback) => {
-                const newValue = typeof callback === 'function' ? callback(newSocialPlatform) : callback;
+                const newValue =
+                  typeof callback === 'function'
+                    ? callback(newSocialPlatform)
+                    : callback;
                 setNewSocialPlatform(newValue || '');
               }}
               setItems={setSocialPlatformItems}
@@ -457,14 +469,23 @@ export function EditGroupModal({
         <TouchableOpacity
           style={[
             styles.addSocialButton,
-            (!newSocialPlatform || !newSocialLink) && styles.addSocialButtonDisabled,
+            (!newSocialPlatform || !newSocialLink) &&
+              styles.addSocialButtonDisabled,
           ]}
           onPress={addSocialMedia}
-          disabled={!newSocialPlatform || !newSocialLink || isSubmitting || updateGroupMutation.isPending}
+          disabled={
+            !newSocialPlatform ||
+            !newSocialLink ||
+            isSubmitting ||
+            updateGroupMutation.isPending
+          }
         >
           <LinearGradient
             colors={
-              (!newSocialPlatform || !newSocialLink || isSubmitting || updateGroupMutation.isPending)
+              !newSocialPlatform ||
+              !newSocialLink ||
+              isSubmitting ||
+              updateGroupMutation.isPending
                 ? ['#9CA3AF', '#6B7280']
                 : ['#6366F1', '#8B5CF6']
             }
@@ -768,7 +789,7 @@ export function EditGroupModal({
                               styles.visibilityButtonTextActive,
                           ]}
                         >
-                          Private
+                          University Only
                         </Text>
                       </LinearGradient>
                     </TouchableOpacity>

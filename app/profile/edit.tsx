@@ -840,7 +840,7 @@ export default function EditProfile() {
 
     const onDateChange = (event: any, selectedDate?: Date): void => {
       const currentDate = selectedDate || new Date();
-      setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+      setShowDatePicker(!showDatePicker); // Keep open on iOS, close on Android
       setSelectedDate(currentDate);
       const formattedDate = formatDate(currentDate);
       updateProfileValue('dateOfBirth', formattedDate);
@@ -898,6 +898,17 @@ export default function EditProfile() {
             textColor="black"
           />
         )}
+
+        {/* {showDatePicker && Platform.OS === 'ios' && (
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => {
+              setShowDatePicker(false);
+            }}
+          >
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        )} */}
 
         {fieldValidation['dateOfBirth'] === false && profile.dateOfBirth && (
           <Text style={styles.validationText}>
@@ -2045,4 +2056,18 @@ const styles = StyleSheet.create({
   dropdownDisabled: {
     backgroundColor: '#F3F4F6',
   },
+  doneButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+
 });
