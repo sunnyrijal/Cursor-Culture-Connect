@@ -34,7 +34,7 @@ export interface Report {
   // The following fields depend on what the backend returns for the entity
   event?: { id: string; name: string };
   group?: { id: string; name: string };
-  quickEvent?: { id: string; title: string };
+  quickEvent?: { id: string; name: string };
   reportedUser?: { id: string; name: string };
   activity?: { id: string; name: string };
 }

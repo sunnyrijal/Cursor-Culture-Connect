@@ -92,7 +92,9 @@ export default function EditProfile() {
   const [newLanguage, setNewLanguage] = useState<string>('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [pronouns, setPronouns] = useState<string>('');
+    const [pronouns, setPronouns] = useState<string>('');
+  const initialDate = profile.dateOfBirth ? new Date(profile.dateOfBirth) : new Date();
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({});
   const [newSocialPlatform, setNewSocialPlatform] = useState<string>('');
@@ -244,6 +246,9 @@ export default function EditProfile() {
           setPronouns(userData.pronouns);
         }
 
+         if (userData.dateOfBirth) {
+           setSelectedDate(new Date(userData.dateOfBirth));
+         }
         return userData;
       }
       throw new Error('Failed to load profile data');
