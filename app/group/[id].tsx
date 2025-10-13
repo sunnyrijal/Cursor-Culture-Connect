@@ -478,7 +478,7 @@ export default function GroupDetailEnhanced() {
                   <Share2 size={20} color={theme.textPrimary} />
                 </TouchableOpacity>
               )}
-              { (
+              {group?.creatorId !== myData?.userId && (
                 <TouchableOpacity
                   onPress={() => setShowReportModal(true)}
                   style={styles.headerButton}
@@ -600,20 +600,22 @@ export default function GroupDetailEnhanced() {
             </View>
 
             <View style={styles.heroMetaContainer}>
-              <View style={styles.creatorInfo}>
-                <Image
-                  source={{
-                    uri:
-                      group.creator.profilePicture ||
-                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                  }}
-                  style={styles.creatorAvatar}
-                  defaultSource={require('../../assets/user.png')}
-                />
-                <Text style={styles.heroSubtitle}>
-                  Created by {group.creator.name}
-                </Text>
-              </View>
+              {group?.creatorId !== myData?.userId && (
+                <View style={styles.creatorInfo}>
+                  <Image
+                    source={{
+                      uri:
+                        group.creator.profilePicture ||
+                        'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                    }}
+                    style={styles.creatorAvatar}
+                    defaultSource={require('../../assets/user.png')}
+                  />
+                  <Text style={styles.heroSubtitle}>
+                    Created by {group.creator.name}
+                  </Text>
+                </View>
+              )}
               <View style={styles.heroStatusBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.heroStatusText}>
