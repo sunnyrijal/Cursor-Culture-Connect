@@ -13,6 +13,7 @@ import {
   Image,
   Platform,
   ActivityIndicator, // Add this
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -66,6 +67,7 @@ export function CreateEventModal({
     images: [] as string[],
     isPublic: true,
     universityOnly: false,
+    requiresTravel: false,
   });
 
   const {
@@ -96,13 +98,16 @@ export function CreateEventModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
+      showAlert({
+        title: 'Upload Error',
+        message: 'Failed to upload image. Please try again.',
+      });
     },
   });
 
   const onNativeDateChange = (event: any, selectedDate: any) => {
     const currentDate = selectedDate || formData.date;
-    setShowNativeDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    setShowNativeDatePicker(!showNativeDatePicker); // Keep open on iOS, close on Android
     setFormData({ ...formData, date: currentDate });
   };
 
@@ -129,7 +134,6 @@ export function CreateEventModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-
         // Use the mutation instead of direct API call
         uploadFileMutation.mutate({
           uri: asset.uri,
@@ -140,7 +144,10 @@ export function CreateEventModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
+      showAlert({
+        title: 'Error',
+        message: `Failed to pick image: ${error.message}`,
+      });
     }
   };
 
@@ -152,6 +159,7 @@ export function CreateEventModal({
 
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['counts'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
 
       showAlert({ title: 'Success', message: 'Event created successfully!' });
 
@@ -184,11 +192,11 @@ export function CreateEventModal({
         images: [],
         isPublic: true,
         universityOnly: false,
+        requiresTravel: false,
       });
       setShowNativeDatePicker(false); // Add this line
     }
   }, [visible]);
-
 
   const addTimeSlot = () => {
     setFormData({
@@ -335,7 +343,8 @@ export function CreateEventModal({
     if (hasInvalidTimes) {
       showAlert({
         title: 'Invalid Time Format',
-        message: 'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).',
+        message:
+          'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).',
       });
       return;
     }
@@ -358,6 +367,7 @@ export function CreateEventModal({
       ...(formData.groupId && { associatedGroupId: formData.groupId }),
       isPublic: formData.isPublic,
       UniversityOnly: formData.universityOnly,
+      requiresTravel: formData.requiresTravel,
     };
     // Use the TanStack Query mutation
     createEventMutation.mutate(eventData);
@@ -637,6 +647,7 @@ export function CreateEventModal({
                       value={formData.date}
                       mode="date"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      themeVariant="light"
                       onChange={onNativeDateChange}
                       minimumDate={new Date()} // Prevent past dates for events
                     />
@@ -735,6 +746,34 @@ export function CreateEventModal({
                         style={styles.validIcon}
                       />
                     )}
+                  </View>
+                </View>
+
+                {/* Travel Requirement - Simplified */}
+                <View style={styles.inputContainer}>
+                  <View style={styles.rowContainer}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.inputLabel}>
+                        Does this Event Require Travel?
+                      </Text>
+                      <Text style={styles.inputSubLabel}>
+                        {formData.requiresTravel
+                          ? 'Yes, attendees need to travel to the event.'
+                          : "No, it's a local event."}
+                      </Text>
+                    </View>
+                    <Switch
+                      trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                      thumbColor={
+                        formData.requiresTravel ? '#6366F1' : '#f4f3f4'
+                      }
+                      ios_backgroundColor="#E5E7EB"
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, requiresTravel: value })
+                      }
+                      value={formData.requiresTravel}
+                      disabled={createEventMutation.isPending}
+                    />
                   </View>
                 </View>
 
@@ -1247,6 +1286,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputSubLabel: {
+    fontSize: 12,
+    color: '#6B7280',
     marginLeft: 4,
   },
   inputWrapper: {

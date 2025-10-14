@@ -18,12 +18,11 @@ import {
 } from '../theme'; // adjust if needed
 import { router } from 'expo-router'; // or your navigation lib
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
+import { getEvents, getUpcommingEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
 import { useAlert } from '@/contexts/AlertContext';
 
-const placeholderImg = 'https://via.placeholder.com/150';
-
+const logo = require('../../assets/logo.png');
 // Helper function to format date
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -54,10 +53,11 @@ const UpcomingEvents = () => {
   });
 
   const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
-    mutationFn: (eventId: string) => joinEvent(eventId),
+    mutationFn: (eventId: string) => joinEvent(eventId, {}),
     onSuccess: (data, eventId) => {
       showAlert({ title: 'Success', message: 'You have RSVPed to the event!' });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
     },
     onError: (error: any) => {
@@ -93,11 +93,12 @@ const UpcomingEvents = () => {
     data: eventsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => getEvents(),
+    queryKey: ['upcomming-events'],
+    queryFn: () => getUpcommingEvents(),
   });
-
+  console.log(eventsResponse)
   const eventsData = eventsResponse?.events || [];
 
   // Show loading state
@@ -107,7 +108,10 @@ const UpcomingEvents = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Events</Text>
         </View>
-        <Text style={styles.loadingText}>Loading events...</Text>
+        <View style={styles.inlineFeedbackContainer}>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={styles.loadingText}>Loading Events...</Text>
+        </View>
       </View>
     );
   }
@@ -119,7 +123,17 @@ const UpcomingEvents = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Events</Text>
         </View>
-        <Text style={styles.errorText}>Failed to load events</Text>
+        <View style={styles.inlineFeedbackContainer}>
+          <Text style={styles.errorText}>
+            Oops! Something went wrong.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -170,12 +184,19 @@ const UpcomingEvents = () => {
           ]}
         >
           {eventsData.map((event: any, idx: number) => {
+            console.log(event)
             const eventTime = event.eventTimes?.[0];
             const date = eventTime ? formatDate(eventTime.startTime) : 'TBA';
             const time = eventTime ? formatTime(eventTime.startTime) : 'TBA';
             const isAttending = event.attendingUsers?.some(
               (attendee: any) => attendee.id === myData?.userId
             );
+            const isEventPast = eventTime
+              ? new Date(eventTime.startTime) < new Date()
+              : false;
+            const isHost = event.userId === myData?.userId;
+            const organizerName =
+              event.associatedGroup?.name || event.user?.name || 'Unknown';
             const isMutationPending = isJoining || isLeaving;
 
             return (
@@ -189,7 +210,7 @@ const UpcomingEvents = () => {
                 activeOpacity={0.7}
               >
                 <Image
-                  source={{ uri: event.imageUrl || placeholderImg }}
+                  source={event.imageUrl ? { uri: event.imageUrl } : logo}
                   style={styles.eventGridImage}
                 />
                 <View style={styles.eventGridDetails}>
@@ -203,13 +224,13 @@ const UpcomingEvents = () => {
                     {event.location}
                   </Text>
                   <Text style={styles.eventGridMeta} numberOfLines={1}>
-                    by {event.user?.name}
+                    by {organizerName}
                   </Text>
                   {myData && (
                     <TouchableOpacity
                       style={[
                         styles.rsvpButtonGrid,
-                        isAttending && styles.rsvpButtonAttending,
+                        isAttending ? styles.rsvpButtonAttending : isEventPast ? styles.rsvpButtonDisabled : null,
                         isMutationPending && styles.rsvpButtonDisabled,
                       ]}
                       onPress={(e) => {
@@ -217,10 +238,13 @@ const UpcomingEvents = () => {
                         if (isAttending) {
                           leaveEventMutation(event.id);
                         } else {
-                          joinEventMutation(event.id);
+                          // If event requires travel, navigate to event detail to open transportation modal, otherwise join directly
+                          event.requiresTravel
+                            ? router.push(`/event/${event.id}?openTransportationModal=true`)
+                            : joinEventMutation(event.id);
                         }
                       }}
-                      disabled={isMutationPending}
+                      disabled={isMutationPending || isEventPast}
                     >
                       {isMutationPending ? (
                         <ActivityIndicator size="small" color={theme.white} />
@@ -231,7 +255,7 @@ const UpcomingEvents = () => {
                             isAttending && styles.rsvpButtonTextAttending,
                           ]}
                         >
-                          {isAttending ? 'Going' : 'RSVP'}
+                          {isEventPast ? 'Ended' : isAttending ? 'Going' : 'RSVP'}
                         </Text>
                       )}
                     </TouchableOpacity>
@@ -250,6 +274,12 @@ const UpcomingEvents = () => {
             const isAttending = event.attendingUsers?.some(
               (attendee: any) => attendee.id === myData?.userId
             );
+            const isEventPast = eventTime
+              ? new Date(eventTime.startTime) < new Date()
+              : false;
+            const isHost = event.userId === myData?.userId;
+            const organizerName =
+              event.associatedGroup?.name || event.user?.name || 'Unknown';
             const isMutationPending = isJoining || isLeaving;
 
             return (
@@ -260,7 +290,7 @@ const UpcomingEvents = () => {
                 activeOpacity={0.7}
               >
                 <Image
-                  source={{ uri: event.imageUrl || placeholderImg }}
+                  source={event.imageUrl ? { uri: event.imageUrl } : logo}
                   style={styles.eventListImage}
                 />
                 <View style={styles.eventListDetails}>
@@ -275,13 +305,13 @@ const UpcomingEvents = () => {
                   </Text>
                   <View style={styles.eventListFooter}>
                     <Text style={styles.eventListPrice}>
-                      by {event.user?.name}
-                    </Text>
+                      by {organizerName}
+                    </Text> 
                     {myData && (
                       <TouchableOpacity
                         style={[
                           styles.rsvpButtonList,
-                          isAttending && styles.rsvpButtonAttending,
+                          isAttending ? styles.rsvpButtonAttending : isEventPast ? styles.rsvpButtonDisabled : null,
                           isMutationPending && styles.rsvpButtonDisabled,
                         ]}
                         onPress={(e) => {
@@ -289,18 +319,21 @@ const UpcomingEvents = () => {
                           if (isAttending) {
                             leaveEventMutation(event.id);
                           } else {
-                            joinEventMutation(event.id);
+                            // If event requires travel, navigate to event detail to open transportation modal, otherwise join directly
+                            event.requiresTravel
+                              ? router.push(`/event/${event.id}?openTransportationModal=true`)
+                              : joinEventMutation(event.id);
                           }
                         }}
-                        disabled={isMutationPending}
+                        disabled={isMutationPending || isEventPast}
                       >
                         {isMutationPending ? (
                           <ActivityIndicator size="small" color={theme.white} />
                         ) : (
                           <Text
-                            style={styles.rsvpButtonText}
+                            style={[styles.rsvpButtonText, isAttending && styles.rsvpButtonTextAttending]}
                           >
-                            {isAttending ? 'Going' : 'RSVP'}
+                            {isEventPast ? 'Ended' : isAttending ? 'Going' : 'RSVP'}
                           </Text>
                         )}
                       </TouchableOpacity>
@@ -318,11 +351,35 @@ const UpcomingEvents = () => {
 export default UpcomingEvents;
 
 const styles = StyleSheet.create({
-  loadingText: {
-    fontSize: typography.fontSize.md,
+  inlineFeedbackContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
   },
-  errorText:{
-
+  loadingText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
+  },
+  errorText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.error,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  retryButton: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+  },
+  retryButtonText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.semiBold,
   },
   section: {
     marginBottom: spacing.lg,

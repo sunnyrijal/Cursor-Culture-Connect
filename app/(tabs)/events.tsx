@@ -154,7 +154,8 @@ export default function Events() {
   const queryClient = useQueryClient();
 
   const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
-    mutationFn: (eventId: string) => joinEvent(eventId),
+    mutationFn: ({ eventId, data }: { eventId: string; data?: any }) =>
+      joinEvent(eventId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
     },
@@ -459,9 +460,14 @@ export default function Events() {
                   isLast={index === filteredEvents.length - 1}
                   onPress={() => router.push(`/event/${event.id}`)}
                   onRSVP={() => {
-                    const isAttending = event.attendingUsers.some((u: any) => u.id === myData?.userId);
-                    isAttending ? leaveEventMutation(event.id) : joinEventMutation(event.id);
+                    const isAttending = event.attendingUsers.some(
+                      (u: any) => u.id === myData?.userId
+                    );
+                    isAttending
+                      ? leaveEventMutation(event.id)
+                      : joinEventMutation({ eventId: event.id, data: {} });
                   }}
+                  onOpenTransportModal={() => router.push(`/event/${event.id}?openTransportationModal=true`)}
                   isLoading={isJoining || isLeaving}
                 />
               ))

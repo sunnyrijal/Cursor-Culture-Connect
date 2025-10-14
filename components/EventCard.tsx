@@ -6,13 +6,16 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {
   MapPin,
   Calendar,
   Users,
+  Crown,
 } from 'lucide-react-native';
 import { theme } from '@/components/theme';
+import { router } from 'expo-router';
 import { formatDate, formatTime } from '@/utils/formatDate';
 
 interface Event {
@@ -23,6 +26,7 @@ interface Event {
   imageUrl?: string | null;
   userId: string;
   attendingUsers: any;
+  requiresTravel?: boolean;
   eventTimes: {
     id: number;
     eventId: string;
@@ -35,6 +39,11 @@ interface Event {
     name: string;
     profilePicture?: string | null;
   };
+  associatedGroup?: {
+    id: string;
+    name: string;
+    imageUrl: string;
+  };
 }
 
 interface EventCardProps {
@@ -43,11 +52,10 @@ interface EventCardProps {
   isFirst?: boolean;
   isLast?: boolean;
   onPress: () => void;
-  onRSVP: () => void;
+  onRSVP: (data?: { preference?: string; message?: string }) => void;
   isLoading?: boolean;
+  onOpenTransportModal?: () => void;
 }
-
-
 
 export const EventCard: React.FC<EventCardProps> = ({
   event,
@@ -57,10 +65,41 @@ export const EventCard: React.FC<EventCardProps> = ({
   onPress,
   onRSVP,
   isLoading = false,
+  onOpenTransportModal,
 }) => {
   const isAttending = event?.attendingUsers?.some(
     (attendee: any) => attendee.id === myUserId
   );
+
+  const isHost = event.userId === myUserId;
+
+  const organizerName = event.associatedGroup?.name || event.user.name;
+  const organizerImage =
+    event.associatedGroup?.imageUrl || event.user.profilePicture;
+  const organizerRole = event.associatedGroup ? 'Group Event' : 'Event Organizer';
+
+  const handleOrganizerPress = () => {
+    // Prevent navigating to your own public profile, go to main profile instead
+    if (event.user.id === myUserId) {
+      router.push('/profile');
+    } else if (event.associatedGroup) {
+      router.push(`/group/${event.associatedGroup.id}`)
+    } else {
+      router.push(`/public/profile/${event.user.id}`);
+    }
+  };
+
+  const handleRSVP = () => {
+    if (event.requiresTravel && !isAttending) {
+      // Open transportation modal for events requiring travel
+      if (onOpenTransportModal) {
+        onOpenTransportModal();
+      }
+    } else {
+      // Direct RSVP for leaving or for events without travel requirement
+      onRSVP();
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -81,6 +120,14 @@ export const EventCard: React.FC<EventCardProps> = ({
           style={styles.eventImage}
         />
         <View style={styles.imageOverlay} />
+        
+        {/* Host Badge */}
+        {isHost && (
+          <View style={styles.hostBadge}>
+            {/* <Crown size={14} color="#FFD700" fill="#FFD700" /> */}
+            <Text style={styles.hostBadgeText}>Host</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.eventContent}>
@@ -109,16 +156,11 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         <View style={styles.creatorSection}>
           <View style={styles.creatorInfo}>
-            {event.user.profilePicture ? (
-              // <Image
-              //   source={{ uri: event.user.profilePicture  }}
-              //   style={styles.creatorAvatar}
-              //   defaultSource={require('../../assets/user.png')}
-              // />
+            {organizerImage ? (
                <Image
               source={{
                 uri:
-                  event.user.profilePicture ||
+                  organizerImage ||
                   'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
               }}
               style={styles.creatorAvatar}
@@ -127,16 +169,18 @@ export const EventCard: React.FC<EventCardProps> = ({
             ) : (
               <View style={styles.creatorAvatar}>
                 <Text style={styles.creatorInitial}>
-                  {event.user.name.charAt(0).toUpperCase()}
+                  {organizerName.charAt(0).toUpperCase()}
                 </Text>
               </View>
             )}
             <View style={styles.creatorDetails}>
-              <Text style={styles.creatorName}>
-                {event.user.name}
-              </Text>
+              <TouchableOpacity onPress={handleOrganizerPress} activeOpacity={0.7}>
+                <Text style={styles.creatorName}>
+                  {organizerName}
+                </Text>
+              </TouchableOpacity>
               <Text style={styles.creatorRole}>
-                Event Organizer
+                {organizerRole}
               </Text>
             </View>
           </View>
@@ -156,16 +200,21 @@ export const EventCard: React.FC<EventCardProps> = ({
             style={[
               styles.rsvpButton,
               isAttending && styles.rsvpedButton,
+              isLoading && styles.disabledButton,
             ]}
-            onPress={onRSVP}
+            onPress={handleRSVP}
             disabled={isLoading}
           >
-            <Text style={[
-              styles.rsvpButtonText,
-              isAttending && styles.rsvpedButtonText,
-            ]}>
-              {isAttending ? 'Going' : 'RSVP'}
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={[
+                styles.rsvpButtonText,
+                isAttending && styles.rsvpedButtonText,
+              ]}>
+                {isAttending ? 'Going' : 'RSVP'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -222,6 +271,28 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+
+  hostBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+
+  hostBadgeText: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 
   eventContent: {
@@ -360,6 +431,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
     minWidth: 80,
     alignItems: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
@@ -376,6 +448,10 @@ const styles = StyleSheet.create({
   rsvpedButton: {
     backgroundColor: theme.success,
     borderColor: 'rgba(255,255,255,0.8)',
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   rsvpButtonText: {

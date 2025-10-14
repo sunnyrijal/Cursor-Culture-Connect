@@ -35,7 +35,7 @@ export default function HubDetails() {
     queryKey: ['hubDetails'],
     queryFn: () => getHubDetails(),
   });
-
+  console.log(res)
   const navigateToChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
   };

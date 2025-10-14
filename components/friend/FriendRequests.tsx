@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -201,6 +202,7 @@ export default function FriendRequestsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.primary} />
           <Text style={styles.loadingText}>Loading friend requests...</Text>
         </View>
       </SafeAreaView>

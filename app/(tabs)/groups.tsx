@@ -299,39 +299,46 @@ export default function Groups() {
                       )}
 
                       <View style={styles.creatorSection}>
-                        <View style={styles.creatorInfo}>
-                          {group.creator.profilePicture ? (
-                            // <Image
-                            //   source={{ uri: group.creator.profilePicture }}
-                            //   style={styles.creatorAvatar}
-                            //   defaultSource={require('../../assets/user.png')}
-                            // />
-                            <Image
-                              source={{
-                                uri:
-                                  group.creator.profilePicture ||
-                                  'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                              }}
-                              style={styles.creatorAvatar}
-                              defaultSource={require('../../assets/user.png')}
-                            />
-                          ) : (
-                            <View style={styles.creatorAvatar}>
-                              <Text style={styles.creatorInitial}>
-                                {group.creator.name.charAt(0).toUpperCase()}
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (group.creator.id === myData?.userId) {
+                              router.push('/profile');
+                            } else {
+                              router.push(
+                                `/public/profile/${group.creator.id}`
+                              );
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.creatorInfo}>
+                            {group.creator.profilePicture ? (
+                              <Image
+                                source={{
+                                  uri:
+                                    group.creator.profilePicture ||
+                                    'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                                }}
+                                style={styles.creatorAvatar}
+                                defaultSource={require('../../assets/user.png')}
+                              />
+                            ) : (
+                              <View style={styles.creatorAvatar}>
+                                <Text style={styles.creatorInitial}>
+                                  {group.creator.name.charAt(0).toUpperCase()}
+                                </Text>
+                              </View>
+                            )}
+                            <View style={styles.creatorDetails}>
+                              <Text style={styles.creatorName}>
+                                {group.creator.name}
+                              </Text>
+                              <Text style={styles.creatorRole}>
+                                Group Creator
                               </Text>
                             </View>
-                          )}
-                          <View style={styles.creatorDetails}>
-                            <Text style={styles.creatorName}>
-                              {group.creator.name}
-                            </Text>
-                            <Text style={styles.creatorRole}>
-                              Group Creator
-                            </Text>
                           </View>
-                        </View>
-
+                        </TouchableOpacity>
                         {isCurrentUserAdmin ? (
                           <View
                             style={[

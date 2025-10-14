@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
+import { theme } from '@/components/theme';
 import {
   Calendar,
   MapPin,
@@ -93,57 +93,61 @@ const EventsList: React.FC<EventsListProps> = ({ events }) => {
 
   return (
     <View style={styles.eventsList}>
-      {events.map((event) => (
-        <TouchableOpacity
-          key={event.id}
-          onPress={() => router.push(`/event/${event.id}`)}
-          style={styles.eventCard}
-        >
-          {/* <Image
+      {events.map((event) => {
+        const organizerName = event.associatedGroup?.name || event.user.name;
+
+        return (
+          <TouchableOpacity
+            key={event.id}
+            onPress={() => router.push(`/event/${event.id}`)}
+            style={styles.eventCard}
+          >
+            {/* <Image
             source={{
               uri: event.imageUrl || require('../../assets/logo.png'),
             }}
             style={styles.eventImage}
           /> */}
 
-          <Image
-            source={
-              event.imageUrl
-                ? { uri: event.imageUrl }
-                : require('../../assets/logo.png')
-            }
-            style={styles.eventImage}
-            defaultSource={require('../../assets/logo.png')}
-          />
-          <View style={styles.eventInfo}>
-            <Text style={styles.eventName}>{event.name}</Text>
-            <Text style={styles.eventDescription} numberOfLines={2}>
-              {event.description}
-            </Text>
-            <View style={styles.eventMeta}>
-              <View style={styles.metaRow}>
-                <Calendar size={14} color={theme.gray500} />
-                <Text style={styles.metaText}>{formatDate(event.date)}</Text>
-              </View>
-              <View style={styles.metaRow}>
-                <Clock size={14} color={theme.gray500} />
-                <Text style={styles.metaText}>
-                  {getEventTime(event.eventTimes)}
-                </Text>
-              </View>
-              <View style={styles.metaRow}>
-                <MapPin size={14} color={theme.gray500} />
-                <Text style={styles.metaText}>{event.location}</Text>
-              </View>
-              <View style={styles.metaRow}>
-                <Users size={14} color={theme.gray500} />
-                <Text style={styles.metaText}>by {event.user.name}</Text>
+            <Image
+              source={
+                event.imageUrl
+                  ? { uri: event.imageUrl }
+                  : require('../../assets/logo.png')
+              }
+              style={styles.eventImage}
+              defaultSource={require('../../assets/logo.png')}
+            />
+            <View style={styles.eventInfo}>
+              <Text style={styles.eventName}>{event.name}</Text>
+              <Text style={styles.eventDescription} numberOfLines={2}>
+                {event.description}
+              </Text>
+              <View style={styles.eventMeta}>
+                <View style={styles.metaRow}>
+                  <Calendar size={14} color={theme.gray500} />
+                  <Text style={styles.metaText}>{formatDate(event.date)}</Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Clock size={14} color={theme.gray500} />
+                  <Text style={styles.metaText}>
+                    {getEventTime(event.eventTimes)}
+                  </Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <MapPin size={14} color={theme.gray500} />
+                  <Text style={styles.metaText}>{event.location}</Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Users size={14} color={theme.gray500} />
+                  <Text style={styles.metaText}>by {organizerName}</Text>
+                </View>
               </View>
             </View>
-          </View>
-          <ChevronRight size={20} color={theme.gray400} />
-        </TouchableOpacity>
-      ))}
+            <ChevronRight size={20} color={theme.gray400} />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

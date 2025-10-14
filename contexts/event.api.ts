@@ -161,6 +161,15 @@ export const getEvents = async (params?: EventFilters) => {
     throw error;
   }
 };
+export const getUpcommingEvents = async (params?: EventFilters) => {
+  try {
+    const response = await api.get('/event/upcoming', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    throw error;
+  }
+};
 
 export const getEvent = async (eventId: string | null) => {
   try {
@@ -197,9 +206,9 @@ export const deleteEvent = async (eventId: string) => {
   }
 };
 
-export const joinEvent = async (id: string) => {
+export const joinEvent = async (id: string, data:any) => {
   try {
-    const response: AxiosResponse = await api.post(`/event/${id}/join`);
+    const response: AxiosResponse = await api.post(`/event/${id}/join` ,data);
     return response.data;
   } catch (error) {
     console.error('Error joining event:', error);
@@ -225,6 +234,22 @@ export const inviteToEvent = async (eventId: string, inviteeIds: string[]) => {
     return response.data;
   } catch (error) {
     console.error('Error inviting to event:', error);
+    throw error;
+  }
+};
+
+export const updateTransportation = async (
+  transportationId: string,
+  data: { preference: string; message?: string }
+) => {
+  try {
+    const response: AxiosResponse = await api.patch(
+      `/event/transportation/${transportationId}`,
+      data
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating transportation:', error);
     throw error;
   }
 };

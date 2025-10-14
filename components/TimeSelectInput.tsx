@@ -73,9 +73,7 @@ export function TimeSelectInput({
   }
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowTimePicker(false)
-    }
+      setShowTimePicker(!showTimePicker)
     
     if (selectedDate) {
       const formattedTime = formatDateToTime(selectedDate)
@@ -147,15 +145,9 @@ export function TimeSelectInput({
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
             style={styles.dateTimePicker}
+            themeVariant="light"
           />
           
-          {Platform.OS === 'ios' && (
-            <View style={styles.iosButtonContainer}>
-              <TouchableOpacity style={styles.iosConfirmButton} onPress={handleIOSConfirm}>
-                <Text style={styles.iosConfirmButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       )}
     </>
@@ -169,7 +161,7 @@ const styles = StyleSheet.create({
         paddingBottom:10
       },
       ios:{
-        paddingBottom:100
+        paddingBottom:10
       }
     }),
   },

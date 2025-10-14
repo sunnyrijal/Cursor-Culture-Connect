@@ -12,6 +12,7 @@ import {
   Platform,
   Modal,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -61,8 +62,6 @@ const FriendshipStatus = {
   DECLINED: 'DECLINED',
   BLOCKED: 'BLOCKED',
 };
-
-
 
 export default function SendFriendRequestScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -366,6 +365,8 @@ export default function SendFriendRequestScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+
           <Text style={styles.loadingText}>Loading users...</Text>
         </View>
       </SafeAreaView>
@@ -395,11 +396,14 @@ export default function SendFriendRequestScreen() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#94A3B8"
           />
-          </View>
-          <TouchableOpacity
-            style={[styles.filterButton, Object.keys(filters).length > 0 && styles.activeFilterButton]}
-            onPress={() => setFilterModalVisible(true)}
-          >
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            Object.keys(filters).length > 0 && styles.activeFilterButton,
+          ]}
+          onPress={() => setFilterModalVisible(true)}
+        >
           <Filter
             size={20}
             color={Object.keys(filters).length > 0 ? theme.white : '#64748B'}
@@ -525,8 +529,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
-    paddingTop:12,
-    margin:0
+    paddingTop: 12,
+    margin: 0,
   },
 
   searchWrapper: {
@@ -606,8 +610,8 @@ const styles = StyleSheet.create({
 
   scrollView: {
     flex: 1,
-    padding:0,
-    margin:0
+    padding: 0,
+    margin: 0,
   },
 
   loadingContainer: {
