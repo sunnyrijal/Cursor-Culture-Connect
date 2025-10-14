@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 80, // Reduced from 100 to 80
+    paddingBottom: 20, // Reduced from 100 to 80
   },
   loadingContainer: {
     flex: 1,

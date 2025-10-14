@@ -117,6 +117,7 @@ export const getUsers = async (filters?:FriendFilters) => {
       if (filters.sortBy) params.append('sortBy', filters.sortBy);
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
       if (filters.language) params.append('language', filters.language);
+      if (filters.country) params.append('country', filters.country);
 
       if (filters.universityId)
         params.append('universityId', filters.universityId);

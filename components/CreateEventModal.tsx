@@ -102,7 +102,7 @@ export function CreateEventModal({
 
   const onNativeDateChange = (event: any, selectedDate: any) => {
     const currentDate = selectedDate || formData.date;
-    setShowNativeDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    setShowNativeDatePicker(!showNativeDatePicker); // Keep open on iOS, close on Android
     setFormData({ ...formData, date: currentDate });
   };
 
@@ -637,6 +637,7 @@ export function CreateEventModal({
                       value={formData.date}
                       mode="date"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      themeVariant='light'
                       onChange={onNativeDateChange}
                       minimumDate={new Date()} // Prevent past dates for events
                     />
@@ -682,6 +683,7 @@ export function CreateEventModal({
                             }
                             label="Start Time"
                             placeholder="Select start time"
+                            
                             disabled={createEventMutation.isPending}
                             required
                           />

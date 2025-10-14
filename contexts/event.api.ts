@@ -161,6 +161,15 @@ export const getEvents = async (params?: EventFilters) => {
     throw error;
   }
 };
+export const getUpcommingEvents = async (params?: EventFilters) => {
+  try {
+    const response = await api.get('/event/upcoming', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    throw error;
+  }
+};
 
 export const getEvent = async (eventId: string | null) => {
   try {

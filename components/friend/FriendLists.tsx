@@ -9,6 +9,7 @@ import {
   Platform,
   RefreshControl,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -118,6 +119,8 @@ export default function FriendsListScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+
           <Text style={styles.loadingText}>Loading friends...</Text>
         </View>
       </SafeAreaView>
@@ -236,8 +239,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
-    paddingTop:12,
-
+    paddingTop: 12,
   },
 
   searchWrapper: {

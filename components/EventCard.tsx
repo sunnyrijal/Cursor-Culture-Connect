@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import { theme } from '@/components/theme';
+import { router } from 'expo-router';
 import { formatDate, formatTime } from '@/utils/formatDate';
 
 interface Event {
@@ -34,6 +35,11 @@ interface Event {
     email: string;
     name: string;
     profilePicture?: string | null;
+  };
+  associatedGroup?: {
+    id: string;
+    name: string;
+    imageUrl: string;
   };
 }
 
@@ -61,6 +67,24 @@ export const EventCard: React.FC<EventCardProps> = ({
   const isAttending = event?.attendingUsers?.some(
     (attendee: any) => attendee.id === myUserId
   );
+
+  const organizerName = event.associatedGroup?.name || event.user.name;
+  const organizerImage =
+    event.associatedGroup?.imageUrl || event.user.profilePicture;
+  const organizerRole = event.associatedGroup ? 'Group Event' : 'Event Organizer';
+
+  const handleOrganizerPress = () => {
+    if (event.associatedGroup) {
+      router.push(`/group/${event.associatedGroup.id}`);
+    } else {
+      // Prevent navigating to your own public profile, go to main profile instead
+      if (event.user.id === myUserId) {
+        router.push('/profile');
+      } else {
+        router.push(`/public/profile/${event.user.id}`);
+      }
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -109,16 +133,11 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         <View style={styles.creatorSection}>
           <View style={styles.creatorInfo}>
-            {event.user.profilePicture ? (
-              // <Image
-              //   source={{ uri: event.user.profilePicture  }}
-              //   style={styles.creatorAvatar}
-              //   defaultSource={require('../../assets/user.png')}
-              // />
+            {organizerImage ? (
                <Image
               source={{
                 uri:
-                  event.user.profilePicture ||
+                  organizerImage ||
                   'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
               }}
               style={styles.creatorAvatar}
@@ -127,16 +146,18 @@ export const EventCard: React.FC<EventCardProps> = ({
             ) : (
               <View style={styles.creatorAvatar}>
                 <Text style={styles.creatorInitial}>
-                  {event.user.name.charAt(0).toUpperCase()}
+                  {organizerName.charAt(0).toUpperCase()}
                 </Text>
               </View>
             )}
             <View style={styles.creatorDetails}>
-              <Text style={styles.creatorName}>
-                {event.user.name}
-              </Text>
+              <TouchableOpacity onPress={handleOrganizerPress} activeOpacity={0.7}>
+                <Text style={styles.creatorName}>
+                  {organizerName}
+                </Text>
+              </TouchableOpacity>
               <Text style={styles.creatorRole}>
-                Event Organizer
+                {organizerRole}
               </Text>
             </View>
           </View>

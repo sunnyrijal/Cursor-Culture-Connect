@@ -1530,7 +1530,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 80,
   },
 
   // Error States

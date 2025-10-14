@@ -18,7 +18,7 @@ import {
 } from '../theme'; // adjust if needed
 import { router } from 'expo-router'; // or your navigation lib
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
+import { getEvents, getUpcommingEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
 import { useAlert } from '@/contexts/AlertContext';
 
@@ -93,11 +93,12 @@ const UpcomingEvents = () => {
     data: eventsResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => getEvents(),
+    queryKey: ['upcomming-events'],
+    queryFn: () => getUpcommingEvents(),
   });
-
+  console.log(eventsResponse)
   const eventsData = eventsResponse?.events || [];
 
   // Show loading state
@@ -107,7 +108,10 @@ const UpcomingEvents = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Events</Text>
         </View>
-        <Text style={styles.loadingText}>Loading events...</Text>
+        <View style={styles.inlineFeedbackContainer}>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={styles.loadingText}>Loading Events...</Text>
+        </View>
       </View>
     );
   }
@@ -119,7 +123,17 @@ const UpcomingEvents = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Events</Text>
         </View>
-        <Text style={styles.errorText}>Failed to load events</Text>
+        <View style={styles.inlineFeedbackContainer}>
+          <Text style={styles.errorText}>
+            Oops! Something went wrong.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -176,6 +190,8 @@ const UpcomingEvents = () => {
             const isAttending = event.attendingUsers?.some(
               (attendee: any) => attendee.id === myData?.userId
             );
+            const organizerName =
+              event.associatedGroup?.name || event.user?.name || 'Unknown';
             const isMutationPending = isJoining || isLeaving;
 
             return (
@@ -203,7 +219,7 @@ const UpcomingEvents = () => {
                     {event.location}
                   </Text>
                   <Text style={styles.eventGridMeta} numberOfLines={1}>
-                    by {event.user?.name}
+                    by {organizerName}
                   </Text>
                   {myData && (
                     <TouchableOpacity
@@ -250,6 +266,8 @@ const UpcomingEvents = () => {
             const isAttending = event.attendingUsers?.some(
               (attendee: any) => attendee.id === myData?.userId
             );
+            const organizerName =
+              event.associatedGroup?.name || event.user?.name || 'Unknown';
             const isMutationPending = isJoining || isLeaving;
 
             return (
@@ -275,7 +293,7 @@ const UpcomingEvents = () => {
                   </Text>
                   <View style={styles.eventListFooter}>
                     <Text style={styles.eventListPrice}>
-                      by {event.user?.name}
+                      by {organizerName}
                     </Text>
                     {myData && (
                       <TouchableOpacity
@@ -318,11 +336,35 @@ const UpcomingEvents = () => {
 export default UpcomingEvents;
 
 const styles = StyleSheet.create({
-  loadingText: {
-    fontSize: typography.fontSize.md,
+  inlineFeedbackContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
   },
-  errorText:{
-
+  loadingText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
+  },
+  errorText: {
+    fontSize: typography.fontSize.sm,
+    color: theme.error,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  retryButton: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+  },
+  retryButtonText: {
+    color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.semiBold,
   },
   section: {
     marginBottom: spacing.lg,

@@ -54,6 +54,7 @@ export interface FriendFilters {
   universityId?: string;
   state?: string;
   language?: string;
+  country?: string;
   city?: string;
 }
 
@@ -227,13 +228,12 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
 const updateFilter = (key: keyof FriendFilters, value: any) => {
     setTempFilters((prev) => {
       const newFilters = { ...prev };
-      
-      if (key === 'language') {
+
+      if (key === 'language' || key === 'country') {
         newFilters[key] = value;
       } else {
         newFilters[key] = value || undefined;
       }
-      
       if (key === 'state' && value !== prev.state) {
         newFilters.city = undefined;
       }
@@ -291,7 +291,18 @@ const updateFilter = (key: keyof FriendFilters, value: any) => {
           {/* Location Filter */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
-            
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Country (Optional)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g., United States"
+                value={tempFilters.country || ''}
+                onChangeText={(text) => updateFilter('country', text)}
+                placeholderTextColor="#A0AEC0"
+              />
+            </View>
+
             {/* State Dropdown */}
             <View style={[styles.inputContainer, { zIndex: 2000 }]}>
               <Text style={styles.inputLabel}>State (Optional)</Text>
