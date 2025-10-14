@@ -43,6 +43,7 @@ import {
   inviteToEvent,
   joinEvent,
   leaveEvent,
+  updateTransportation,
 } from '@/contexts/event.api';
 import getDecodedToken from '@/utils/getMyData';
 import { createDirectChat } from '@/contexts/chat.api';
@@ -52,6 +53,10 @@ import * as Linking from 'expo-linking';
 import { ReportModal } from '@/components/ReportModal';
 import { getUsers, User } from '@/contexts/user.api';
 import { Button } from '@/components/ui/Button';
+import {
+  TransportationModal,
+  TransportationPreference,
+} from '@/components/TransportationModal';
 
 // Enhanced theme for neumorphism
 const neomorphColors = {
@@ -70,7 +75,7 @@ const extendedTheme = {
 };
 
 export default function EventDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, openTransportationModal } = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [showAttendees, setShowAttendees] = React.useState(false);
   const [showInviteModal, setShowInviteModal] = React.useState(false);
@@ -78,9 +83,14 @@ export default function EventDetail() {
   const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
   const [showReportModal, setShowReportModal] = React.useState(false);
   const [showEditEventModal, setShowEditEventModal] = React.useState(false);
+  const [showTransportationModal, setShowTransportationModal] =
+    React.useState(false);
   const queryClient = useQueryClient();
+  const [activeTransportationTab, setActiveTransportationTab] = React.useState<
+    'providers' | 'seekers'
+  >('providers');
   const { showAlert } = useAlert();
-    const url = Linking.useURL();
+  const url = Linking.useURL();
 
   const eventId = Array.isArray(id) ? id[0] : id ?? null;
 
@@ -96,6 +106,9 @@ export default function EventDetail() {
   });
 
   const event = eventResponse?.event;
+
+  console.log(event);
+
   const { data: myData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
@@ -110,12 +123,16 @@ export default function EventDetail() {
     mutationFn: (eventIdToDelete: string) => deleteEvent(eventIdToDelete),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
       router.back();
       showAlert({ title: 'Success', message: 'Event deleted successfully.' });
     },
     onError: (err) => {
       console.error('Error deleting event:', err);
-      showAlert({ title: 'Error', message: 'Failed to delete event. Please try again.' });
+      showAlert({
+        title: 'Error',
+        message: 'Failed to delete event. Please try again.',
+      });
     },
   });
 
@@ -134,19 +151,49 @@ export default function EventDetail() {
           style: 'destructive',
           onPress: () => deleteEventMutation(eventId),
         },
-      ]
+      ],
     });
   };
 
   const { mutate: joinEventMutation, isPending: isJoining } = useMutation({
-    mutationFn: () => joinEvent(eventId as string),
+    mutationFn: (data?: { preference?: string; message?: string }) =>
+      joinEvent(eventId as string, data),
     onSuccess: () => {
+      setShowTransportationModal(false);
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
     },
     onError: (error) => {
       console.error('Error joining event:', error);
       showAlert({ title: 'Error', message: 'Failed to RSVP for the event.' });
+    },
+  });
+
+  const {
+    mutate: updateTransportationMutation,
+    isPending: isUpdatingTransportation,
+  } = useMutation({
+    mutationFn: (data: {
+      preference: TransportationPreference;
+      message?: string;
+    }) => updateTransportation(event.myTransportation.id, data),
+    onSuccess: () => {
+      setShowTransportationModal(false);
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
+
+      showAlert({
+        title: 'Success',
+        message: 'Transportation details updated.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error updating transportation:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        'Failed to update transportation details.';
+      showAlert({ title: 'Error', message: errorMessage });
     },
   });
 
@@ -166,7 +213,10 @@ export default function EventDetail() {
       },
       onError: (error: any) => {
         console.error('❌ Error creating chat:', error);
-        showAlert({ title: 'Error', message: error.message || 'Could not start a conversation.' });
+        showAlert({
+          title: 'Error',
+          message: error.message || 'Could not start a conversation.',
+        });
       },
     });
 
@@ -175,6 +225,7 @@ export default function EventDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
     },
     onError: (error) => {
       console.error('Error leaving event:', error);
@@ -187,6 +238,7 @@ export default function EventDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['event', id] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
 
       showAlert({ title: 'Success', message: 'Event has been approved.' });
     },
@@ -199,14 +251,18 @@ export default function EventDetail() {
     },
   });
 
-  const handleApproveEvent = ()=>{
-    approveEventMutation.mutate(event.id)
-  }
+  const handleApproveEvent = () => {
+    approveEventMutation.mutate(event.id);
+  };
 
   const { mutate: inviteToEventMutation, isPending: isInviting } = useMutation({
-    mutationFn: (inviteeIds: string[]) => inviteToEvent(eventId as string, inviteeIds),
+    mutationFn: (inviteeIds: string[]) =>
+      inviteToEvent(eventId as string, inviteeIds),
     onSuccess: () => {
-      showAlert({ title: 'Success', message: 'Invitations sent successfully!' });
+      showAlert({
+        title: 'Success',
+        message: 'Invitations sent successfully!',
+      });
       setShowInviteModal(false);
       setSelectedUserIds([]);
       setSearchEmail('');
@@ -216,7 +272,8 @@ export default function EventDetail() {
       console.error('Error inviting users:', error);
       showAlert({
         title: 'Error',
-        message: error?.response?.data?.message || 'Failed to send invitations.',
+        message:
+          error?.response?.data?.message || 'Failed to send invitations.',
       });
     },
   });
@@ -239,10 +296,14 @@ export default function EventDetail() {
     if (!usersResponse?.users || !event?.attendingUsers) {
       return [];
     }
-    const attendingUserIds = new Set(event.attendingUsers.map((u: any) => u.id));
+    const attendingUserIds = new Set(
+      event.attendingUsers.map((u: any) => u.id)
+    );
     return usersResponse.users.filter((user: User) => {
       const isAttending = attendingUserIds.has(user.id);
-      const matchesSearch = user.name.toLowerCase().includes(searchEmail.toLowerCase()) || user.email.toLowerCase().includes(searchEmail.toLowerCase());
+      const matchesSearch =
+        user.name.toLowerCase().includes(searchEmail.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchEmail.toLowerCase());
       return !isAttending && matchesSearch;
     });
   }, [usersResponse, event, searchEmail]);
@@ -258,6 +319,12 @@ export default function EventDetail() {
       (attendee: any) => attendee.id === myData?.userId
     );
   }, [event, myData]);
+
+  React.useEffect(() => {
+    if (openTransportationModal === 'true' && event && !isAttending) {
+      setShowTransportationModal(true);
+    }
+  }, [openTransportationModal, event, isAttending]);
 
   const handleMessageHost = () => {
     if (!event?.user?.id) return;
@@ -348,12 +415,15 @@ export default function EventDetail() {
     eventTime?.startTime,
     eventTime?.endTime
   );
+  const isEventPast = eventTime
+    ? new Date(eventTime.startTime) < new Date()
+    : false;
+
   const organizer =
     event.associatedGroup?.name || event.user?.name || 'Unknown Organizer';
 
   const canApprove = event?.canApprove;
 
-  
   const handleShareEvent = async () => {
     if (!event) return;
     try {
@@ -366,11 +436,12 @@ export default function EventDetail() {
         title: `Culture Connect Event: ${event.name}`,
       });
     } catch (error) {
-      showAlert({ title: 'Error', message: 'Unable to share this event at this time.' });
+      showAlert({
+        title: 'Error',
+        message: 'Unable to share this event at this time.',
+      });
     }
   };
-
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -491,6 +562,24 @@ export default function EventDetail() {
                   <Users size={14} color={theme.primary} />
                   <Text style={[styles.categoryText, { color: theme.primary }]}>
                     Group Event
+                  </Text>
+                </View>
+              )}
+              {event.requiresTravel && (
+                <View
+                  style={[
+                    styles.categoryTag,
+                    { backgroundColor: theme.gray100 },
+                  ]}
+                >
+                  <Navigation size={14} color={extendedTheme.warning} />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: extendedTheme.warning },
+                    ]}
+                  >
+                    Requires Travel
                   </Text>
                 </View>
               )}
@@ -643,6 +732,128 @@ export default function EventDetail() {
             </View>
           </View>
 
+          {/* Transportation Section */}
+          {event.requiresTravel &&
+            event.transportationPreferences?.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Transportation</Text>
+                </View>
+                <View style={styles.transportTabsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.transportTab,
+                      activeTransportationTab === 'providers' &&
+                        styles.transportTabActive,
+                    ]}
+                    onPress={() => setActiveTransportationTab('providers')}
+                  >
+                    <Text
+                      style={[
+                        styles.transportTabText,
+                        activeTransportationTab === 'providers' &&
+                          styles.transportTabTextActive,
+                      ]}
+                    >
+                      Offering Rides
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.transportTab,
+                      activeTransportationTab === 'seekers' &&
+                        styles.transportTabActive,
+                    ]}
+                    onPress={() => setActiveTransportationTab('seekers')}
+                  >
+                    <Text
+                      style={[
+                        styles.transportTabText,
+                        activeTransportationTab === 'seekers' &&
+                          styles.transportTabTextActive,
+                      ]}
+                    >
+                      Needing Rides
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {event.transportationPreferences.filter((pref: any) =>
+                  activeTransportationTab === 'providers'
+                    ? pref.preference === 'CAN_PROVIDE_RIDE'
+                    : pref.preference === 'NEED_RIDE'
+                ).length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.transportScrollView}
+                  >
+                    {event.transportationPreferences
+                      .filter((pref: any) =>
+                        activeTransportationTab === 'providers'
+                          ? pref.preference === 'CAN_PROVIDE_RIDE'
+                          : pref.preference === 'NEED_RIDE'
+                      )
+                      .map((pref: any) => (
+                        <View key={pref.id} style={styles.transportCard}>
+                          <View style={styles.transportUserHeader}>
+                            <Image
+                              source={{
+                                uri:
+                                  pref.user.profilePicture ||
+                                  'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                              }}
+                              style={styles.transportUserImage}
+                            />
+                            <Text style={styles.transportUserName}>
+                              {pref.user.name}
+                            </Text>
+                          </View>
+                          {pref.message && (
+                            <Text style={styles.transportMessage}>
+                              "{pref.message}"
+                            </Text>
+                          )}
+                          {pref.userId !== myData?.userId && (
+                            <TouchableOpacity
+                              style={[
+                                styles.transportMessageButton,
+                                isCreatingChat && styles.disabledButton,
+                              ]}
+                              onPress={() =>
+                                createDirectChatMutate(pref.userId)
+                              }
+                              disabled={isCreatingChat}
+                            >
+                              {isCreatingChat ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color={theme.white}
+                                />
+                              ) : (
+                                <Text style={styles.transportMessageButtonText}>
+                                  Message
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.noTransportContainer}>
+                    <Text style={styles.noTransportText}>
+                      No one is{' '}
+                      {activeTransportationTab === 'providers'
+                        ? 'offering a ride'
+                        : 'requesting a ride'}{' '}
+                      yet.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
           {/* Associated Group Section */}
           {event.associatedGroup && (
             <View style={styles.section}>
@@ -723,15 +934,15 @@ export default function EventDetail() {
         </View>
       </ScrollView>
 
-      {!isHost && (
+      {!isHost ? (
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
               styles.messageButtonFooter,
-              isCreatingChat && styles.disabledButton,
+              (isCreatingChat || isEventPast) && styles.disabledButton,
             ]}
             onPress={handleMessageHost}
-            disabled={isCreatingChat}
+            disabled={isCreatingChat || isEventPast}
           >
             <View style={styles.rsvpContent}>
               {isCreatingChat ? (
@@ -744,27 +955,124 @@ export default function EventDetail() {
               )}
             </View>
           </TouchableOpacity>
-          {isAttending ? (
+          {isEventPast ? (
             <TouchableOpacity
-              style={[styles.rsvpButton, styles.leaveButton]}
-              onPress={() => leaveEventMutation()}
-              disabled={isLeaving}
+              style={[styles.rsvpButton, styles.disabledButton]}
+              disabled={true}
             >
               <View style={styles.rsvpContent}>
-                {isLeaving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <CheckCircle size={20} color={theme.white} />
-                    <Text style={styles.rsvpButtonText}>Going</Text>
-                  </>
-                )}
+                <Text style={styles.rsvpButtonText}>Event Ended</Text>
               </View>
             </TouchableOpacity>
           ) : (
+            <>
+              {isAttending ? (
+                event.requiresTravel ? (
+                  <TouchableOpacity
+                    style={[styles.rsvpButton, styles.manageRsvpButton]}
+                    onPress={() => setShowTransportationModal(true)}
+                  >
+                    <View style={styles.rsvpContent}>
+                      <Edit3 size={20} color={theme.white} />
+                      <Text style={styles.rsvpButtonText}>Manage RSVP</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.rsvpButton,
+                      styles.leaveButton,
+                      isLeaving && styles.disabledButton,
+                    ]}
+                    onPress={() => leaveEventMutation()}
+                    disabled={isLeaving}
+                  >
+                    <View style={styles.rsvpContent}>
+                      {isLeaving ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <>
+                          <CheckCircle size={20} color={theme.white} />
+                          <Text style={styles.rsvpButtonText}>Going</Text>
+                        </>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.rsvpButton,
+                    isJoining && styles.disabledButton,
+                  ]}
+                  onPress={() =>
+                    event.requiresTravel
+                      ? setShowTransportationModal(true)
+                      : joinEventMutation({})
+                  }
+                  disabled={isJoining}
+                >
+                  <View style={styles.rsvpContent}>
+                    {isJoining ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          {isAttending ? (
+            <>
+              {event.requiresTravel ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.rsvpButton, styles.manageRsvpButton]}
+                    onPress={() => setShowTransportationModal(true)}
+                  >
+                    <View style={styles.rsvpContent}>
+                      <Edit3 size={20} color={theme.white} />
+                      <Text style={styles.rsvpButtonText}>Manage RSVP</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.rsvpButton,
+                      styles.leaveButton,
+                      isLeaving && styles.disabledButton,
+                    ]}
+                    onPress={() => leaveEventMutation()}
+                    disabled={isLeaving}
+                  >
+                    <View style={styles.rsvpContent}>
+                      {isLeaving ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <>
+                          <CheckCircle size={20} color={theme.white} />
+                          <Text style={styles.rsvpButtonText}>Going</Text>
+                        </>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </>
+              )}
+            </>
+          ) : (
             <TouchableOpacity
               style={[styles.rsvpButton, isJoining && styles.disabledButton]}
-              onPress={() => joinEventMutation()}
+              onPress={() =>
+                event.requiresTravel
+                  ? setShowTransportationModal(true)
+                  : joinEventMutation({})
+              }
               disabled={isJoining}
             >
               <View style={styles.rsvpContent}>
@@ -784,9 +1092,10 @@ export default function EventDetail() {
           visible={showEditEventModal}
           onClose={() => setShowEditEventModal(false)}
           eventId={eventId}
-          onSubmit={() =>
-            queryClient.invalidateQueries({ queryKey: ['event', eventId] })
-          }
+          onSubmit={() => {
+            queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+            queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
+          }}
         />
       )}
 
@@ -796,6 +1105,29 @@ export default function EventDetail() {
         entityId={eventId as string}
         entityType="event"
         entityName={event.name}
+      />
+
+      <TransportationModal
+        visible={showTransportationModal}
+        onClose={() => setShowTransportationModal(false)}
+        isConfirming={isJoining || isUpdatingTransportation}
+        isLeaving={isLeaving}
+        onConfirm={(preference, message) => {
+          if (isAttending && event.myTransportation) {
+            updateTransportationMutation({ preference, message });
+          } else {
+            joinEventMutation({
+              preference,
+              message,
+            });
+          }
+        }}
+        isEditing={isAttending}
+        initialPreference={event?.myTransportation?.preference}
+        initialMessage={event?.myTransportation?.message}
+        onLeaveEvent={() => {
+          leaveEventMutation();
+        }}
       />
 
       <Modal
@@ -868,10 +1200,18 @@ export default function EventDetail() {
                 style={styles.cancelButton}
               />
               <Button
-                title={isInviting ? 'Inviting...' : `Invite ${selectedUserIds.length}`}
+                title={
+                  isInviting
+                    ? 'Inviting...'
+                    : `Invite ${selectedUserIds.length}`
+                }
                 onPress={handleInviteUsers}
                 disabled={selectedUserIds.length === 0 || isInviting}
-                style={[styles.addButton, (selectedUserIds.length === 0 || isInviting) && styles.disabledButton]}
+                style={[
+                  styles.addButton,
+                  (selectedUserIds.length === 0 || isInviting) &&
+                    styles.disabledButton,
+                ]}
               />
             </View>
           </TouchableOpacity>
@@ -882,6 +1222,107 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
+  transportTabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.gray100,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  transportTab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  transportTabActive: {
+    backgroundColor: theme.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  transportTabText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  transportTabTextActive: {
+    color: theme.primary,
+  },
+  transportScrollView: {
+    paddingHorizontal: 4,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
+  },
+  transportCard: {
+    width: 200,
+    backgroundColor: theme.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  transportUserHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  transportUserImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: spacing.sm,
+  },
+  transportUserName: {
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    color: theme.textPrimary,
+  },
+  transportMessage: {
+    fontSize: typography.fontSize.xs,
+    color: theme.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    minHeight: 50,
+  },
+  transportMessageButton: {
+    backgroundColor: theme.primary,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  transportMessageButtonText: {
+    color: theme.white,
+    fontWeight: '600',
+  },
+
+  noTransportContainer: {
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noTransportText: {
+    fontSize: typography.fontSize.base,
+    color: theme.textSecondary,
+    fontStyle: 'italic',
+  },
+
   actionButton: {
     width: 44,
     height: 44,
@@ -900,6 +1341,7 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+
     borderWidth: 0.5,
     borderColor: 'rgba(255, 255, 255, 0.7)',
   },
@@ -938,7 +1380,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20, // Reduced from 100 to 80
+    paddingBottom: 100, // Reduced from 100 to 80
   },
   loadingContainer: {
     flex: 1,
@@ -1426,6 +1868,10 @@ const styles = StyleSheet.create({
   },
   leaveButton: {
     backgroundColor: extendedTheme.success,
+  },
+  manageRsvpButton: {
+    backgroundColor: theme.primary,
+    flex: 1,
   },
   disabledButton: { backgroundColor: theme.gray400 },
   rsvpIcon: {

@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { theme, spacing, typography, borderRadius } from '@/components/theme';
+import { theme } from '@/components/theme';
 import {
   Calendar,
   MapPin,

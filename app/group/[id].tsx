@@ -116,14 +116,12 @@ export default function GroupDetailEnhanced() {
 
 
   // Modal states
-  const [showAddMembersModal, setShowAddMembersModal] = useState(false);
-  const [showKickModal, setShowKickModal] = useState(false);
+  const [showAddMembersModal, setShowAddMembersModal] = useState(false);  
   const [showUpdateRoleModal, setShowUpdateRoleModal] = useState(false);
   const [showMembersList, setShowMembersList] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
-  const [memberToKick, setMemberToKick] = useState<Member | null>(null);
   const [memberToUpdate, setMemberToUpdate] = useState<Member | null>(null);
   const [selectedRole, setSelectedRole] = useState<GroupRole | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -179,8 +177,18 @@ export default function GroupDetailEnhanced() {
   };
 
   const handleKickMember = (member: Member) => {
-    setMemberToKick(member);
-    setShowKickModal(true);
+    showAlert({
+      title: 'Kick Member',
+      message: `Are you sure you want to kick ${member.user.name} from the group?`,
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Kick',
+          style: 'destructive',
+          onPress: () => kickMembersMutate(member.userId),
+        },
+      ],
+    });
   };
 
   const handleUpdateRole = (member: Member) => {
@@ -292,7 +300,6 @@ export default function GroupDetailEnhanced() {
     useMutation({
       mutationFn: (userId: string) => removeMember(id as string, userId),
       onSuccess: (data) => {
-        setShowKickModal(false);
         refetch();
       },
       onError: (error) => {
@@ -335,12 +342,6 @@ export default function GroupDetailEnhanced() {
     },
   });
 
-  const kickMember = (userId: string) => {
-    kickMembersMutate(userId);
-    setShowKickModal(false);
-    setMemberToKick(null);
-  };
-
   const updateMemberRole = (newRole: GroupRole) => {
     if (memberToUpdate) {
       updateRoleMutate({ userId: memberToUpdate.userId, newRole });
@@ -380,7 +381,6 @@ export default function GroupDetailEnhanced() {
     modalSetter(false);
     setSelectedUserIds([]);
     setSearchEmail('');
-    setMemberToKick(null);
     setMemberToUpdate(null);
     setSelectedRole(null);
   };
@@ -747,21 +747,30 @@ export default function GroupDetailEnhanced() {
                     Members
                   </Text>
                   {group.members.map((member: any) => (
-                    <View key={member.id} style={styles.infoRow}>
-                      <Image
-                        source={{
-                          uri:
-                            member.user.profilePicture ||
-                            'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                        }}
-                        style={styles.memberAvatar}
-                        defaultSource={require('../../assets/user.png')}
-                      />
-
-                      
-                      <View style={styles.infoContent}>
-                        <Text style={styles.infoValue}>{member.user.name}</Text>
-                        {/* <Text style={styles.infoLabel}>{member.user.email}</Text> */}
+                    <TouchableOpacity
+                      key={member.id}
+                      style={styles.infoRow}
+                      onPress={() => {
+                        if (member.userId === myData?.userId) {
+                          router.push('/profile');
+                        } else {
+                          router.push(`/profile/public/${member.userId}`);
+                        }
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <Image
+                          source={{
+                            uri:
+                              member.user.profilePicture ||
+                              'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                          }}
+                          style={styles.memberAvatar}
+                          defaultSource={require('../../assets/user.png')}
+                        />
+                        <View style={styles.infoContent}>
+                          <Text style={styles.infoValue}>{member.user.name}</Text>
+                        </View>
                       </View>
                       <View style={styles.memberActions}>
                         <Badge
@@ -773,20 +782,20 @@ export default function GroupDetailEnhanced() {
                             <>
                               <TouchableOpacity
                                 style={styles.editButton}
-                                onPress={() => handleUpdateRole(member)}
+                                onPress={(e) => { e.stopPropagation(); handleUpdateRole(member); }}
                               >
                                 <Edit3 size={16} color={theme.primary} />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={styles.kickButton}
-                                onPress={() => handleKickMember(member)}
+                                onPress={(e) => { e.stopPropagation(); handleKickMember(member); }}
                               >
                                 <UserMinus size={16} color={theme.error} />
                               </TouchableOpacity>
                             </>
                           )}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -1154,44 +1163,6 @@ export default function GroupDetailEnhanced() {
                   (selectedUserIds.length === 0 || isAddMemberPending) &&
                     styles.disabledButton,
                 ]}
-              />
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={showKickModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowKickModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => handleModalOverlayPress(setShowKickModal)}
-        >
-          <TouchableOpacity
-            style={styles.confirmModalContent}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <Text style={styles.confirmModalTitle}>Kick Member</Text>
-            <Text style={styles.confirmModalText}>
-              Are you sure you want to kick {memberToKick?.user.name} from the
-              group?
-            </Text>
-            <View style={styles.confirmModalActions}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowKickModal(false)}
-                style={styles.cancelButton}
-              />
-              <Button
-                title={kickMemberPending ? 'Kicking...' : 'Kick'}
-                onPress={() => memberToKick && kickMember(memberToKick.userId)}
-                style={styles.kickConfirmButton}
-                disabled={kickMemberPending}
               />
             </View>
           </TouchableOpacity>

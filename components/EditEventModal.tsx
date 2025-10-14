@@ -13,6 +13,7 @@ import {
   Image,
   Platform,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -69,6 +70,7 @@ export function EditEventModal({
     images: [] as string[],
     isPublic: true,
     universityOnly: false,
+    requiresTravel: false,
   });
 
   // Fetch event data
@@ -124,6 +126,7 @@ export function EditEventModal({
         images: event.imageUrl ? [event.imageUrl] : [],
         isPublic: event.isPublic !== undefined ? event.isPublic : true,
         universityOnly: event.UniversityOnly !== undefined ? event.UniversityOnly : false,
+        requiresTravel: event.requiresTravel || false,
       });
     } 
   }, [event, visible]);
@@ -388,6 +391,7 @@ export function EditEventModal({
       ...(formData.groupId && { associatedGroupId: formData.groupId }),
       isPublic: formData.isPublic,
       UniversityOnly: formData.universityOnly,
+      requiresTravel: formData.requiresTravel,
     };
 
     updateEventMutation.mutate({ eventId, eventData });
@@ -776,6 +780,28 @@ export function EditEventModal({
                   </View>
                 </View>
 
+                {/* Travel Requirement - Simplified */}
+                <View style={styles.inputContainer}>
+                  <View style={styles.rowContainer}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.inputLabel}>Does this Event Require Travel?</Text>
+                      <Text style={styles.inputSubLabel}>
+                        {formData.requiresTravel
+                          ? 'Yes, attendees need to travel to the event.'
+                          : "No, it's a local event."}
+                      </Text>
+                    </View>
+                    <Switch
+                      trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                      thumbColor={formData.requiresTravel ? '#6366F1' : '#f4f3f4'}
+                      ios_backgroundColor="#E5E7EB"
+                      onValueChange={(value) => setFormData({ ...formData, requiresTravel: value })}
+                      value={formData.requiresTravel}
+                      disabled={updateEventMutation.isPending}
+                    />
+                  </View>
+                </View>
+
                 {/* Associated Group */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Associated Group</Text>
@@ -1140,6 +1166,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#374151',
+    marginBottom: 8,
+  },
+  inputSubLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 4,
     marginBottom: 8,
   },
   inputWrapper: {
