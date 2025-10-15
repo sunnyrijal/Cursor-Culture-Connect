@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { StyleSheet } from 'react-native';
-import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, SlidersHorizontal, Plus } from 'lucide-react-native';
+import { StyleSheet, Platform } from 'react-native';
+import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, Plus, Package, Car, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyActivityPreferences, deleteUserInterest, toggleUserInterestStatus } from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
@@ -135,111 +135,81 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
         styles.preferenceCard,
         !preference.isActive && styles.inactiveCard
       ]}>
-        {/* Header */}
         <View style={styles.cardHeader}>
           <View style={styles.activityInfo}>
             <Text style={styles.activityName}>{preference.activity.name}</Text>
             <Text style={styles.interestCategory}>{preference.activity.interest.name}</Text>
           </View>
-          <View style={styles.cardActions}>
-            <TouchableOpacity
-              onPress={() => handleToggle(preference.id)}
-              disabled={isToggling}
-              style={styles.toggleButton}
-            >
-              {preference.isActive ? (
-                <ToggleRight size={24} color="#4CAF50" />
-              ) : (
-                <ToggleLeft size={24} color="#757575" />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleDelete(preference.id, preference.activity.name)}
-              disabled={isDeleting}
-              style={styles.deleteButton}
-            >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color="#F44336" />
-              ) : (
-                <Trash2 size={20} color="#F44336" />
-              )}
-            </TouchableOpacity>
+          <View style={[styles.skillBadge, { backgroundColor: getSkillLevelColor(preference.skillLevel) }]}>
+            <Text style={styles.skillBadgeText}>{preference.skillLevel}</Text>
           </View>
         </View>
 
-        {/* Skill Level Badge */}
-        <View style={[
-          styles.skillBadge,
-          { backgroundColor: getSkillLevelColor(preference.skillLevel) }
-        ]}>
-          <Text style={styles.skillBadgeText}>{preference.skillLevel}</Text>
-        </View>
-
-        {/* Equipment & Transport */}
-        <View style={styles.preferencesSection}>
-          <View style={styles.preferenceRow}>
+        <View style={styles.detailsGrid}>
+          <View style={styles.detailItem}>
+            <Package size={14} color="#6B7280" />
             {preference.hasEquipment ? (
-              <View style={styles.hasTag}>
-                <Text style={styles.hasTagText}>Has Equipment</Text>
-              </View>
+              <Text style={[styles.detailText, styles.hasDetail]}>Has Equipment</Text>
             ) : (
-              <View style={styles.needsTag}>
-                <Text style={styles.needsTagText}>
-                  Needs: {preference.equipmentNeeded || 'Equipment'}
-                </Text>
-              </View>
+              <Text style={[styles.detailText, styles.needsDetail]} numberOfLines={1}>
+                Needs: {preference.equipmentNeeded || 'Equipment'}
+              </Text>
             )}
           </View>
 
-          <View style={styles.preferenceRow}>
+          <View style={styles.detailItem}>
+            <Car size={14} color="#6B7280" />
             {preference.hasTransport ? (
-              <View style={styles.hasTag}>
-                <Text style={styles.hasTagText}>Has Transport</Text>
-              </View>
+              <Text style={[styles.detailText, styles.hasDetail]}>Has Transport</Text>
             ) : (
-              <View style={styles.needsTag}>
-                <Text style={styles.needsTagText}>
-                  Transport: {preference.transportDetails || 'Needed'}
-                </Text>
-              </View>
+              <Text style={[styles.detailText, styles.needsDetail]} numberOfLines={1}>
+                Needs: {preference.transportDetails || 'Transport'}
+              </Text>
             )}
           </View>
-        </View>
 
-        {/* Location & Time Info */}
-        <View style={styles.detailsSection}>
-          <View style={styles.detailRow}>
-            <MapPin size={16} color="#666" />
-            <Text style={styles.detailText}>
-              Within {preference.locationRadius} miles
-            </Text>
+          <View style={styles.detailItem}>
+            <MapPin size={14} color="#6B7280" />
+            <Text style={styles.detailText}>Within {preference.locationRadius} miles</Text>
           </View>
-          
-          {preference.availableDays.length > 0 && (
-            <View style={styles.detailRow}>
-              <Clock size={16} color="#666" />
-              <Text style={styles.detailText}>
+
+          {preference.availableDays?.length > 0 && (
+            <View style={styles.detailItem}>
+              <Clock size={14} color="#6B7280" />
+              <Text style={styles.detailText} numberOfLines={1}>
                 {preference.availableDays.join(', ')}
               </Text>
             </View>
           )}
-          
-          {preference.preferredTimes.length > 0 && (
-            <Text style={styles.detailText}>
-              Times: {preference.preferredTimes.join(', ')}
-            </Text>
-          )}
         </View>
 
-        {/* Additional Notes */}
         {preference.additionalNotes && (
           <View style={styles.notesSection}>
-            <Text style={styles.notesLabel}>Notes:</Text>
             <Text style={styles.notesText}>{preference.additionalNotes}</Text>
           </View>
         )}
 
-        {/* Inactive Overlay */}
+        <View style={styles.cardFooter}>
+          <TouchableOpacity
+            onPress={() => handleToggle(preference.id)}
+            disabled={isToggling}
+            style={styles.actionButton}
+          >
+            {preference.isActive ? (
+              <ToggleRight size={24} color="#4CAF50" />
+            ) : (
+              <ToggleLeft size={24} color="#757575" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDelete(preference.id, preference.activity.name)}
+            disabled={isDeleting}
+            style={styles.actionButton}
+          >
+            {isDeleting ? <ActivityIndicator size="small" color="#F44336" /> : <Trash2 size={20} color="#F44336" />}
+          </TouchableOpacity>
+        </View>
+
         {!preference.isActive && (
           <View style={styles.inactiveOverlay}>
             <Text style={styles.inactiveText}>Inactive</Text>
@@ -396,14 +366,14 @@ const styles = StyleSheet.create({
   },
   preferenceCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 3.84,
     elevation: 5,
     position: 'relative',
@@ -415,122 +385,107 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   activityInfo: {
     flex: 1,
+    marginRight: 8,
   },
   activityName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   interestCategory: {
-    fontSize: 14,
-    color: '#666',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  toggleButton: {
-    padding: 4,
-  },
-  deleteButton: {
-    padding: 4,
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   skillBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   skillBadgeText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  preferencesSection: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  preferenceRow: {
+  detailsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  hasTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  hasTagText: {
-    fontSize: 12,
-    color: '#1976D2',
-    fontWeight: '500',
-  },
-  needsTag: {
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF9800',
-  },
-  needsTagText: {
-    fontSize: 12,
-    color: '#F57C00',
-    fontWeight: '500',
-  },
-  detailsSection: {
-    gap: 6,
     marginBottom: 12,
   },
-  detailRow: {
+  detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
   detailText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  hasDetail: {
+    color: '#059669',
+  },
+  needsDetail: {
+    color: '#D97706',
   },
   notesSection: {
-    paddingTop: 12,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  notesLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 4,
+    borderTopColor: '#F3F4F6',
   },
   notesText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#555',
-    lineHeight: 20,
+    lineHeight: 18,
     fontStyle: 'italic',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  actionButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   inactiveOverlay: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: '#F44336',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inactiveText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#757575',
+    transform: [{ rotate: '-15deg' }],
+    borderWidth: 2,
+    borderColor: '#757575',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
 });
 

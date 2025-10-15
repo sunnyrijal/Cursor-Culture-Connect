@@ -754,7 +754,7 @@ export default function GroupDetailEnhanced() {
                         if (member.userId === myData?.userId) {
                           router.push('/profile');
                         } else {
-                          router.push(`/profile/public/${member.userId}`);
+                          router.push(`/public/profile/${member.userId}`);
                         }
                       }}
                     >

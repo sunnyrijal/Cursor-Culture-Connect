@@ -308,7 +308,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
                 </>
               ) : (
                 <View style={styles.noResultsContainer}>
-                  <Search size={20} color="#9CA3AF" />
+                  {/* <Search size={20} color="#9CA3AF" /> */}
                   <Text style={styles.noResultsText}>
                     No majors found
                   </Text>
@@ -520,8 +520,8 @@ const styles = StyleSheet.create({
   },
   noResultsContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
+    justifyContent: 'flex-start',
+    paddingVertical: 16,
     paddingHorizontal: 16,
     height: 240,
   },

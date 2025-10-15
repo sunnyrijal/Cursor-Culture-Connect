@@ -86,6 +86,7 @@ export default function ActivityBuddyPage() {
   const [activeTab, setActiveTab] = useState<TabType>('activities');
   const [activePingTab, setActivePingTab] = useState<'received' | 'sent'>('received');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string | null>(
     'all'
   );
@@ -124,6 +125,16 @@ export default function ActivityBuddyPage() {
     queryFn: () => getActivities(),
   });
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
   // Query for users by activity using infinite query for pagination
   const {
     data: usersPages,
@@ -131,13 +142,18 @@ export default function ActivityBuddyPage() {
     hasNextPage,
     isLoading: usersLoading,
     isFetchingNextPage,
-    refetch: refetchUsers,
+    refetch: refetchUsers, // This is correct
   } = useInfiniteQuery({
-    queryKey: ['usersByActivity', selectedActivity],
+    queryKey: ['usersByActivity', selectedActivity, debouncedSearchQuery],
     queryFn: ({ pageParam = 1 }) => {
       const activityToFetch =
         selectedActivity === 'all' ? 'all' : selectedActivity;
-      return getUsersByActivity(activityToFetch!, pageParam);
+      return getUsersByActivity(
+        activityToFetch!,
+        pageParam,
+        10,
+        debouncedSearchQuery
+      );
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
@@ -253,13 +269,6 @@ export default function ActivityBuddyPage() {
         });
       },
     });
-
-  const filteredUsers = users.filter(
-    (user: User) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.major &&
-        user.major.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -383,7 +392,10 @@ export default function ActivityBuddyPage() {
 
     return (
       <View key={user.id} style={styles.userCard}>
-        <View style={styles.userHeader}>
+        <TouchableOpacity
+          style={styles.userHeader}
+          onPress={() => router.push(`/public/profile/${user.id}`)}
+        >
           <Image
             source={{
               uri:
@@ -403,7 +415,7 @@ export default function ActivityBuddyPage() {
               </Text>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Activity Preferences Section */}
         {user.activityPreferences && user.activityPreferences.length > 0 && (
@@ -878,14 +890,14 @@ export default function ActivityBuddyPage() {
           <>
             <Text style={styles.resultsCount}>
               {usersPages?.pages[0]?.data.pagination.totalCount ||
-                filteredUsers.length}{' '}
+                users.length}{' '}
               {(usersPages?.pages[0]?.data.pagination.totalCount ||
-                filteredUsers.length) === 1
+                users.length) === 1
                 ? 'person'
                 : 'people'}{' '}
               found
             </Text>
-            {filteredUsers.length === 0 && !usersLoading ? (
+            {users.length === 0 && !usersLoading ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateIcon}>🔍</Text>
                 <Text style={styles.emptyStateTitle}>No people found</Text>
@@ -901,7 +913,7 @@ export default function ActivityBuddyPage() {
               </View>
             ) : (
               <>
-                {filteredUsers.map(renderUserCard)}
+                {users.map(renderUserCard)}
                 {hasNextPage && (
                   <TouchableOpacity
                     style={[
@@ -1103,8 +1115,8 @@ const styles = StyleSheet.create({
   userCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
+    padding: 12,
+    marginVertical: 6,
     marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -1118,30 +1130,30 @@ const styles = StyleSheet.create({
   userHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   userImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     marginRight: 12,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
   },
   userMajor: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     marginBottom: 2,
   },
   userYear: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     marginBottom: 4,
   },
@@ -1151,10 +1163,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   activitiesSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
@@ -1168,7 +1180,7 @@ const styles = StyleSheet.create({
   activityPreferenceCard: {
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     borderLeftWidth: 3,
     borderLeftColor: theme.primary,
   },
@@ -1176,17 +1188,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   activityName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
     flex: 1,
   },
   skillBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 12,
     marginLeft: 8,
   },
@@ -1196,7 +1208,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   preferenceDetails: {
-    gap: 6,
+    gap: 4,
   },
   preferenceRow: {
     flexDirection: 'row',
@@ -1205,14 +1217,14 @@ const styles = StyleSheet.create({
   },
   preferenceTag: {
     backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.primary,
   },
   preferenceTagText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#1976D2',
     fontWeight: '500',
   },
@@ -1221,14 +1233,14 @@ const styles = StyleSheet.create({
     borderColor: '#FF9800',
   },
   needsTagText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#F57C00',
     fontWeight: '500',
   },
   expandButton: {
     backgroundColor: '#F0F0F0',
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -1244,13 +1256,13 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   collapseButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.primary,
     fontWeight: '500',
   },
   additionalNotesContainer: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 6,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
   },
@@ -1261,7 +1273,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   additionalNotesText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#555',
     lineHeight: 16,
     fontStyle: 'italic',
@@ -1271,14 +1283,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
     gap: 8,
   },
   pingButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
 

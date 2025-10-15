@@ -118,6 +118,7 @@ export default function ChatListScreen() {
     queryFn: () => getUserChats(),
   });
 
+  console.log(chatResponse)
 
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],

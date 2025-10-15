@@ -24,8 +24,24 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getHubDetails } from '@/contexts/user.api';
 
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'TBA';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const formatTime = (dateString: string) => {
+  if (!dateString) return 'TBA';
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 export default function HubDetails() {
-  const [activeTab, setActiveTab] = useState('friends');
+  const [activeTab, setActiveTab] = useState('events');
 
   const {
     data: res,
@@ -35,7 +51,7 @@ export default function HubDetails() {
     queryKey: ['hubDetails'],
     queryFn: () => getHubDetails(),
   });
-  console.log(res)
+  console.log(res);
   const navigateToChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
   };
@@ -46,7 +62,13 @@ export default function HubDetails() {
     if (friends.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No friends found</Text>
+          <View style={styles.emptyCard}>
+            <Users size={48} color={theme.primary} style={{ opacity: 1 }} />
+            <Text style={styles.emptyText}>No friends found</Text>
+            <Text style={styles.emptySubtext}>
+              Connect with people to see them here
+            </Text>
+          </View>
         </View>
       );
     }
@@ -54,51 +76,56 @@ export default function HubDetails() {
     return (
       <View style={styles.contentContainer}>
         {friends.map((friend: any) => (
-          <TouchableOpacity 
-          onPress={() => router.push(`/public/profile/${friend.id}`)}
-           key={friend.id} style={styles.friendCard}>
-            <View style={styles.friendInfo}>
-              {friend.profilePicture ? (
-                <Image
-                  source={{ uri: friend.profilePicture }}
-                  style={styles.friendAvatar}
-                />
-              ) : (
-                <View style={styles.friendAvatarPlaceholder}>
-                  <User size={24} color={theme.textSecondary} />
+          <TouchableOpacity
+            onPress={() => router.push(`/public/profile/${friend.id}`)}
+            key={friend.id}
+            style={styles.friendCard}
+            activeOpacity={0.7}
+          >
+            <View style={styles.friendCardInner}>
+              <View style={styles.friendInfo}>
+                {friend.profilePicture ? (
+                  <Image
+                    source={{ uri: friend.profilePicture }}
+                    style={styles.friendAvatar}
+                  />
+                ) : (
+                  <View style={styles.friendAvatarPlaceholder}>
+                    <User size={26} color={theme.primary} />
+                  </View>
+                )}
+                <View style={styles.friendDetails}>
+                  <Text style={styles.friendName}>
+                    {friend.firstName} {friend.lastName}
+                  </Text>
+                  {friend.major && (
+                    <Text style={styles.friendMeta}>{friend.major}</Text>
+                  )}
+                  {friend.university && (
+                    <Text style={styles.friendMeta}>
+                     {friend.university.name}
+                    </Text>
+                  )}
+                  {friend.classYear && (
+                    <Text style={styles.friendYear}>
+                      {friend.classYear}
+                    </Text>
+                  )}
+                  {(friend.countryOfOrigin || friend.city) && (
+                    <Text style={styles.friendLocation}>
+                      {friend.countryOfOrigin || friend.city}
+                    </Text>
+                  )}
                 </View>
-              )}
-              <View style={styles.friendDetails}>
-                <Text style={styles.friendName}>
-                  {friend.firstName} {friend.lastName}
-                </Text>
-                {/* <Text style={styles.friendEmail}>{friend.email}</Text> */}
-
-                {friend.major && (
-                  <Text style={styles.friendEmail}>{friend.major}</Text>
-                )}
-                {friend.university && (
-                  <Text style={styles.friendEmail}>
-                    {friend.university.name}
-                  </Text>
-                )}
-                {friend.classYear && (
-                  <Text style={styles.friendEmail}>{friend.classYear}</Text>
-                )}
-                {(friend.countryOfOrigin || friend.city) && (
-                  <Text style={styles.friendEmail}>
-                    {friend.countryOfOrigin || friend.city}
-                  </Text>
-                )}
               </View>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => navigateToChat(friend.chatId)}
+                activeOpacity={0.7}
+              >
+                <MessageCircle size={20} color={theme.white} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.chatButton}
-              onPress={() => navigateToChat(friend.chatId)}
-              activeOpacity={0.7}
-            >
-              <MessageCircle size={20} color={theme.primary} />
-            </TouchableOpacity>
           </TouchableOpacity>
         ))}
       </View>
@@ -111,7 +138,17 @@ export default function HubDetails() {
     if (groups.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No groups found</Text>
+          <View style={styles.emptyCard}>
+            <Users
+              size={48}
+              color={theme.textSecondary}
+              style={{ opacity: 0.3 }}
+            />
+            <Text style={styles.emptyText}>No groups found</Text>
+            <Text style={styles.emptySubtext}>
+              Join groups to see them here
+            </Text>
+          </View>
         </View>
       );
     }
@@ -123,39 +160,47 @@ export default function HubDetails() {
             key={group.id}
             onPress={() => router.push(`/group/${group.id}`)}
             activeOpacity={0.8}
+            style={styles.groupCard}
           >
-            <View key={group.id} style={styles.groupCard}>
+            <View style={styles.groupCardInner}>
               <View style={styles.groupHeader}>
                 {group.imageUrl ? (
-                  <Image
-                    source={{ uri: group.imageUrl }}
-                    style={styles.groupImage}
-                  />
+                  <View style={styles.groupImageContainer}>
+                    <Image
+                      source={{ uri: group.imageUrl }}
+                      style={styles.groupImage}
+                    />
+                  </View>
                 ) : (
                   <View style={styles.groupImagePlaceholder}>
-                    <Users size={24} color={theme.textSecondary} />
+                    <Users size={28} color={theme.primary} />
                   </View>
                 )}
                 <View style={styles.groupInfo}>
                   <Text style={styles.groupName}>{group.name}</Text>
-                  <View style={styles.groupMeta}>
-                    <Text style={styles.groupMembers}>
-                      {group._count.members} member
-                      {group._count.members !== 1 ? 's' : ''}
-                    </Text>
-                    <Text style={styles.groupCreator}>
-                      Created by {group.creator.name}
-                    </Text>
+                  <View style={styles.groupMetaRow}>
+                    <View style={styles.groupMemberBadge}>
+                      <Users size={14} color={theme.primary} />
+                      <Text style={styles.groupMembers}>
+                        {group._count.members} member
+                        {group._count.members !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.groupCreator}>
+                    by {group.creator.name}
+                  </Text>
                 </View>
               </View>
               <Text style={styles.groupDescription} numberOfLines={2}>
                 {group.description || 'No description available'}
               </Text>
               {group.meetingLocation && (
-                <Text style={styles.groupLocation}>
-                  📍 {group.meetingLocation}
-                </Text>
+                <View style={styles.locationBadge}>
+                  <Text style={styles.groupLocation}>
+                    📍 {group.meetingLocation}
+                  </Text>
+                </View>
               )}
             </View>
           </TouchableOpacity>
@@ -170,47 +215,80 @@ export default function HubDetails() {
     if (events.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No events found</Text>
+          <View style={styles.emptyCard}>
+            <Calendar
+              size={48}
+              color={theme.textSecondary}
+              style={{ opacity: 0.3 }}
+            />
+            <Text style={styles.emptyText}>No events found</Text>
+            <Text style={styles.emptySubtext}>
+              Check back later for upcoming events
+            </Text>
+          </View>
         </View>
       );
     }
 
     return (
       <View style={styles.contentContainer}>
-        {events.map((event: any) => (
-          <TouchableOpacity
-            key={event.id}
-            onPress={() => router.push(`/event/${event.id}`)}
-            activeOpacity={0.8}
-          >
-            <View key={event.id} style={styles.eventCard}>
-              {event.imageUrl && (
-                <Image
-                  source={{ uri: event.imageUrl }}
-                  style={styles.eventImage}
-                />
-              )}
-              <View style={styles.eventContent}>
-                <Text style={styles.eventName}>{event.name}</Text>
-                <Text style={styles.eventDescription} numberOfLines={2}>
-                  {event.description}
-                </Text>
-                <View style={styles.eventMeta}>
-                  <Text style={styles.eventLocation}>📍 {event.location}</Text>
-                  <Text style={styles.eventDate}>
-                    📅 {new Date(event.date).toLocaleDateString()}
+        {events.map((event: any) => {
+          const organizerName = event.associatedGroup?.name || event.user.name;
+
+          return (
+            <TouchableOpacity
+              key={event.id}
+              onPress={() => router.push(`/event/${event.id}`)}
+              activeOpacity={0.8}
+              style={styles.eventCard}
+            >
+              <View style={styles.eventCardInner}>
+                <View style={styles.eventDateBadge}>
+                  <Text style={styles.eventDateText}>
+                    {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[0]}
+                  </Text>
+                  <Text style={styles.eventDateNumber}>
+                    {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[1]}
                   </Text>
                 </View>
-                <Text style={styles.eventOrganizer}>
-                  Organized by {event.user.name}
-                </Text>
-                <Text style={styles.eventAttendees}>
-                  {event.attendingUsers?.length || 0} attending
-                </Text>
+                <View style={styles.eventImageContainer}>
+                  <Image
+                    source={
+                      event.imageUrl
+                        ? { uri: event.imageUrl }
+                        : require('../assets/logo.png')
+                    }
+                    style={styles.eventImage}
+                  />
+                </View>
+                <View style={styles.eventDetails}>
+                  <Text style={styles.eventTitle} numberOfLines={2}>
+                    {event.name}
+                  </Text>
+                  <View style={styles.eventMetaRow}>
+                    <Text style={styles.eventTime}>
+                      🕒 {formatTime(event.eventTimes?.[0]?.startTime)}
+                    </Text>
+                  </View>
+                  <Text style={styles.eventLocation} numberOfLines={1}>
+                    📍 {event.location}
+                  </Text>
+                  <View style={styles.eventFooter}>
+                    <Text style={styles.eventHost} numberOfLines={1}>
+                      by {organizerName}
+                    </Text>
+                    <View style={styles.eventAttendees}>
+                      <Users size={14} color={theme.primary} />
+                      <Text style={styles.eventAttendeesText}>
+                        {event.attendingUsers?.length || 0}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   };
@@ -228,7 +306,10 @@ export default function HubDetails() {
     if (error || !res?.data) {
       return (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load hub details</Text>
+          <View style={styles.emptyCard}>
+            <Text style={styles.errorText}>Failed to load hub details</Text>
+            <Text style={styles.emptySubtext}>Please try again later</Text>
+          </View>
         </View>
       );
     }
@@ -242,21 +323,6 @@ export default function HubDetails() {
         return renderEvents();
       default:
         return null;
-    }
-  };
-
-  const getTabCount = () => {
-    if (!res?.data) return '';
-
-    switch (activeTab) {
-      case 'friends':
-        return res.data.friends?.length || 0;
-      case 'groups':
-        return res.data.groups?.length || 0;
-      case 'events':
-        return res.data.events?.length || 0;
-      default:
-        return '';
     }
   };
 
@@ -275,19 +341,20 @@ export default function HubDetails() {
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-          onPress={() => setActiveTab('friends')}
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'friends' && styles.activeTabText,
+              activeTab === 'events' && styles.activeTabText,
             ]}
           >
-            Friends
+            Events
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'groups' && styles.activeTab]}
           onPress={() => setActiveTab('groups')}
@@ -302,18 +369,19 @@ export default function HubDetails() {
             Groups
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-          onPress={() => setActiveTab('events')}
+          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+          onPress={() => setActiveTab('friends')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'events' && styles.activeTabText,
+              activeTab === 'friends' && styles.activeTabText,
             ]}
           >
-            Events
+            Friends
           </Text>
         </TouchableOpacity>
       </View>
@@ -331,7 +399,7 @@ export default function HubDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: '#F5F7FA',
   },
   header: {
     flexDirection: 'row',
@@ -339,9 +407,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
     backgroundColor: theme.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   backButton: {
     padding: spacing.xs,
@@ -354,60 +431,30 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
-  headerContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    padding: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  countContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  countText: {
-    fontSize: 15,
-    color: theme.gray500,
-    fontWeight: '600',
-  },
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#F0F3F7',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     marginHorizontal: spacing.md,
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: 20,
+    padding: 6,
     marginVertical: spacing.md,
     ...Platform.select({
       ios: {
         shadowColor: '#A3B1C6',
-        shadowOffset: { width: 3, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
       },
       android: {
-        elevation: 5,
+        elevation: 6,
       },
     }),
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -416,17 +463,17 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: typography.fontFamily.semiBold,
     color: theme.textSecondary,
   },
@@ -438,59 +485,95 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 100,
   },
   loadingText: {
     fontSize: 16,
     color: theme.gray500,
-    marginTop: 12,
+    marginTop: 16,
+    fontFamily: typography.fontFamily.medium,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 100,
+    paddingHorizontal: spacing.md,
   },
   errorText: {
-    fontSize: 16,
-    color: theme.gray500,
+    fontSize: 18,
+    color: theme.textPrimary,
+    fontFamily: typography.fontFamily.semiBold,
+    marginBottom: 8,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 100,
+    paddingHorizontal: spacing.md,
+  },
+  emptyCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 24,
+    padding: spacing.xl,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 320,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   emptyText: {
-    fontSize: 16,
-    color: theme.gray500,
+    fontSize: 18,
+    color: theme.textPrimary,
+    fontFamily: typography.fontFamily.semiBold,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    backgroundColor: 'transparent',
   },
-  // Friends styles
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  },
+  // Enhanced Friends styles
   friendCard: {
-    backgroundColor: theme.white,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  friendCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    padding: spacing.md,
   },
   friendInfo: {
     flexDirection: 'row',
@@ -498,166 +581,275 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   friendAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginRight: spacing.md,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   friendAvatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: theme.gray100,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: 'rgba(87, 108, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   friendDetails: {
     flex: 1,
   },
   friendName: {
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 17,
+    fontFamily: typography.fontFamily.bold,
     color: theme.textPrimary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  friendEmail: {
-    fontSize: typography.fontSize.sm,
+  friendMeta: {
+    fontSize: 13,
     color: theme.textSecondary,
+    marginBottom: 3,
+  },
+  friendYear: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginTop: 2,
+  },
+  friendLocation: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginTop: 2,
   },
   chatButton: {
-    padding: spacing.sm,
-    borderRadius: 8,
-    backgroundColor: theme.gray50,
-  },
-  // Groups styles
-  groupCard: {
-    backgroundColor: theme.white,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: theme.primary,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 3,
+        elevation: 4,
       },
     }),
   },
+  // Enhanced Groups styles
+  groupCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  groupCardInner: {
+    padding: spacing.md,
+  },
   groupHeader: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  groupImageContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   groupImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    marginRight: spacing.md,
+    width: 70,
+    height: 70,
+    borderRadius: 16,
   },
   groupImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    backgroundColor: theme.gray100,
+    width: 70,
+    height: 70,
+    borderRadius: 16,
+    backgroundColor: 'rgba(87, 108, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   groupInfo: {
     flex: 1,
+    marginLeft: spacing.md,
+    justifyContent: 'center',
   },
   groupName: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 18,
+    fontFamily: typography.fontFamily.bold,
     color: theme.textPrimary,
+    marginBottom: 8,
+  },
+  groupMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  groupDescription: {
-    fontSize: typography.fontSize.sm,
-    color: theme.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  groupMeta: {
+  groupMemberBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
+    alignItems: 'center',
+    backgroundColor: 'rgba(87, 108, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    gap: 6,
   },
   groupMembers: {
-    fontSize: typography.fontSize.xs,
+    fontSize: 13,
     color: theme.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   groupCreator: {
-    fontSize: typography.fontSize.xs,
+    fontSize: 12,
     color: theme.textSecondary,
+    marginTop: 2,
+  },
+  groupDescription: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  locationBadge: {
+    backgroundColor: 'rgba(87, 108, 255, 0.05)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
   },
   groupLocation: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 13,
     color: theme.textSecondary,
-    marginTop: spacing.xs,
+    fontWeight: '500',
   },
-  // Events styles
+  // Enhanced Events styles
   eventCard: {
-    backgroundColor: theme.white,
-    borderRadius: 12,
-    marginBottom: spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    marginBottom: spacing.md,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 3,
+        elevation: 5,
       },
     }),
   },
+  eventCardInner: {
+    flexDirection: 'row',
+  },
+  eventImageContainer: {
+    width: 120,
+    height: 140,
+    position: 'relative',
+  },
   eventImage: {
     width: '100%',
-    height: 150,
+    height: '100%',
     resizeMode: 'cover',
   },
-  eventContent: {
-    padding: spacing.md,
+  eventDateBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  eventName: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.semiBold,
+  eventDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.primary,
+    textTransform: 'uppercase',
+  },
+  eventDateNumber: {
+    fontSize: 18,
+    fontWeight: '800',
     color: theme.textPrimary,
+    marginTop: 2,
+  },
+  eventDetails: {
+    flex: 1,
+    padding: spacing.md,
+    justifyContent: 'space-between',
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.bold,
+    color: theme.textPrimary,
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  eventMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  eventDescription: {
-    fontSize: typography.fontSize.sm,
+  eventTime: {
+    fontSize: 13,
     color: theme.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  eventMeta: {
-    marginBottom: spacing.xs,
+    fontWeight: '500',
   },
   eventLocation: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 13,
     color: theme.textSecondary,
-    marginBottom: 2,
+    marginBottom: 8,
   },
-  eventDate: {
-    fontSize: typography.fontSize.sm,
-    color: theme.textSecondary,
+  eventFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
   },
-  eventOrganizer: {
-    fontSize: typography.fontSize.xs,
+  eventHost: {
+    fontSize: 12,
     color: theme.textSecondary,
-    marginTop: spacing.xs,
+    flex: 1,
+    marginRight: 8,
   },
   eventAttendees: {
-    fontSize: typography.fontSize.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(87, 108, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  eventAttendeesText: {
+    fontSize: 14,
     color: theme.primary,
-    fontWeight: '600',
-    marginTop: 2,
+    fontWeight: '700',
   },
 });

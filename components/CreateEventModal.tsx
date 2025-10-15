@@ -107,7 +107,9 @@ export function CreateEventModal({
 
   const onNativeDateChange = (event: any, selectedDate: any) => {
     const currentDate = selectedDate || formData.date;
-    setShowNativeDatePicker(!showNativeDatePicker); // Keep open on iOS, close on Android
+    if (Platform.OS === 'android') {
+          setShowDatePicker(false);
+        }
     setFormData({ ...formData, date: currentDate });
   };
 
@@ -617,7 +619,7 @@ export function CreateEventModal({
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
                   <TouchableOpacity
-                    onPress={() => setShowNativeDatePicker(true)}
+                    onPress={() => setShowNativeDatePicker(!showNativeDatePicker)}
                     disabled={createEventMutation.isPending}
                   >
                     <View
@@ -684,33 +686,27 @@ export function CreateEventModal({
                         )}
                       </View>
 
-                      <View style={styles.rowContainer}>
-                        <View style={styles.halfWidth}>
-                          <TimeSelectInput
-                            value={timeSlot.startTime}
-                            onTimeChange={(time) =>
-                              updateTimeSlot(index, 'startTime', time)
-                            }
-                            label="Start Time"
-                            placeholder="Select start time"
-                            disabled={createEventMutation.isPending}
-                            required
-                          />
-                        </View>
+                      <TimeSelectInput
+                        value={timeSlot.startTime}
+                        onTimeChange={(time) =>
+                          updateTimeSlot(index, 'startTime', time)
+                        }
+                        label="Start Time"
+                        placeholder="Select start time"
+                        disabled={createEventMutation.isPending}
+                        required
+                      />
 
-                        <View style={styles.halfWidth}>
-                          <TimeSelectInput
-                            value={timeSlot.endTime}
-                            onTimeChange={(time) =>
-                              updateTimeSlot(index, 'endTime', time)
-                            }
-                            label="End Time"
-                            placeholder="Select end time"
-                            disabled={createEventMutation.isPending}
-                            required
-                          />
-                        </View>
-                      </View>
+                      <TimeSelectInput
+                        value={timeSlot.endTime}
+                        onTimeChange={(time) =>
+                          updateTimeSlot(index, 'endTime', time)
+                        }
+                        label="End Time"
+                        placeholder="Select end time"
+                        disabled={createEventMutation.isPending}
+                        required
+                      />
                     </View>
                   ))}
                 </View>

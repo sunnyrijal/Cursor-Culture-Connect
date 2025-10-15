@@ -78,6 +78,8 @@ const UpcomingEvents = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['upcomming-events'] });
+
     },
     onError: (error: any) => {
       showAlert({
