@@ -1010,11 +1010,11 @@ export default function EditProfile() {
               <View style={{ width: '100%' }}>
                 {renderAnimatedInput(
                   Link,
-                  'Profile Link',
+                  'Username or Profile Link',
                   newSocialLink,
                   setNewSocialLink,
-                  'https://...',
-                  'socialLink'
+                  'e.g., @username or https://...',
+                  'socialLink',
                 )}
               </View>
             </View>

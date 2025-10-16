@@ -509,10 +509,10 @@ export default function EventDetail() {
           </View>
 
           {/* Event Badge */}
-          <View style={styles.eventBadge}>
+          {/* <View style={styles.eventBadge}>
             <Music size={16} color={theme.white} />
             <Text style={styles.eventBadgeText}>Live Event</Text>
-          </View>
+          </View> */}
 
           {/* Hero Bottom Info */}
           <View style={styles.heroBottomInfo}>
