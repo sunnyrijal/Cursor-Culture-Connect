@@ -41,19 +41,46 @@ const socialColors: { [key: string]: string } = {
   default: '#6366F1',
 };
 
+const socialBaseUrls: { [key: string]: string } = {
+  facebook: 'https://facebook.com/',
+  instagram: 'https://instagram.com/',
+  twitter: 'https://twitter.com/',
+  linkedin: 'https://linkedin.com/in/',
+  github: 'https://github.com/',
+  youtube: 'https://youtube.com/',
+  tiktok: 'https://tiktok.com/@',
+  snapchat: 'https://snapchat.com/add/',
+  telegram: 'https://t.me/',
+  pinterest: 'https://pinterest.com/',
+  reddit: 'https://reddit.com/user/',
+  twitch: 'https://twitch.tv/',
+  // Platforms that require full links or special formats
+  portfolio: '',
+  discord: '',
+  whatsapp: 'https://wa.me/',
+};
+
 interface SocialMediaLinksProps {
   socialMedia: { [key: string]: string };
 }
 
 const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
   const { showAlert } = useAlert();
-  
+
   if (!socialMedia || Object.keys(socialMedia).length === 0) {
     return null;
   }
 
-  const handlePress = async (url: string) => {
-    const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+  const handlePress = async (platform: string, value: string) => {
+    let fullUrl = value;
+
+    // If it's not a full URL, construct it
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      const baseUrl = socialBaseUrls[platform.toLowerCase()];
+      const username = value.replace(/^@/, ''); // Remove leading '@' if present
+      fullUrl = baseUrl !== undefined ? `${baseUrl}${username}` : `https://${value}`;
+    }
+
     const supported = await Linking.canOpenURL(fullUrl);
 
     if (supported) {
@@ -82,7 +109,7 @@ const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({ socialMedia }) => {
             <TouchableOpacity
               key={platform}
               style={[styles.iconWrapper, { backgroundColor: color }]}
-              onPress={() => handlePress(link)}
+              onPress={() => handlePress(platform, link)}
             >
               <IconComponent name={iconConfig.name} color="white" size={20} />
             </TouchableOpacity>

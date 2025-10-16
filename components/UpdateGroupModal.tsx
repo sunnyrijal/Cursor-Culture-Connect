@@ -455,10 +455,10 @@ export function EditGroupModal({
 
           <View style={styles.socialLinkContainer}>
             {renderInput(
-              'Profile Link',
+              'Username or Profile Link',
               newSocialLink,
               setNewSocialLink,
-              'https://...',
+              'e.g., username or https://...',
               <Link size={16} color="#6366F1" />,
               false,
               false

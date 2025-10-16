@@ -265,11 +265,11 @@ export default function GroupDetailEnhanced() {
   const handleShareGroup = async () => {
     if (!group) return;
     try {
-      const groupUrl = `https://cultureconnect.app/group/${group.id}`;
+      const groupUrl = `https://trivoconnect.app/group/${group.id}`;
       await Share.share({
-        message: `Check out the "${group.name}" group on Culture Connect! Let's join and connect: ${groupUrl}`,
+        message: `Check out the "${group.name}" group on Trivo Connect! Let's join and connect: ${groupUrl}`,
         url: groupUrl,
-        title: `Join the ${group.name} group on Culture Connect`,
+        title: `Join the ${group.name} group on Trivo Connect`,
       });
     } catch (error:any) {
       console.error('Error sharing group:', error);
@@ -754,7 +754,7 @@ export default function GroupDetailEnhanced() {
                         if (member.userId === myData?.userId) {
                           router.push('/profile');
                         } else {
-                          router.push(`/profile/public/${member.userId}`);
+                          router.push(`/public/profile/${member.userId}`);
                         }
                       }}
                     >

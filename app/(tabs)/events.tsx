@@ -40,6 +40,7 @@ import { formatTime, formatTo12Hour } from '@/utils/formatDate';
 
 import { Filter } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
+import CountdownTimer from '@/components/CountdownTimer';
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -108,7 +109,7 @@ interface QuickEvent {
     id: string;
     name: string;
     email: string;
-    profilePicture?:string
+    profilePicture?: string;
   };
 }
 
@@ -125,7 +126,7 @@ export default function Events() {
     selectedUniversity: '',
   });
   const [showHelper, setShowHelper] = useState(true);
-  const [includeNotInterested, setIncludeNotInterested] = useState(false);
+  const [includeNotInterested, setIncludeNotInterested] = useState(true);
 
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [eventFilters, setEventFilters] = useState<{
@@ -220,7 +221,6 @@ export default function Events() {
 
   const events = eventsResponse?.events || [];
 
-
   const handleFilterChange = (newFilters: typeof eventFilters) => {
     setEventFilters(newFilters);
   };
@@ -273,7 +273,6 @@ export default function Events() {
     return tempEvents;
   }, [events, searchQuery, activeFilter, filters]);
 
-
   const filteredQuickEvents = useMemo(() => {
     let tempQuickEvents = [...quickEvents];
 
@@ -318,7 +317,7 @@ export default function Events() {
             <View style={styles.headerRow}>
               {/* <Text style={styles.heroTitle}>Discover</Text> */}
               <Text style={styles.heroSubtitle}>
-                Discover and participate in cultural celebrations
+                Explore events that match your interests 
               </Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity
@@ -445,8 +444,13 @@ export default function Events() {
               </View>
             ) : error ? (
               <View style={styles.inlineFeedbackContainer}>
-                <Text style={styles.errorText}>Oops! Something went wrong.</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+                <Text style={styles.errorText}>
+                  Oops! Something went wrong.
+                </Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => refetch()}
+                >
                   <Text style={styles.retryButtonText}>Try Again</Text>
                 </TouchableOpacity>
               </View>
@@ -467,7 +471,11 @@ export default function Events() {
                       ? leaveEventMutation(event.id)
                       : joinEventMutation({ eventId: event.id, data: {} });
                   }}
-                  onOpenTransportModal={() => router.push(`/event/${event.id}?openTransportationModal=true`)}
+                  onOpenTransportModal={() =>
+                    router.push(
+                      `/event/${event.id}?openTransportationModal=true`
+                    )
+                  }
                   isLoading={isJoining || isLeaving}
                 />
               ))
@@ -476,7 +484,8 @@ export default function Events() {
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>No Events Found</Text>
                   <Text style={styles.emptyText}>
-                    Be the first to create a cultural event and start building your community!
+                    Be the first to create a cultural event and start building
+                    your community!
                   </Text>
                 </View>
               </View>
@@ -493,105 +502,134 @@ export default function Events() {
               </View>
             ) : quickEventsError ? (
               <View style={styles.inlineFeedbackContainer}>
-                <Text style={styles.errorText}>Oops! Something went wrong.</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={() => refetchQuickEvents()}>
+                <Text style={styles.errorText}>
+                  Oops! Something went wrong.
+                </Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => refetchQuickEvents()}
+                >
                   <Text style={styles.retryButtonText}>Try Again</Text>
                 </TouchableOpacity>
               </View>
             ) : filteredQuickEvents.length > 0 ? (
-              filteredQuickEvents.map((quickEvent: QuickEvent, index: number) => {
-                const isInterested = quickEvent.interestedUsers.some((user) => user.id === myData?.userId);
-                const isMutating = (isAddingInterest || isRemovingInterest) && mutatingQuickEventId === quickEvent.id;
-                return (
-                  <TouchableOpacity
-                    key={quickEvent.id}
-                    style={[
-                      styles.quickEventCard,
-                      index === 0 && styles.firstCard,
-                      index === filteredQuickEvents.length - 1 && styles.lastCard,
-                    ]}
-                    onPress={() => router.push(`/quickevent/${quickEvent.id}`)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.quickEventContent}>
-                      <View style={styles.quickEventHeader}>
-                        <Text style={styles.quickEventTitle} numberOfLines={2}>
-                          {quickEvent.name} at {quickEvent.location}
-                        </Text>
-                        <View style={styles.quickEventBadge}>
-                          <Text style={styles.quickEventBadgeText}>Quick</Text>
+              filteredQuickEvents.map(
+                (quickEvent: QuickEvent, index: number) => {
+                  const isInterested = quickEvent.interestedUsers.some(
+                    (user) => user.id === myData?.userId
+                  );
+                  const isMutating =
+                    (isAddingInterest || isRemovingInterest) &&
+                    mutatingQuickEventId === quickEvent.id;
+                  return (
+                    <TouchableOpacity
+                      key={quickEvent.id}
+                      style={[
+                        styles.quickEventCard,
+                        index === 0 && styles.firstCard,
+                        index === filteredQuickEvents.length - 1 &&
+                          styles.lastCard,
+                      ]}
+                      onPress={() =>
+                        router.push(`/quickevent/${quickEvent.id}`)
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.quickEventContent}>
+                        <View style={styles.quickEventHeader}>
+                          <Text
+                            style={styles.quickEventTitle}
+                            numberOfLines={2}
+                          >
+                            {quickEvent.name} at {quickEvent.location}
+                          </Text>
+                          <CountdownTimer time={quickEvent.time} />
                         </View>
-                      </View>
-                      <Text style={styles.quickEventDescription} numberOfLines={2}>
-                        {quickEvent.description}
-                      </Text>
-                      <View style={styles.quickEventMeta}>
-                        <Clock size={16} color="#F59E0B" />
-                        <Text style={styles.quickEventMetaText}>
-                          {quickEvent.endTime
-                            ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
-                            : formatTo12Hour(quickEvent.time)}
-                        </Text>
-                      </View>
-                      <View style={styles.quickEventMeta}>
-                        <Users size={16} color="#6366F1" />
-                        <Text style={styles.quickEventMetaText}>
-                          {quickEvent.max ? ` Max ${quickEvent.max} people` : 'No Limit'}
-                        </Text>
-                      </View>
-                      <View style={styles.quickEventMeta}>
-                        <Users size={16} color="#10B981" />
-                        <Text style={styles.quickEventMetaText}>
-                          {quickEvent.interestedUsers?.length || 0} interested
-                        </Text>
-                      </View>
-                      <View style={styles.quickEventActions}>
-                        <View style={styles.quickEventCreator}>
-                          <Image
-                            source={
-                              quickEvent.user.profilePicture
-                                ? { uri: quickEvent.user.profilePicture }
-                                : require('../../assets/user.png')
-                            }
-                            style={styles.creatorAvatar}
-                            defaultSource={require('../../assets/user.png')}
-                          />
-
-                          
-                          <View style={styles.creatorDetails}>
-                            <Text style={styles.creatorName}>{quickEvent.user.name}</Text>
-                            <Text style={styles.creatorRole}>Host</Text>
-                          </View>
-                        </View>
-                        <TouchableOpacity
-                          style={[styles.rsvpButtonSmall, isInterested && styles.rsvpedButtonSmall]}
-                          onPress={() =>
-                            !isMutating &&
-                            (isInterested
-                              ? removeInterestMutation(quickEvent.id)
-                              : addInterestMutation(quickEvent.id))
-                          }
-                          disabled={isMutating}
+                        {quickEvent.description && <Text
+                          style={styles.quickEventDescription}
+                          numberOfLines={2}
                         >
-                          {isMutating ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                          ) : (
-                            <Text style={styles.rsvpButtonTextSmall}>
-                              {isInterested ? 'Interested' : "I'm in"}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
+                          {quickEvent.description}
+                        </Text>}
+
+                        <View style={styles.quickEventMeta}>
+                          <Clock size={16} color="#F59E0B" />
+                          <Text style={styles.quickEventMetaText}>
+                            {quickEvent.endTime
+                              ? `${formatTo12Hour(
+                                  quickEvent.time
+                                )} - ${formatTo12Hour(quickEvent.endTime)}`
+                              : formatTo12Hour(quickEvent.time)}
+                          </Text>
+                        </View>
+
+                        <View style={styles.quickEventMeta}>
+                          <Users size={16} color="#6366F1" />
+                          <Text style={styles.quickEventMetaText}>
+                            {quickEvent.max
+                              ? ` Max ${quickEvent.max} people`
+                              : 'No Limit'}
+                          </Text>
+                        </View>
+                        <View style={styles.quickEventMeta}>
+                          <Users size={16} color="#10B981" />
+                          <Text style={styles.quickEventMetaText}>
+                            {quickEvent.interestedUsers?.length || 0} interested
+                          </Text>
+                        </View>
+                        <View style={styles.quickEventActions}>
+                          <View style={styles.quickEventCreator}>
+                            <Image
+                              source={
+                                quickEvent.user.profilePicture
+                                  ? { uri: quickEvent.user.profilePicture }
+                                  : require('../../assets/user.png')
+                              }
+                              style={styles.creatorAvatar}
+                              defaultSource={require('../../assets/user.png')}
+                            />
+
+                            <View style={styles.creatorDetails}>
+                              <Text style={styles.creatorName}>
+                                {quickEvent.user.name}
+                              </Text>
+                              <Text style={styles.creatorRole}>Host</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.rsvpButtonSmall,
+                              isInterested && styles.rsvpedButtonSmall,
+                            ]}
+                            onPress={() =>
+                              !isMutating &&
+                              (isInterested
+                                ? removeInterestMutation(quickEvent.id)
+                                : addInterestMutation(quickEvent.id))
+                            }
+                            disabled={isMutating}
+                          >
+                            {isMutating ? (
+                              <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                              <Text style={styles.rsvpButtonTextSmall}>
+                                {isInterested ? 'Interested' : "I'm in"}
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
+                    </TouchableOpacity>
+                  );
+                }
+              )
             ) : (
               <View style={styles.emptyState}>
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>No Quick Events Found</Text>
                   <Text style={styles.emptyText}>
-                    Quick events are spontaneous meetups and activities. Check back soon for new opportunities!
+                    Quick events are spontaneous meetups and activities. Check
+                    back soon for new opportunities!
                   </Text>
                 </View>
               </View>
@@ -830,7 +868,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
     paddingLeft: 16,
-    paddingRight:4,
+    paddingRight: 4,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',

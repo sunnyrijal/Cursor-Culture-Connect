@@ -186,7 +186,7 @@ export default function Settings() {
       onPress: () =>
         showAlert({
           title: 'Help & Support',
-          message: 'Contact us at support@cultureconnect.app',
+          message: 'Contact us at  info@trivoconnect.com',
         }),
       showChevron: true,
     },

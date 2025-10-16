@@ -44,7 +44,13 @@ import {
   Globe,
   Users as UsersIcon,
 } from 'lucide-react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -62,7 +68,7 @@ import {
 } from '@/components/SignUpForm';
 import statesData from '../../data/US_States_list.json';
 import citiesData from '../../data/US_Cities.json';
-import {socialPlatforms} from '../../data/socialPlatforms'
+import { socialPlatforms } from '../../data/socialPlatforms';
 
 export default function EditProfile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({
@@ -92,8 +98,10 @@ export default function EditProfile() {
   const [newLanguage, setNewLanguage] = useState<string>('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-    const [pronouns, setPronouns] = useState<string>('');
-  const initialDate = profile.dateOfBirth ? new Date(profile.dateOfBirth) : new Date();
+  const [pronouns, setPronouns] = useState<string>('');
+  const initialDate = profile.dateOfBirth
+    ? new Date(profile.dateOfBirth)
+    : new Date();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [socialMedia, setSocialMedia] = useState<{ [key: string]: string }>({});
@@ -115,7 +123,9 @@ export default function EditProfile() {
     Object.values(statesData).map((s) => ({ label: s, value: s }))
   );
   const [cityOpen, setCityOpen] = useState(false);
-  const [cityItems, setCityItems] = useState<{ label: string; value: string }[]>([]);
+  const [cityItems, setCityItems] = useState<
+    { label: string; value: string }[]
+  >([]);
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const majorPickerRef = useRef<Picker<string>>(null);
@@ -165,7 +175,9 @@ export default function EditProfile() {
   useEffect(() => {
     if (profile.state) {
       const citiesForState = (citiesData as any)[profile.state] || [];
-      setCityItems(citiesForState.map((city: string) => ({ label: city, value: city })));
+      setCityItems(
+        citiesForState.map((city: string) => ({ label: city, value: city }))
+      );
       // Reset city if it's not in the new list of cities
       if (!citiesForState.includes(profile.city)) {
         updateProfileValue('city', '');
@@ -188,7 +200,7 @@ export default function EditProfile() {
         isValid = value.length >= 10;
         break;
       case 'major':
-        isValid=true
+        isValid = true;
       case 'graduationYear':
         break;
       default:
@@ -246,9 +258,9 @@ export default function EditProfile() {
           setPronouns(userData.pronouns);
         }
 
-         if (userData.dateOfBirth) {
-           setSelectedDate(new Date(userData.dateOfBirth));
-         }
+        if (userData.dateOfBirth) {
+          setSelectedDate(new Date(userData.dateOfBirth));
+        }
         return userData;
       }
       throw new Error('Failed to load profile data');
@@ -332,8 +344,8 @@ export default function EditProfile() {
       updateData.socialMedia = socialMedia;
     if (ethnicity.length > 0) updateData.ethnicity = ethnicity;
     if (profile.publicPreference !== undefined)
-    if (pronouns) updateData.pronouns = pronouns;
-      updateData.publicPreference = profile.publicPreference;
+      if (pronouns) updateData.pronouns = pronouns;
+    updateData.publicPreference = profile.publicPreference;
 
     updateProfileMutation.mutate(updateData);
   };
@@ -489,7 +501,6 @@ export default function EditProfile() {
     [fieldValidation, focusedInput, loading, formOpacity]
   );
 
-
   const renderPronounsSection = () => {
     const pronounOptions = ['she/her', 'he/him', 'they/them', 'other'];
     return (
@@ -511,7 +522,10 @@ export default function EditProfile() {
                 onPress={() => setPronouns(option)}
               >
                 <Text
-                  style={[styles.tagText, pronouns === option && styles.tagTextSelected]}
+                  style={[
+                    styles.tagText,
+                    pronouns === option && styles.tagTextSelected,
+                  ]}
                 >
                   {option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
@@ -520,7 +534,12 @@ export default function EditProfile() {
           </View>
         </ScrollView>
         {pronouns === 'other' && (
-          <TextInput style={styles.customInterestInput} placeholder="Please specify your pronouns" onChangeText={setPronouns} autoFocus />
+          <TextInput
+            style={styles.customInterestInput}
+            placeholder="Please specify your pronouns"
+            onChangeText={setPronouns}
+            autoFocus
+          />
         )}
       </Animated.View>
     );
@@ -832,7 +851,7 @@ export default function EditProfile() {
   const renderDateOfBirthPicker = () => {
     const formatDate = (date: Date): string => {
       try {
-        if (!date || !(date instanceof Date)) return "";
+        if (!date || !(date instanceof Date)) return '';
         const year = date.getFullYear();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const day = date.getDate().toString().padStart(2, '0');
@@ -841,11 +860,12 @@ export default function EditProfile() {
         return '';
       }
     };
-  
 
     const onDateChange = (event: any, selectedDate?: Date): void => {
       const currentDate = selectedDate || new Date();
-      setShowDatePicker(!showDatePicker); // Keep open on iOS, close on Android
+      if (Platform.OS === 'android') {
+        setShowDatePicker(false);
+      }
       setSelectedDate(currentDate);
       const formattedDate = formatDate(currentDate);
       updateProfileValue('dateOfBirth', formattedDate);
@@ -862,7 +882,7 @@ export default function EditProfile() {
               profile.dateOfBirth &&
               styles.inputWrapperInvalid,
           ]}
-          onPress={() => setShowDatePicker(true)}
+          onPress={() => setShowDatePicker(!showDatePicker)}
           disabled={loading}
         >
           <View style={styles.inputIcon}>
@@ -899,7 +919,7 @@ export default function EditProfile() {
             onChange={onDateChange}
             maximumDate={new Date()} // Prevent future dates
             minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
-            themeVariant='light'
+            themeVariant="light"
             textColor="black"
           />
         )}
@@ -990,11 +1010,11 @@ export default function EditProfile() {
               <View style={{ width: '100%' }}>
                 {renderAnimatedInput(
                   Link,
-                  'Profile Link',
+                  'Username or Profile Link',
                   newSocialLink,
                   setNewSocialLink,
-                  'https://...',
-                  'socialLink'
+                  'e.g., @username or https://...',
+                  'socialLink',
                 )}
               </View>
             </View>
@@ -1126,361 +1146,406 @@ export default function EditProfile() {
             <ActivityIndicator size="large" color="#6366F1" />
           </View>
         ) : (
-        <KeyboardAvoidingView
-          style={styles.keyboardContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          enabled={keyboardVisible}
-        >
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+          <KeyboardAvoidingView
+            style={styles.keyboardContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            enabled={keyboardVisible}
           >
-            {/* Success/Error Messages */}
-            {success && (
-              <Animated.View style={styles.successContainer}>
-                <LinearGradient
-                  colors={['rgba(34, 197, 94, 0.1)', 'rgba(34, 197, 94, 0.05)']}
-                  style={styles.messageGradient}
-                >
-                  <CheckCircle size={20} color="#22C55E" />
-                  <Text style={styles.successText}>{success}</Text>
-                </LinearGradient>
-              </Animated.View>
-            )}
-
-            {error && (
-              <Animated.View style={styles.errorContainer}>
-                <LinearGradient
-                  colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
-                  style={styles.messageGradient}
-                >
-                  <AlertCircle size={20} color="#EF4444" />
-                  <Text style={styles.errorText}>{error}</Text>
-                </LinearGradient>
-              </Animated.View>
-            )}
-
-            {/* Profile Pictures */}
-            {renderProfilePictureSection()}
-
-            {/* Pronouns */}
-            {renderPronounsSection()}
-
-            {/* Basic Information */}
-            <Animated.View
-              style={[styles.formSection, { opacity: formOpacity }]}
+            <ScrollView
+              style={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
             >
-              <BlurView
-                intensity={20}
-                tint="light"
-                style={styles.blurContainer}
-              >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                  style={styles.gradientContainer}
-                >
-                  <View style={styles.sectionHeader}>
-                    <Sparkles size={20} color="#6366F1" />
-                    <Text style={styles.formSectionTitle}>
-                      Basic Information
-                    </Text>
-                  </View>
-
-                  {renderAnimatedInput(
-                    User,
-                    'First Name',
-                    profile.firstName || '',
-                    (text) => updateProfileValue('firstName', text),
-                    'Enter your first name',
-                    'firstName',
-                    { autoCapitalize: 'words' }
-                  )}
-
-                  {renderAnimatedInput(
-                    User,
-                    'Last Name',
-                    profile.lastName || '',
-                    (text) => updateProfileValue('lastName', text),
-                    'Enter your last name',
-                    'lastName',
-                    { autoCapitalize: 'words' }
-                  )}
-
-                  {renderDateOfBirthPicker()}
-
-                  {renderAnimatedInput(
-                    User,
-                    'Bio',
-                    profile.bio || '',
-                    (text) => updateProfileValue('bio', text),
-                    'Tell others about yourself...',
-                    'bio',
-                    {
-                      multiline: true,
-                      numberOfLines: 4,
-                      textAlignVertical: 'top',
-                    }
-                  )}
-                </LinearGradient>
-              </BlurView>
-            </Animated.View>
-
-            {/* Academic Information */}
-            <Animated.View
-              style={[styles.formSection, { opacity: formOpacity, zIndex:1000 }]}
-            >
-              <BlurView
-                intensity={20}
-                tint="light"
-                style={styles.blurContainer}
-              >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                  style={styles.gradientContainer}
-                >
-                  <View style={styles.sectionHeader}>
-                    <GraduationCap size={20} color="#6366F1" />
-                    <Text style={styles.formSectionTitle}>
-                      Academic Information
-                    </Text>
-                  </View>
-
-                  <Animated.View
-                    style={[{ opacity: formOpacity, zIndex: 3000 }]}
+              {/* Success/Error Messages */}
+              {success && (
+                <Animated.View style={styles.successContainer}>
+                  <LinearGradient
+                    colors={[
+                      'rgba(34, 197, 94, 0.1)',
+                      'rgba(34, 197, 94, 0.05)',
+                    ]}
+                    style={styles.messageGradient}
                   >
-                    <UniversityDropdown
-                      universities={universities?.data || []}
-                      value={university}
-                      onValueChange={setUniversity}
-                      label="University"
-                      placeholder="Search for your university..."
-                      isValid={fieldValidation['university']}
-                      isFocused={focusedInput === 'university'}
-                      onFocus={() => setFocusedInput('university')}
-                      onBlur={() => {
-                        setFocusedInput('');
-                        if (university) validateField('university', university);
-                      }}
-                      loading={loading}
-                    />
-                  </Animated.View>
+                    <CheckCircle size={20} color="#22C55E" />
+                    <Text style={styles.successText}>{success}</Text>
+                  </LinearGradient>
+                </Animated.View>
+              )}
 
-                  <Animated.View style={[{ opacity: formOpacity, zIndex: 2000 }]}>
-                    <MajorDropdown
-                      value={profile.major || ''}
-                      onValueChange={(value) => updateProfileValue('major', value)}
-                      label="Major/Field of Study"
-                      placeholder="Search for your major..."
-                      isValid={fieldValidation['major']}
-                      isFocused={focusedInput === 'major'}
-                      onFocus={() => setFocusedInput('major')}
-                      onBlur={() => {
-                        setFocusedInput('');
-                        if (profile.major) validateField('major', profile.major);
-                      }}
-                      loading={updateProfileMutation.isPending}
-                    />
-                  </Animated.View>
-                  {renderDropdownPicker(
-                    Calendar,
-                    'Class Year',
-                    profile.classYear || '',
-                    (value) => updateProfileValue('classYear', value),
-                    'Select your class year',
-                    classYearItems,
-                    setClassYearItems,
-                    classYearOpen,
-                    setClassYearOpen,
-                    'classYear',
-                    1000
-                  )}
-                </LinearGradient>
-              </BlurView>
-            </Animated.View>
+              {error && (
+                <Animated.View style={styles.errorContainer}>
+                  <LinearGradient
+                    colors={[
+                      'rgba(239, 68, 68, 0.1)',
+                      'rgba(239, 68, 68, 0.05)',
+                    ]}
+                    style={styles.messageGradient}
+                  >
+                    <AlertCircle size={20} color="#EF4444" />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </LinearGradient>
+                </Animated.View>
+              )}
 
-            {/* Location & Contact */}
-            <Animated.View
-              style={[styles.formSection, { opacity: formOpacity, zIndex:100 }]}
-            >
-              <BlurView
-                intensity={20}
-                tint="light"
-                style={styles.blurContainer}
+              {/* Profile Pictures */}
+              {renderProfilePictureSection()}
+
+              {/* Pronouns */}
+              {renderPronounsSection()}
+
+              {/* Basic Information */}
+              <Animated.View
+                style={[styles.formSection, { opacity: formOpacity }]}
               >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                  style={styles.gradientContainer}
+                <BlurView
+                  intensity={20}
+                  tint="light"
+                  style={styles.blurContainer}
                 >
-                  <View style={styles.sectionHeader}>
-                    <MapPin size={20} color="#6366F1" />
-                    <Text style={styles.formSectionTitle}>
-                      Location & Contact
-                    </Text>
-                  </View>
-
-                  <View style={styles.row}>
-                    <View style={[styles.halfField, { zIndex: 2000 }]}>
-                      <Text style={styles.inputLabel}>State</Text>
-                      <DropDownPicker
-                        open={stateOpen}
-                        value={profile.state || null}
-                        items={stateItems}
-                        setOpen={setStateOpen}
-                        setValue={(callback) => {
-                          const newValue = typeof callback === 'function' ? callback(profile.state) : callback;
-                          updateProfileValue('state', newValue || '');
-                        }}
-                        setItems={setStateItems}
-                        placeholder="Select state"
-                        searchable={true}
-                        searchPlaceholder="Search states..."
-                        listMode="MODAL"
-                        zIndexInverse={5000}
-                        style={styles.dropdownStyle}
-                        dropDownContainerStyle={styles.dropdownContainerStyle}
-                        textStyle={styles.dropdownTextStyle}
-                        placeholderStyle={styles.dropdownPlaceholderStyle}
-                        searchTextInputStyle={styles.dropdownSearchStyle}
-                        ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
-                        ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />}
-                      />
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+                    style={styles.gradientContainer}
+                  >
+                    <View style={styles.sectionHeader}>
+                      <Sparkles size={20} color="#6366F1" />
+                      <Text style={styles.formSectionTitle}>
+                        Basic Information
+                      </Text>
                     </View>
-                    <View style={[styles.halfField, { zIndex: 1000 }]}>
-                      <Text style={styles.inputLabel}>City</Text>
-                      <DropDownPicker
-                        open={cityOpen}
-                        value={profile.city || null}
-                        items={cityItems}
-                        setOpen={setCityOpen}
-                        setValue={(callback) => {
-                          const newValue = typeof callback === 'function' ? callback(profile.city) : callback;
-                          updateProfileValue('city', newValue || '');
-                        }}
-                        setItems={setCityItems}
-                        placeholder={profile.state ? 'Select city' : 'Select state first'}
-                        disabled={!profile.state}
-                        searchable={true}
-                        searchPlaceholder="Search cities..."
-                        listMode="MODAL"
-                        zIndexInverse={4000}
-                        style={[styles.dropdownStyle, !profile.state && styles.dropdownDisabled]}
-                        dropDownContainerStyle={styles.dropdownContainerStyle}
-                        textStyle={styles.dropdownTextStyle}
-                        placeholderStyle={styles.dropdownPlaceholderStyle}
-                        searchTextInputStyle={styles.dropdownSearchStyle}
-                        ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
-                        ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />}
-                      />
-                    </View>
-                  </View>
 
-                  {renderAnimatedInput(
-                    Globe2,
-                    'Country of Origin',
-                    profile.countryOfOrigin || '',
-                    (text) => updateProfileValue('countryOfOrigin', text),
-                    'e.g., Nepal',
-                    'countryOfOrigin'
-                  )}
-                </LinearGradient>
-              </BlurView>
-            </Animated.View>
-
-            {/* Visibility Settings */}
-            <Animated.View
-              style={[styles.formSection, { opacity: formOpacity }]}
-            >
-              <BlurView
-                intensity={20}
-                tint="light"
-                style={styles.blurContainer}
-              >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                  style={styles.gradientContainer}
-                >
-                  <View style={styles.sectionHeader}>
-                    <UsersIcon size={20} color="#6366F1" />
-                    <Text style={styles.formSectionTitle}>
-                      Profile Visibility
-                    </Text>
-                  </View>
-                  <View style={styles.inputContainer}>
-                    <View style={styles.toggleRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.inputLabel}>Public Profile</Text>
-                        <Text style={styles.toggleSubtitle}>
-                          {profile.publicPreference
-                            ? 'Your profile is visible to everyone.'
-                            : 'Your profile is only visible to your connections.'}
-                        </Text>
-                      </View>
-                      <Switch
-                        value={profile.publicPreference}
-                        onValueChange={(value) =>
-                          setProfile((prev) => ({
-                            ...prev,
-                            publicPreference: value,
-                          }))
-                        }
-                        trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
-                        thumbColor={
-                          profile.publicPreference ? '#6366F1' : '#f4f3f4'
-                        }
-                        ios_backgroundColor="#E5E7EB"
-                        disabled={updateProfileMutation.isPending}
-                      />
-                    </View>
-                  </View>
-                </LinearGradient>
-              </BlurView>
-            </Animated.View>
-
-            {renderEthnicitySelection()}
-
-            {/* Interests */}
-            {renderInterestsSection()}
-
-            {/* Languages */}
-            {renderLanguagesSection()}
-
-            {/* Social Media */}
-            {renderSocialMediaSection()}
-
-            {/* Save Button */}
-            <Animated.View
-              style={[styles.saveContainer, { opacity: formOpacity }]}
-            >
-              <TouchableOpacity
-                onPress={handleSave}
-                style={styles.saveButton}
-                disabled={
-                  updateProfileMutation.isPending ||
-                  uploadFileMutation.isPending
-                }
-              >
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.saveButtonGradient}
-                >
-                  <View style={styles.saveButtonContent}>
-                    {updateProfileMutation.isPending ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Save size={20} color="#FFFFFF" />
+                    {renderAnimatedInput(
+                      User,
+                      'First Name',
+                      profile.firstName || '',
+                      (text) => updateProfileValue('firstName', text),
+                      'Enter your first name',
+                      'firstName',
+                      { autoCapitalize: 'words' }
                     )}
-                    <Text style={styles.saveButtonText}>
-                      {updateProfileMutation.isPending
-                        ? 'Saving...'
-                        : 'Save Changes'}
-                    </Text>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+
+                    {renderAnimatedInput(
+                      User,
+                      'Last Name',
+                      profile.lastName || '',
+                      (text) => updateProfileValue('lastName', text),
+                      'Enter your last name',
+                      'lastName',
+                      { autoCapitalize: 'words' }
+                    )}
+
+                    {renderDateOfBirthPicker()}
+
+                    {renderAnimatedInput(
+                      User,
+                      'Bio',
+                      profile.bio || '',
+                      (text) => updateProfileValue('bio', text),
+                      'Tell others about yourself...',
+                      'bio',
+                      {
+                        multiline: true,
+                        numberOfLines: 4,
+                        textAlignVertical: 'top',
+                      }
+                    )}
+                  </LinearGradient>
+                </BlurView>
+              </Animated.View>
+
+              {/* Academic Information */}
+              <Animated.View
+                style={[
+                  styles.formSection,
+                  { opacity: formOpacity, zIndex: 1000 },
+                ]}
+              >
+                <BlurView
+                  intensity={20}
+                  tint="light"
+                  style={styles.blurContainer}
+                >
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+                    style={styles.gradientContainer}
+                  >
+                    <View style={styles.sectionHeader}>
+                      <GraduationCap size={20} color="#6366F1" />
+                      <Text style={styles.formSectionTitle}>
+                        Academic Information
+                      </Text>
+                    </View>
+
+                    <Animated.View
+                      style={[{ opacity: formOpacity, zIndex: 3000 }]}
+                    >
+                      <UniversityDropdown
+                        universities={universities?.data || []}
+                        value={university}
+                        onValueChange={setUniversity}
+                        label="University"
+                        placeholder="Search for your university..."
+                        isValid={fieldValidation['university']}
+                        isFocused={focusedInput === 'university'}
+                        onFocus={() => setFocusedInput('university')}
+                        onBlur={() => {
+                          setFocusedInput('');
+                          if (university)
+                            validateField('university', university);
+                        }}
+                        loading={loading}
+                      />
+                    </Animated.View>
+
+                    <Animated.View
+                      style={[{ opacity: formOpacity, zIndex: 2000 }]}
+                    >
+                      <MajorDropdown
+                        value={profile.major || ''}
+                        onValueChange={(value) =>
+                          updateProfileValue('major', value)
+                        }
+                        label="Major/Field of Study"
+                        placeholder="Search for your major..."
+                        isValid={fieldValidation['major']}
+                        isFocused={focusedInput === 'major'}
+                        onFocus={() => setFocusedInput('major')}
+                        onBlur={() => {
+                          setFocusedInput('');
+                          if (profile.major)
+                            validateField('major', profile.major);
+                        }}
+                        loading={updateProfileMutation.isPending}
+                      />
+                    </Animated.View>
+                    {renderDropdownPicker(
+                      Calendar,
+                      'Class Year',
+                      profile.classYear || '',
+                      (value) => updateProfileValue('classYear', value),
+                      'Select your class year',
+                      classYearItems,
+                      setClassYearItems,
+                      classYearOpen,
+                      setClassYearOpen,
+                      'classYear',
+                      1000
+                    )}
+                  </LinearGradient>
+                </BlurView>
+              </Animated.View>
+
+              {/* Location & Contact */}
+              <Animated.View
+                style={[
+                  styles.formSection,
+                  { opacity: formOpacity, zIndex: 100 },
+                ]}
+              >
+                <BlurView
+                  intensity={20}
+                  tint="light"
+                  style={styles.blurContainer}
+                >
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+                    style={styles.gradientContainer}
+                  >
+                    <View style={styles.sectionHeader}>
+                      <MapPin size={20} color="#6366F1" />
+                      <Text style={styles.formSectionTitle}>
+                        Location & Contact
+                      </Text>
+                    </View>
+
+                    <View style={styles.row}>
+                      <View style={[styles.halfField, { zIndex: 2000 }]}>
+                        <Text style={styles.inputLabel}>State</Text>
+                        <DropDownPicker
+                          open={stateOpen}
+                          value={profile.state || null}
+                          items={stateItems}
+                          setOpen={setStateOpen}
+                          setValue={(callback) => {
+                            const newValue =
+                              typeof callback === 'function'
+                                ? callback(profile.state)
+                                : callback;
+                            updateProfileValue('state', newValue || '');
+                          }}
+                          setItems={setStateItems}
+                          placeholder="Select state"
+                          searchable={true}
+                          searchPlaceholder="Search states..."
+                          listMode="MODAL"
+                          zIndexInverse={5000}
+                          style={styles.dropdownStyle}
+                          dropDownContainerStyle={styles.dropdownContainerStyle}
+                          textStyle={styles.dropdownTextStyle}
+                          placeholderStyle={styles.dropdownPlaceholderStyle}
+                          searchTextInputStyle={styles.dropdownSearchStyle}
+                          ArrowDownIconComponent={() => (
+                            <ChevronDown size={20} color="#9CA3AF" />
+                          )}
+                          ArrowUpIconComponent={() => (
+                            <ChevronDown
+                              size={20}
+                              color="#9CA3AF"
+                              style={{ transform: [{ rotate: '180deg' }] }}
+                            />
+                          )}
+                        />
+                      </View>
+                      <View style={[styles.halfField, { zIndex: 1000 }]}>
+                        <Text style={styles.inputLabel}>City</Text>
+                        <DropDownPicker
+                          open={cityOpen}
+                          value={profile.city || null}
+                          items={cityItems}
+                          setOpen={setCityOpen}
+                          setValue={(callback) => {
+                            const newValue =
+                              typeof callback === 'function'
+                                ? callback(profile.city)
+                                : callback;
+                            updateProfileValue('city', newValue || '');
+                          }}
+                          setItems={setCityItems}
+                          placeholder={
+                            profile.state ? 'Select city' : 'Select state first'
+                          }
+                          disabled={!profile.state}
+                          searchable={true}
+                          searchPlaceholder="Search cities..."
+                          listMode="MODAL"
+                          zIndexInverse={4000}
+                          style={[
+                            styles.dropdownStyle,
+                            !profile.state && styles.dropdownDisabled,
+                          ]}
+                          dropDownContainerStyle={styles.dropdownContainerStyle}
+                          textStyle={styles.dropdownTextStyle}
+                          placeholderStyle={styles.dropdownPlaceholderStyle}
+                          searchTextInputStyle={styles.dropdownSearchStyle}
+                          ArrowDownIconComponent={() => (
+                            <ChevronDown size={20} color="#9CA3AF" />
+                          )}
+                          ArrowUpIconComponent={() => (
+                            <ChevronDown
+                              size={20}
+                              color="#9CA3AF"
+                              style={{ transform: [{ rotate: '180deg' }] }}
+                            />
+                          )}
+                        />
+                      </View>
+                    </View>
+
+                    {renderAnimatedInput(
+                      Globe2,
+                      'Country of Origin',
+                      profile.countryOfOrigin || '',
+                      (text) => updateProfileValue('countryOfOrigin', text),
+                      'e.g., Nepal',
+                      'countryOfOrigin'
+                    )}
+                  </LinearGradient>
+                </BlurView>
+              </Animated.View>
+
+              {/* Visibility Settings */}
+              <Animated.View
+                style={[styles.formSection, { opacity: formOpacity }]}
+              >
+                <BlurView
+                  intensity={20}
+                  tint="light"
+                  style={styles.blurContainer}
+                >
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+                    style={styles.gradientContainer}
+                  >
+                    <View style={styles.sectionHeader}>
+                      <UsersIcon size={20} color="#6366F1" />
+                      <Text style={styles.formSectionTitle}>
+                        Profile Visibility
+                      </Text>
+                    </View>
+                    <View style={styles.inputContainer}>
+                      <View style={styles.toggleRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.inputLabel}>Public Profile</Text>
+                          <Text style={styles.toggleSubtitle}>
+                            {profile.publicPreference
+                              ? 'Your profile is visible to everyone.'
+                              : 'Your profile is only visible to your connections.'}
+                          </Text>
+                        </View>
+                        <Switch
+                          value={profile.publicPreference}
+                          onValueChange={(value) =>
+                            setProfile((prev) => ({
+                              ...prev,
+                              publicPreference: value,
+                            }))
+                          }
+                          trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                          thumbColor={
+                            profile.publicPreference ? '#6366F1' : '#f4f3f4'
+                          }
+                          ios_backgroundColor="#E5E7EB"
+                          disabled={updateProfileMutation.isPending}
+                        />
+                      </View>
+                    </View>
+                  </LinearGradient>
+                </BlurView>
+              </Animated.View>
+
+              {renderEthnicitySelection()}
+
+              {/* Interests */}
+              {renderInterestsSection()}
+
+              {/* Languages */}
+              {renderLanguagesSection()}
+
+              {/* Social Media */}
+              {renderSocialMediaSection()}
+
+              {/* Save Button */}
+              <Animated.View
+                style={[styles.saveContainer, { opacity: formOpacity }]}
+              >
+                <TouchableOpacity
+                  onPress={handleSave}
+                  style={styles.saveButton}
+                  disabled={
+                    updateProfileMutation.isPending ||
+                    uploadFileMutation.isPending
+                  }
+                >
+                  <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    style={styles.saveButtonGradient}
+                  >
+                    <View style={styles.saveButtonContent}>
+                      {updateProfileMutation.isPending ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Save size={20} color="#FFFFFF" />
+                      )}
+                      <Text style={styles.saveButtonText}>
+                        {updateProfileMutation.isPending
+                          ? 'Saving...'
+                          : 'Save Changes'}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         )}
       </SafeAreaView>
     </View>
@@ -1488,7 +1553,6 @@ export default function EditProfile() {
 }
 
 const pickerSelectStyles = StyleSheet.create({
-
   inputIOS: {
     fontSize: 16,
     paddingVertical: 12,
@@ -1507,7 +1571,7 @@ const pickerSelectStyles = StyleSheet.create({
   },
 });
 const styles = StyleSheet.create({
-    disabledButton: {
+  disabledButton: {
     color: '#FFFFFF',
     opacity: 0.7,
   },
@@ -1877,7 +1941,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom:4,
+    marginBottom: 4,
   },
   tag: {
     paddingHorizontal: 16,
@@ -1915,7 +1979,7 @@ const styles = StyleSheet.create({
   },
   saveContainer: {
     marginTop: 20,
-    marginBottom:40
+    marginBottom: 40,
   },
   saveButton: {
     borderRadius: 16,
@@ -1976,8 +2040,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     marginBottom: 20,
   },
-  addSocialButtonContainer: {
-  },
+  addSocialButtonContainer: {},
   socialDropdownContainer: {
     flex: 1,
     width: '100%',
@@ -2073,6 +2136,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
-
 });

@@ -111,15 +111,27 @@ export const updateActivity = async (activityId: string, updateData: UpdateActiv
 export const getUsersByActivity = async (
   id: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  search?: string
 ) => {
   try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (search) {
+      params.append('search', search);
+    }
+
+    console.log(params)
+
     const response: AxiosResponse = await api.get(
-      `/activities/${id}/users?page=${page}&limit=${limit}`
+      `/activities/${id}/users?${params.toString()}`
     );
     return response.data;
   } catch (error) {
-    console.error('Error fetching users by interest:', error);
+    console.error('Error fetching users by activity:', error);
     throw error;
   }
 };
@@ -157,4 +169,3 @@ export const sendActivityPing = async (pingData: SendActivityPingData) => {
     throw error;
   }
 };
-
