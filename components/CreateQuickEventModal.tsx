@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
@@ -245,7 +246,7 @@ export function CreateQuickEventModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -646,7 +647,7 @@ export function CreateQuickEventModal({
             </TouchableOpacity>
           </TouchableOpacity>
         </Modal> */}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

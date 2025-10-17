@@ -113,6 +113,23 @@ interface QuickEvent {
   };
 }
 
+const getTimeAgo = (dateString: string) => {
+  const now = new Date();
+  const pastDate = new Date(dateString);
+  const diffInMinutes = Math.floor(
+    (now.getTime() - pastDate.getTime()) / (1000 * 60)
+  );
+
+  if (diffInMinutes < 1) return 'just now';
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays}d ago`;
+};
+
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -317,7 +334,7 @@ export default function Events() {
             <View style={styles.headerRow}>
               {/* <Text style={styles.heroTitle}>Discover</Text> */}
               <Text style={styles.heroSubtitle}>
-                Explore events that match your interests 
+                Explore events that match your interests
               </Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity
@@ -521,6 +538,28 @@ export default function Events() {
                   const isMutating =
                     (isAddingInterest || isRemovingInterest) &&
                     mutatingQuickEventId === quickEvent.id;
+                  const isEventPast = (() => {
+                    const now = new Date();
+
+                    if (quickEvent.endTime) {
+                      // If endTime exists, check if endTime has passed
+                      const [endHours, endMinutes] = quickEvent.endTime
+                        .split(':')
+                        .map(Number);
+                      const end = new Date();
+                      end.setHours(endHours, endMinutes, 0, 0);
+                      return end < now;
+                    } else {
+                      // If no endTime, check if start time has passed
+                      const [startHours, startMinutes] = quickEvent.time
+                        .split(':')
+                        .map(Number);
+                      const start = new Date();
+                      start.setHours(startHours, startMinutes, 0, 0);
+                      return start < now;
+                    }
+                  })();
+
                   return (
                     <TouchableOpacity
                       key={quickEvent.id}
@@ -543,14 +582,15 @@ export default function Events() {
                           >
                             {quickEvent.name} at {quickEvent.location}
                           </Text>
-                          <CountdownTimer time={quickEvent.time} />
                         </View>
-                        {quickEvent.description && <Text
-                          style={styles.quickEventDescription}
-                          numberOfLines={2}
-                        >
-                          {quickEvent.description}
-                        </Text>}
+                        {quickEvent.description && (
+                          <Text
+                            style={styles.quickEventDescription}
+                            numberOfLines={2}
+                          >
+                            {quickEvent.description}
+                          </Text>
+                        )}
 
                         <View style={styles.quickEventMeta}>
                           <Clock size={16} color="#F59E0B" />
@@ -571,12 +611,27 @@ export default function Events() {
                               : 'No Limit'}
                           </Text>
                         </View>
-                        <View style={styles.quickEventMeta}>
-                          <Users size={16} color="#10B981" />
-                          <Text style={styles.quickEventMetaText}>
-                            {quickEvent.interestedUsers?.length || 0} interested
-                          </Text>
+                        <View
+                          style={[
+                            styles.quickEventMeta,
+                            { justifyContent: 'space-between' },
+                          ]}
+                        >
+                          <View style={styles.quickEventMeta}>
+                            <Users size={16} color="#10B981" />
+                            <Text style={styles.quickEventMetaText}>
+                              {quickEvent.interestedUsers?.length || 0}{' '}
+                              interested
+                            </Text>
+                          </View>
+
+                        
+                          <CountdownTimer
+                            time={quickEvent.time}
+                            endTime={quickEvent.endTime}
+                          />
                         </View>
+
                         <View style={styles.quickEventActions}>
                           <View style={styles.quickEventCreator}>
                             <Image
@@ -599,18 +654,26 @@ export default function Events() {
                           <TouchableOpacity
                             style={[
                               styles.rsvpButtonSmall,
-                              isInterested && styles.rsvpedButtonSmall,
+                              isInterested && !isEventPast
+                                ? styles.rsvpedButtonSmall
+                                : null,
+                              isEventPast && styles.endedButtonSmall,
                             ]}
                             onPress={() =>
                               !isMutating &&
+                              !isEventPast &&
                               (isInterested
                                 ? removeInterestMutation(quickEvent.id)
                                 : addInterestMutation(quickEvent.id))
                             }
-                            disabled={isMutating}
+                            disabled={isMutating || isEventPast}
                           >
                             {isMutating ? (
                               <ActivityIndicator color="#fff" size="small" />
+                            ) : isEventPast ? (
+                              <Text style={styles.rsvpButtonTextSmall}>
+                                Ended
+                              </Text>
                             ) : (
                               <Text style={styles.rsvpButtonTextSmall}>
                                 {isInterested ? 'Interested' : "I'm in"}
@@ -732,6 +795,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+  },
+  endedButtonSmall: {
+    backgroundColor: theme.gray400,
+    borderColor: theme.gray400,
+  },
+  endedBadge: {
+    backgroundColor: theme.gray400,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  endedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 
   heroSection: {

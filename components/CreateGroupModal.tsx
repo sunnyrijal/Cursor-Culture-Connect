@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   X,
   Globe,
@@ -435,7 +436,7 @@ export function CreateGroupModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -752,7 +753,7 @@ export function CreateGroupModal({
             </LinearGradient>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

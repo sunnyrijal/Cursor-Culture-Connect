@@ -3,39 +3,75 @@ import { View, Text, StyleSheet } from 'react-native';
 import { theme } from './theme';
 
 interface CountdownTimerProps {
-  time: string; // Expects "HH:mm" format
+  time: string;   // Start time in "HH:mm"
+  endTime?: string; // Optional end time in "HH:mm"
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ time }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ time, endTime }) => {
   const calculateRemainingTime = (): React.ReactNode => {
     if (!time) {
       return <Text style={styles.text}>Time not set</Text>;
     }
 
     const now = new Date();
-    const [hours, minutes] = time.split(':').map(Number);
+    const [startHours, startMinutes] = time.split(':').map(Number);
+    console.log(startHours, startMinutes)
+    const start = new Date();
+    start.setHours(startHours, startMinutes, 0, 0);
 
-    const eventTime = new Date();
-    eventTime.setHours(hours, minutes, 0, 0);
+    let end: Date | null = null;
+    if (endTime) {
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      end = new Date();
+      end.setHours(endHours, endMinutes, 0, 0);
+    }
 
-    const diff = eventTime.getTime() - now.getTime(); // in milliseconds
+    const diffToStart = start.getTime() - now.getTime();
+    const diffToEnd = end ? end.getTime() - now.getTime() : null;
 
-    if (diff <= 0) {
-      const diffMinutes = Math.floor(Math.abs(diff) / (1000 * 60));
-      const diffHours = Math.floor(diffMinutes / 60);
-      const remainingMinutes = diffMinutes % 60;
+    // 🟢 CASE 1: Event has not started yet
+    if (diffToStart > 0) {
+      const totalMinutes = Math.floor(diffToStart / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      if (totalMinutes < 2) {
+        return <Text style={styles.text}>Starting now</Text>;
+      }
+      if (hours > 0) {
+        return (
+          <Text style={styles.text}>
+            Starts in <Text style={styles.number}>{hours}</Text>hr{' '}
+            <Text style={styles.number}>{minutes}</Text>min
+          </Text>
+        );
+      }
+      return (
+        <Text style={styles.text}>
+          Starts in <Text style={styles.number}>{minutes}</Text>min
+        </Text>
+      );
+    }
+
+    // 🔵 CASE 2: Event started but not yet ended
+    if (end && diffToEnd && diffToEnd > 0) {
+      const diffMinutes = Math.floor(Math.abs(diffToStart) / (1000 * 60));
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = diffMinutes % 60;
 
       if (diffMinutes < 1) {
         return <Text style={styles.text}>Started now</Text>;
       }
-      if (diffHours > 0) {
+
+      if (hours > 0) {
         return (
           <Text style={styles.text}>
-            Started <Text style={styles.number}>{diffHours}</Text>hr{' '}
-            <Text style={styles.number}>{remainingMinutes}</Text>min ago
+            Started <Text style={styles.number}>{hours}</Text>hr{' '}
+            <Text style={styles.number}>{minutes}</Text>min ago
           </Text>
         );
       }
+
       return (
         <Text style={styles.text}>
           Started <Text style={styles.number}>{diffMinutes}</Text>min ago
@@ -43,28 +79,34 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ time }) => {
       );
     }
 
-    const totalMinutes = Math.floor(diff / (1000 * 60));
-    const remainingHours = Math.floor(totalMinutes / 60);
-    const remainingMinutes = totalMinutes % 60;
+    // 🔴 CASE 3: Event ended
+  if (end && diffToEnd && diffToEnd <= 0) {
+      const timeSinceEnd = now.getTime() - end.getTime();
+      const diffMinutes = Math.floor(timeSinceEnd / (1000 * 60));
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = diffMinutes % 60;
+      
+      if (diffMinutes < 1) {
+        return <Text style={styles.text}>Ended just now</Text>;
+      }
 
-    if (totalMinutes < 2) {
-      return <Text style={styles.text}>Starting now</Text>;
-    }
+      if (hours > 0) {
+        return (
+          <Text style={styles.text}>
+            Ended <Text style={styles.number}>{hours}</Text>hr{' '}
+            <Text style={styles.number}>{minutes}</Text>min ago
+          </Text>
+        );
+      }
 
-    if (remainingHours > 0) {
       return (
         <Text style={styles.text}>
-          Starts in <Text style={styles.number}>{remainingHours}</Text>hr{' '}
-          <Text style={styles.number}>{remainingMinutes}</Text>min
+          Ended <Text style={styles.number}>{diffMinutes}</Text>min ago
         </Text>
       );
     }
-
-    return (
-      <Text style={styles.text}>
-        Starts in <Text style={styles.number}>{remainingMinutes}</Text>min
-      </Text>
-    );
+    // Default fallback
+    return <Text style={styles.text}>Started</Text>;
   };
 
   const [content, setContent] = useState(calculateRemainingTime());
@@ -75,7 +117,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ time }) => {
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [time]);
+  }, [time, endTime]);
 
   return <View style={styles.container}>{content}</View>;
 };

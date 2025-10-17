@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Switch } from 'react-native'; // Ensure Switch is imported
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -360,7 +361,7 @@ export function CreateInterestPreferenceModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -893,7 +894,7 @@ export function CreateInterestPreferenceModal({
           onClose={() => setIsActivityModalVisible(false)}
           editingActivity={null}
         />
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

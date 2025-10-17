@@ -15,6 +15,7 @@ import {
   ActivityIndicator, // Add this
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
@@ -106,11 +107,12 @@ export function CreateEventModal({
   });
 
   const onNativeDateChange = (event: any, selectedDate: any) => {
-    const currentDate = selectedDate || formData.date;
     if (Platform.OS === 'android') {
-          setShowDatePicker(false);
-        }
-    setFormData({ ...formData, date: currentDate });
+      setShowNativeDatePicker(false);
+    }
+    if (selectedDate) {
+      setFormData({ ...formData, date: selectedDate });
+    }
   };
 
   const pickImage = async () => {
@@ -391,7 +393,7 @@ export function CreateEventModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -650,6 +652,7 @@ export function CreateEventModal({
                       mode="date"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       themeVariant="light"
+                      textColor='black'
                       onChange={onNativeDateChange}
                       minimumDate={new Date()} // Prevent past dates for events
                     />
@@ -1076,8 +1079,8 @@ export function CreateEventModal({
               </View>
             </TouchableOpacity>
           </TouchableOpacity>
-        </Modal>
-      </View>
+        </Modal>      
+      </SafeAreaView>
     </Modal>
   );
 }

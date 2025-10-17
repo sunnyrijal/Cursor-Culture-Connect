@@ -158,14 +158,15 @@ export function TimeSelectInput({
                 onChange={handleTimeChange}
                 style={styles.dateTimePicker}
                 themeVariant="light"
+                textColor="black"
               />
             </View>
-            {/* <TouchableOpacity
+            <TouchableOpacity
               style={styles.iosConfirmButton}
               onPress={handleIOSConfirm}
             >
               <Text style={styles.iosConfirmButtonText}>Done</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
         )}
       </View>

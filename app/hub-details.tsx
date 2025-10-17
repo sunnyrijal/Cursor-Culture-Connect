@@ -51,7 +51,6 @@ export default function HubDetails() {
     queryKey: ['hubDetails'],
     queryFn: () => getHubDetails(),
   });
-  console.log(res);
   const navigateToChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
   };
@@ -810,6 +809,8 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
     marginBottom: 8,
     lineHeight: 22,
+    width:"80%"
+
   },
   eventMetaRow: {
     flexDirection: 'row',

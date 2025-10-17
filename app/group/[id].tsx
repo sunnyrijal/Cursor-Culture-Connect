@@ -133,11 +133,14 @@ export default function GroupDetailEnhanced() {
     data: groupResponse,
     isLoading,
     error,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ['group', id],
     queryFn: () => getGroup((id as string) || ''),
   });
+
+
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
     queryFn: () => getUsers(),
@@ -417,28 +420,35 @@ export default function GroupDetailEnhanced() {
     );
   }
 
-  console.log(error || !group);
 
-  if (error || !group) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>Group not found</Text>
-            <Text style={styles.errorSubtext}>
-              The group you're looking for doesn't exist or has been removed.
-            </Text>
-            <TouchableOpacity
-              style={styles.backLink}
-              onPress={() => router.back()}
-            >
-              <Text style={styles.backLinkText}>Go Back</Text>
-            </TouchableOpacity>
-          </View>
+if (error || !group || isError) {
+  const errorMessage = 
+    (error as any)?.response?.data?.error || 
+    (error as any)?.message || 
+    'The group you\'re looking for doesn\'t exist or has been removed.';
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.errorContainer}>
+        <View style={styles.errorCard}>
+          <AlertTriangle size={48} color={theme.error} style={{ marginBottom: 16 }} />
+          <Text style={styles.errorText}>
+            {(error as any)?.response?.status === 404 ? 'Group not Found' : 'Error Loading Group'}
+          </Text>
+          <Text style={styles.errorSubtext}>{errorMessage}</Text>
+          <TouchableOpacity
+            style={styles.backLink}            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace('/(tabs)/groups');
+            }}
+          >
+            <Text style={styles.backLinkText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    );
-  }
+      </View>
+    </SafeAreaView>
+  );
+}
 
   return (
     <SafeAreaView style={styles.container}>

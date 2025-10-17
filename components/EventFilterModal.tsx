@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { useQuery } from '@tanstack/react-query';
@@ -111,7 +112,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>Filter Events</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -379,7 +380,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             <Text style={styles.applyButtonText}>Apply Filters</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

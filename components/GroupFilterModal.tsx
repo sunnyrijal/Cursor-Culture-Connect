@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ChevronDown } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -207,7 +208,7 @@ export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>Filter Groups</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -440,7 +441,7 @@ export const GroupFilterModal: React.FC<GroupFilterModalProps> = ({
             <Text style={styles.applyButtonText}>Apply Filters</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

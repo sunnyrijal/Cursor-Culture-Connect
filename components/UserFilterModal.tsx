@@ -8,6 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Filter, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { useQuery } from '@tanstack/react-query';
@@ -228,12 +229,7 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
 const updateFilter = (key: keyof FriendFilters, value: any) => {
     setTempFilters((prev) => {
       const newFilters = { ...prev };
-
-      if (key === 'language' || key === 'country') {
-        newFilters[key] = value;
-      } else {
-        newFilters[key] = value || undefined;
-      }
+      newFilters[key] = value || undefined;
       if (key === 'state' && value !== prev.state) {
         newFilters.city = undefined;
       }
@@ -253,7 +249,7 @@ const updateFilter = (key: keyof FriendFilters, value: any) => {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>Filter Friends</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -502,7 +498,7 @@ const updateFilter = (key: keyof FriendFilters, value: any) => {
             <Text style={styles.applyButtonText}>Apply Filters</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

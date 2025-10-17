@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
@@ -87,10 +88,7 @@ export function EditEventModal({
   const event = eventResponse?.event;
 
   // Fetch groups data
-  const {
-    data: groupResponse,
-    isLoading: groupsLoading,
-  } = useQuery({
+  const { data: groupResponse, isLoading: groupsLoading } = useQuery({
     queryKey: ['groups'],
     queryFn: () => getUserMemberGroup(),
     enabled: visible, // Only fetch when modal is visible
@@ -125,10 +123,11 @@ export function EditEventModal({
         groupId: event.associatedGroupId || null,
         images: event.imageUrl ? [event.imageUrl] : [],
         isPublic: event.isPublic !== undefined ? event.isPublic : true,
-        universityOnly: event.UniversityOnly !== undefined ? event.UniversityOnly : false,
+        universityOnly:
+          event.UniversityOnly !== undefined ? event.UniversityOnly : false,
         requiresTravel: event.requiresTravel || false,
       });
-    } 
+    }
   }, [event, visible]);
 
   const uploadFileMutation = useMutation({
@@ -142,7 +141,10 @@ export function EditEventModal({
     },
     onError: (error) => {
       console.error('Error uploading file:', error);
-      showAlert({ title: 'Upload Error', message: 'Failed to upload image. Please try again.' });
+      showAlert({
+        title: 'Upload Error',
+        message: 'Failed to upload image. Please try again.',
+      });
     },
   });
 
@@ -175,7 +177,9 @@ export function EditEventModal({
 
   const onNativeDateChange = (event: any, selectedDate: any) => {
     const currentDate = selectedDate || formData.date;
-    setShowNativeDatePicker(Platform.OS === 'ios');
+    if (Platform.OS === 'android') {
+      setShowNativeDatePicker(false);
+    }
     setFormData({ ...formData, date: currentDate });
   };
 
@@ -210,7 +214,10 @@ export function EditEventModal({
       }
     } catch (error: any) {
       console.error('Error picking image:', error);
-      showAlert({ title: 'Error', message: `Failed to pick image: ${error.message}` });
+      showAlert({
+        title: 'Error',
+        message: `Failed to pick image: ${error.message}`,
+      });
     }
   };
 
@@ -357,7 +364,8 @@ export function EditEventModal({
     if (hasInvalidTimes) {
       showAlert({
         title: 'Invalid Time Format',
-        message: 'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).',
+        message:
+          'Please use 24-hour format (HH:MM) with valid hours (00-23) and minutes (00-59).',
       });
       return;
     }
@@ -373,8 +381,10 @@ export function EditEventModal({
     const eventData = {
       name: formData.title,
       description: formData.description,
-      eventTimes: formData.eventTimes.map(slot => {
-        const [startHours, startMinutes] = slot.startTime.split(':').map(Number);
+      eventTimes: formData.eventTimes.map((slot) => {
+        const [startHours, startMinutes] = slot.startTime
+          .split(':')
+          .map(Number);
         const [endHours, endMinutes] = slot.endTime.split(':').map(Number);
 
         const startDate = new Date(formData.date);
@@ -383,7 +393,10 @@ export function EditEventModal({
         const endDate = new Date(formData.date);
         endDate.setHours(endHours, endMinutes, 0, 0);
 
-        return { startTime: startDate.toISOString(), endTime: endDate.toISOString() };
+        return {
+          startTime: startDate.toISOString(),
+          endTime: endDate.toISOString(),
+        };
       }),
       imageUrl: formData.images.length > 0 ? formData.images[0] : null,
       location: formData.location,
@@ -453,7 +466,7 @@ export function EditEventModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -486,11 +499,7 @@ export function EditEventModal({
                       formData.title && styles.inputWrapperValid,
                     ]}
                   >
-                    <Edit3
-                      size={20}
-                      color="#6366F1"
-                      style={styles.inputIcon}
-                    />
+                    <Edit3 size={20} color="#6366F1" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={formData.title}
@@ -648,7 +657,9 @@ export function EditEventModal({
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Date *</Text>
                   <TouchableOpacity
-                    onPress={() => setShowNativeDatePicker(true)}
+                    onPress={() =>
+                      setShowNativeDatePicker(!showNativeDatePicker)
+                    }
                     disabled={updateEventMutation.isPending}
                   >
                     <View
@@ -677,6 +688,8 @@ export function EditEventModal({
                     <DateTimePicker
                       value={formData.date}
                       mode="date"
+                      themeVariant="light"
+                      textColor="black"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={onNativeDateChange}
                       minimumDate={new Date()}
@@ -784,7 +797,9 @@ export function EditEventModal({
                 <View style={styles.inputContainer}>
                   <View style={styles.rowContainer}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.inputLabel}>Does this Event Require Travel?</Text>
+                      <Text style={styles.inputLabel}>
+                        Does this Event Require Travel?
+                      </Text>
                       <Text style={styles.inputSubLabel}>
                         {formData.requiresTravel
                           ? 'Yes, attendees need to travel to the event.'
@@ -793,9 +808,13 @@ export function EditEventModal({
                     </View>
                     <Switch
                       trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
-                      thumbColor={formData.requiresTravel ? '#6366F1' : '#f4f3f4'}
+                      thumbColor={
+                        formData.requiresTravel ? '#6366F1' : '#f4f3f4'
+                      }
                       ios_backgroundColor="#E5E7EB"
-                      onValueChange={(value) => setFormData({ ...formData, requiresTravel: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, requiresTravel: value })
+                      }
                       value={formData.requiresTravel}
                       disabled={updateEventMutation.isPending}
                     />
@@ -1048,67 +1067,67 @@ export function EditEventModal({
         </Modal>
 
         {/* Group Picker Modal */}
-         <Modal
-                 visible={showGroupPicker && !updateEventMutation.isPending}
-                 transparent
-                 animationType="fade"
-               >
-                 <TouchableOpacity
-                   style={styles.modalOverlay}
-                   activeOpacity={1}
-                   onPress={() => setShowGroupPicker(false)}
-                 >
-                   <TouchableOpacity
-                     style={styles.groupPickerContainer}
-                     activeOpacity={1}
-                   >
-                     <View style={styles.groupPickerContent}>
-                       <Text style={styles.groupPickerTitle}>Select Your Group</Text>
-       
-                       <ScrollView
-                         style={styles.groupList}
-                         showsVerticalScrollIndicator={false}
-                       >
-                         {groups.map((group: any) => (
-                           <TouchableOpacity
-                             key={group.id}
-                             style={styles.groupItem}
-                             onPress={() => {
-                               setFormData({ ...formData, groupId: group.id });
-                               setShowGroupPicker(false);
-                             }}
-                           >
-                             <Image
-                               source={
-                                 group.imageUrl
-                                   ? { uri: group.imageUrl }
-                                   : require('../assets/user.png')
-                               }
-                               style={styles.groupImage}
-                             />
-                             <View style={styles.groupInfo}>
-                               <Text style={styles.groupItemText} numberOfLines={1}>
-                                 {group.name}
-                               </Text>
-                               <Text style={styles.groupCreatorText}>
-                                 By {group.creator.name}
-                               </Text>
-                             </View>
-                           </TouchableOpacity>
-                         ))}
-                       </ScrollView>
-       
-                       <TouchableOpacity
-                         style={styles.closeGroupPicker}
-                         onPress={() => setShowGroupPicker(false)}
-                       >
-                         <Text style={styles.closeGroupPickerText}>Close</Text>
-                       </TouchableOpacity>
-                     </View>
-                   </TouchableOpacity>
-                 </TouchableOpacity>
-               </Modal>
-      </View>
+        <Modal
+          visible={showGroupPicker && !updateEventMutation.isPending}
+          transparent
+          animationType="fade"
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowGroupPicker(false)}
+          >
+            <TouchableOpacity
+              style={styles.groupPickerContainer}
+              activeOpacity={1}
+            >
+              <View style={styles.groupPickerContent}>
+                <Text style={styles.groupPickerTitle}>Select Your Group</Text>
+
+                <ScrollView
+                  style={styles.groupList}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {groups.map((group: any) => (
+                    <TouchableOpacity
+                      key={group.id}
+                      style={styles.groupItem}
+                      onPress={() => {
+                        setFormData({ ...formData, groupId: group.id });
+                        setShowGroupPicker(false);
+                      }}
+                    >
+                      <Image
+                        source={
+                          group.imageUrl
+                            ? { uri: group.imageUrl }
+                            : require('../assets/user.png')
+                        }
+                        style={styles.groupImage}
+                      />
+                      <View style={styles.groupInfo}>
+                        <Text style={styles.groupItemText} numberOfLines={1}>
+                          {group.name}
+                        </Text>
+                        <Text style={styles.groupCreatorText}>
+                          By {group.creator.name}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={styles.closeGroupPicker}
+                  onPress={() => setShowGroupPicker(false)}
+                >
+                  <Text style={styles.closeGroupPickerText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>      
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -1129,7 +1148,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   title: {
-        fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.xl,
 
     fontWeight: 'bold',
     color: '#1E293B',
@@ -1531,7 +1550,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-groupPickerContainer: {
+  groupPickerContainer: {
     width: '90%',
     maxWidth: 400,
     maxHeight: '70%',

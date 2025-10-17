@@ -627,6 +627,7 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
     marginBottom: 8,
     lineHeight: 22,
+    width:"80%"
   },
   eventMetaRow: {
     flexDirection: 'row',

@@ -71,6 +71,11 @@ export const EventCard: React.FC<EventCardProps> = ({
     (attendee: any) => attendee.id === myUserId
   );
 
+  const eventTime = event.eventTimes?.[0];
+  const isEventPast = eventTime
+    ? new Date(eventTime.endTime || eventTime.startTime) < new Date()
+    : false;
+
   const isHost = event.userId === myUserId;
 
   const organizerName = event.associatedGroup?.name || event.user.name;
@@ -199,20 +204,20 @@ export const EventCard: React.FC<EventCardProps> = ({
           <TouchableOpacity
             style={[
               styles.rsvpButton,
-              isAttending && styles.rsvpedButton,
-              isLoading && styles.disabledButton,
+              isAttending && !isEventPast && styles.rsvpedButton,
+              (isLoading || isEventPast) && styles.disabledButton,
             ]}
             onPress={handleRSVP}
-            disabled={isLoading}
+            disabled={isLoading || isEventPast}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={[
                 styles.rsvpButtonText,
-                isAttending && styles.rsvpedButtonText,
+                isAttending && !isEventPast && styles.rsvpedButtonText,
               ]}>
-                {isAttending ? 'Going' : 'RSVP'}
+                {isEventPast ? 'Ended' : isAttending ? 'Going' : 'RSVP'}
               </Text>
             )}
           </TouchableOpacity>

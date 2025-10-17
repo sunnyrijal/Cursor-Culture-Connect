@@ -385,7 +385,7 @@ export default function EventDetail() {
   // Error state
   if (isError || !event) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} >
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>Event Not Accessible</Text>
