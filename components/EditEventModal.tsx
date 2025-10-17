@@ -728,33 +728,27 @@ export function EditEventModal({
                         )}
                       </View>
 
-                      <View style={styles.rowContainer}>
-                        <View style={styles.halfWidth}>
-                          <TimeSelectInput
-                            value={timeSlot.startTime}
-                            onTimeChange={(time) =>
-                              updateTimeSlot(index, 'startTime', time)
-                            }
-                            label="Start Time *"
-                            placeholder="Select start time"
-                            disabled={updateEventMutation.isPending}
-                            required
-                          />
-                        </View>
+                      <TimeSelectInput
+                        value={timeSlot.startTime}
+                        onTimeChange={(time) =>
+                          updateTimeSlot(index, 'startTime', time)
+                        }
+                        label="Start Time *"
+                        placeholder="Select start time"
+                        disabled={updateEventMutation.isPending}
+                        required
+                      />
 
-                        <View style={styles.halfWidth}>
-                          <TimeSelectInput
-                            value={timeSlot.endTime}
-                            onTimeChange={(time) =>
-                              updateTimeSlot(index, 'endTime', time)
-                            }
-                            label="End Time *"
-                            placeholder="Select end time"
-                            disabled={updateEventMutation.isPending}
-                            required
-                          />
-                        </View>
-                      </View>
+                      <TimeSelectInput
+                        value={timeSlot.endTime}
+                        onTimeChange={(time) =>
+                          updateTimeSlot(index, 'endTime', time)
+                        }
+                        label="End Time *"
+                        placeholder="Select end time"
+                        disabled={updateEventMutation.isPending}
+                        required
+                      />
                     </View>
                   ))}
                 </View>

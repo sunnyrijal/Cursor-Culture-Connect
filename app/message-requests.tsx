@@ -18,7 +18,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MessageSquarePlus, ArrowLeft, Check, X } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 
-import { getChatRequests, deleteChat } from '@/contexts/chat.api';
+import {
+  getChatRequests,
+  deleteChat,
+  acceptChatRequest,
+} from '@/contexts/chat.api';
 import getDecodedToken from '@/utils/getMyData';
 
 interface User {
@@ -88,6 +92,16 @@ const MessageRequestsScreen = () => {
     },
   });
 
+  const acceptMutation = useMutation({
+    mutationFn: (chatId: string) => acceptChatRequest(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+    },
+    onError: (error) => {
+      console.error('Error accepting chat request:', error);
+    },
+  });
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     refetch().finally(() => setRefreshing(false));
@@ -146,6 +160,10 @@ const MessageRequestsScreen = () => {
 
   const handleDecline = (chatId: string) => {
     deleteMutation.mutate(chatId);
+  };
+
+  const handleAccept = (chatId: string) => {
+    acceptMutation.mutate(chatId);
   };
 
   const renderEmptyState = () => (
@@ -232,18 +250,30 @@ const MessageRequestsScreen = () => {
               </View>
             ) : activeTab === 'received' ? (
               <View style={styles.actionButtonsContainer}>
-                 <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    styles.declineButton,
-                    { flex: 1 },
-                  ]}
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.declineButton]}
                   onPress={() => handleDecline(item.id)}
+                  disabled={deleteMutation.isPending}
                 >
                   <X size={16} color="#475569" />
                   <Text style={[styles.actionButtonText, { color: '#475569' }]}>
                     Decline
                   </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.acceptButton]}
+                  onPress={() => handleAccept(item.id)}
+                  disabled={acceptMutation.isPending}
+                >
+                  {acceptMutation.isPending &&
+                  acceptMutation.variables === item.id ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Check size={16} color="#FFFFFF" />
+                      <Text style={styles.actionButtonText}>Accept</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             ) : (
@@ -560,7 +590,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   acceptButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#6366F1',
   },
   declineButton: {
     backgroundColor: '#E2E8F0',

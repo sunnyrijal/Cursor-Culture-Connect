@@ -641,10 +641,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   eventListPrice: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: theme.primary,
     fontWeight: '600',
     fontFamily: typography.fontFamily.semiBold,
+    width:'70%',
   },
   eventListDistance: {
     fontSize: typography.fontSize.xs,

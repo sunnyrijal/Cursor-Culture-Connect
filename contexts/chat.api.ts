@@ -114,3 +114,14 @@ export const deleteChat = async (chatId: string) => {
     throw error;
   }
 };
+
+// 10. ACCEPT CHAT REQUEST
+export const acceptChatRequest = async (chatId: string) => {
+  try {
+    const response = await api.patch(`/chat/${chatId}/accept`);
+    return response.data;
+  } catch (error) {
+    console.error('Error accepting chat request:', error);
+    throw error;
+  }
+};
