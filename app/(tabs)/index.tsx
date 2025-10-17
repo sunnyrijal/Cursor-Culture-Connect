@@ -23,6 +23,8 @@ import AutoplayVideo from '@/components/home/VideoCard';
 
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+// import NotificationTest from '@/components/NotificationTest';
+import { usePushNotifications } from '@/hooks/usePushNotification';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -34,6 +36,17 @@ export default function Dashboard() {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
+
+  //   useEffect(() => {
+  //   initializePushNotifications();
+    
+  //   return () => {
+  //     cleanupNotificationListeners();
+  //   };
+  // }, []);
+
+   const { expoPushToken, notification } = usePushNotifications();
+  const data = JSON.stringify(notification, undefined, 2);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showStoriesModal, setShowStoriesModal] = useState(false);
@@ -93,6 +106,8 @@ export default function Dashboard() {
         <CulturalExperiences />
 
         <UpcommingEvents />
+
+        {/* <NotificationTest /> */}
 
       </ScrollView>
 
