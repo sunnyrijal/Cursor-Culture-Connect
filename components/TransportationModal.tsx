@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Car, Hand, UserCheck, X } from 'lucide-react-native';
 import { theme, typography, borderRadius, spacing } from './theme';
@@ -100,92 +101,97 @@ export const TransportationModal: React.FC<TransportationModalProps> = ({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={handleClose}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity
-          style={styles.modalContent}
+          style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => {}}
+          onPress={handleClose}
         >
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <X size={24} color={theme.textSecondary} />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>Transportation</Text>
-          <Text style={styles.modalSubtitle}>
-            How are you getting to the event?
-          </Text>
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <X size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Transportation</Text>
+            <Text style={styles.modalSubtitle}>
+              How are you getting to the event?
+            </Text>
 
-          <View style={styles.optionsContainer}>
-            {options.map((option) => (
-              <TouchableOpacity
-                key={option.preference}
-                style={[
-                  styles.option,
-                  selectedPreference === option.preference &&
-                    styles.selectedOption,
-                ]}
-                onPress={() => setSelectedPreference(option.preference)}
-              >
-                <option.icon
-                  size={24}
-                  color={
-                    selectedPreference === option.preference
-                      ? theme.primary
-                      : theme.textSecondary
-                  }
-                />
-                <Text
+            <View style={styles.optionsContainer}>
+              {options.map((option) => (
+                <TouchableOpacity
+                  key={option.preference}
                   style={[
-                    styles.optionLabel,
+                    styles.option,
                     selectedPreference === option.preference &&
-                      styles.selectedOptionLabel,
+                      styles.selectedOption,
                   ]}
+                  onPress={() => setSelectedPreference(option.preference)}
                 >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {showMessageInput && (
-            <View style={styles.messageContainer}>
-              <Text style={styles.messageLabel}>Optional Message</Text>
-              <TextInput
-                style={styles.messageInput}
-                placeholder="e.g., I can take 3 people, pickup from campus..."
-                placeholderTextColor={theme.gray400}
-                value={message}
-                onChangeText={setMessage}
-                multiline
-              />
+                  <option.icon
+                    size={24}
+                    color={
+                      selectedPreference === option.preference
+                        ? theme.primary
+                        : theme.textSecondary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      selectedPreference === option.preference &&
+                        styles.selectedOptionLabel,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
 
-          <Button
-            title={isConfirming ? 'Saving...' : isEditing ? 'Update RSVP' : 'Confirm RSVP'}
-            onPress={handleConfirm}
-            disabled={!selectedPreference || isConfirming}
-            style={[
-              styles.confirmButton,
-              (!selectedPreference || isConfirming) && styles.disabledButton,
-            ]}
-          />
+            {showMessageInput && (
+              <View style={styles.messageContainer}>
+                <Text style={styles.messageLabel}>Optional Message</Text>
+                <TextInput
+                  style={styles.messageInput}
+                  placeholder="e.g., I can take 3 people, pickup from campus..."
+                  placeholderTextColor={theme.gray400}
+                  value={message}
+                  onChangeText={setMessage}
+                  multiline
+                />
+              </View>
+            )}
 
-          {isEditing && (
             <Button
-              title={isLeaving ? 'Leaving...' : 'Leave Event'}
-              onPress={handleLeave}
-              disabled={isLeaving}
+              title={isConfirming ? 'Saving...' : isEditing ? 'Update RSVP' : 'Confirm RSVP'}
+              onPress={handleConfirm}
+              disabled={!selectedPreference || isConfirming}
               style={[
-                styles.leaveButton,
-                isLeaving && styles.disabledButton,
+                styles.confirmButton,
+                (!selectedPreference || isConfirming) && styles.disabledButton,
               ]}
-          />)}
+            />
+
+            {isEditing && (
+              <Button
+                title={isLeaving ? 'Leaving...' : 'Leave Event'}
+                onPress={handleLeave}
+                disabled={isLeaving}
+                style={[
+                  styles.leaveButton,
+                  isLeaving && styles.disabledButton,
+                ]}
+              />)}
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

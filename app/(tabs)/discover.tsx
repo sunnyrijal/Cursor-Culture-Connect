@@ -4,9 +4,9 @@ import FriendsListScreen from '@/components/friend/FriendLists';
 import FriendRequestsScreen from '@/components/friend/FriendRequests';
 import SendFriendRequestScreen from '@/components/friend/SendFriendRequest';
 import getDecodedToken from '@/utils/getMyData';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -39,12 +39,23 @@ const theme = {
 type TabType = 'friends' | 'discover' | 'requests';
 
 export default function Page() {
+  const params = useLocalSearchParams<{ tab?: TabType }>();
   const [activeTab, setActiveTab] = useState<TabType>('friends');
 
   const { data: myData, isLoading: isLoadingMyData } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
+
+  useEffect(() => {
+    const tab = params.tab;
+    if (tab === 'friends' || tab === 'discover' || tab === 'requests') {
+      setActiveTab(tab);
+    } else {
+      // Default to 'friends' if tab is not present or invalid
+      setActiveTab('friends');
+    }
+  }, [params.tab]);
 
   if (isLoadingMyData) {
     return (
@@ -89,6 +100,10 @@ export default function Page() {
     }
   };
 
+  const handleTabPress = (tab: TabType) => {
+    router.setParams({ tab });
+  };
+
   return (
     <View style={styles.container}>
       {/* Hero Section */}
@@ -109,7 +124,7 @@ export default function Page() {
             styles.tabButton,
             activeTab === 'friends' && styles.activeTabButton,
           ]}
-          onPress={() => setActiveTab('friends')}
+          onPress={() => handleTabPress('friends')}
         >
           <Text
             style={[
@@ -126,7 +141,7 @@ export default function Page() {
             styles.tabButton,
             activeTab === 'discover' && styles.activeTabButton,
           ]}
-          onPress={() => setActiveTab('discover')}
+          onPress={() => handleTabPress('discover')}
         >
           <Text
             style={[
@@ -143,7 +158,7 @@ export default function Page() {
             styles.tabButton,
             activeTab === 'requests' && styles.activeTabButton,
           ]}
-          onPress={() => setActiveTab('requests')}
+          onPress={() => handleTabPress('requests')}
         >
           <Text
             style={[

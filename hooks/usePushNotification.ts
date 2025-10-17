@@ -6,6 +6,8 @@ import Constants from "expo-constants";
 
 import { Platform } from "react-native";
 import { registerPushToken } from "@/contexts/pushNotification.api";
+import { router } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface PushNotificationState {
   expoPushToken?: Notifications.ExpoPushToken;
@@ -15,14 +17,13 @@ export interface PushNotificationState {
 export const usePushNotifications = (): PushNotificationState => {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldPlaySound: false,
+      shouldPlaySound: true,
       shouldShowAlert: true,
-      shouldSetBadge: false,
+      shouldSetBadge: true,
       shouldShowBanner: true,
       shouldShowList: true,
     }),
   });
-
   const [expoPushToken, setExpoPushToken] = useState<
     Notifications.ExpoPushToken | undefined
   >();
@@ -33,6 +34,7 @@ export const usePushNotifications = (): PushNotificationState => {
 
   const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
   const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const queryClient = useQueryClient();
 
   async function registerForPushNotificationsAsync() {
     let token;
@@ -69,6 +71,88 @@ export const usePushNotifications = (): PushNotificationState => {
     return token;
   }
 
+  const handleNotificationResponse = (
+    response: Notifications.NotificationResponse
+  ) => {
+    const data = response.notification.request.content.data;
+    console.log("Notification tapped, data:", data);
+
+    if (!data || !data.type) {
+      console.log("No data or type in notification, cannot navigate.");
+      return;
+    }
+
+    // Centralized navigation logic
+    switch (data.type) {
+      case "FRIEND_REQUEST_RECEIVED":
+        queryClient.invalidateQueries({ queryKey: ["friend-requests"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+        queryClient.invalidateQueries({ queryKey: ["counts"] });
+        router.push("/discover?tab=requests");
+        break;
+      case "FRIEND_REQUEST_ACCEPTED":
+        queryClient.invalidateQueries({ queryKey: ["friends"] });
+        queryClient.invalidateQueries({ queryKey: ["friend-requests"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+        queryClient.invalidateQueries({ queryKey: ["counts"] });
+        router.push("/discover?tab=friends");
+        break;
+      // case "FRIEND_REQUEST_DECLINED":
+      //   router.push("/discover?tab=requests");
+      //   break;
+      case "NEW_GROUP_MESSAGE":
+        if (data.groupId) {
+          queryClient.invalidateQueries({ queryKey: ["groups"] });
+          queryClient.invalidateQueries({ queryKey: ["group", data.groupId] });
+          router.push(`/group/${data.groupId}`);
+        }
+        break;
+      case "GROUP_MEMBER_ADDED":
+      case "GROUP_JOINED_SELF":
+        if (data.groupId) {
+          queryClient.invalidateQueries({ queryKey: ["groups"] });
+          queryClient.invalidateQueries({ queryKey: ["group", data.groupId] });
+          queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+          router.push(`/group/${data.groupId}`);
+        }
+        break;
+      case "NEW_MESSAGE":
+        if (data.chatId) {
+          queryClient.invalidateQueries({ queryKey: ["chats"] });
+          queryClient.invalidateQueries({
+            queryKey: ["messages", data.chatId],
+          });
+          router.push(`/chat/${data.chatId}`);
+        }
+        break;
+      case "EVENT_INVITE":
+      case "EVENT_RSVP":
+      case "EVENT_JOINED":
+        if (data.eventId) {
+          queryClient.invalidateQueries({ queryKey: ["events"] });
+          queryClient.invalidateQueries({ queryKey: ["event", data.eventId] });
+          queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+          router.push(`/event/${data.eventId}`);
+        }
+        break;
+      case "INTEREST_PING_RECEIVED":
+      case "INTEREST_PING_ACCEPTED":
+      case "INTEREST_PING_DECLINED":
+      case "INTEREST_PING_BACK":
+        queryClient.invalidateQueries({ queryKey: ["userPings"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+        queryClient.invalidateQueries({ queryKey: ["counts"] });
+        router.push("/activity-buddy?tab=pings");
+        break;
+
+      // Add more cases for other notification types here
+      default:
+        console.log(`No navigation handler for notification type: ${data.type}`);
+        queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
+        router.push("/notifications"); // Fallback to notifications screen
+    }
+  };
+
   useEffect(() => {
     registerForPushNotificationsAsync().then(async (token) => {
       setExpoPushToken(token);
@@ -88,7 +172,7 @@ export const usePushNotifications = (): PushNotificationState => {
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
+        handleNotificationResponse(response);
       });
 
     return () => {

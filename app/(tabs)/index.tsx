@@ -23,7 +23,6 @@ import AutoplayVideo from '@/components/home/VideoCard';
 
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-// import NotificationTest from '@/components/NotificationTest';
 import { usePushNotifications } from '@/hooks/usePushNotification';
 
 export default function Dashboard() {
@@ -36,15 +35,6 @@ export default function Dashboard() {
     queryKey: ['myData'],
     queryFn: () => getDecodedToken(),
   });
-
-  //   useEffect(() => {
-  //   initializePushNotifications();
-    
-  //   return () => {
-  //     cleanupNotificationListeners();
-  //   };
-  // }, []);
-
    const { expoPushToken, notification } = usePushNotifications();
   const data = JSON.stringify(notification, undefined, 2);
 
@@ -107,7 +97,6 @@ export default function Dashboard() {
 
         <UpcommingEvents />
 
-        {/* <NotificationTest /> */}
 
       </ScrollView>
 

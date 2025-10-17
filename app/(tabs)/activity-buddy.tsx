@@ -33,7 +33,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react-native';
 import { CreateActivityModal } from '@/components/AddActivityModal';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { CreateInterestPreferenceModal } from '@/components/CreateUserPreferenceModal';
 import {
   useQuery,
@@ -83,7 +83,8 @@ const theme = {
 type TabType = 'activities' | 'pings';
 
 export default function ActivityBuddyPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('activities');
+  const params = useLocalSearchParams<{ tab?: TabType }>();
+  const [activeTab, setActiveTab] = useState<TabType>('activities'); // Default to activities
   const [activePingTab, setActivePingTab] = useState<'received' | 'sent'>('received');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -124,6 +125,17 @@ export default function ActivityBuddyPage() {
     queryKey: ['activities'],
     queryFn: () => getActivities(),
   });
+
+  useEffect(() => {
+    const tab = params.tab;
+    if (tab === 'activities' || tab === 'pings') {
+      setActiveTab(tab);
+    } else {
+      // Default to 'activities' if tab is not present or invalid
+      setActiveTab('activities');
+    }
+  }, [params.tab]);
+
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -360,6 +372,10 @@ export default function ActivityBuddyPage() {
         updateData: { status },
       });
     }
+  };
+
+  const handleTabPress = (tab: TabType) => {
+    router.setParams({ tab });
   };
 
   const renderUserCard = (user: any) => {
@@ -1015,7 +1031,7 @@ export default function ActivityBuddyPage() {
         <View style={styles.tabSelector}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
-            onPress={() => setActiveTab('activities')}
+            onPress={() => handleTabPress('activities')}
           >
             <Text
               style={[
@@ -1028,7 +1044,7 @@ export default function ActivityBuddyPage() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'pings' && styles.tabActive]}
-            onPress={() => setActiveTab('pings')}
+            onPress={() => handleTabPress('pings')}
           >
             <Text
               style={[
