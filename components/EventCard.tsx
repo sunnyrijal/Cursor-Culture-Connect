@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Trash2 } from 'lucide-react-native';
 import {
   MapPin,
   Calendar,
@@ -55,6 +56,7 @@ interface EventCardProps {
   onRSVP: (data?: { preference?: string; message?: string }) => void;
   isLoading?: boolean;
   onOpenTransportModal?: () => void;
+  onDelete?: () => void;
 }
 
 export const EventCard: React.FC<EventCardProps> = ({
@@ -66,6 +68,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   onRSVP,
   isLoading = false,
   onOpenTransportModal,
+  onDelete,
 }) => {
   const isAttending = event?.attendingUsers?.some(
     (attendee: any) => attendee.id === myUserId
@@ -201,26 +204,45 @@ export const EventCard: React.FC<EventCardProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.rsvpButton,
-              isAttending && !isEventPast && styles.rsvpedButton,
-              (isLoading || isEventPast) && styles.disabledButton,
-            ]}
-            onPress={handleRSVP}
-            disabled={isLoading || isEventPast}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={[
-                styles.rsvpButtonText,
-                isAttending && !isEventPast && styles.rsvpedButtonText,
-              ]}>
-                {isEventPast ? 'Ended' : isAttending ? 'Going' : 'RSVP'}
-              </Text>
-            )}
-          </TouchableOpacity>
+          {isHost && isEventPast && onDelete ? (
+            <TouchableOpacity
+              style={[styles.rsvpButton, styles.deleteButton]}
+              onPress={onDelete}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Trash2 size={16} color="white" />
+                  <Text style={styles.rsvpButtonText}>Delete</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.rsvpButton,
+                isAttending && !isEventPast && styles.rsvpedButton,
+                (isLoading || isEventPast) && styles.disabledButton,
+              ]}
+              onPress={handleRSVP}
+              disabled={isLoading || isEventPast}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={[
+                    styles.rsvpButtonText,
+                    isAttending && !isEventPast && styles.rsvpedButtonText,
+                  ]}
+                >
+                  {isEventPast ? 'Ended' : isAttending ? 'Going' : 'RSVP'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -432,6 +454,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 16,
+    flexDirection: 'row',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
     minWidth: 80,
@@ -453,6 +476,11 @@ const styles = StyleSheet.create({
   rsvpedButton: {
     backgroundColor: theme.success,
     borderColor: 'rgba(255,255,255,0.8)',
+  },
+
+  deleteButton: {
+    backgroundColor: theme.error,
+    gap: 8,
   },
 
   disabledButton: {

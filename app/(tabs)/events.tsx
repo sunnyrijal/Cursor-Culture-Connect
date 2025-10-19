@@ -32,6 +32,7 @@ import {
   getQuickEvents,
   addInterestedUser,
   removeInterestedUser,
+  deleteQuickEvent,
 } from '@/contexts/quickEvent.api';
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import React from 'react';
@@ -40,6 +41,7 @@ import { formatTime, formatTo12Hour } from '@/utils/formatDate';
 
 import { Filter } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
+import { Trash2 } from 'lucide-react-native';
 import CountdownTimer from '@/components/CountdownTimer';
 
 const filterOptions = [
@@ -105,6 +107,7 @@ interface QuickEvent {
   interestedUsers: { id: string }[];
   time: string;
   endTime?: string;
+  createdAt: string;
   user: {
     id: string;
     name: string;
@@ -231,6 +234,20 @@ export default function Events() {
       },
       onSettled: () => {
         setMutatingQuickEventId(null);
+      },
+    });
+
+  const { mutate: deleteQuickEventMutation, isPending: isDeletingQuickEvent } =
+    useMutation({
+      mutationFn: async (quickEventId: string) => {
+        setMutatingQuickEventId(quickEventId);
+        return deleteQuickEvent(quickEventId);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+      },
+      onError: (error) => {
+        console.error('Error deleting quick event:', error);
       },
     });
 
@@ -571,8 +588,16 @@ export default function Events() {
                       start.setHours(startHours, startMinutes, 0, 0);
                       return start < now;
                     }
-                  })();
+                })();
 
+                const isHost = quickEvent.user.id === myData?.userId;
+                const isOldEvent = (() => {
+                  const eventDate = new Date(quickEvent.createdAt);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0); // Set to start of today
+                  return eventDate < today;
+                  })();
+                  console.log(isHost, isOldEvent, quickEvent.createdAt)
                   return (
                     <TouchableOpacity
                       key={quickEvent.id}
@@ -587,6 +612,12 @@ export default function Events() {
                       }
                       activeOpacity={0.8}
                     >
+                       {isHost && (
+                                <View style={styles.hostBadge}>
+                                  {/* <Crown size={14} color="#FFD700" fill="#FFD700" /> */}
+                                  <Text style={styles.hostBadgeText}>Host</Text>
+                                </View>
+                              )}
                       <View style={styles.quickEventContent}>
                         <View style={styles.quickEventHeader}>
                           <Text
@@ -637,12 +668,12 @@ export default function Events() {
                               interested
                             </Text>
                           </View>
-
-                        
-                          <CountdownTimer
-                            time={quickEvent.time}
-                            endTime={quickEvent.endTime}
-                          />
+                          {!isOldEvent && (
+                            <CountdownTimer
+                              time={quickEvent.time}
+                              endTime={quickEvent.endTime}
+                            />
+                          )}
                         </View>
 
                         <View style={styles.quickEventActions}>
@@ -661,38 +692,56 @@ export default function Events() {
                               <Text style={styles.creatorName}>
                                 {quickEvent.user.name}
                               </Text>
-                              <Text style={styles.creatorRole}>Host</Text>
+                              {isHost && (
+                                <Text style={styles.creatorRole}>Host</Text>
+                              )}
                             </View>
                           </View>
-                          <TouchableOpacity
-                            style={[
-                              styles.rsvpButtonSmall,
-                              isInterested && !isEventPast
-                                ? styles.rsvpedButtonSmall
-                                : null,
-                              isEventPast && styles.endedButtonSmall,
-                            ]}
-                            onPress={() =>
-                              !isMutating &&
-                              !isEventPast &&
-                              (isInterested
-                                ? removeInterestMutation(quickEvent.id)
-                                : addInterestMutation(quickEvent.id))
-                            }
-                            disabled={isMutating || isEventPast}
-                          >
-                            {isMutating ? (
-                              <ActivityIndicator color="#fff" size="small" />
-                            ) : isEventPast ? (
-                              <Text style={styles.rsvpButtonTextSmall}>
-                                Ended
-                              </Text>
-                            ) : (
-                              <Text style={styles.rsvpButtonTextSmall}>
-                                {isInterested ? 'Interested' : "I'm in"}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
+                          {isHost && isOldEvent ? (
+                            <TouchableOpacity
+                              style={[
+                                styles.rsvpButtonSmall,
+                                styles.deleteButton,
+                              ]}
+                              onPress={() =>
+                                deleteQuickEventMutation(quickEvent.id)
+                              }
+                              disabled={isDeletingQuickEvent}
+                            >
+                              {isDeletingQuickEvent &&
+                              mutatingQuickEventId === quickEvent.id ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                              ) : (
+                                <Trash2 size={16} color="white" />
+                              )}
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={[
+                                styles.rsvpButtonSmall,
+                                isInterested && !isEventPast
+                                  ? styles.rsvpedButtonSmall
+                                  : null,
+                                isEventPast && styles.endedButtonSmall,
+                              ]}
+                              onPress={() =>
+                                !isMutating &&
+                                !isEventPast &&
+                                (isInterested
+                                  ? removeInterestMutation(quickEvent.id)
+                                  : addInterestMutation(quickEvent.id))
+                              }
+                              disabled={isMutating || isEventPast}
+                            >
+                              {isMutating ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                              ) : (
+                                <Text style={styles.rsvpButtonTextSmall}>
+                                  {isEventPast ? 'Ended' : isInterested ? 'Interested' : "I'm in"}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -798,6 +847,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
+  },
+
+  deleteButton: {
+    backgroundColor: theme.error,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   rsvpedButtonSmall: {
@@ -1082,6 +1138,28 @@ const styles = StyleSheet.create({
   quickEventContent: {
     padding: 20,
   },
+  hostBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+
+  hostBadgeText: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
   quickEventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
