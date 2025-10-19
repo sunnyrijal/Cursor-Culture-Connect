@@ -26,16 +26,19 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We use your photo library to let you upload a profile picture to your account.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "notification": {
+        "icon": "./assets/logo.png"
       }
     },
     "android": {
       "package": "com.trivo.connect",
       "googleServicesFile": "./google-services/google-services.json",
-      "permissions": [
-        "NOTIFICATIONS",
-        "VIBRATE",
-        "WAKE_LOCK"
-      ]
+      "permissions": ["NOTIFICATIONS", "VIBRATE", "WAKE_LOCK"],
+      "notification": {
+        "icon": "./assets/logo.png",
+        "color": "#FF231F7C"
+      }
     },
     "web": {
       "bundler": "metro",

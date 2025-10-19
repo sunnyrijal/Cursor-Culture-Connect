@@ -173,7 +173,9 @@ const UpcomingEvents = () => {
           </TouchableOpacity>
          
         </View>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/events?tab=event')}
+        >
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
       </View>

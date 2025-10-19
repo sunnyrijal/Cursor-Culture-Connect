@@ -103,7 +103,7 @@ export default function QuickEventDetail() {
   });
 
   const quickEvent = eventResponse?.data;
-
+  console.log(error)
 
   const { data: myData } = useQuery({
     queryKey: ['myData'],
@@ -213,13 +213,10 @@ export default function QuickEventDetail() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
-            <Text style={styles.errorText}>
-              {isError ? 'Failed to load quick event' : 'Quick Event Not Found'}
-            </Text>
+            <Text style={styles.errorText}>Quick Event Not Found</Text>
             <Text style={styles.errorSubtext}>
-              {isError
-                ? error?.message || 'Please try again later'
-                : "Sorry, we couldn't find this quick event."}
+              This quick event may not exist, or you might not have access to
+              view it. Please check the event details and try again.
             </Text>
             <TouchableOpacity
               onPress={() => router.back()}

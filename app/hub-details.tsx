@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { theme, spacing, typography } from '@/components/theme';
 import {
   ArrowLeft,
@@ -41,7 +41,14 @@ const formatTime = (dateString: string) => {
 };
 
 export default function HubDetails() {
-  const [activeTab, setActiveTab] = useState('events');
+  const params = useLocalSearchParams();
+  const [activeTab, setActiveTab] = useState<'events' | 'groups' | 'friends'>(
+    () => {
+      const tabParam = params.tab;
+      if (tabParam === 'groups' || tabParam === 'friends') return tabParam;
+      return 'events';
+    }
+  );
 
   const {
     data: res,
@@ -53,6 +60,11 @@ export default function HubDetails() {
   });
   const navigateToChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
+  };
+
+  const handleTabChange = (tab: 'events' | 'groups' | 'friends') => {
+    setActiveTab(tab);
+    router.setParams({ tab });
   };
 
   const renderFriends = () => {
@@ -341,7 +353,7 @@ export default function HubDetails() {
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-          onPress={() => setActiveTab('events')}
+          onPress={() => handleTabChange('events')}
           activeOpacity={0.7}
         >
           <Text
@@ -356,7 +368,7 @@ export default function HubDetails() {
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'groups' && styles.activeTab]}
-          onPress={() => setActiveTab('groups')}
+          onPress={() => handleTabChange('groups')}
           activeOpacity={0.7}
         >
           <Text
@@ -371,7 +383,7 @@ export default function HubDetails() {
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-          onPress={() => setActiveTab('friends')}
+          onPress={() => handleTabChange('friends')}
           activeOpacity={0.7}
         >
           <Text

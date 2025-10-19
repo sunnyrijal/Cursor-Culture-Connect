@@ -52,7 +52,6 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
         {/* Inner card with neumorphic effect */}
         <View style={[
           styles.innerCard,
-          isPressed ? styles.innerCardPressed : styles.innerCardNormal
         ]}>
           {/* <LinearGradient
             colors={[
@@ -71,11 +70,11 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
 
             {/* Stats Container */}
             <View style={styles.statsContainer}>
-              {/* Stat 1 */}
-              <View style={styles.statWrapper}>
+              {/* Stat 1: Events */}
+              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=events')}>
                 <View style={[
                   styles.statContainer,
-                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
                 ]}>
                   <LinearGradient
                     colors={[
@@ -91,13 +90,13 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     <Text style={styles.statLabel}>Events</Text>
                   </LinearGradient>
                 </View>
-              </View>
+              </TouchableOpacity>
 
-              {/* Stat 2 */}
-              <View style={styles.statWrapper}>
+              {/* Stat 2: Groups */}
+              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=groups')}>
                 <View style={[
                   styles.statContainer,
-                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
                 ]}>
                   <LinearGradient
                     colors={[
@@ -113,13 +112,13 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     <Text style={styles.statLabel}>Groups</Text>
                   </LinearGradient>
                 </View>
-              </View>
+              </TouchableOpacity>
 
-              {/* Stat 3 */}
-              <View style={styles.statWrapper}>
+              {/* Stat 3: Connections */}
+              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=friends')}>
                 <View style={[
                   styles.statContainer,
-                  isPressed ? styles.statContainerPressed : styles.statContainerNormal
+                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
                 ]}>
                   <LinearGradient
                     colors={[
@@ -135,7 +134,7 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
                     <Text style={styles.statLabel}>Connections</Text>
                   </LinearGradient>
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           {/* </LinearGradient> */}
         </View>

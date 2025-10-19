@@ -328,6 +328,7 @@ export default function Profile() {
 
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{userData.name}</Text>
+                <Text style={styles.userEmail}>{userData.email}</Text>
                 {userData.pronouns && (
                   <Text style={styles.userPronouns}>{userData.pronouns}</Text>
                 )}
@@ -818,6 +819,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: clayTheme.textPrimary,
     marginBottom: 8,
+  },
+  userEmail: {
+    fontSize: 16,
+    color: clayTheme.textSecondary,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   userPronouns: {
     fontSize: 16,

@@ -17,7 +17,7 @@ import { RefreshControl } from 'react-native';
 // import { Picker } from '@react-native-picker/picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Search, Users, Clock, PlusCircle, Zap } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
@@ -131,6 +131,7 @@ const getTimeAgo = (dateString: string) => {
 };
 
 export default function Events() {
+  const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -158,9 +159,16 @@ export default function Events() {
   const [mutatingQuickEventId, setMutatingQuickEventId] = useState<
     string | null
   >(null);
-  const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(
-    'events'
-  );
+  const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(() => {
+    const tabParam = params.tab;
+    if (tabParam === 'event') {
+      return 'events';
+    } else if (tabParam === 'quickevent') {
+      return 'quickEvents';
+    }
+    return 'events';
+  });
+
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
 
@@ -314,6 +322,11 @@ export default function Events() {
     setShowCreateQuickEventModal(false);
   };
 
+  const handleTabChange = (tab: 'events' | 'quickEvents') => {
+    setActiveTab(tab);
+    router.setParams({ tab: tab === 'events' ? 'event' : 'quickevent' });
+  };
+
   return (
     <View style={styles.container}>
       <CreateEventModal
@@ -363,7 +376,7 @@ export default function Events() {
             styles.tabButton,
             activeTab === 'events' && styles.activeTabButton,
           ]}
-          onPress={() => setActiveTab('events')}
+          onPress={() => handleTabChange('events')}
         >
           <Text
             style={[
@@ -379,7 +392,7 @@ export default function Events() {
             styles.tabButton,
             activeTab === 'quickEvents' && styles.activeTabButton,
           ]}
-          onPress={() => setActiveTab('quickEvents')}
+          onPress={() => handleTabChange('quickEvents')}
         >
           <Text
             style={[

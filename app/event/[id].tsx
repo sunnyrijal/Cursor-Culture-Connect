@@ -1154,7 +1154,7 @@ export default function EventDetail() {
             <View style={styles.searchContainer}>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search by name or email..."
+                placeholder="Search by name"
                 value={searchEmail}
                 onChangeText={setSearchEmail}
                 autoCapitalize="none"

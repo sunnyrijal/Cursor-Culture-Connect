@@ -165,9 +165,10 @@ export default function GroupDetailEnhanced() {
       const isMember = group?.members?.some(
         (member: any) => member.userId === user.id
       );
-      const matchesSearch = user.email
-        .toLowerCase()
-        .includes(searchEmail.toLowerCase());
+      const lowercasedQuery = searchEmail.toLowerCase();
+      const matchesSearch =
+        user.name.toLowerCase().includes(lowercasedQuery) ||
+        user.email.toLowerCase().includes(lowercasedQuery);
       return !isMember && matchesSearch;
     }) || [];
 
@@ -1107,11 +1108,10 @@ if (error || !group || isError) {
             <View style={styles.searchContainer}>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search by email..."
+                placeholder="Search by name"
                 value={searchEmail}
                 onChangeText={setSearchEmail}
                 autoCapitalize="none"
-                keyboardType="email-address"
               />
             </View>
 

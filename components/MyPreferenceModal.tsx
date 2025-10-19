@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { StyleSheet, Platform } from 'react-native';
-import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Clock, Plus, Package, Car, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { StyleSheet } from 'react-native';
+import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Plus, Package, Car, Edit } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyActivityPreferences, deleteUserInterest, toggleUserInterestStatus } from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
@@ -36,6 +36,7 @@ interface ActivityPreference {
   preferredTimes: string[];
   additionalNotes: string | null;
   isActive: boolean;
+  publicPreference: boolean;
   createdAt: string;
   updatedAt: string;
   activity: {
@@ -54,9 +55,8 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
-  const [isPreferenceModalVisible, setIsPreferenceModalVisible] = useState(
-    false
-  );
+  const [isPreferenceModalVisible, setIsPreferenceModalVisible] = useState(false);
+  const [editingPreference, setEditingPreference] = useState<ActivityPreference | null>(null);
 
   // Fetch user preferences
   const {
@@ -117,6 +117,27 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
     toggleMutation.mutate(id);
   };
 
+  const handleEdit = (preference: ActivityPreference) => {
+    // Transform the preference data to match the modal's expected format
+    const preferenceForEdit = {
+      ...preference,
+      interestId: preference.activityId, // Map activityId to interestId for the modal
+    };
+    
+    setEditingPreference(preferenceForEdit);
+    setIsPreferenceModalVisible(true);
+  };
+
+  const handleAddNew = () => {
+    setEditingPreference(null);
+    setIsPreferenceModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setIsPreferenceModalVisible(false);
+    setEditingPreference(null);
+  };
+
   const getSkillLevelColor = (level: string) => {
     switch (level) {
       case 'Beginner': return '#4CAF50';
@@ -131,15 +152,19 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
     const isDeleting = deleteMutation.isPending;
 
     return (
-      <View key={preference.id} style={[
-        styles.preferenceCard,
-        !preference.isActive && styles.inactiveCard
-      ]}>
+      <View key={preference.id} style={styles.preferenceCard}>
         <View style={styles.cardHeader}>
           <View style={styles.activityInfo}>
             <Text style={styles.activityName}>{preference.activity.name}</Text>
             <Text style={styles.interestCategory}>{preference.activity.interest.name}</Text>
           </View>
+
+          {!preference.isActive && (
+            <View style={[styles.skillBadge, { backgroundColor: '#EF4444', marginRight: 8 }]}>
+              <Text style={styles.skillBadgeText}>Inactive</Text>
+            </View>
+          )}
+          
           <View style={[styles.skillBadge, { backgroundColor: getSkillLevelColor(preference.skillLevel) }]}>
             <Text style={styles.skillBadgeText}>{preference.skillLevel}</Text>
           </View>
@@ -172,15 +197,6 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             <MapPin size={14} color="#6B7280" />
             <Text style={styles.detailText}>Within {preference.locationRadius} miles</Text>
           </View>
-
-          {preference.availableDays?.length > 0 && (
-            <View style={styles.detailItem}>
-              <Clock size={14} color="#6B7280" />
-              <Text style={styles.detailText} numberOfLines={1}>
-                {preference.availableDays.join(', ')}
-              </Text>
-            </View>
-          )}
         </View>
 
         {preference.additionalNotes && (
@@ -190,6 +206,12 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
         )}
 
         <View style={styles.cardFooter}>
+          <TouchableOpacity
+            onPress={() => handleEdit(preference)}
+            style={styles.actionButton}
+          >
+            <Edit size={20} color="#3B82F6" />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => handleToggle(preference.id)}
             disabled={isToggling}
@@ -206,75 +228,84 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             disabled={isDeleting}
             style={styles.actionButton}
           >
-            {isDeleting ? <ActivityIndicator size="small" color="#F44336" /> : <Trash2 size={20} color="#F44336" />}
+            {isDeleting ? (
+              <ActivityIndicator size="small" color="#F44336" />
+            ) : (
+              <Trash2 size={20} color="#F44336" />
+            )}
           </TouchableOpacity>
         </View>
-
-        {!preference.isActive && (
-          <View style={styles.inactiveOverlay}>
-            <Text style={styles.inactiveText}>Inactive</Text>
-          </View>
-        )}
       </View>
     );
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>My Activity Preferences</Text>
-          <TouchableOpacity
-            style={styles.addPreferenceButton}
-            onPress={() => setIsPreferenceModalVisible(true)}
-          >
-            <Plus size={16} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>My Activity Preferences</Text>
+            <TouchableOpacity
+              style={styles.addPreferenceButton}
+              onPress={handleAddNew}
+            >
+              <Plus size={16} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <X size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
 
-        {/* Content */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.loadingText}>Loading preferences...</Text>
-            </View>
-          ) : isError ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Failed to load preferences</Text>
-              <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : preferences.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No activity preferences yet</Text>
-              <Text style={styles.emptySubtext}>
-                Add some activities to get started!
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.preferencesContainer}>
-              {preferences.map(renderPreferenceCard)}
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+          {/* Content */}
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Loading preferences...</Text>
+              </View>
+            ) : isError ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Failed to load preferences</Text>
+                <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : preferences.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No activity preferences yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Add some activities to get started!
+                </Text>
+                <TouchableOpacity onPress={handleAddNew} style={styles.addFirstButton}>
+                  <Text style={styles.addFirstButtonText}>Add Your First Preference</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.preferencesContainer}>
+                {preferences.map(renderPreferenceCard)}
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-       <CreateInterestPreferenceModal
-              visible={isPreferenceModalVisible} // Use the new state here
-              onClose={() => setIsPreferenceModalVisible(false)}
-            />
-    </Modal>
+      {/* Preference Modal (Create/Edit) */}
+      <CreateInterestPreferenceModal
+        visible={isPreferenceModalVisible}
+        onClose={handleModalClose}
+        editingPreference={editingPreference}
+        onSubmit={() => {
+          // Refresh the list after successful create/update
+          queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+        }}
+      />
+    </>
   );
 };
 
@@ -349,6 +380,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 18,
@@ -359,6 +391,18 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 24,
+  },
+  addFirstButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  addFirstButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   preferencesContainer: {
     padding: 16,
@@ -377,9 +421,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     position: 'relative',
-  },
-  inactiveCard: {
-    opacity: 0.7,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -464,28 +505,6 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 4,
     marginLeft: 8,
-  },
-  inactiveOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  inactiveText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#757575',
-    transform: [{ rotate: '-15deg' }],
-    borderWidth: 2,
-    borderColor: '#757575',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
   },
 });
 
