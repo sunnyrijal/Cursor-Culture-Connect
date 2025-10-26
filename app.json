@@ -2,7 +2,7 @@
   "expo": {
     "name": "TRiVO",
     "slug": "bolt-expo-nativewind",
-    "version": "0.1.1",
+    "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/logo.png",
     "scheme": "myapp",
@@ -21,7 +21,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trivo.connect",
-      "buildNumber": "20",
+      "buildNumber": "25",
       "googleServicesFile": "./google-services/GoogleService-Info.plist",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We use your photo library to let you upload a profile picture to your account.",
