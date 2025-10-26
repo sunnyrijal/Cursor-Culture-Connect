@@ -6,7 +6,7 @@ import {
   useEffect,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logout as storeLogout } from '@/data/store';
+import * as SecureStore from 'expo-secure-store';
 import { apiClient } from './api';
 import { Alert } from 'react-native';
 import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
@@ -67,8 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // If no active session, check local storage as fallback
-        const token = await AsyncStorage.getItem('token');
-        const userId = await AsyncStorage.getItem('userId');
+        const token = await SecureStore.getItemAsync('token');
+        const userId = await SecureStore.getItemAsync('userId');
         if (token && userId) {
           setAuthState({
             authenticated: true,
@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Session check error:', error);
         // Fallback to local storage if session check fails
-        const token = await AsyncStorage.getItem('token');
-        const userId = await AsyncStorage.getItem('userId');
+        const token = await SecureStore.getItemAsync('token');
+        const userId = await SecureStore.getItemAsync('userId');
         if (token && userId) {
           setAuthState({
             authenticated: true,
@@ -98,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiClient.login(email, password);
       const { accessToken, user } = response.data;
-      console.log(response);
-      await AsyncStorage.setItem('token', accessToken);
-      await AsyncStorage.setItem('userId', user?.id.toString());
+
+      await SecureStore.setItemAsync('token', accessToken);
+      await SecureStore.setItemAsync('userId', user?.id.toString());
 
       setAuthState({
         authenticated: true,
@@ -141,11 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // }
 
     // Clear local storage
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('userId');
-
-    // Reset store
-    storeLogout();
+    await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('userId');
 
     // Update auth state
     setAuthState({

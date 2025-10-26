@@ -31,18 +31,18 @@ export interface SignupData {
   classYear: string;
   university: string;
   profilePicture?: any;
-  pronouns: string;
-  ethnicity: string[];
+  pronouns?: string;
+  ethnicity?: string[];
   countryOfOrigin: string;
   major:string;
-  city: string;
+  city?: string;
   bio?:string;
-  state: string;
-  languagesSpoken: string[];
-  interests: string[];
+  state?: string;
+  languagesSpoken?: string[];
+  interests?: string[];
   termsAccepted: boolean;
   privacyAccepted: boolean;
-  marketingOptIn: boolean;
+  marketingOptIn?: boolean;
   publicPreference?:any
   
 }

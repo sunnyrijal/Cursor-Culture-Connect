@@ -60,6 +60,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { uploadFile } from '@/contexts/file.api';
 import TermsModal from './TermsModal';
+import * as SecureStore from 'expo-secure-store';
 import { useAlert } from '@/contexts/AlertContext';
 
 import statesData from '../data/US_States_list.json';
@@ -131,33 +132,17 @@ interface SignUpFormProps {
 }
 
 const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Step 1 - Basic Information (Required fields)
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [university, setUniversity] = useState('');
   const [major, setMajor] = useState('');
   const [countryOfOrigin, setCountryOfOrigin] = useState('');
   const [classYear, setClassYear] = useState('');
-
-  // Step 2 - Profile Information (Optional fields)
   const [profilePicture, setProfilePicture] = useState('');
-  const [pronouns, setPronouns] = useState('');
-  const [ethnicity, setEthnicity] = useState<string[]>([]);
-  const [location, setLocation] = useState({
-    city: '',
-    state: '',
-  });
-  const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [customInterest, setCustomInterest] = useState('');
-  const [bio, setBio] = useState('');
-  const [newLanguage, setNewLanguage] = useState('');
 
   // Legal checkboxes
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -171,16 +156,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   const [classYearItems, setClassYearItems] = useState(
     CLASS_YEAR_OPTIONS.map((y) => ({ label: y, value: y }))
   );
-
-  const [stateOpen, setStateOpen] = useState(false);
-  const [stateItems, setStateItems] = useState(
-    Object.values(statesData).map((s) => ({ label: s, value: s }))
-  );
-
-  const [cityOpen, setCityOpen] = useState(false);
-  const [cityItems, setCityItems] = useState<
-    { label: string; value: string }[]
-  >([]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -234,33 +209,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   });
 
   useEffect(() => {
-    if (location.state) {
-      const citiesForState = (citiesData as any)[location.state] || [];
-      setCityItems(
-        citiesForState.map((city: string) => ({ label: city, value: city }))
-      );
-      // Reset city if it's not in the new list of cities
-      if (!citiesForState.includes(location.city)) {
-        setLocation((prev) => ({ ...prev, city: '' }));
-      }
-    }
-  }, [location.state]);
-
-  useEffect(() => {
-    if (stateOpen) {
-      setClassYearOpen(false);
-      setCityOpen(false);
-    }
-  }, [stateOpen]);
-
-  useEffect(() => {
-    if (cityOpen) {
-      setClassYearOpen(false);
-      setStateOpen(false);
-    }
-  }, [cityOpen]);
-
-  useEffect(() => {
     // Entry animations
     headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }));
     headerScale.value = withDelay(
@@ -292,7 +240,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
       withTiming(20, { duration: 200 }),
       withTiming(0, { duration: 400 })
     );
-  }, [currentStep]);
+  }, []);
 
   const validateField = (field: string, value: any): boolean => {
     let isValid = false;
@@ -308,9 +256,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
       case 'confirmPassword':
         isValid = value === password;
         break;
-      case 'firstName':
-      case 'lastName':
-        isValid = value.length >= 2;
+      case 'fullName':
+        isValid = value.trim().includes(' ') && value.length >= 3;
         break;
       case 'university':
         isValid = value.length >= 2;
@@ -336,34 +283,21 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   };
 
   const handleSubmit = async (): Promise<void> => {
-    if (currentStep === 1) {
-      // Validate step 1 fields
-      const step1Valid = [
-        validateField('firstName', firstName),
-        validateField('lastName', lastName),
-        validateField('dateOfBirth', dateOfBirth),
-        validateField('email', email),
-        validateField('university', university),
-        validateField('password', password),
-        validateField('confirmPassword', confirmPassword),
-      ].every(Boolean);
+    const isFormValid = [
+      validateField('fullName', fullName),
+      validateField('email', email),
+      validateField('university', university),
+      validateField('classYear', classYear),
+      validateField('major', major),
+      validateField('password', password),
+      validateField('confirmPassword', confirmPassword),
+      validateField('termsAccepted', termsAccepted),
+      validateField('privacyAccepted', privacyAccepted),
+    ].every(Boolean);
 
-      if (step1Valid) {
-        setError('');
-        setCurrentStep(2);
-        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-        return;
-      } else {
-        setError('Please fill in all required fields correctly.');
-        return;
-      }
-    }
-
-    if (currentStep === 2) {
-      if (!termsAccepted || !privacyAccepted) {
-        setError('You must accept the Terms & Conditions and Privacy Policy.');
-        return;
-      }
+    if (!isFormValid) {
+      setError('Please fill in all required fields correctly.');
+      return;
     }
 
     setError('');
@@ -375,6 +309,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     );
 
     try {
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       const signupData = {
         firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
         lastName: lastName.charAt(0).toUpperCase() + lastName.slice(1),
@@ -386,20 +324,17 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
         major,
         university,
         countryOfOrigin,
-        profilePicture,
-        pronouns,
-        ethnicity,
-        city: location.city,
-        state: location.state,
-        languagesSpoken,
-        interests: selectedInterests,
-        bio,
+        profilePicture: profilePicture || undefined,
         termsAccepted,
         privacyAccepted,
         marketingOptIn,
       };
 
       await signup(signupData);
+
+      // Save credentials for auto-fill on login screen
+      await SecureStore.setItemAsync('savedEmail', email);
+      await SecureStore.setItemAsync('savedPassword', password);
     } catch (err: any) {
       console.log(err);
       setError(err.message || 'Authentication failed. Please try again.');
@@ -460,51 +395,61 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     setModalType(null);
   };
 
-  const toggleEthnicity = (option: string): void => {
-    setEthnicity((prevEthnicity) => {
-      const currentEthnicity = [...prevEthnicity]; // Create a new array
-      const index = currentEthnicity.indexOf(option);
+  const renderLegalCheckboxes = () => {
+    return (
+      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => {
+            setTermsAccepted(!termsAccepted);
+            validateField('termsAccepted', !termsAccepted);
+          }}
+        >
+          <View
+            style={[styles.checkbox, termsAccepted && styles.checkboxSelected]}
+          >
+            {termsAccepted && <CheckCircle size={16} color="#6366F1" />}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            I accept the{' '}
+            <Text
+              style={styles.linkText}
+              onPress={() => openLegalModal('terms')}
+            >
+              Terms & Conditions
+            </Text>{' '}
+            *
+          </Text>
+        </TouchableOpacity>
 
-      if (index > -1) {
-        // Remove if exists
-        currentEthnicity.splice(index, 1);
-      } else {
-        // Add if doesn't exist
-        currentEthnicity.push(option);
-      }
-
-      return currentEthnicity;
-    });
-  };
-
-  const toggleInterest = (interest: string): void => {
-    setSelectedInterests((prev) => {
-      if (prev.includes(interest)) {
-        return prev.filter((item) => item !== interest);
-      } else {
-        return [...prev, interest];
-      }
-    });
-  };
-
-  const addCustomInterest = (): void => {
-    if (
-      customInterest.trim() &&
-      !selectedInterests.includes(customInterest.trim())
-    ) {
-      setSelectedInterests((prev) => [...prev, customInterest.trim()]);
-      setCustomInterest('');
-    }
-  };
-
-  const addLanguage = (language: string): void => {
-    if (language.trim() && !languagesSpoken.includes(language.trim())) {
-      setLanguagesSpoken((prev) => [...prev, language.trim()]);
-    }
-  };
-
-  const removeLanguage = (language: string): void => {
-    setLanguagesSpoken((prev) => prev.filter((lang) => lang !== language));
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => {
+            setPrivacyAccepted(!privacyAccepted);
+            validateField('privacyAccepted', !privacyAccepted);
+          }}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              privacyAccepted && styles.checkboxSelected,
+            ]}
+          >
+            {privacyAccepted && <CheckCircle size={16} color="#6366F1" />}
+          </View>
+          <Text style={styles.checkboxLabel}>
+            I accept the{' '}
+            <Text
+              style={styles.linkText}
+              onPress={() => openLegalModal('privacy')}
+            >
+              Privacy Policy
+            </Text>{' '}
+            *
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
   };
 
   const renderAnimatedInput = useCallback(
@@ -552,6 +497,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
               value={value}
               onChangeText={onChangeText}
               editable={!loading}
+              onBlur={() => validateField(inputKey, value)}
               placeholderTextColor="#9CA3AF"
               {...options}
             />
@@ -601,13 +547,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
               {inputKey === 'password' &&
                 'Password must be at least 8 characters'}
               {inputKey === 'confirmPassword' && 'Passwords do not match'}
-              {inputKey === 'firstName' &&
-                'First name must be at least 2 characters'}
-              {inputKey === 'lastName' &&
-                'Last name must be at least 2 characters'}
+              {inputKey === 'fullName' && 'Please enter your full name.'}
               {inputKey === 'university' && 'University name is required'}
-              {inputKey === 'dateOfBirth' &&
-                'Please enter date in YYYY-MM-DD format'}
             </Text>
           )}
         </Animated.View>
@@ -697,112 +638,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     },
     [fieldValidation, loading]
   );
-
-  const renderLocationDropdowns = () => {
-    return (
-      <Animated.View style={{ opacity: formOpacity }}>
-        {/* State Dropdown */}
-        <View style={[styles.inputContainer, { zIndex: 2000 }]}>
-          <Text style={styles.inputLabel}>State (Optional)</Text>
-          <DropDownPicker
-            open={stateOpen}
-            value={location.state}
-            items={stateItems}
-            setOpen={setStateOpen}
-            setValue={(callback) => {
-              const newValue =
-                typeof callback === 'function'
-                  ? callback(location.state)
-                  : callback;
-              setLocation((prev) => ({
-                ...prev,
-                state: newValue || '',
-                city: '',
-              }));
-            }}
-            setItems={setStateItems}
-            placeholder="Select your state"
-            disabled={loading}
-            searchable={true}
-            searchPlaceholder="Search states..."
-            listMode="MODAL"
-            zIndexInverse={5000}
-            modalProps={{
-              animationType: 'slide',
-            }}
-            style={styles.dropdownStyle}
-            dropDownContainerStyle={styles.dropdownContainerStyle}
-            textStyle={styles.dropdownTextStyle}
-            placeholderStyle={styles.dropdownPlaceholderStyle}
-            searchTextInputStyle={styles.dropdownSearchStyle}
-            ArrowDownIconComponent={() => (
-              <ChevronDown size={20} color="#9CA3AF" />
-            )}
-            ArrowUpIconComponent={() => (
-              <ChevronDown
-                size={20}
-                color="#9CA3AF"
-                style={{ transform: [{ rotate: '180deg' }] }}
-              />
-            )}
-            TickIconComponent={() => <CheckCircle size={16} color="#6366F1" />}
-          />
-        </View>
-
-        {/* City Dropdown */}
-        <View style={[styles.inputContainer, { zIndex: 1000 }]}>
-          <Text style={styles.inputLabel}>City (Optional)</Text>
-          <DropDownPicker
-            open={cityOpen}
-            value={location.city}
-            items={cityItems}
-            setOpen={setCityOpen}
-            setValue={(callback) => {
-              const newValue =
-                typeof callback === 'function'
-                  ? callback(location.city)
-                  : callback;
-              setLocation((prev) => ({ ...prev, city: newValue || '' }));
-            }}
-            setItems={setCityItems}
-            placeholder={
-              location.state ? 'Select your city' : 'Select a state first'
-            }
-            disabled={loading || !location.state}
-            searchable={true}
-            searchPlaceholder="Search cities..."
-            listMode="MODAL"
-            zIndexInverse={4000}
-            modalProps={{
-              animationType: 'slide',
-            }}
-            scrollViewProps={{
-              nestedScrollEnabled: true,
-            }}
-            style={[
-              styles.dropdownStyle,
-              !location.state && styles.dropdownDisabled,
-            ]}
-            dropDownContainerStyle={styles.dropdownContainerStyle}
-            textStyle={styles.dropdownTextStyle}
-            placeholderStyle={styles.dropdownPlaceholderStyle}
-            searchTextInputStyle={styles.dropdownSearchStyle}
-            ArrowDownIconComponent={() => (
-              <ChevronDown size={20} color="#9CA3AF" />
-            )}
-            ArrowUpIconComponent={() => (
-              <ChevronDown
-                size={20}
-                color="#9CA3AF"
-                style={{ transform: [{ rotate: '180deg' }] }}
-              />
-            )}
-            TickIconComponent={() => <CheckCircle size={16} color="#6366F1" />}
-          />
-        </View>
-      </Animated.View>
-    );
-  };
 
   const renderDateOfBirthPicker = () => {
     const formatDate = (date: Date): string => {
@@ -895,313 +730,313 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     );
   };
 
-  const renderPronounsDropdown = () => {
-    const pronounOptions = ['she/her', 'he/him', 'they/them', 'other'];
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.sectionTitle}>Pronouns</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScrollView}
-        >
-          <View style={styles.dropdownContainer}>
-            {pronounOptions.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.dropdownOption,
-                  pronouns === option && styles.dropdownOptionSelected,
-                ]}
-                onPress={() => setPronouns(option)}
-              >
-                <Text
-                  style={[
-                    styles.dropdownOptionText,
-                    pronouns === option && styles.dropdownOptionTextSelected,
-                  ]}
-                >
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-        {pronouns === 'other' && (
-          <TextInput
-            style={styles.customInterestInput}
-            placeholder="Please specify your pronouns"
-            onChangeText={setPronouns}
-            autoFocus
-          />
-        )}
-      </Animated.View>
-    );
-  };
+  // const renderPronounsDropdown = () => {
+  //   const pronounOptions = ['she/her', 'he/him', 'they/them', 'other'];
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <Text style={styles.sectionTitle}>Pronouns</Text>
+  //       <ScrollView
+  //         horizontal
+  //         showsHorizontalScrollIndicator={false}
+  //         style={styles.horizontalScrollView}
+  //       >
+  //         <View style={styles.dropdownContainer}>
+  //           {pronounOptions.map((option) => (
+  //             <TouchableOpacity
+  //               key={option}
+  //               style={[
+  //                 styles.dropdownOption,
+  //                 pronouns === option && styles.dropdownOptionSelected,
+  //               ]}
+  //               onPress={() => setPronouns(option)}
+  //             >
+  //               <Text
+  //                 style={[
+  //                   styles.dropdownOptionText,
+  //                   pronouns === option && styles.dropdownOptionTextSelected,
+  //                 ]}
+  //               >
+  //                 {option.charAt(0).toUpperCase() + option.slice(1)}
+  //               </Text>
+  //             </TouchableOpacity>
+  //           ))}
+  //         </View>
+  //       </ScrollView>
+  //       {pronouns === 'other' && (
+  //         <TextInput
+  //           style={styles.customInterestInput}
+  //           placeholder="Please specify your pronouns"
+  //           onChangeText={setPronouns}
+  //           autoFocus
+  //         />
+  //       )}
+  //     </Animated.View>
+  //   );
+  // };
 
-  const renderEthnicitySelection = () => {
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <View style={styles.ethnicityHeader}>
-          <Heart size={20} color="#8B5CF6" />
-          <Text style={styles.sectionTitle}>Ethnicity & Background</Text>
-        </View>
-        <Text style={styles.sectionSubtitle}>
-          Help us build inclusive communities and celebrate diversity
-        </Text>
-        <View style={styles.checkboxContainer}>
-          {ETHNICITY_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.checkboxRow}
-              onPress={() => toggleEthnicity(option)}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  ethnicity.includes(option) && styles.checkboxSelected,
-                ]}
-              >
-                {ethnicity.includes(option) && (
-                  <CheckCircle size={16} color="#6366F1" />
-                )}
-              </View>
-              <Text style={styles.checkboxLabel}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Animated.View>
-    );
-  };
+  // const renderEthnicitySelection = () => {
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <View style={styles.ethnicityHeader}>
+  //         <Heart size={20} color="#8B5CF6" />
+  //         <Text style={styles.sectionTitle}>Ethnicity & Background</Text>
+  //       </View>
+  //       <Text style={styles.sectionSubtitle}>
+  //         Help us build inclusive communities and celebrate diversity
+  //       </Text>
+  //       <View style={styles.checkboxContainer}>
+  //         {ETHNICITY_OPTIONS.map((option) => (
+  //           <TouchableOpacity
+  //             key={option}
+  //             style={styles.checkboxRow}
+  //             onPress={() => toggleEthnicity(option)}
+  //           >
+  //             <View
+  //               style={[
+  //                 styles.checkbox,
+  //                 ethnicity.includes(option) && styles.checkboxSelected,
+  //               ]}
+  //             >
+  //               {ethnicity.includes(option) && (
+  //                 <CheckCircle size={16} color="#6366F1" />
+  //               )}
+  //             </View>
+  //             <Text style={styles.checkboxLabel}>{option}</Text>
+  //           </TouchableOpacity>
+  //         ))}
+  //       </View>
+  //     </Animated.View>
+  //   );
+  // };
 
-  const renderLanguagesSpoken = () => {
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <View style={styles.languagesHeader}>
-          <Globe size={20} color="#10B981" />
-          <Text style={[styles.inputLabel, { marginLeft: 10, fontSize: 16 }]}>
-            Languages Spoken
-          </Text>
-        </View>
+  // const renderLanguagesSpoken = () => {
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <View style={styles.languagesHeader}>
+  //         <Globe size={20} color="#10B981" />
+  //         <Text style={[styles.inputLabel, { marginLeft: 10, fontSize: 16 }]}>
+  //           Languages Spoken
+  //         </Text>
+  //       </View>
 
-        <View style={styles.languageInputContainer}>
-          <TextInput
-            style={styles.languageInput}
-            placeholder="Add a language (e.g., Nepali, Hindi)"
-            value={newLanguage}
-            onChangeText={setNewLanguage}
-            onSubmitEditing={() => {
-              if (newLanguage.trim()) {
-                addLanguage(newLanguage);
-                setNewLanguage('');
-              }
-            }}
-          />
-          <TouchableOpacity
-            style={styles.addLanguageButton}
-            onPress={() => {
-              if (newLanguage.trim()) {
-                addLanguage(newLanguage);
-                setNewLanguage('');
-              }
-            }}
-          >
-            <Text style={styles.addLanguageButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
+  //       <View style={styles.languageInputContainer}>
+  //         <TextInput
+  //           style={styles.languageInput}
+  //           placeholder="Add a language (e.g., Nepali, Hindi)"
+  //           value={newLanguage}
+  //           onChangeText={setNewLanguage}
+  //           onSubmitEditing={() => {
+  //             if (newLanguage.trim()) {
+  //               addLanguage(newLanguage);
+  //               setNewLanguage('');
+  //             }
+  //           }}
+  //         />
+  //         <TouchableOpacity
+  //           style={styles.addLanguageButton}
+  //           onPress={() => {
+  //             if (newLanguage.trim()) {
+  //               addLanguage(newLanguage);
+  //               setNewLanguage('');
+  //             }
+  //           }}
+  //         >
+  //           <Text style={styles.addLanguageButtonText}>Add</Text>
+  //         </TouchableOpacity>
+  //       </View>
 
-        <View style={styles.languageTagsContainer}>
-          {languagesSpoken.map((language, index) => (
-            <View key={index} style={styles.languageTag}>
-              <Text style={styles.languageTagText}>{language}</Text>
-              <TouchableOpacity
-                onPress={() => removeLanguage(language)}
-                style={styles.removeLanguageButton}
-              >
-                <X size={14} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </Animated.View>
-    );
-  };
+  //       <View style={styles.languageTagsContainer}>
+  //         {languagesSpoken.map((language, index) => (
+  //           <View key={index} style={styles.languageTag}>
+  //             <Text style={styles.languageTagText}>{language}</Text>
+  //             <TouchableOpacity
+  //               onPress={() => removeLanguage(language)}
+  //               style={styles.removeLanguageButton}
+  //             >
+  //               <X size={14} color="#6B7280" />
+  //             </TouchableOpacity>
+  //           </View>
+  //         ))}
+  //       </View>
+  //     </Animated.View>
+  //   );
+  // };
 
-  const renderInterestsAndHobbies = () => {
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <View style={styles.interestsHeader}>
-          <Heart size={20} color="#F59E0B" />
-          <Text style={styles.sectionTitle}>Interests & Hobbies</Text>
-        </View>
-        <Text style={styles.sectionSubtitle}>
-          Select your interests to connect with like-minded peers
-        </Text>
+  // const renderInterestsAndHobbies = () => {
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <View style={styles.interestsHeader}>
+  //         <Heart size={20} color="#F59E0B" />
+  //         <Text style={styles.sectionTitle}>Interests & Hobbies</Text>
+  //       </View>
+  //       <Text style={styles.sectionSubtitle}>
+  //         Select your interests to connect with like-minded peers
+  //       </Text>
 
-        <View style={styles.interestsGrid}>
-          {INTERESTS_OPTIONS.map((interest) => (
-            <TouchableOpacity
-              key={interest}
-              style={[
-                styles.interestTag,
-                selectedInterests.includes(interest) &&
-                  styles.interestTagSelected,
-              ]}
-              onPress={() => toggleInterest(interest)}
-            >
-              <Text
-                style={[
-                  styles.interestTagText,
-                  selectedInterests.includes(interest) &&
-                    styles.interestTagTextSelected,
-                ]}
-              >
-                {interest}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          {selectedInterests
-            .filter((interest) => !INTERESTS_OPTIONS.includes(interest))
-            .map((interest, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.interestTag, styles.interestTagSelected]}
-                onPress={() => toggleInterest(interest)}
-              >
-                <Text
-                  style={[
-                    styles.interestTagText,
-                    styles.interestTagTextSelected,
-                  ]}
-                >
-                  {interest}
-                </Text>
-              </TouchableOpacity>
-            ))}
-        </View>
+  //       <View style={styles.interestsGrid}>
+  //         {INTERESTS_OPTIONS.map((interest) => (
+  //           <TouchableOpacity
+  //             key={interest}
+  //             style={[
+  //               styles.interestTag,
+  //               selectedInterests.includes(interest) &&
+  //                 styles.interestTagSelected,
+  //             ]}
+  //             onPress={() => toggleInterest(interest)}
+  //           >
+  //             <Text
+  //               style={[
+  //                 styles.interestTagText,
+  //                 selectedInterests.includes(interest) &&
+  //                   styles.interestTagTextSelected,
+  //               ]}
+  //             >
+  //               {interest}
+  //             </Text>
+  //           </TouchableOpacity>
+  //         ))}
+  //         {selectedInterests
+  //           .filter((interest) => !INTERESTS_OPTIONS.includes(interest))
+  //           .map((interest, index) => (
+  //             <TouchableOpacity
+  //               key={index}
+  //               style={[styles.interestTag, styles.interestTagSelected]}
+  //               onPress={() => toggleInterest(interest)}
+  //             >
+  //               <Text
+  //                 style={[
+  //                   styles.interestTagText,
+  //                   styles.interestTagTextSelected,
+  //                 ]}
+  //               >
+  //                 {interest}
+  //               </Text>
+  //             </TouchableOpacity>
+  //           ))}
+  //       </View>
 
-        <View style={styles.customInterestContainer}>
-          <TextInput
-            style={styles.customInterestInput}
-            placeholder="Add custom interest..."
-            value={customInterest}
-            onChangeText={setCustomInterest}
-            onSubmitEditing={addCustomInterest}
-          />
-          <TouchableOpacity
-            style={styles.addInterestButton}
-            onPress={addCustomInterest}
-          >
-            <Text style={styles.addInterestButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
-  };
+  //       <View style={styles.customInterestContainer}>
+  //         <TextInput
+  //           style={styles.customInterestInput}
+  //           placeholder="Add custom interest..."
+  //           value={customInterest}
+  //           onChangeText={setCustomInterest}
+  //           onSubmitEditing={addCustomInterest}
+  //         />
+  //         <TouchableOpacity
+  //           style={styles.addInterestButton}
+  //           onPress={addCustomInterest}
+  //         >
+  //           <Text style={styles.addInterestButtonText}>Add</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //     </Animated.View>
+  //   );
+  // };
 
-  const renderBioSection = () => {
-    const maxLength = 500;
+  // const renderBioSection = () => {
+  //   const maxLength = 500;
 
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <Text style={styles.inputLabel}>Tell us about yourself</Text>
-        <View style={styles.bioContainer}>
-          <TextInput
-            style={styles.bioInput}
-            placeholder="Share a bit about yourself, your goals, what you're looking for in connections..."
-            value={bio}
-            onChangeText={setBio}
-            multiline
-            numberOfLines={4}
-            maxLength={maxLength}
-            textAlignVertical="top"
-          />
-        </View>
-        <Text style={styles.characterCount}>
-          {bio.length}/{maxLength} characters
-        </Text>
-      </Animated.View>
-    );
-  };
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <Text style={styles.inputLabel}>Tell us about yourself</Text>
+  //       <View style={styles.bioContainer}>
+  //         <TextInput
+  //           style={styles.bioInput}
+  //           placeholder="Share a bit about yourself, your goals, what you're looking for in connections..."
+  //           value={bio}
+  //           onChangeText={setBio}
+  //           multiline
+  //           numberOfLines={4}
+  //           maxLength={maxLength}
+  //           textAlignVertical="top"
+  //         />
+  //       </View>
+  //       <Text style={styles.characterCount}>
+  //         {bio.length}/{maxLength} characters
+  //       </Text>
+  //     </Animated.View>
+  //   );
+  // };
 
-  const renderLegalCheckboxes = () => {
-    return (
-      <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
-        <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => {
-            setTermsAccepted(!termsAccepted);
-            validateField('termsAccepted', !termsAccepted);
-          }}
-        >
-          <View
-            style={[styles.checkbox, termsAccepted && styles.checkboxSelected]}
-          >
-            {termsAccepted && <CheckCircle size={16} color="#6366F1" />}
-          </View>
-          <Text style={styles.checkboxLabel}>
-            I accept the{' '}
-            <Text
-              style={styles.linkText}
-              onPress={() => openLegalModal('terms')}
-            >
-              Terms & Conditions
-            </Text>{' '}
-            *
-          </Text>
-        </TouchableOpacity>
+  // const renderLegalCheckboxes = () => {
+  //   return (
+  //     <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
+  //       <TouchableOpacity
+  //         style={styles.checkboxRow}
+  //         onPress={() => {
+  //           setTermsAccepted(!termsAccepted);
+  //           validateField('termsAccepted', !termsAccepted);
+  //         }}
+  //       >
+  //         <View
+  //           style={[styles.checkbox, termsAccepted && styles.checkboxSelected]}
+  //         >
+  //           {termsAccepted && <CheckCircle size={16} color="#6366F1" />}
+  //         </View>
+  //         <Text style={styles.checkboxLabel}>
+  //           I accept the{' '}
+  //           <Text
+  //             style={styles.linkText}
+  //             onPress={() => openLegalModal('terms')}
+  //           >
+  //             Terms & Conditions
+  //           </Text>{' '}
+  //           *
+  //         </Text>
+  //       </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => {
-            setPrivacyAccepted(!privacyAccepted);
-            validateField('privacyAccepted', !privacyAccepted);
-          }}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              privacyAccepted && styles.checkboxSelected,
-            ]}
-          >
-            {privacyAccepted && <CheckCircle size={16} color="#6366F1" />}
-          </View>
-          <Text style={styles.checkboxLabel}>
-            I accept the{' '}
-            <Text
-              style={styles.linkText}
-              onPress={() => openLegalModal('privacy')}
-            >
-              Privacy Policy
-            </Text>{' '}
-            *
-          </Text>
-        </TouchableOpacity>
+  //       <TouchableOpacity
+  //         style={styles.checkboxRow}
+  //         onPress={() => {
+  //           setPrivacyAccepted(!privacyAccepted);
+  //           validateField('privacyAccepted', !privacyAccepted);
+  //         }}
+  //       >
+  //         <View
+  //           style={[
+  //             styles.checkbox,
+  //             privacyAccepted && styles.checkboxSelected,
+  //           ]}
+  //         >
+  //           {privacyAccepted && <CheckCircle size={16} color="#6366F1" />}
+  //         </View>
+  //         <Text style={styles.checkboxLabel}>
+  //           I accept the{' '}
+  //           <Text
+  //             style={styles.linkText}
+  //             onPress={() => openLegalModal('privacy')}
+  //           >
+  //             Privacy Policy
+  //           </Text>{' '}
+  //           *
+  //         </Text>
+  //       </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => setMarketingOptIn(!marketingOptIn)}
-        >
-          <View
-            style={[styles.checkbox, marketingOptIn && styles.checkboxSelected]}
-          >
-            {marketingOptIn && <CheckCircle size={16} color="#6366F1" />}
-          </View>
-          <Text style={styles.checkboxLabel}>
-            Send me updates about events and news (Notification/Marketing
-            Opt-In)
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+  //       <TouchableOpacity
+  //         style={styles.checkboxRow}
+  //         onPress={() => setMarketingOptIn(!marketingOptIn)}
+  //       >
+  //         <View
+  //           style={[styles.checkbox, marketingOptIn && styles.checkboxSelected]}
+  //         >
+  //           {marketingOptIn && <CheckCircle size={16} color="#6366F1" />}
+  //         </View>
+  //         <Text style={styles.checkboxLabel}>
+  //           Send me updates about events and news (Notification/Marketing
+  //           Opt-In)
+  //         </Text>
+  //       </TouchableOpacity>
+  //     </Animated.View>
+  //   );
+  // };
 
   const renderBreadcrumb = () => {
     return (
       <Animated.View
         style={[styles.breadcrumbContainer, { opacity: formOpacity }]}
       >
-        <View style={styles.breadcrumbStep}>
+        {/* <View style={styles.breadcrumbStep}>
           <View
             style={[
               styles.breadcrumbCircle,
@@ -1225,9 +1060,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
           >
             Basic Info
           </Text>
-        </View>
+        </View> */}
 
-        <View style={styles.breadcrumbLine} />
+        {/* <View style={styles.breadcrumbLine} />
 
         <View style={styles.breadcrumbStep}>
           <View
@@ -1253,7 +1088,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
           >
             Profile
           </Text>
-        </View>
+        </View> */}
       </Animated.View>
     );
   };
@@ -1383,33 +1218,19 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                 end={{ x: 1, y: 1 }}
                 style={styles.formGradient}
               >
-                {currentStep === 1 && (
                   <>
                     {renderProfilePictureInput()}
 
                     {renderAnimatedInput(
                       User,
-                      'First Name *',
-                      firstName,
-                      setFirstName,
+                      'Full Name *',
+                      fullName,
+                      setFullName,
                       'John',
-                      'firstName',
+                      'fullName',
                       {
                         autoCapitalize: 'words',
                         autoComplete: 'given-name',
-                      }
-                    )}
-
-                    {renderAnimatedInput(
-                      User,
-                      'Last Name *',
-                      lastName,
-                      setLastName,
-                      'Doe',
-                      'lastName',
-                      {
-                        autoCapitalize: 'words',
-                        autoComplete: 'family-name',
                       }
                     )}
 
@@ -1520,45 +1341,15 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                         autoCorrect: false,
                       }
                     )}
-                  </>
-                )}
-
-                {currentStep === 2 && (
-                  <>
-                    {renderPronounsDropdown()}
-
-                    {renderEthnicitySelection()}
-
-                    {renderLocationDropdowns()}
-
-                    {renderLanguagesSpoken()}
-
-                    {renderInterestsAndHobbies()}
-
-                    {renderBioSection()}
 
                     {renderLegalCheckboxes()}
                   </>
-                )}
               </LinearGradient>
             </BlurView>
           </Animated.View>
 
           {/* Navigation Buttons */}
           <Animated.View style={buttonAnimatedStyle}>
-            {currentStep === 2 && (
-              <TouchableOpacity
-                style={[styles.secondaryButton]}
-                onPress={() => setCurrentStep(1)}
-                disabled={loading}
-              >
-                <View style={styles.buttonContent}>
-                  <ArrowLeft size={16} color="#6366F1" />
-                  <Text style={styles.secondaryButtonText}>Back</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
             <TouchableOpacity
               style={[styles.primaryButton, loading && styles.disabledButton]}
               onPress={handleSubmit}
@@ -1583,18 +1374,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                 ) : (
                   <View style={styles.buttonContent}>
                     <Text style={styles.primaryButtonText}>
-                      {currentStep === 1
-                        ? 'Continue'
-                        : currentStep === 2
-                        ? 'Complete Registration'
-                        : 'Create Account'}
+                      Create Account
                     </Text>
                     <View style={styles.buttonIcon}>
-                      {currentStep === 2 ? (
-                        <Sparkles size={16} color="white" />
-                      ) : (
-                        <ArrowRight size={16} color="white" />
-                      )}
+                      <Sparkles size={16} color="white" />
                     </View>
                   </View>
                 )}

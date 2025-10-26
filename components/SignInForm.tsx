@@ -32,6 +32,7 @@ import Animated, {
 } from "react-native-reanimated"
 
 import { useAlert } from "@/contexts/AlertContext"
+import * as SecureStore from "expo-secure-store"
 //@ts-ignore
 import logo from "../assets/logo.png"
 
@@ -44,9 +45,9 @@ interface SignInFormProps {
 const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [focusedInput, setFocusedInput] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [fieldValidation, setFieldValidation] = useState<Record<string, boolean>>({})
 
@@ -64,23 +65,37 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
   const particleOpacity = useSharedValue(0)
   const backgroundRotation = useSharedValue(0)
 
+  // ⏬ Load saved credentials
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      try {
+        const savedEmail = await SecureStore.getItemAsync("savedEmail")
+        const savedPassword = await SecureStore.getItemAsync("savedPassword")
+        if (savedEmail && savedPassword) {
+          setEmail(savedEmail)
+          setPassword(savedPassword)
+          setRememberMe(true)
+        }
+      } catch (err) {
+        console.error("Error loading saved credentials:", err)
+      }
+    }
+    loadSavedCredentials()
+  }, [])
+
   useEffect(() => {
     // Entry animations
     headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }))
     headerScale.value = withDelay(200, withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) }))
-
     formOpacity.value = withDelay(600, withTiming(1, { duration: 800 }))
     formTranslateY.value = withDelay(600, withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) }))
-
     switchScale.value = withDelay(1000, withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) }))
     particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }))
-
     backgroundRotation.value = withRepeat(withTiming(360, { duration: 60000, easing: Easing.linear }), -1, false)
   }, [])
 
   const validateField = (field: string, value: any): boolean => {
     let isValid = false
-
     switch (field) {
       case "email":
         isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.includes(".edu")
@@ -91,33 +106,41 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
       default:
         isValid = true
     }
-
     setFieldValidation((prev) => ({ ...prev, [field]: isValid }))
     return isValid
   }
 
+  // ⏬ Handle Submit
   const handleSubmit = async (): Promise<void> => {
     setError("")
     setLoading(true)
-
     buttonScale.value = withSequence(withTiming(0.95, { duration: 100 }), withTiming(1, { duration: 100 }))
 
     try {
-      const loginData = { email, password }
       await login(email, password)
+
+      // Save credentials if Remember Me is checked
+      if (rememberMe) {
+        await SecureStore.setItemAsync("savedEmail", email)
+        await SecureStore.setItemAsync("savedPassword", password)
+      } else {
+        await SecureStore.deleteItemAsync("savedEmail")
+        await SecureStore.deleteItemAsync("savedPassword")
+      }
+
       router.replace("/(tabs)")
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || "Authentication failed. Please try again.";
+      const errorMessage = err.response?.data?.message || err.message || "Authentication failed. Please try again."
 
       if (errorMessage.includes("Your account is not verified") || errorMessage.includes("Email not verified")) {
         showAlert({
           title: "Verification Required",
           message: "Your account is not verified. A new verification code has been sent to your email.",
-        });
-        router.push(`/(auth)/verify?email=${email}`);
+        })
+        router.push(`/(auth)/verify?email=${email}`)
       } else {
-        setError(errorMessage);
-        showAlert({ title: "Login Failed", message: errorMessage });
+        setError(errorMessage)
+        showAlert({ title: "Login Failed", message: errorMessage })
       }
     } finally {
       setLoading(false)
@@ -135,7 +158,6 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
       options: object = {},
     ) => {
       const isValid = fieldValidation[inputKey]
-      const isFocused = focusedInput === inputKey
 
       return (
         <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
@@ -143,7 +165,6 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
           <View
             style={[
               styles.inputWrapper,
-              isFocused && styles.inputWrapperFocused,
               isValid === true && styles.inputWrapperValid,
               isValid === false && value && styles.inputWrapperInvalid,
             ]}
@@ -151,13 +172,11 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
             <View style={styles.inputIcon}>
               {React.createElement(icon, {
                 size: 20,
-                color: isFocused
-                  ? "#6366F1"
-                  : isValid === true
-                    ? "#10B981"
-                    : isValid === false && value
-                      ? "#EF4444"
-                      : "#9CA3AF",
+                color: isValid === true
+                  ? "#10B981"
+                  : isValid === false && value
+                  ? "#EF4444"
+                  : "#9CA3AF",
               })}
             </View>
 
@@ -168,6 +187,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
               onChangeText={onChangeText}
               editable={!loading}
               placeholderTextColor="#9CA3AF"
+              onBlur={() => validateField(inputKey, value)}
               {...options}
             />
 
@@ -199,7 +219,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
         </Animated.View>
       )
     },
-    [fieldValidation, focusedInput, loading, showPassword, formOpacity],
+    [fieldValidation, loading, showPassword, formOpacity],
   )
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -272,6 +292,21 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
                   autoCorrect: false,
                 })}
 
+                {/* Remember Me */}
+                <TouchableOpacity
+                  style={styles.rememberContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <TouchableOpacity
+                    onPress={() => setRememberMe(!rememberMe)}
+                    style={[styles.rememberCheckbox, rememberMe && styles.rememberChecked]}
+                  >
+                    {rememberMe && <CheckCircle size={14} color="white" />}
+                  </TouchableOpacity>
+                  <Text style={styles.rememberText}>Remember Me</Text>
+                </TouchableOpacity>
+
                 <View style={styles.extraLinksContainer}>
                   <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")}>
                     <Text style={styles.linkText}>Forgot Password?</Text>
@@ -321,7 +356,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
               >
                 <Text style={styles.switchLabel}>Don't have an account?</Text>
                 <TouchableOpacity
-                  onPress={() => router.push('/(auth)/signup')}
+                  onPress={() => router.push("/(auth)/signup")}
                   disabled={loading}
                   style={styles.switchButton}
                   activeOpacity={0.7}
@@ -342,47 +377,16 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
   )
 }
 
+// 🎨 Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1E1B4B",
-  },
-  backgroundContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backgroundGradient: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "black",
-    textAlign: "center",
-    marginBottom: 8,
-  },
+  container: { flex: 1, backgroundColor: "#1E1B4B" },
+  backgroundContainer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  backgroundGradient: { flex: 1, backgroundColor: "#FAFAFA" },
+  keyboardContainer: { flex: 1 },
+  scrollContainer: { flexGrow: 1, paddingHorizontal: 20, paddingTop: Platform.OS === "ios" ? 60 : 40, paddingBottom: 40 },
+  header: { alignItems: "center", marginBottom: 30 },
+  logo: { width: 80, height: 80, borderRadius: 20 },
+  title: { fontSize: 28, fontWeight: "bold", color: "black", textAlign: "center", marginBottom: 8 },
   errorContainer: {
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     borderRadius: 12,
@@ -391,30 +395,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(239, 68, 68, 0.3)",
   },
-  errorText: {
-    color: "#EF4444",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  formContainer: {
-    marginBottom: 20,
-  },
-  formBlur: {
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  formGradient: {
-    padding: 24,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
+  errorText: { color: "#EF4444", fontSize: 14, textAlign: "center" },
+  formContainer: { marginBottom: 20 },
+  formBlur: { borderRadius: 20, overflow: "hidden" },
+  formGradient: { padding: 24 },
+  inputContainer: { marginBottom: 20 },
+  inputLabel: { fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -425,117 +411,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
   },
-  inputWrapperFocused: {
+  inputWrapperFocused: { borderColor: "#6366F1", shadowColor: "#6366F1", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  inputWrapperValid: { borderColor: "#10B981" },
+  inputWrapperInvalid: { borderColor: "#EF4444" },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 16, color: "#111827", paddingVertical: 0 },
+  eyeIcon: { padding: 4, marginLeft: 8 },
+  validIcon: { marginLeft: 8 },
+  validationText: { fontSize: 12, color: "#EF4444", marginTop: 4, marginLeft: 4 },
+  rememberContainer: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  rememberCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
     borderColor: "#6366F1",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  inputWrapperValid: {
-    borderColor: "#10B981",
-  },
-  inputWrapperInvalid: {
-    borderColor: "#EF4444",
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: "#111827",
-    paddingVertical: 0,
-  },
-  eyeIcon: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  validIcon: {
-    marginLeft: 8,
-  },
-  validationText: {
-    fontSize: 12,
-    color: "#EF4444",
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  extraLinksContainer: {
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  linkText: {
-    color: "#6366F1",
-    textDecorationLine: "underline",
-  },
-  primaryButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  buttonGradient: {
-    paddingVertical: 18,
-    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
-  },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
     marginRight: 8,
+    backgroundColor: "transparent",
   },
-  buttonIcon: {
-    marginLeft: 4,
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-    marginLeft: 8,
-  },
-  switchContainer: {
-    marginTop: 20,
-  },
-  switchBlur: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  switchGradient: {
-    padding: 20,
-    alignItems: "center",
-  },
-  switchLabel: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 12,
-  },
-  switchButton: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  switchButtonGradient: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  switchButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6366F1",
-  },
+  rememberChecked: { backgroundColor: "#6366F1" },
+  rememberText: { color: "#374151", fontSize: 14 },
+  extraLinksContainer: { alignItems: "flex-end", gap: 8 },
+  linkText: { color: "#6366F1", textDecorationLine: "underline" },
+  primaryButton: { borderRadius: 16, overflow: "hidden", marginBottom: 12 },
+  disabledButton: { opacity: 0.6 },
+  buttonGradient: { paddingVertical: 18, paddingHorizontal: 24, alignItems: "center", justifyContent: "center" },
+  buttonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  primaryButtonText: { fontSize: 16, fontWeight: "600", color: "white", marginRight: 8 },
+  buttonIcon: { marginLeft: 4 },
+  loadingContainer: { flexDirection: "row", alignItems: "center" },
+  loadingText: { fontSize: 16, fontWeight: "600", color: "white", marginLeft: 8 },
+  switchContainer: { alignItems: "center", marginTop: 10 },
+  switchBlur: { borderRadius: 16, overflow: "hidden" },
+  switchGradient: { padding: 16, alignItems: "center" },
+  switchLabel: { fontSize: 14, color: "#4B5563", marginBottom: 6 },
+  switchButton: { borderRadius: 12, overflow: "hidden" },
+  switchButtonGradient: { paddingVertical: 10, paddingHorizontal: 24 },
+  switchButtonText: { fontSize: 14, fontWeight: "600", color: "#6366F1" },
 })
 
 export default SignInForm

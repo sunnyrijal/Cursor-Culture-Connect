@@ -8,6 +8,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -52,7 +53,7 @@ export default function Settings() {
     router.push('/profile/edit');
   };
 
-  const { data: myData, isLoading } = useQuery({
+  const { data: myData, isLoading, isFetching } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getMyData(),
   });
@@ -280,14 +281,17 @@ export default function Settings() {
     return 'Student passionate about connecting with fellow students from around the world! 🌍';
   };
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <View
         style={[
-          styles.container,
-          { justifyContent: 'center', alignItems: 'center' },
+          styles.container, {
+            justifyContent: 'center',
+            alignItems: 'center'
+          }
         ]}
       >
+        <ActivityIndicator size="large" color="#6366F1" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );

@@ -4,11 +4,12 @@ import {
   View,
   TouchableOpacity,
   Platform,
+  Animated,
 } from 'react-native';
-import React, { useState } from 'react';
-import { Camera, Bell, User, BookOpen, LogIn } from 'lucide-react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Bell, User, BookOpen, LogIn, CheckCircle, X } from 'lucide-react-native';
 
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import LogoutButton from '../LogoutButton';
 import { Shadow } from 'react-native-shadow-2';
 
@@ -43,6 +44,13 @@ const Header = ({
 }) => {
   const router = useRouter();
   const [pressedButton, setPressedButton] = useState<string | null>(null);
+  const [showProfileTooltip, setShowProfileTooltip] = useState(false);
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  const { verified } = useLocalSearchParams<{ verified?: string }>();
 
   const handlePressIn = (buttonId: string) => {
     setPressedButton(buttonId);
@@ -65,10 +73,66 @@ const Header = ({
     queryFn: () => getDecodedToken(),
   });
 
-    const { data: notificationCount, isLoading, refetch } = useQuery({
-      queryKey: ['notificationCount'],
-      queryFn: () => getNotificationCount(),
+  const { data: notificationCount, isLoading, refetch } = useQuery({
+    queryKey: ['notificationCount'],
+    queryFn: () => getNotificationCount(),
+  });
+
+  // Show profile tooltip if verified param is present
+  useEffect(() => {
+    if (verified=='true' && myData) {
+      // Small delay before showing tooltip
+      const timer = setTimeout(() => {
+        setShowProfileTooltip(true);
+        
+        // Fade in and scale animation
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 500);
+
+      // Auto hide after 6 seconds
+      const hideTimer = setTimeout(() => {
+        hideTooltip();
+      }, 6500);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(hideTimer);
+      };
+    }
+  }, [verified, myData]);
+
+  const hideTooltip = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Remove the 'verified' query param from the URL so the tooltip doesn't show again
+      if (verified) {
+        router.setParams({ verified: undefined });
+      }
+      setShowProfileTooltip(false);
     });
+  };
 
   return (
     <View style={styles.container}>
@@ -80,10 +144,6 @@ const Header = ({
             activeOpacity={1}
           >
             <View style={styles.avatarContainer}>
-              {/* <Text style={styles.avatarText}>
-                {currentUser.name.charAt(0)}
-              </Text> */}
-
               <View style={styles.avatarContainer}>
                 <Image source={logo} style={styles.logo} resizeMode="contain" />
               </View>
@@ -93,48 +153,73 @@ const Header = ({
           <View style={styles.appTitleContainer}>
             <Text style={styles.appTitle}>TRiVO</Text>
             <Text style={styles.greeting}>Connect</Text>
-            {/* <Text style={styles.userName}>{currentUser.name}!</Text> */}
           </View>
         </View>
 
         <View style={styles.headerActions}>
           {myData ? (
             <>
-            {/* <Shadow
-            distance={8}
-            startColor="rgba(163, 177, 198, 0.15)"
-            offset={[4, 4]}
-          >
-            <TouchableOpacity
-              onPress={() => router.push('/notifications')}
-              onPressIn={() => handlePressIn('notification')}
-              onPressOut={handlePressOut}
-              style={[
-                getButtonStyle('notification'),
-                styles.notificationButton,
-              ]}
-              activeOpacity={1}
-            >
-              <Bell size={24} color="#3B82F6" />
-            </TouchableOpacity>
-          </Shadow> */}
-              <Shadow
-                distance={8}
-                startColor="rgba(163, 177, 198, 0.15)"
-                offset={[4, 4]}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push('/profile')}
-                  onPressIn={() => handlePressIn('profile')}
-                  onPressOut={handlePressOut}
-                  style={[getButtonStyle('profile'), styles.profileButton]}
-                  activeOpacity={1}
+              <View style={styles.profileButtonContainer}>
+                <Shadow
+                  distance={8}
+                  startColor="rgba(163, 177, 198, 0.15)"
+                  offset={[4, 4]}
                 >
-                  <User size={24} color="#8B5FBF" />
-                  {/* <Image source={require('../../assets/images/user.png')} style={styles.logo} resizeMode="contain" /> */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      hideTooltip();
+                      router.push('/settings');
+                    }}
+                    onPressIn={() => handlePressIn('profile')}
+                    onPressOut={handlePressOut}
+                    style={[getButtonStyle('profile'), styles.profileButton]}
+                    activeOpacity={1}
+                  >
+                    <User size={24} color="#8B5FBF" />
+                  </TouchableOpacity>
+                </Shadow>
 
-                </TouchableOpacity>
-              </Shadow>
+                {/* Profile Tooltip */}
+                {showProfileTooltip && (
+                  <Animated.View
+                    style={[
+                      styles.tooltipContainer,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ scale: scaleAnim }],
+                      },
+                    ]}
+                  >
+                    {/* Arrow pointing to profile button */}
+                    <View style={styles.tooltipArrow} />
+                    
+                    <Shadow
+                      distance={12}
+                      startColor="rgba(99, 102, 241, 0.2)"
+                      offset={[0, 8]}
+                    >
+                      <View style={styles.tooltip}>
+                        <TouchableOpacity
+                          onPress={hideTooltip}
+                          style={styles.tooltipClose}
+                        >
+                          <X size={16} color="#6B7280" />
+                        </TouchableOpacity>
+                        
+                        <View style={styles.tooltipHeader}>
+                          <Text style={styles.tooltipTitle}>Your Hub</Text>
+                        </View>
+                        
+                        <Text style={styles.tooltipText}>
+                          <Text style={styles.tooltipBold}>Enhance your profile.</Text>
+                          {'\n'}
+                          Add a profile picture, interests, and bio to help your peers to discover you
+                        </Text>
+                      </View>
+                    </Shadow>
+                  </Animated.View>
+                )}
+              </View>
             </>
           ) : (
             <>
@@ -155,21 +240,6 @@ const Header = ({
             </>
           )}
 
-          {/* <Shadow
-            distance={8}
-            startColor="rgba(163, 177, 198, 0.15)"
-            offset={[4, 4]}
-          >
-            <TouchableOpacity
-              onPress={() => setShowStoriesModal(true)}
-              onPressIn={() => handlePressIn('camera')}
-              onPressOut={handlePressOut}
-              style={[getButtonStyle('camera'), styles.cameraButton]}
-              activeOpacity={1}
-            >
-              <BookOpen size={24} color="#EC4899" />
-            </TouchableOpacity>
-          </Shadow> */}
           <Shadow
             distance={8}
             startColor="rgba(163, 177, 198, 0.15)"
@@ -193,7 +263,6 @@ const Header = ({
               )}
             </TouchableOpacity>
           </Shadow>
-          {/* <LogoutButton /> */}
         </View>
       </View>
     </View>
@@ -210,10 +279,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20, // Increased from 16
-    paddingVertical: 20, // Increased from 24
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: clayColors.background,
-    minHeight: 80, // Added minimum height
+    minHeight: 80,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -222,9 +291,9 @@ const styles = StyleSheet.create({
   },
 
   avatarButton: {
-    borderRadius: 18, // Increased from 16
-    padding: 6, // Increased from 4
-    marginRight: 20, // Increased from 16
+    borderRadius: 18,
+    padding: 6,
+    marginRight: 20,
     backgroundColor: clayColors.background,
     ...Platform.select({
       ios: {
@@ -240,39 +309,29 @@ const styles = StyleSheet.create({
   },
 
   avatarContainer: {
-    width: 56, // Increased from 48
-    height: 56, // Increased from 48
-    borderRadius: 14, // Increased from 12
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    // Inner shadow effect
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   logo: {
-    width: 56, // Increased from 48
-    height: 56, // Increased from 48
+    width: 56,
+    height: 56,
   },
 
-  // Commented out avatar text style
-  // avatarText: {
-  //   fontSize: 24,
-  //   fontWeight: '600',
-  //   color: '#7C3AED', // Purple text
-  // },
-
-  // New app title styles
   appTitleContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   appTitle: {
-    fontSize: 24, // Increased from 20
+    fontSize: 24,
     fontWeight: '700',
     color: clayColors.textPrimary,
   },
 
-  // Commented out greeting styles
   greetingContainer: {
     flex: 1,
   },
@@ -282,28 +341,27 @@ const styles = StyleSheet.create({
     color: clayColors.textSecondary,
     marginBottom: 2,
   },
-  // userName: {
-  //   fontSize: 20,
-  //   fontWeight: '700',
-  //   color: clayColors.textPrimary,
-  // },
 
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12, // Increased from 8
+    gap: 12,
+  },
+
+  profileButtonContainer: {
+    position: 'relative',
   },
 
   profileButton: {
-    backgroundColor: '#F5F3FF', // Light purple background
+    backgroundColor: '#F5F3FF',
     borderWidth: 1,
     borderColor: 'rgba(139, 95, 191, 0.1)',
   },
 
   actionButton: {
-    width: 56, // Increased from 48
-    height: 56, // Increased from 48
-    borderRadius: 18, // Increased from 16
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     backgroundColor: clayColors.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -329,10 +387,10 @@ const styles = StyleSheet.create({
   },
 
   actionButtonPressed: {
-    width: 56, // Increased from 48
-    height: 56, // Increased from 48
-    borderRadius: 18, // Increased from 16
-    backgroundColor: '#E5E9F0', // Slightly darker for pressed state
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: '#E5E9F0',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -351,13 +409,13 @@ const styles = StyleSheet.create({
   },
 
   cameraButton: {
-    backgroundColor: '#FDF2F8', // Light pink background
+    backgroundColor: '#FDF2F8',
     borderWidth: 1,
     borderColor: 'rgba(236, 72, 153, 0.1)',
   },
 
   notificationButton: {
-    backgroundColor: '#EFF6FF', // Light blue background
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.1)',
   },
@@ -379,5 +437,93 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     paddingHorizontal: 2,
+  },
+
+  // Tooltip styles
+  tooltipContainer: {
+    position: 'absolute',
+    top: 70,
+    right: -10,
+    width: 280,
+    zIndex: 1000,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    top: -8,
+    right: 24,
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#FFFFFF',
+    zIndex: 1001,
+  },
+  tooltip: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.1)',
+    position: 'relative',
+  },
+  tooltipClose: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  tooltipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tooltipTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: clayColors.textPrimary,
+  },
+  tooltipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: clayColors.textSecondary,
+    marginBottom: 16,
+  },
+  tooltipBold: {
+    fontWeight: '700',
+    color: clayColors.textPrimary,
+  },
+  tooltipButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  tooltipButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

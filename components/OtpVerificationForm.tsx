@@ -61,7 +61,8 @@ const OtpVerificationForm: React.FC = () => {
     mutationFn: (data: VerifyOTPData) => verifyOTP(data),
     onSuccess: (data) => {
       console.log('✅ OTP verified successfully:', data);
-      router.replace('/(tabs)');
+      // In OtpVerificationForm after successful verification
+      router.replace('/(tabs)?verified=true');
     },
     onError: (error: any) => {
       console.error('❌ Error verifying OTP:', error);
@@ -101,7 +102,10 @@ const OtpVerificationForm: React.FC = () => {
 
     // Gentle fade in with smaller movement
     formOpacity.value = withTiming(1, { duration: 400, easing: Easing.ease });
-    formTranslateY.value = withTiming(0, { duration: 400, easing: Easing.ease });
+    formTranslateY.value = withTiming(0, {
+      duration: 400,
+      easing: Easing.ease,
+    });
 
     setTimeout(() => {
       inputRefs.current[0]?.focus();
@@ -158,7 +162,7 @@ const OtpVerificationForm: React.FC = () => {
     }
 
     setError('');
-    
+
     // Subtle button press animation - smaller scale change
     buttonScale.value = withSequence(
       withTiming(0.98, { duration: 80 }), // Reduced from 0.95
@@ -302,6 +306,9 @@ const OtpVerificationForm: React.FC = () => {
                   We've sent a 6-digit verification code to
                 </Text>
                 <Text style={styles.emailText}>{email || emailParam}</Text>
+                <Text style={styles.spamText}>
+                  Please check your spam folder if you don't see it.
+                </Text>
               </View>
             </LinearGradient>
           </View>
@@ -542,6 +549,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     marginTop: 4,
+  },
+  spamText: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   errorContainer: {
     marginHorizontal: 20,
