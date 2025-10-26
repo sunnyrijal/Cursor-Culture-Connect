@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './axiosConfig';
+import * as SecureStore from 'expo-secure-store';
 import { AxiosResponse } from 'axios';
 
 export interface SendOTPData {
@@ -37,8 +37,8 @@ export const verifyOTP = async (data: VerifyOTPData) => {
       data
     );
     const { accessToken, userId } = response.data;
-    await AsyncStorage.setItem('token', accessToken);
-    await AsyncStorage.setItem('userId', userId.toString());
+    await SecureStore.setItemAsync('token', accessToken);
+    await SecureStore.setItemAsync('userId', userId.toString());
     return response.data;
   } catch (error) {
     console.error('Error verifying OTP:', error);
