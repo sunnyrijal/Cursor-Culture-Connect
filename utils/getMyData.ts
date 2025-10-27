@@ -1,5 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+import * as SecureStore from 'expo-secure-store';
 
 interface JwtPayload {
   userId: string;
@@ -11,13 +11,15 @@ interface JwtPayload {
 
 async function getDecodedToken(): Promise<JwtPayload | null> {
   try {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     if (!token) return null;
 
     const decoded = jwtDecode<JwtPayload>(token);
     // optional: check if token expired
     if (decoded.exp && Date.now() >= decoded.exp * 1000) {
       console.warn("Token expired");
+      await SecureStore.deleteItemAsync('token');
+      await SecureStore.deleteItemAsync('userId');
       return null;
     }
 

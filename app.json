@@ -34,7 +34,11 @@
     "android": {
       "package": "com.trivo.connect",
       "googleServicesFile": "./google-services/google-services.json",
-      "permissions": ["NOTIFICATIONS", "VIBRATE", "WAKE_LOCK"],
+      "permissions": [
+        "NOTIFICATIONS",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
       "notification": {
         "icon": "./assets/logo.png",
         "color": "#FF231F7C"
@@ -58,11 +62,15 @@
             "deploymentTarget": "15.1",
             "useFrameworks": "static",
             "extraPods": [
-              { "name": "GoogleUtilities", "modular_headers": true }
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              }
             ]
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

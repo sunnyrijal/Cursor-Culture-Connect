@@ -2,7 +2,7 @@ import { User } from '@/types/user';
 import { Event } from '@/types/event';
 import { Group } from '@/types/group';
 import { mockUsersByHeritage, mockEvents, mockGroups } from './mockData';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // Combine all users into a single array
 const allUsers: User[] = Object.values(mockUsersByHeritage).flat();
@@ -57,8 +57,8 @@ export const signup = (user: User): boolean => {
 
 export const logout = async (): Promise<void> => {
   state.currentUser = null;
-  await AsyncStorage.removeItem('token');
-  await AsyncStorage.removeItem('userId');
+  await SecureStore.deleteItemAsync('token');
+  await SecureStore.deleteItemAsync('userId');
 };
 
 export const getCurrentUser = (): User | null => state.currentUser;

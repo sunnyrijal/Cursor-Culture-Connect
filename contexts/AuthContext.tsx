@@ -5,15 +5,11 @@ import {
   ReactNode,
   useEffect,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from './api';
-import { Alert } from 'react-native';
-import { useFilterScreenChildren } from 'expo-router/build/layouts/withLayoutContext';
 import { API_URL } from './axiosConfig';
 import { router } from 'expo-router';
 import { SignupData } from '@/types/user';
-import { checkAuthStatus } from '@/utils/auth';
 
 type AuthState = {
   authenticated: boolean;
@@ -22,17 +18,18 @@ type AuthState = {
 };
 
 type AuthContextType = {
-  authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
   signup: (signupData: SignupData) => Promise<void>;
   logout: () => Promise<void>;
-  loading:boolean;
-  authenticated:boolean
+  loading: boolean;
+  authenticated: boolean;
+  userId: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [loading, setLoading] = useState(true);
   const [authState, setAuthState] = useState<AuthState>({
     authenticated: false,
     token: null,
@@ -42,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        setLoading(true);
         // Check if there's an active session on the server
         const response = await fetch(`${API_URL}/auth/check-session`, {
           method: 'GET',
@@ -55,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await response.json();
           if (data.authenticated) {
             // Get token from storage if available
-            const token = await AsyncStorage.getItem('token');
+            const token = await SecureStore.getItemAsync('token');
 
             setAuthState({
               authenticated: true,
@@ -88,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userId,
           });
         }
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -152,21 +152,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const [loading, setLoading] = useState(true); // ← needed for splash
-
-  const [authenticated, setAuthenticated] = useState(false);
-  useEffect(() => {
-    const initAuth = async () => {
-      const isValid = await checkAuthStatus();
-      setAuthenticated(isValid);
-      setLoading(false); // auth check complete
-    };
-
-    initAuth();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ authState, login, signup, logout, authenticated, loading }}>
+    <AuthContext.Provider
+      value={{
+        login,
+        signup,
+        logout,
+        loading,
+        authenticated: authState.authenticated,
+        userId: authState.userId,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

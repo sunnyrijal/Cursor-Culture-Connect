@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { jwtDecode } from "jwt-decode"
-import { Platform } from "react-native"
+import * as SecureStore from 'expo-secure-store';
+import { jwtDecode } from 'jwt-decode';
+import { Platform } from 'react-native';
 interface DecodedToken {
   exp: number
   iat: number
@@ -38,7 +38,7 @@ export const isTokenExpired = (token: string): boolean => {
 
 export const checkAuthStatus = async (): Promise<boolean> => {
   try {
-    const token = await AsyncStorage.getItem('token');
+    const token = await SecureStore.getItemAsync('token');
     if (!token) {
       return false;
     }
@@ -49,7 +49,8 @@ export const checkAuthStatus = async (): Promise<boolean> => {
 
       if (decodedToken.exp < currentTime) {
         // Token is expired
-        await AsyncStorage.multiRemove(['token', 'userId']);
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync('userId');
         return false;
       }
 
