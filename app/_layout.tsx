@@ -14,6 +14,7 @@ import { AlertProvider } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
 import SafeScreen from '@/components/SafeScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useColorScheme } from 'react-native';
 const queryClient = new QueryClient();
 
 function MainLayout() {
@@ -67,10 +68,11 @@ function MainLayout() {
     },
   };
 
-
+ const scheme = useColorScheme(); 
+ console.log(scheme)
   return (
     <SocketProvider serverUrl={API_BASE_URL} userId={userId || ''} onConnect={handleConnect} onDisconnect={handleDisconnect} onError={handleError} onAuthenticated={handleAuthenticated}>
-      <StatusBar style="auto" />
+      <StatusBar  style={scheme === 'dark' ? 'dark' : 'light'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />

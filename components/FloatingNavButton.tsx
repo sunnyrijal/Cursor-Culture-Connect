@@ -1,21 +1,31 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, View, Platform } from 'react-native';
-import { Menu, LogOut } from 'lucide-react-native';
+import { Menu, LogOut, LucideIcon } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { router } from 'expo-router';
 import { useAlert } from '@/contexts/AlertContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function FloatingNavButton({ onPress }: { onPress: () => void }) {
+interface FloatingButtonProps {
+  onPress: () => void;
+  icon: React.ReactElement;
+  style?: object;
+  accessibilityLabel: string;
+}
+
+function FloatingButton({ onPress, icon, style, accessibilityLabel }: FloatingButtonProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={{...styles.container, pointerEvents: "box-none"}}>
+    <View style={[styles.container, { bottom: insets.bottom + 20, pointerEvents: "box-none" }]}>
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, style]}
         onPress={onPress}
         activeOpacity={0.85}
-        accessibilityLabel="Show navigation bar"
+        accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
       >
-        <Menu size={22} color="#fff" />
+        {icon}
       </TouchableOpacity>
     </View>
   );
@@ -24,7 +34,6 @@ export default function FloatingNavButton({ onPress }: { onPress: () => void }) 
 export function FloatingLogoutButton() {
   const { logout } = useAuth();
   const { showAlert } = useAlert();
-
   const handleLogout = () => {
     showAlert({
       title: 'Logout',
@@ -52,25 +61,23 @@ export function FloatingLogoutButton() {
   };
 
   return (
-    <View style={{...styles.container, pointerEvents: "box-none"}}>
-      <TouchableOpacity
-        style={[styles.button, styles.logoutButton]}
-        onPress={handleLogout}
-        activeOpacity={0.85}
-        accessibilityLabel="Logout"
-        accessibilityRole="button"
-      >
-        <LogOut size={22} color="#EF4444" />
-      </TouchableOpacity>
-    </View>
+    <FloatingButton
+      onPress={handleLogout}
+      icon={<LogOut size={22} color="#EF4444" />}
+      style={styles.logoutButton}
+      accessibilityLabel="Logout"
+    />
   );
+}
+
+export default function FloatingNavButton({ onPress }: { onPress: () => void }) {
+  return <FloatingButton onPress={onPress} icon={<Menu size={22} color="#fff" />} accessibilityLabel="Show navigation bar" />;
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: 20,
-    bottom: 90,
     zIndex: 100,
   },
   button: {

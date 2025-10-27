@@ -94,6 +94,18 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToSignUp }) => {
     backgroundRotation.value = withRepeat(withTiming(360, { duration: 60000, easing: Easing.linear }), -1, false)
   }, [])
 
+  // If user edits saved credentials, uncheck "Remember Me"
+  // useEffect(() => {
+  //   const handleCredentialChange = async () => {
+  //     const savedEmail = await SecureStore.getItemAsync("savedEmail");
+  //     const savedPassword = await SecureStore.getItemAsync("savedPassword");
+  //     if (rememberMe && (email !== savedEmail || password !== savedPassword)) {
+  //       setRememberMe(false);
+  //     }
+  //   };
+  //   handleCredentialChange();
+  // }, [email, password]);
+
   const validateField = (field: string, value: any): boolean => {
     let isValid = false
     switch (field) {

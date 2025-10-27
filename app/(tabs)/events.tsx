@@ -436,6 +436,7 @@ export default function Events() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#64748B"
           />
+
           {activeTab === 'events' && (
             <TouchableOpacity
               style={[
@@ -452,25 +453,18 @@ export default function Events() {
             </TouchableOpacity>
           )}
         </View>
+        {activeTab === 'quickEvents' && (
+          <TouchableOpacity
+            style={styles.checkboxInline}
+            onPress={() => setIncludeNotInterested(!includeNotInterested)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.checkboxLabel}>
+              {includeNotInterested ? ' All Events' : 'Interested Events'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
-
-      {activeTab === 'quickEvents' && (
-        <TouchableOpacity
-          style={styles.checkboxContainer}
-          onPress={() => setIncludeNotInterested(!includeNotInterested)}
-          activeOpacity={0.8}
-        >
-          <Checkbox
-            style={styles.checkbox}
-            value={includeNotInterested}
-            onValueChange={setIncludeNotInterested}
-            color={includeNotInterested ? theme.primary : undefined}
-          />
-          <Text style={styles.checkboxLabel}>
-            Include events I'm not interested in
-          </Text>
-        </TouchableOpacity>
-      )}
 
       <ScrollView
         style={styles.eventsList}
@@ -588,16 +582,16 @@ export default function Events() {
                       start.setHours(startHours, startMinutes, 0, 0);
                       return start < now;
                     }
-                })();
-
-                const isHost = quickEvent.user.id === myData?.userId;
-                const isOldEvent = (() => {
-                  const eventDate = new Date(quickEvent.createdAt);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0); // Set to start of today
-                  return eventDate < today;
                   })();
-                  console.log(isHost, isOldEvent, quickEvent.createdAt)
+
+                  const isHost = quickEvent.user.id === myData?.userId;
+                  const isOldEvent = (() => {
+                    const eventDate = new Date(quickEvent.createdAt);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Set to start of today
+                    return eventDate < today;
+                  })();
+                  console.log(isHost, isOldEvent, quickEvent.createdAt);
                   return (
                     <TouchableOpacity
                       key={quickEvent.id}
@@ -612,12 +606,12 @@ export default function Events() {
                       }
                       activeOpacity={0.8}
                     >
-                       {isHost && (
-                                <View style={styles.hostBadge}>
-                                  {/* <Crown size={14} color="#FFD700" fill="#FFD700" /> */}
-                                  <Text style={styles.hostBadgeText}>Host</Text>
-                                </View>
-                              )}
+                      {isHost && (
+                        <View style={styles.hostBadge}>
+                          {/* <Crown size={14} color="#FFD700" fill="#FFD700" /> */}
+                          <Text style={styles.hostBadgeText}>Host</Text>
+                        </View>
+                      )}
                       <View style={styles.quickEventContent}>
                         <View style={styles.quickEventHeader}>
                           <Text
@@ -737,7 +731,11 @@ export default function Events() {
                                 <ActivityIndicator color="#fff" size="small" />
                               ) : (
                                 <Text style={styles.rsvpButtonTextSmall}>
-                                  {isEventPast ? 'Ended' : isInterested ? 'Interested' : "I'm in"}
+                                  {isEventPast
+                                    ? 'Ended'
+                                    : isInterested
+                                    ? 'Interested'
+                                    : "I'm in"}
                                 </Text>
                               )}
                             </TouchableOpacity>
@@ -794,6 +792,15 @@ export default function Events() {
 }
 
 const styles = StyleSheet.create({
+  checkboxInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+    backgroundColor: theme.primary,
+    color: 'white',
+    paddingHorizontal: 8,
+    borderRadius: 14,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7', // Updated to match groups page background
@@ -1008,8 +1015,11 @@ const styles = StyleSheet.create({
   searchWrapper: {
     marginHorizontal: 20,
     marginBottom: 16,
+    display: 'flex',
+    flexDirection: 'row',
   },
   searchContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -1383,7 +1393,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    padding: 40,
+    padding: 24,
     borderRadius: 24,
     alignItems: 'center',
     maxWidth: 300,
@@ -1407,6 +1417,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 12,
     letterSpacing: -0.3,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 15,
@@ -1434,7 +1445,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.textPrimary,
+    color: theme.white,
   },
   inlineFeedbackContainer: {
     flex: 1,

@@ -104,7 +104,7 @@ export function CreateInterestPreferenceModal({
   useEffect(() => {
     if (editingPreference) {
       // Pre-fill form for editing
-      setFormData({
+      const newFormData: any = {
         activityId: editingPreference.interestId, // This will now be activityId
         hasEquipment: editingPreference.hasEquipment,
         needsEquipment: editingPreference.needsEquipment,
@@ -120,15 +120,24 @@ export function CreateInterestPreferenceModal({
           editingPreference.publicPreference !== undefined
             ? editingPreference.publicPreference
             : true,
-      });
+      };
+
+      // If creating a new preference for a specific activity
+      if (!editingPreference.id && editingPreference.activityId) {
+        newFormData.activityId = editingPreference.activityId;
+      }
+
+      setFormData(newFormData);
 
       // Set selected interest
-      const activity = activities.find(
-        (a: any) => a.id === editingPreference.interestId
-      );
+      const activityIdToFind =
+        editingPreference.interestId || editingPreference.activityId;
+      const activity = activities.find((a: any) => a.id === activityIdToFind);
       if (activity) {
         setSelectedActivity(activity);
       }
+
+
     } else if (!visible) {
       // Reset form when modal closes
       setFormData({

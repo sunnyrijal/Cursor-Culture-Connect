@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Sparkles, Globe } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSequence, withDelay, withRepeat, Easing, interpolate, runOnJS } from 'react-native-reanimated';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -111,16 +110,10 @@ export default function Index() {
   return (
     <Animated.View style={[styles.container]}>
       <LinearGradient colors={['#4F46E5', '#87CEEB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
-        {/* Particles */}
-        <Animated.View style={[styles.particleContainer, particleAnimatedStyle]}>
-          {[...Array(6)].map((_, i) => (
-            <Sparkles key={i} size={12 + (i % 3) * 4} color="rgba(255,255,255,0.2)" />
-          ))}
-        </Animated.View>
 
         <View style={styles.content}>
           {/* Glow behind logo */}
-          <Animated.View style={[styles.logoGlow, glowAnimatedStyle]} />
+          {/* <Animated.View style={[styles.logoGlow, glowAnimatedStyle]} /> */}
 
           {/* Logo */}
           <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>

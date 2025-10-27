@@ -207,33 +207,33 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 
         <View style={styles.cardFooter}>
           <TouchableOpacity
-            onPress={() => handleEdit(preference)}
-            style={styles.actionButton}
-          >
-            <Edit size={20} color="#3B82F6" />
-          </TouchableOpacity>
-          <TouchableOpacity
             onPress={() => handleToggle(preference.id)}
             disabled={isToggling}
             style={styles.actionButton}
           >
-            {preference.isActive ? (
-              <ToggleRight size={24} color="#4CAF50" />
+            {isToggling ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : preference.isActive ? (
+              <ToggleRight size={28} color="#4CAF50" />
             ) : (
-              <ToggleLeft size={24} color="#757575" />
+              <ToggleLeft size={28} color="#757575" />
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete(preference.id, preference.activity.name)}
-            disabled={isDeleting}
-            style={styles.actionButton}
-          >
-            {isDeleting ? (
-              <ActivityIndicator size="small" color="#F44336" />
-            ) : (
-              <Trash2 size={20} color="#F44336" />
-            )}
-          </TouchableOpacity>
+          <View style={styles.rightActions}>
+            <TouchableOpacity
+              onPress={() => handleEdit(preference)}
+              style={styles.actionButton}
+            >
+              <Edit size={20} color="#3B82F6" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDelete(preference.id, preference.activity.name)}
+              disabled={isDeleting}
+              style={styles.actionButton}
+            >
+              {isDeleting ? <ActivityIndicator size="small" color="#F44336" /> : <Trash2 size={20} color="#F44336" />}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -495,12 +495,16 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionButton: {
     padding: 4,
