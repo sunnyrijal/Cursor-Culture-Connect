@@ -10,6 +10,7 @@ import { apiClient } from './api';
 import { API_URL } from './axiosConfig';
 import { router } from 'expo-router';
 import { SignupData } from '@/types/user';
+import { checkAuthStatus } from '@/utils/auth';
 
 type AuthState = {
   authenticated: boolean;
@@ -18,18 +19,17 @@ type AuthState = {
 };
 
 type AuthContextType = {
+  authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
   signup: (signupData: SignupData) => Promise<void>;
   logout: () => Promise<void>;
-  loading: boolean;
-  authenticated: boolean;
-  userId: string | null;
+  loading:boolean;
+  authenticated:boolean
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [loading, setLoading] = useState(true);
   const [authState, setAuthState] = useState<AuthState>({
     authenticated: false,
     token: null,
@@ -39,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        setLoading(true);
         // Check if there's an active session on the server
         const response = await fetch(`${API_URL}/auth/check-session`, {
           method: 'GET',
@@ -86,8 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userId,
           });
         }
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -152,17 +149,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const [loading, setLoading] = useState(true); // ← needed for splash
+
+  const [authenticated, setAuthenticated] = useState(false);
+  useEffect(() => {
+    const initAuth = async () => {
+      const isValid = await checkAuthStatus();
+      setAuthenticated(isValid);
+      setLoading(false); // auth check complete
+    };
+
+    initAuth();
+  }, []);
+
   return (
-    <AuthContext.Provider
-      value={{
-        login,
-        signup,
-        logout,
-        loading,
-        authenticated: authState.authenticated,
-        userId: authState.userId,
-      }}
-    >
+    <AuthContext.Provider value={{ authState, login, signup, logout, authenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );
