@@ -412,7 +412,7 @@ export default function Groups() {
             onPress={() => setShowCreateGroupModal(true)}
             activeOpacity={0.7}
           >
-            <PlusCircle size={28} color={theme.primary} />
+            <PlusCircle size={28} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -517,11 +517,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(99, 101, 241, 1)',
     zIndex: 20,
     ...Platform.select({
       ios: {
-        shadowColor: '#6d7075',
+        shadowColor: '#6365f1',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.2,
         shadowRadius: 10,
