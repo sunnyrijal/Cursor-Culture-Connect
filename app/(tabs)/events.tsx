@@ -136,6 +136,7 @@ const getTimeAgo = (dateString: string) => {
 export default function Events() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFabMenu, setShowFabMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
@@ -358,11 +359,11 @@ export default function Events() {
         onSubmit={handleCreateQuickEvent}
       />
 
-      <View style={styles.heroSection}>
+      {/* <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
             <View style={styles.headerRow}>
-              {/* <Text style={styles.heroTitle}>Discover</Text> */}
+              {/* <Text style={styles.heroTitle}>Discover</Text> 
               <Text style={styles.heroSubtitle}>
                 Explore events that match your interests
               </Text>
@@ -385,7 +386,7 @@ export default function Events() {
             </View>
           </View>
         </View>
-      </View>
+      </View> */}
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -771,22 +772,72 @@ export default function Events() {
         onApply={handleApplyFilters}
       />
 
-      {/* <View style={styles.fabContainer}>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => setShowCreateQuickEventModal(true)}
-          activeOpacity={0.7}
-        >
-          <Zap size={24} color={theme.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.createButton, { marginTop: 12 }]}
-          onPress={() => setShowCreateModal(true)}
-          activeOpacity={0.7}
-        >
-          <PlusCircle size={28} color={theme.primary} />
-        </TouchableOpacity>
-      </View> */}
+      {/* this is button block  */}
+
+      {/* FAB Backdrop (tap to close) */}
+{showFabMenu && (
+  <TouchableOpacity
+    activeOpacity={1}
+    onPress={() => setShowFabMenu(false)}
+    style={styles.fabBackdrop}
+  />
+)}
+
+{/* Floating Action Button + Speed Dial */}
+<View pointerEvents="box-none" style={styles.fabContainer}>
+  {showFabMenu && (
+    <View style={styles.fabMenu}>
+      {/* Create Quick Event */}
+      <TouchableOpacity
+        style={styles.fabItem}
+        activeOpacity={0.85}
+        onPress={() => {
+          setShowFabMenu(false);
+          setShowCreateQuickEventModal(true);
+        }}
+      >
+        <View style={styles.fabLabelPill}>
+          <Text style={styles.fabLabelText}>Create Quick Event</Text>
+        </View>
+        <View style={styles.fabIconButton}>
+          <Zap size={22} color={theme.primary} />
+        </View>
+      </TouchableOpacity>
+
+      {/* Create Event */}
+      <TouchableOpacity
+        style={[styles.fabItem, { marginTop: 12 }]}
+        activeOpacity={0.85}
+        onPress={() => {
+          setShowFabMenu(false);
+          setShowCreateModal(true);
+        }}
+      >
+        <View style={styles.fabLabelPill}>
+          <Text style={styles.fabLabelText}>Create Event</Text>
+        </View>
+        <View style={styles.fabIconButton}>
+          <PlusCircle size={24} color={theme.primary} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  )}
+
+  {/* Main FAB */}
+  <TouchableOpacity
+    accessibilityLabel="Create"
+    accessibilityHint="Open actions to create an event"
+    style={styles.fabMain}
+    activeOpacity={0.9}
+    onPress={() => setShowFabMenu((s) => !s)}
+  >
+    <Text style={styles.fabMainPlus}>{showFabMenu ? '×' : '+'}</Text>
+  </TouchableOpacity>
+</View>
+
+        
+
+
     </View>
   );
 }
@@ -925,10 +976,94 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     // marginBottom: 16, // Removed to allow subtitle to be centered
   },
+
+  fabBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+  },
+  fabMain: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6365f1',
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6365f1',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+      },
+      android: { elevation: 10 },
+    }),
+  },
+  fabMainPlus: {
+    color: 'white',
+    fontSize: 34,
+    lineHeight: 34,
+    marginTop: 2,
+    fontWeight: '700',
+  },
+  fabMenu: {
+    position: 'absolute',
+    right: 20,
+    bottom: 100, // sit above the main FAB
+    alignItems: 'flex-end',
+  },
+  fabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fabLabelPill: {
+    backgroundColor: '#6365f1',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginRight: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#111827',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  fabLabelText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  fabIconButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#CDD2D8',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    alignContent: "center",
   },
   heroTitle: {
     fontSize: 32,

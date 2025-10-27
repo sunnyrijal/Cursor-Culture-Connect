@@ -107,7 +107,7 @@ export default function Page() {
   return (
     <View style={styles.container}>
       {/* Hero Section */}
-      <View style={styles.heroSection}>
+      {/* <View style={styles.heroSection}>
         <View style={styles.heroOverlay}>
           <View style={styles.headerContainer}>
             <Text style={styles.heroSubtitle}>
@@ -115,7 +115,7 @@ export default function Page() {
             </Text>
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Tab Container with Neumorphism */}
       <View style={styles.tabContainer}>

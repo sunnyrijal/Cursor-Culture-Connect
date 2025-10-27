@@ -176,7 +176,7 @@ export default function Groups() {
     <>
       <View style={styles.container}>
         <View style={styles.safeArea}>
-          <View style={styles.heroSection}>
+          {/* <View style={styles.heroSection}>
             <View style={styles.headerContainer}>
               <View style={styles.headerRow}>
                 <Text style={styles.heroSubtitle}>
@@ -187,9 +187,10 @@ export default function Groups() {
 
               {/* <Text style={styles.heroSubtitle}>
                 Discover and connect with communities that share your interests.
-                </Text> */}
+                </Text> 
             </View>
-          </View>
+          </View> 
+          */}
 
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>

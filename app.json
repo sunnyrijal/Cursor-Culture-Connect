@@ -21,7 +21,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trivo.connect",
-      "buildNumber": "26",
+      "buildNumber": "29",
       "googleServicesFile": "./google-services/GoogleService-Info.plist",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We use your photo library to let you upload a profile picture to your account.",
