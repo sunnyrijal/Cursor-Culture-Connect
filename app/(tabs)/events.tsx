@@ -42,6 +42,11 @@ import { QuickEventCard } from '@/components/QuickEventCard';
 
 import { Filter } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+
+const FAB_SIZE = 60;       // matches styles.fabMain width/height
+const FAB_GAP  = 8;        // desired space between main FAB and menu
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -134,6 +139,8 @@ const getTimeAgo = (dateString: string) => {
 
 export default function Events() {
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -599,69 +606,93 @@ export default function Events() {
       {/* this is button block  */}
 
       {/* FAB Backdrop (tap to close) */}
-      {showFabMenu && (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setShowFabMenu(false)}
-          style={styles.fabBackdrop}
-        />
-      )}
+      {/* FAB backdrop */}
+{showFabMenu && (
+  <TouchableOpacity
+    activeOpacity={1}
+    onPress={() => setShowFabMenu(false)}
+    style={styles.fabBackdrop}
+  />
+)}
 
-      {/* Floating Action Button + Speed Dial */}
-      <View pointerEvents="box-none" style={styles.fabContainer}>
-        {showFabMenu && (
-          <View style={styles.fabMenu}>
-            {/* Create Quick Event */}
-            <TouchableOpacity
-              style={styles.fabItem}
-              activeOpacity={0.85}
-              onPress={() => {
-                setShowFabMenu(false);
-                setShowCreateQuickEventModal(true);
-              }}
-            >
-              <View style={styles.fabLabelPill}>
-                <Text style={styles.fabLabelText}>Quick Event</Text>
-              </View>
-              <View style={styles.fabIconButton}>
-                <Zap size={22} color={theme.primary} />
-              </View>
-            </TouchableOpacity>
+{/* Floating Action Button + Speed Dial */}
+<View
+  pointerEvents="box-none"
+  style={[
+    styles.fabContainer,
+    {
+      right: Math.max(16, insets.right + 8),
+      // keep the button above the tab bar + safe area
+      bottom: Math.max(16, insets.bottom + tabBarHeight + 12),
+    },
+  ]}
+>
 
-            {/* Create Event */}
-            <TouchableOpacity
-              style={[styles.fabItem, { marginTop: 12 }]}
-              activeOpacity={0.85}
-              onPress={() => {
-                setShowFabMenu(false);
-                setShowCreateModal(true);
-              }}
-            >
-              <View style={styles.fabLabelPill}>
-                <Text style={styles.fabLabelText}>Create Event</Text>
-              </View>
-              <View style={styles.fabIconButton}>
-                <PlusCircle size={24} color={theme.primary} />
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
+  {/* Speed dial list (labels to the LEFT of the FAB) */}
+  {showFabMenu && (
+    <View
+    style={[
+      styles.fabMenu,
+      // BEFORE: { bottom: 72 + Math.max(0, tabBarHeight - 16) }
+      { bottom: FAB_SIZE + FAB_GAP } // e.g., 60 + 8 = 68 (tight)
+    ]}
+  >
+      {/* Quick Event */}
+      <TouchableOpacity
+        style={styles.fabItem}
+        activeOpacity={0.9}
+        onPress={() => {
+          setShowFabMenu(false);
+          setShowCreateQuickEventModal(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Create Quick Event"
+      >
+        <View style={styles.fabLabelPill}>
+          <Text style={styles.fabLabelText}>Quick Event</Text>
+        </View>
+        <View style={styles.fabIconButton}>
+          <Zap size={22} color={theme.primary} />
+        </View>
+      </TouchableOpacity>
 
-        {/* Main FAB */}
-        <TouchableOpacity
-          accessibilityLabel="Create"
-          accessibilityHint="Open actions to create an event"
-          style={styles.fabMain}
-          activeOpacity={0.9}
-          onPress={() => setShowFabMenu((s) => !s)}
-        >
-          {showFabMenu ? (
-            <Text style={styles.fabMainPlus}>×</Text>
-          ) : (
-            <PlusCircle size={28} color="#FFFFFF" />
-          )}
-        </TouchableOpacity>
-      </View>
+      {/* Create Event */}
+      <TouchableOpacity
+        style={[styles.fabItem, { marginTop: 8 }]}
+        activeOpacity={0.9}
+        onPress={() => {
+          setShowFabMenu(false);
+          setShowCreateModal(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Create Event"
+      >
+        <View style={styles.fabLabelPill}>
+          <Text style={styles.fabLabelText}>Create Event</Text>
+        </View>
+        <View style={styles.fabIconButton}>
+          <PlusCircle size={24} color={theme.primary} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  )}
+
+  {/* Main FAB */}
+  <TouchableOpacity
+    accessibilityLabel={showFabMenu ? 'Close creation menu' : 'Open creation menu'}
+    accessibilityHint="Opens actions to create an event"
+    style={styles.fabMain}
+    activeOpacity={0.95}
+    onPress={() => setShowFabMenu((s) => !s)}
+  >
+    {showFabMenu ? (
+      <Text style={styles.fabMainPlus}>×</Text>
+    ) : (
+      <PlusCircle size={28} color="#FFFFFF" />
+    )}
+  </TouchableOpacity>
+</View>
+
     </GestureHandlerRootView>
     </AnimatedTabPage>
   );
@@ -686,12 +717,10 @@ const styles = StyleSheet.create({
     
   },
   fabContainer: {
-    
     position: 'absolute',
-    right: 20,
-    bottom: 120,
-    alignItems: 'center',
-    zIndex: 20,
+    alignItems: 'flex-end',
+    zIndex: 50,
+    ...Platform.select({ android: { elevation: 50 } }),
   },
   createButton: {
     width: 60,
@@ -825,6 +854,7 @@ const styles = StyleSheet.create({
       android: { elevation: 10 },
     }),
   },
+  
   fabMainPlus: {
     color: 'white',
     fontSize: 40,
@@ -833,8 +863,9 @@ const styles = StyleSheet.create({
   },
   fabMenu: {
     position: 'absolute',
-    bottom: 75, // Position it above the main FAB
-    alignItems: 'center',
+    right: 0,                 // anchor menu to the right side of the container
+    bottom: 72,               // stack above the main FAB
+    alignItems: 'flex-end',   // labels grow to the left
   },
   fabItem: {
     flexDirection: 'row',
@@ -843,9 +874,11 @@ const styles = StyleSheet.create({
   fabLabelPill: {
     backgroundColor: '#6365f1',
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
     marginRight: 10,
+    minWidth: 140,            // ensures full label is readable
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#111827',
@@ -856,6 +889,7 @@ const styles = StyleSheet.create({
       android: { elevation: 6 },
     }),
   },
+  
   fabLabelText: {
     color: 'white',
     fontWeight: '600',
@@ -1078,7 +1112,7 @@ const styles = StyleSheet.create({
   },
   eventsListContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 140,
 
   },
 
