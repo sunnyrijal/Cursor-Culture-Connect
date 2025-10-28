@@ -121,12 +121,18 @@ export const EventCard: React.FC<EventCardProps> = ({
       disabled={isLoading}
     >
       <View style={styles.eventImageContainer}>
-        <Image
-          source={{
-            uri: event.imageUrl || 'https://via.placeholder.com/150',
-          }}
-          style={styles.eventImage}
-        />
+        {event.imageUrl ? (
+          <Image
+            source={{
+              uri: event.imageUrl,
+            }}
+            style={styles.eventImage}
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Calendar size={40} color={theme.gray400} />
+          </View>
+        )}
         <View style={styles.imageOverlay} />
         
         {/* Host Badge */}
@@ -252,20 +258,20 @@ export const EventCard: React.FC<EventCardProps> = ({
 const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...Platform.select({
       ios: {
         shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 8,
+        elevation: 3,
       },
     }),
   },
@@ -279,7 +285,7 @@ const styles = StyleSheet.create({
   },
 
   eventImageContainer: {
-    height: 120,
+    height: 100,
     position: 'relative',
     backgroundColor: '#6366F1',
     overflow: 'hidden',
@@ -289,6 +295,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#94A3B8',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: theme.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   imageOverlay: {
@@ -323,15 +336,15 @@ const styles = StyleSheet.create({
   },
 
   eventContent: {
-    padding: 20,
+    padding: 16,
   },
 
   eventHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
 
   eventTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1E293B',
     lineHeight: 24,
@@ -341,12 +354,12 @@ const styles = StyleSheet.create({
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 8,
   },
 
   eventMetaText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#64748B',
     fontWeight: '500',
   },
@@ -422,37 +435,22 @@ const styles = StyleSheet.create({
   statCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.5,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    paddingHorizontal: 4, // Minimal padding
+    paddingVertical: 4,
   },
 
   statText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '600',
-    marginLeft: 6,
+  marginLeft: 6,
     flex: 1,
   },
 
   rsvpButton: {
     backgroundColor: theme.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 16,
     flexDirection: 'row',
     borderWidth: 1,
@@ -490,7 +488,7 @@ const styles = StyleSheet.create({
   rsvpButtonText: {
     color: 'white',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
 
   rsvpedButtonText: {

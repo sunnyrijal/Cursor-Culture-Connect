@@ -1,25 +1,12 @@
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { theme, spacing, typography } from '../theme';
 import { useQuery } from '@tanstack/react-query';
 import { getCounts } from '@/contexts/user.api';
 
-export const neomorphColors = {
-  background: '#F0F3F7',
-  lightShadow: '#FFFFFF',
-  darkShadow: '#A3B1C6',
-  shadowLight: 'rgba(255, 255, 255, 0.9)',
-  shadowDark: 'rgba(163, 177, 198, 0.2)',
-  primary: theme.primary || '#6366F1',
-  cardBackground: '#F0F3F7',
-  statBackground: '#EDF1F7',
-};
-
 const UserStat = ({ currentUser }: { currentUser: any }) => {
   const router = useRouter();
-  const [isPressed, setIsPressed] = useState(false);
 
   const {data} = useQuery({
     queryFn: getCounts,
@@ -28,117 +15,48 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
 
 
   return (
-    <TouchableOpacity 
-      onPressIn={() => setIsPressed(true)}
+    <TouchableOpacity
       onPress={() => router.push('/hub-details')}
-      onPressOut={() => setIsPressed(false)}
-      style={[
-        styles.mainContainer,
-        isPressed ? styles.mainContainerPressed : styles.mainContainerNormal
-      ]}
-      activeOpacity={1}
+      style={styles.card}
+      activeOpacity={0.8}
     >
-      {/* Outer gradient for enhanced depth */}
-      {/* <LinearGradient
-        colors={[
-          'rgba(255, 255, 255, 0.8)',
-          neomorphColors.background,
-          'rgba(163, 177, 198, 0.1)'
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.outerGradient}
-      > */}
-        {/* Inner card with neumorphic effect */}
-        <View style={[
-          styles.innerCard,
-        ]}>
-          {/* <LinearGradient
-            colors={[
-              neomorphColors.lightShadow,
-              neomorphColors.cardBackground,
-              'rgba(163, 177, 198, 0.05)'
-            ]}
-            start={{ x: 0.1, y: 0.1 }}
-            end={{ x: 0.9, y: 0.9 }}
-            style={styles.cardContent}
-          > */}
-            {/* Header Section */}
-            <View style={styles.headerSection}>
-              <Text style={styles.title}>Your Hub</Text>
-            </View>
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Hub</Text>
+        <Text style={styles.viewDetails}>View Details →</Text>
+      </View>
 
-            {/* Stats Container */}
-            <View style={styles.statsContainer}>
-              {/* Stat 1: Events */}
-              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=events')}>
-                <View style={[
-                  styles.statContainer,
-                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
-                ]}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.6)',
-                      neomorphColors.statBackground,
-                      'rgba(163, 177, 198, 0.08)'
-                    ]}
-                    start={{ x: 0.2, y: 0.2 }}
-                    end={{ x: 0.8, y: 0.8 }}
-                    style={styles.statGradient}
-                  >
-                    <Text style={styles.statNumber}>{data?.data?.eventsCount || 0}</Text>
-                    <Text style={styles.statLabel}>Events</Text>
-                  </LinearGradient>
-                </View>
-              </TouchableOpacity>
+      <View style={styles.statsContainer}>
+        <TouchableOpacity
+          style={styles.statItem}
+          onPress={() => router.push('/hub-details?tab=events')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.statNumber}>{data?.data?.eventsCount || 0}</Text>
+          <Text style={styles.statLabel}>Events</Text>
+        </TouchableOpacity>
 
-              {/* Stat 2: Groups */}
-              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=groups')}>
-                <View style={[
-                  styles.statContainer,
-                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
-                ]}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.6)',
-                      neomorphColors.statBackground,
-                      'rgba(163, 177, 198, 0.08)'
-                    ]}
-                    start={{ x: 0.2, y: 0.2 }}
-                    end={{ x: 0.8, y: 0.8 }}
-                    style={styles.statGradient}
-                  >
-                    <Text style={styles.statNumber}>{data?.data?.groupsCount || 0}</Text>
-                    <Text style={styles.statLabel}>Groups</Text>
-                  </LinearGradient>
-                </View>
-              </TouchableOpacity>
+        <View style={styles.statDivider} />
 
-              {/* Stat 3: Connections */}
-              <TouchableOpacity style={styles.statWrapper} onPress={() => router.push('/hub-details?tab=friends')}>
-                <View style={[
-                  styles.statContainer,
-                  // isPressed ? styles.statContainerPressed : styles.statContainerNormal
-                ]}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.6)',
-                      neomorphColors.statBackground,
-                      'rgba(163, 177, 198, 0.08)'
-                    ]}
-                    start={{ x: 0.2, y: 0.2 }}
-                    end={{ x: 0.8, y: 0.8 }}
-                    style={styles.statGradient}
-                  >
-                    <Text style={styles.statNumber}>{data?.data?.friendsCount || 0}</Text>
-                    <Text style={styles.statLabel}>Connections</Text>
-                  </LinearGradient>
-                </View>
-              </TouchableOpacity>
-            </View>
-          {/* </LinearGradient> */}
-        </View>
-      {/* </LinearGradient> */}
+        <TouchableOpacity
+          style={styles.statItem}
+          onPress={() => router.push('/hub-details?tab=groups')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.statNumber}>{data?.data?.groupsCount || 0}</Text>
+          <Text style={styles.statLabel}>Groups</Text>
+        </TouchableOpacity>
+
+        <View style={styles.statDivider} />
+
+        <TouchableOpacity
+          style={styles.statItem}
+          onPress={() => router.push('/hub-details?tab=friends')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.statNumber}>{data?.data?.friendsCount || 0}</Text>
+          <Text style={styles.statLabel}>Friends</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -146,207 +64,70 @@ const UserStat = ({ currentUser }: { currentUser: any }) => {
 export default UserStat;
 
 const styles = StyleSheet.create({
-  mainContainer: {
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 20,
     marginBottom: spacing.md,
     marginHorizontal: spacing.sm,
-  },
-
-  mainContainerNormal: {
-    
-    // ...Platform.select({
-    //   web: {
-    //     filter:
-    //       'drop-shadow(4px 4px 8px rgba(163, 177, 198, 0.15)) drop-shadow(-4px -4px 8px rgba(255, 255, 255, 0.7))',
-    //   },
-    //   ios: {
-    //     shadowColor: neomorphColors.darkShadow,
-    //     shadowOffset: { width: 4, height: 4 },
-    //     shadowOpacity: 0.15,
-    //     shadowRadius: 8,
-    //   },
-    //   android: {
-    //     elevation: 6,
-    //   },
-    // }),
-  },
-
-  mainContainerPressed: {
+    padding: spacing.md,
     ...Platform.select({
-      web: {
-        filter:
-          'drop-shadow(2px 2px 4px rgba(163, 177, 198, 0.2)) drop-shadow(-2px -2px 4px rgba(255, 255, 255, 0.6))',
-      },
       ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-
-  outerGradient: {
-    borderRadius: 18,
-    padding: 1.5,
-  },
-
-  innerCard: {
-    borderRadius: 16,
-    backgroundColor:'skyblue'
-
-  },
-
-  innerCardNormal: {
-    ...Platform.select({
-      web: {
-        boxShadow:
-          'inset 1px 1px 2px rgba(163, 177, 198, 0.08), inset -1px -1px 2px rgba(255, 255, 255, 0.7)',
-      },
-      ios: {
-        shadowColor: neomorphColors.lightShadow,
-        shadowOffset: { width: -1, height: -1 },
-        shadowOpacity: 0.6,
-        shadowRadius: 2,
-      },
-      android: {
-        borderWidth: 1,
-        borderTopColor: 'rgba(255, 255, 255, 0.5)',
-        borderLeftColor: 'rgba(255, 255, 255, 0.5)',
-        borderRightColor: 'rgba(163, 177, 198, 0.15)',
-        borderBottomColor: 'rgba(163, 177, 198, 0.15)',
-      },
-    }),
-  },
-
-  innerCardPressed: {
-    // ...Platform.select({
-    //   web: {
-    //     boxShadow:
-    //       'inset 2px 2px 4px rgba(163, 177, 198, 0.1), inset -1px -1px 2px rgba(255, 255, 255, 0.6)',
-    //   },
-    //   ios: {
-    //     shadowColor: neomorphColors.darkShadow,
-    //     shadowOffset: { width: 1, height: 1 },
-    //     shadowOpacity: 0.15,
-    //     shadowRadius: 2,
-    //   },
-    //   android: {
-    //     borderWidth: 1,
-    //     borderTopColor: 'rgba(163, 177, 198, 0.25)',
-    //     borderLeftColor: 'rgba(163, 177, 198, 0.25)',
-    //     borderRightColor: 'rgba(255, 255, 255, 0.3)',
-    //     borderBottomColor: 'rgba(255, 255, 255, 0.3)',
-    //   },
-    // }),
-  },
-
-  cardContent: {
-    borderRadius: 16,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-
-  },
-
-  headerSection: {
-    padding:10,
-    paddingBottom:0
-  },
-
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    fontFamily: typography.fontFamily.bold,
-  },
-
-  subtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    fontFamily: typography.fontFamily.regular,
-    lineHeight: 18,
-  },
-
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding:12,
-    gap: spacing.xs,
-  },
-
-  statWrapper: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  statContainer: {
-    borderRadius: 12,
-    width: '100%',
-    minHeight: 70,
-    backgroundColor: neomorphColors.background,
-  },
-
-  statContainerNormal: {
-    ...Platform.select({
-      web: {
-        boxShadow:
-          '2px 2px 6px rgba(163, 177, 198, 0.15), -2px -2px 6px rgba(255, 255, 255, 0.7)',
-      },
-      ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 2, height: 2 },
-        // shadowOpacity: 0.15,
-        shadowRadius: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
       android: {
         elevation: 4,
       },
     }),
   },
-
-  statContainerPressed: {
-    ...Platform.select({
-      web: {
-        boxShadow:
-          '1px 1px 3px rgba(163, 177, 198, 0.2), -1px -1px 3px rgba(255, 255, 255, 0.6)',
-      },
-      ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-
-  statGradient: {
-    borderRadius: 10,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    minHeight: 68,
+    marginBottom: spacing.md,
   },
-
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: neomorphColors.primary,
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
     fontFamily: typography.fontFamily.bold,
-    marginBottom: 2,
   },
-
+  viewDetails: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.primary,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ecf1f7ff',
+    borderRadius: 16,
+    paddingVertical: spacing.sm,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: '60%',
+    backgroundColor: '#b6b6b6ff',
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.primary,
+    fontFamily: typography.fontFamily.bold,
+    marginBottom: 4,
+  },
   statLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#475569',
+    color: '#64748B',
     textAlign: 'center',
     fontFamily: typography.fontFamily.medium,
-    lineHeight: 13,
   },
 });

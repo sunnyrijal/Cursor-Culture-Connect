@@ -156,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       const isValid = await checkAuthStatus();
       setAuthenticated(isValid);
+      setAuthState(()=>({...authState, authenticated:isValid}))
       setLoading(false); // auth check complete
     };
 

@@ -11,7 +11,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   Users,
@@ -33,44 +32,7 @@ import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { GroupFilterModal } from '@/components/GroupFilterModal';
 import { useAlert } from '@/contexts/AlertContext';
 import AnimatedTabPage from '@/components/AnimatedTabPage';
-
-const placeholderImg = 'https://via.placeholder.com/150';
-
-const theme = {
-  // Neomorphic base colors
-  background: '#E8ECF4',
-  cardBackground: '#E8ECF4',
-  white: '#FFFFFF',
-
-  // Primary colors
-  primary: '#667EEA',
-  primaryLight: '#764BA2',
-  primaryDark: '#5A67D8',
-
-  // Accent colors
-  accent: '#F093FB',
-  accentSecondary: '#F5576C',
-  success: '#48BB78',
-  warning: '#ED8936',
-
-  // Text colors
-  textPrimary: '#2D3748',
-  textSecondary: '#4A5568',
-  textMuted: '#718096',
-  textLight: '#A0AEC0',
-
-  // Neomorphic shadows
-  shadowLight: '#FFFFFF',
-  shadowDark: '#D1D9E6',
-
-  // Status colors
-  online: '#48BB78',
-  offline: '#CBD5E0',
-
-  // Border and divider
-  border: '#E2E8F0',
-  divider: '#EDF2F7',
-};
+import { theme } from '@/components/theme';
 
 interface ApiGroup {
   id: string;
@@ -175,10 +137,9 @@ export default function Groups() {
 
   return (
     <>
-      <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <View style={styles.safeArea}>
+      <View style={styles.container}>       
           {/* <View style={styles.heroSection}>
             <View style={styles.headerContainer}>
               <View style={styles.headerRow}>
@@ -197,13 +158,13 @@ export default function Groups() {
 
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>
-              <Search size={18} color={theme.textMuted} />
+              <Search size={20} color={theme.gray500} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search groups by name, description..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholderTextColor={theme.textMuted}
+                placeholderTextColor={theme.gray500}
               />
               <TouchableOpacity
                 style={[
@@ -215,7 +176,7 @@ export default function Groups() {
               >
                 <Filter
                   size={22}
-                  color={hasActiveGroupFilters ? '#FFFFFF' : theme.textMuted}
+                  color={hasActiveGroupFilters ? theme.white : theme.gray500}
                 />
               </TouchableOpacity>
             </View>
@@ -265,15 +226,22 @@ export default function Groups() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.groupImageContainer}>
-                      <Image
-                        source={{
-                          uri: group.imageUrl || placeholderImg,
-                        }}
-                        style={styles.groupImage}
-                      />
-                      <View style={styles.imageOverlay} />
-
-                      {/* Status Badge */}
+                      {group.imageUrl ? (
+                        <Image
+                          source={{
+                            uri: group.imageUrl,
+                          }}
+                          style={styles.groupImage}
+                        />
+                      ) : (
+                        <View style={styles.imagePlaceholder}>
+                          <Users
+                            size={40}
+                            color={theme.gray400}
+                          />
+                        </View>
+                      )}
+                      
                       <View style={styles.badgeContainer}>
                         {!group.isPrivate ? (
                           <View style={[styles.badge, styles.publicBadge]}>
@@ -282,7 +250,7 @@ export default function Groups() {
                           </View>
                         ) : (
                           <View style={[styles.badge, styles.privateBadge]}>
-                            <Lock size={10} color={theme.white} />
+                            <Lock size={12} color={theme.white} />
                             <Text style={styles.badgeText}>University Only</Text>
                           </View>
                         )}
@@ -291,13 +259,13 @@ export default function Groups() {
 
                     <View style={styles.groupContent}>
                       <View style={styles.groupHeader}>
-                        <Text style={styles.groupName} numberOfLines={2}>
+                        <Text style={styles.groupName} numberOfLines={1}>
                           {group.name} 
                         </Text>
                       </View>
 
                       {group.description && group.description !== '' && (
-                        <Text style={styles.groupDescription} numberOfLines={3}>
+                        <Text style={styles.groupDescription} numberOfLines={2}>
                           {group.description} 
                         </Text>
                       )}
@@ -371,27 +339,26 @@ export default function Groups() {
                         ) : null}
                       </View>
 
-                      <View style={styles.statsSection}>
-                        <View style={styles.statCard}>
-                          <Users size={16} color={theme.primary} />
-                          <Text style={styles.statText}>
-                            {group._count?.members || 0} members
-                          </Text>
+                      <View style={styles.footer}>
+                        <View style={styles.statItem}>
+                            <Users size={14} color={theme.gray500} />
+                            <Text style={styles.statText}>
+                              {group._count?.members || 0} members
+                            </Text>
+                          </View>
+                          <View style={styles.statItem}>
+                            <Calendar size={14} color={theme.gray500} />
+                            <Text style={styles.statText}>
+                              Joined {new Date(group.createdAt).toLocaleDateString(
+                                'en-US',
+                                {
+                                  month: 'short',
+                                  year: 'numeric',
+                                }
+                              )}
+                            </Text>
+                          </View>
                         </View>
-
-                        <View style={styles.statCard}>
-                          <Calendar size={16} color={theme.accent} />
-                          <Text style={styles.statText}>
-                            {new Date(group.createdAt).toLocaleDateString(
-                              'en-US',
-                              {
-                                month: 'short',
-                                year: 'numeric',
-                              }
-                            )}
-                          </Text>
-                        </View>
-                      </View>
                     </View>
                   </TouchableOpacity>
                 );
@@ -417,7 +384,6 @@ export default function Groups() {
           >
             <PlusCircle size={28} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
 
         <CreateGroupModal
           visible={showCreateGroupModal}
@@ -447,6 +413,7 @@ export default function Groups() {
           </View>
         </View>
       </Modal>
+
       </View>
       </AnimatedTabPage>
     </>
@@ -455,6 +422,7 @@ export default function Groups() {
 
 const styles = StyleSheet.create({
   container: {
+    paddingTop:12,
     flex: 1,
     backgroundColor: '#F0F3F7', // Clay-like background
   },
@@ -491,12 +459,12 @@ const styles = StyleSheet.create({
 
   filterButton: {
     padding: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    height: '100%',
-    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeFilterButton: {
     backgroundColor: theme.primary,
@@ -608,8 +576,11 @@ const styles = StyleSheet.create({
     }),
   },
   statItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    gap: 6,
+    width: '50%',
+    marginBottom: 8,
   },
   statNumber: {
     fontSize: 24,
@@ -639,14 +610,14 @@ const styles = StyleSheet.create({
   // Group Card Styles (Enhanced Claymorphism/Neumorphism)
   joinButton: {
     backgroundColor: theme.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
   },
   joinButtonText: {
     color: theme.white,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 13,
   },
   groupCard: {
     backgroundColor: '#FFFFFF',
@@ -657,13 +628,13 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     ...Platform.select({
       ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 8,
+        elevation: 4,
       },
     }),
   },
@@ -676,25 +647,21 @@ const styles = StyleSheet.create({
 
   // Group Image Styles
   groupImageContainer: {
-    height: 100,
+    height: 120,
     position: 'relative',
-    backgroundColor: '#6366F1',
-    overflow: 'hidden',
   },
   groupImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#94A3B8',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
 
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: theme.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   // Badge Styles
   badgeContainer: {
     position: 'absolute',
@@ -706,9 +673,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    backdropFilter: 'blur(10px)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -722,7 +688,7 @@ const styles = StyleSheet.create({
     }),
   },
   publicBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.9)',
+    backgroundColor: 'rgba(16, 185, 129, 0.8)',
     ...Platform.select({
       ios: {
         shadowColor: '#10B981',
@@ -736,7 +702,7 @@ const styles = StyleSheet.create({
     }),
   },
   privateBadge: {
-    backgroundColor: theme.primary,
+    backgroundColor: 'rgba(99, 102, 241, 0.8)',
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
@@ -752,7 +718,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 4,
   },
   featuredBadge: {
@@ -786,27 +752,27 @@ const styles = StyleSheet.create({
 
   // Group Content Styles
   groupContent: {
-    padding: 16,
+    padding: 12,
   },
   groupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 4,
   },
   groupName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1E293B',
-    lineHeight: 22,
+    lineHeight: 26,
     letterSpacing: -0.3,
+    flex: 1,
   },
   groupDescription: {
     fontSize: 14,
     color: '#64748B',
-    lineHeight: 22,
-    marginBottom: 16,
-    fontWeight: '500',
+    lineHeight: 20,
+    marginBottom: 8,
   },
 
   // Creator Section Styles
@@ -820,7 +786,7 @@ const styles = StyleSheet.create({
   },
   creatorInfo: {
     flexDirection: 'row',
-    // alignItems: 'center',
+    alignItems: 'center',
   },
   creatorAvatar: {
     width: 36,
@@ -831,18 +797,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.5,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderColor: 'white',
   },
   creatorInitial: {
     color: '#FFFFFF',
@@ -863,71 +818,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Stats Section Styles
-  statsSection: {
+  footer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-  statCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 1, height: 1 },
-        shadowOpacity: 0.5,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
+ 
   statText: {
     fontSize: 13,
     color: '#64748B',
     fontWeight: '600',
-    marginLeft: 6,
-    flex: 1,
   },
 
-  // Action Section Styles
-  actionSection: {
-    alignItems: 'center',
-  },
-  joinPreview: {
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  joinPreviewText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
 
   // Loading State Styles
   loadingContainer: {
@@ -1067,14 +973,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     // paddingHorizontal: 16,
     paddingLeft: 16,
-    paddingRight: 4,
-    paddingVertical: 4,
+    paddingRight: 8,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minHeight: 50,
     ...Platform.select({
       ios: {
-        shadowColor: '#CDD2D8',
         shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 1,
         shadowRadius: 4,
@@ -1107,7 +1011,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '500',
-    paddingVertical: 12,
+    height: '100%',
   },
 
   // Filter buttons for categories

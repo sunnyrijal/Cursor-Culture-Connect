@@ -79,6 +79,9 @@
       "router": {},
       "eas": {
         "projectId": "fecb2cb4-c2cd-4536-a6c8-fea3c961c70c"
+      },
+      "expoPushNotifications": {
+        "useFcmV1": true
       }
     }
   }

@@ -8,10 +8,25 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { StyleSheet } from 'react-native';
-import { X, Trash2, ToggleLeft, ToggleRight, MapPin, Plus, Package, Car, Edit } from 'lucide-react-native';
+import {
+  X,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  MapPin,
+  Plus,
+  Package,
+  Car,
+  Edit,
+} from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMyActivityPreferences, deleteUserInterest, toggleUserInterestStatus } from '../contexts/userInterest.api';
+import {
+  getMyActivityPreferences,
+  deleteUserInterest,
+  toggleUserInterestStatus,
+} from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
 import { useAlert } from '@/contexts/AlertContext';
 
@@ -55,8 +70,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
-  const [isPreferenceModalVisible, setIsPreferenceModalVisible] = useState(false);
-  const [editingPreference, setEditingPreference] = useState<ActivityPreference | null>(null);
+  const [isPreferenceModalVisible, setIsPreferenceModalVisible] =
+    useState(false);
+  const [editingPreference, setEditingPreference] =
+    useState<ActivityPreference | null>(null);
 
   // Fetch user preferences
   const {
@@ -76,7 +93,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
     mutationFn: deleteUserInterest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
-      showAlert({ title: 'Success', message: 'Preference deleted successfully' });
+      showAlert({
+        title: 'Success',
+        message: 'Preference deleted successfully',
+      });
     },
     onError: (error) => {
       showAlert({ title: 'Error', message: 'Failed to delete preference' });
@@ -91,7 +111,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
     },
     onError: (error) => {
-      showAlert({ title: 'Error', message: 'Failed to toggle preference status' });
+      showAlert({
+        title: 'Error',
+        message: 'Failed to toggle preference status',
+      });
       console.error('Toggle error:', error);
     },
   });
@@ -123,7 +146,7 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
       ...preference,
       interestId: preference.activityId, // Map activityId to interestId for the modal
     };
-    
+
     setEditingPreference(preferenceForEdit);
     setIsPreferenceModalVisible(true);
   };
@@ -140,10 +163,14 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 
   const getSkillLevelColor = (level: string) => {
     switch (level) {
-      case 'Beginner': return '#4CAF50';
-      case 'Intermediate': return '#FF9800';
-      case 'Advanced': return '#F44336';
-      default: return '#757575';
+      case 'Beginner':
+        return '#4CAF50';
+      case 'Intermediate':
+        return '#FF9800';
+      case 'Advanced':
+        return '#F44336';
+      default:
+        return '#757575';
     }
   };
 
@@ -156,16 +183,28 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
         <View style={styles.cardHeader}>
           <View style={styles.activityInfo}>
             <Text style={styles.activityName}>{preference.activity.name}</Text>
-            <Text style={styles.interestCategory}>{preference.activity.interest.name}</Text>
+            <Text style={styles.interestCategory}>
+              {preference.activity.interest.name}
+            </Text>
           </View>
 
           {!preference.isActive && (
-            <View style={[styles.skillBadge, { backgroundColor: '#EF4444', marginRight: 8 }]}>
+            <View
+              style={[
+                styles.skillBadge,
+                { backgroundColor: '#EF4444', marginRight: 8 },
+              ]}
+            >
               <Text style={styles.skillBadgeText}>Inactive</Text>
             </View>
           )}
-          
-          <View style={[styles.skillBadge, { backgroundColor: getSkillLevelColor(preference.skillLevel) }]}>
+
+          <View
+            style={[
+              styles.skillBadge,
+              { backgroundColor: getSkillLevelColor(preference.skillLevel) },
+            ]}
+          >
             <Text style={styles.skillBadgeText}>{preference.skillLevel}</Text>
           </View>
         </View>
@@ -174,9 +213,14 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
           <View style={styles.detailItem}>
             <Package size={14} color="#6B7280" />
             {preference.hasEquipment ? (
-              <Text style={[styles.detailText, styles.hasDetail]}>Has Equipment</Text>
+              <Text style={[styles.detailText, styles.hasDetail]}>
+                Has Equipment
+              </Text>
             ) : (
-              <Text style={[styles.detailText, styles.needsDetail]} numberOfLines={1}>
+              <Text
+                style={[styles.detailText, styles.needsDetail]}
+                numberOfLines={1}
+              >
                 Needs: {preference.equipmentNeeded || 'Equipment'}
               </Text>
             )}
@@ -185,9 +229,14 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
           <View style={styles.detailItem}>
             <Car size={14} color="#6B7280" />
             {preference.hasTransport ? (
-              <Text style={[styles.detailText, styles.hasDetail]}>Has Transport</Text>
+              <Text style={[styles.detailText, styles.hasDetail]}>
+                Has Transport
+              </Text>
             ) : (
-              <Text style={[styles.detailText, styles.needsDetail]} numberOfLines={1}>
+              <Text
+                style={[styles.detailText, styles.needsDetail]}
+                numberOfLines={1}
+              >
                 Needs: {preference.transportDetails || 'Transport'}
               </Text>
             )}
@@ -195,7 +244,9 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 
           <View style={styles.detailItem}>
             <MapPin size={14} color="#6B7280" />
-            <Text style={styles.detailText}>Within {preference.locationRadius} miles</Text>
+            <Text style={styles.detailText}>
+              Within {preference.locationRadius} miles
+            </Text>
           </View>
         </View>
 
@@ -227,11 +278,17 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
               <Edit size={20} color="#3B82F6" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => handleDelete(preference.id, preference.activity.name)}
+              onPress={() =>
+                handleDelete(preference.id, preference.activity.name)
+              }
               disabled={isDeleting}
               style={styles.actionButton}
             >
-              {isDeleting ? <ActivityIndicator size="small" color="#F44336" /> : <Trash2 size={20} color="#F44336" />}
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#F44336" />
+              ) : (
+                <Trash2 size={20} color="#F44336" />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -263,7 +320,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
           </View>
 
           {/* Content */}
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />
@@ -272,18 +332,28 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             ) : isError ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>Failed to load preferences</Text>
-                <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+                <TouchableOpacity
+                  onPress={() => refetch()}
+                  style={styles.retryButton}
+                >
                   <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
             ) : preferences.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No activity preferences yet</Text>
+                <Text style={styles.emptyText}>
+                  No activity preferences yet
+                </Text>
                 <Text style={styles.emptySubtext}>
                   Add some activities to get started!
                 </Text>
-                <TouchableOpacity onPress={handleAddNew} style={styles.addFirstButton}>
-                  <Text style={styles.addFirstButtonText}>Add Your First Preference</Text>
+                <TouchableOpacity
+                  onPress={handleAddNew}
+                  style={styles.addFirstButton}
+                >
+                  <Text style={styles.addFirstButtonText}>
+                    Add Your First Preference
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -302,7 +372,9 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
         editingPreference={editingPreference}
         onSubmit={() => {
           // Refresh the list after successful create/update
-          queryClient.invalidateQueries({ queryKey: ['myActivityPreferences'] });
+          queryClient.invalidateQueries({
+            queryKey: ['myActivityPreferences'],
+          });
         }}
       />
     </>
@@ -319,6 +391,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 16,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

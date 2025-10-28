@@ -1,18 +1,15 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
-import React, { useEffect, useState, useRef } from 'react'
-import { theme, spacing, typography, neomorphColors } from '../theme'; 
+import React, {  useState, useRef } from 'react'
+import { theme,  typography} from '../theme'; 
 import { MapPin, Clock } from 'lucide-react-native';
 import { useMutation } from '@tanstack/react-query';
 import { recordAdClick, recordAdImpression } from '@/contexts/ad.api';
-import { useAuth } from '@/contexts/AuthContext';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery } from '@tanstack/react-query';
 
 const CulturalExperienceCard = ({
   content,
   handleSponsoredContentPress,
-  index,
-  activeSponsoredCategory,
   recordImpression,
 }: {
   content: any,
@@ -134,23 +131,21 @@ export default CulturalExperienceCard
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: neomorphColors.background,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    marginBottom: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.border,
     ...Platform.select({
       ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 0, height: 2 },
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.08,
         shadowRadius: 4,
       },
-      android: {
-        elevation: 2,
-      },
+      android: { elevation: 2 },
     }),
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
   },
   imageContainer: {
     width: 80,
@@ -194,7 +189,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: theme.textPrimary,
     fontFamily: typography.fontFamily.bold,
@@ -212,7 +207,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   description: {
-    fontSize: 11,
+    fontSize: 12,
     color: theme.textSecondary,
     fontFamily: typography.fontFamily.regular,
     marginBottom: 6,
@@ -229,7 +224,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   metaText: {
-    fontSize: 10,
+    fontSize: 11,
     color: theme.textSecondary,
     marginLeft: 4,
     flex: 1,

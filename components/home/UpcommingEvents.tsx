@@ -140,6 +140,20 @@ const UpcomingEvents = () => {
     );
   }
 
+  // Show empty state if there are no events
+  if (!isLoading && eventsData.length === 0) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        </View>
+        <View style={styles.inlineFeedbackContainer}>
+          <Text style={styles.emptyText}>No upcoming events right now.</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -381,6 +395,12 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: theme.white,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  emptyText: {
+    color: theme.black,
     fontSize: typography.fontSize.sm,
     fontWeight: '600',
     fontFamily: typography.fontFamily.semiBold,

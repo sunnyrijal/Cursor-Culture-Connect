@@ -316,14 +316,10 @@ export default CulturalExperiences;
 
 const styles = StyleSheet.create({
   section: {
-    marginVertical: spacing.lg,
-    backgroundColor: 'skyblue',
-    paddingTop: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
-    // Ensure the container doesn't interfere with touch events
-    overflow: 'hidden',
+    marginVertical: spacing.md,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingVertical: spacing.md,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -339,12 +335,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   viewAllBtn: {
-    backgroundColor: theme.white,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
+    // No background needed for a simple text button
   },
   viewAllBtnText: {
     color: theme.primary,
@@ -352,21 +343,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   categoryRow: {
-    paddingLeft: 16,
+    paddingHorizontal: 16,
     marginBottom: 12,
   },
   categoryTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: neomorphColors.background,
+    backgroundColor: theme.gray50,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
+    borderColor: theme.border,
   },
   categoryTabActive: {
     backgroundColor: theme.primary,
-    borderWidth: 0,
+    borderColor: theme.primary,
   },
   categoryText: {
     fontSize: 12,
@@ -379,7 +370,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     height: 280, // Fixed height for the scrollable area
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     // IMPORTANT: Don't add flex: 1 here as it can cause issues
     // Make sure the container has a defined height
   },
@@ -410,24 +401,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   viewAllButton: {
-    backgroundColor: neomorphColors.background,
+    backgroundColor: theme.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: neomorphColors.darkShadow,
-        shadowOffset: { width: 3, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 5,
-        shadowColor: neomorphColors.darkShadow,
-      },
-    }),
-    borderWidth: 1,
-    borderColor: neomorphColors.lightShadow,
   },
   viewAllButtonText: {
     color: theme.primary,

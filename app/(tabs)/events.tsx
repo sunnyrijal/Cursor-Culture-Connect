@@ -5,7 +5,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Image,
   TextInput,
@@ -13,6 +12,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RefreshControl } from 'react-native';
 // import { Picker } from '@react-native-picker/picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,7 +25,7 @@ import { ShareButton } from '@/components/ui/ShareButton';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useQuery } from '@tanstack/react-query';
 import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
-
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 // Add import for date formatting
 import getDecodedToken from '@/utils/getMyData';
 import { theme } from '@/components/theme';
@@ -37,13 +38,10 @@ import {
 import { CreateQuickEventModal } from '@/components/CreateQuickEventModal';
 import React from 'react';
 import { EventCard } from '@/components/EventCard';
-import { formatTime, formatTo12Hour } from '@/utils/formatDate';
+import { QuickEventCard } from '@/components/QuickEventCard';
 
 import { Filter } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
-import { Trash2 } from 'lucide-react-native';
-import CountdownTimer from '@/components/CountdownTimer';
-import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -347,9 +345,8 @@ export default function Events() {
   };
 
   return (
-    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flex: 1 }}>
-    <View style={styles.container}>
+     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <CreateEventModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -526,13 +523,11 @@ export default function Events() {
               ))
             ) : (
               <View style={styles.emptyState}>
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyTitle}>No Events Found</Text>
-                  <Text style={styles.emptyText}>
-                    Be the first to create a cultural event and start building
-                    your community!
-                  </Text>
-                </View>
+                <Text style={styles.emptyTitle}>No Events Found</Text>
+                <Text style={styles.emptyText}>
+                  Be the first to create a cultural event and start building
+                  your community!
+                </Text>
               </View>
             )}
           </>
@@ -560,205 +555,31 @@ export default function Events() {
             ) : filteredQuickEvents.length > 0 ? (
               filteredQuickEvents.map(
                 (quickEvent: QuickEvent, index: number) => {
-                  const isInterested = quickEvent.interestedUsers.some(
-                    (user) => user.id === myData?.userId
-                  );
-                  const isMutating =
-                    (isAddingInterest || isRemovingInterest) &&
-                    mutatingQuickEventId === quickEvent.id;
-                  const isEventPast = (() => {
-                    const now = new Date();
-
-                    if (quickEvent.endTime) {
-                      // If endTime exists, check if endTime has passed
-                      const [endHours, endMinutes] = quickEvent.endTime
-                        .split(':')
-                        .map(Number);
-                      const end = new Date();
-                      end.setHours(endHours, endMinutes, 0, 0);
-                      return end < now;
-                    } else {
-                      // If no endTime, check if start time has passed
-                      const [startHours, startMinutes] = quickEvent.time
-                        .split(':')
-                        .map(Number);
-                      const start = new Date();
-                      start.setHours(startHours, startMinutes, 0, 0);
-                      return start < now;
-                    }
-                  })();
-
-                  const isHost = quickEvent.user.id === myData?.userId;
-                  const isOldEvent = (() => {
-                    const eventDate = new Date(quickEvent.createdAt);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0); // Set to start of today
-                    return eventDate < today;
-                  })();
-                  console.log(isHost, isOldEvent, quickEvent.createdAt);
                   return (
-                    <TouchableOpacity
+                    <QuickEventCard
                       key={quickEvent.id}
-                      style={[
-                        styles.quickEventCard,
-                        index === 0 && styles.firstCard,
-                        index === filteredQuickEvents.length - 1 &&
-                          styles.lastCard,
-                      ]}
-                      onPress={() =>
-                        router.push(`/quickevent/${quickEvent.id}`)
-                      }
-                      activeOpacity={0.8}
-                    >
-                      {isHost && (
-                        <View style={styles.hostBadge}>
-                          {/* <Crown size={14} color="#FFD700" fill="#FFD700" /> */}
-                          <Text style={styles.hostBadgeText}>Host</Text>
-                        </View>
-                      )}
-                      <View style={styles.quickEventContent}>
-                        <View style={styles.quickEventHeader}>
-                          <Text
-                            style={styles.quickEventTitle}
-                            numberOfLines={2}
-                          >
-                            {quickEvent.name} at {quickEvent.location}
-                          </Text>
-                        </View>
-                        {quickEvent.description && (
-                          <Text
-                            style={styles.quickEventDescription}
-                            numberOfLines={2}
-                          >
-                            {quickEvent.description}
-                          </Text>
-                        )}
-
-                        <View style={styles.quickEventMeta}>
-                          <Clock size={16} color="#F59E0B" />
-                          <Text style={styles.quickEventMetaText}>
-                            {quickEvent.endTime
-                              ? `${formatTo12Hour(
-                                  quickEvent.time
-                                )} - ${formatTo12Hour(quickEvent.endTime)}`
-                              : formatTo12Hour(quickEvent.time)}
-                          </Text>
-                        </View>
-
-                        <View style={styles.quickEventMeta}>
-                          <Users size={16} color="#6366F1" />
-                          <Text style={styles.quickEventMetaText}>
-                            {quickEvent.max
-                              ? ` Max ${quickEvent.max} people`
-                              : 'No Limit'}
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.quickEventMeta,
-                            { justifyContent: 'space-between' },
-                          ]}
-                        >
-                          <View style={styles.quickEventMeta}>
-                            <Users size={16} color="#10B981" />
-                            <Text style={styles.quickEventMetaText}>
-                              {quickEvent.interestedUsers?.length || 0}{' '}
-                              interested
-                            </Text>
-                          </View>
-                          {!isOldEvent && (
-                            <CountdownTimer
-                              time={quickEvent.time}
-                              endTime={quickEvent.endTime}
-                            />
-                          )}
-                        </View>
-
-                        <View style={styles.quickEventActions}>
-                          <View style={styles.quickEventCreator}>
-                            <Image
-                              source={
-                                quickEvent.user.profilePicture
-                                  ? { uri: quickEvent.user.profilePicture }
-                                  : require('../../assets/user.png')
-                              }
-                              style={styles.creatorAvatar}
-                              defaultSource={require('../../assets/user.png')}
-                            />
-
-                            <View style={styles.creatorDetails}>
-                              <Text style={styles.creatorName}>
-                                {quickEvent.user.name}
-                              </Text>
-                              {isHost && (
-                                <Text style={styles.creatorRole}>Host</Text>
-                              )}
-                            </View>
-                          </View>
-                          {isHost && isOldEvent ? (
-                            <TouchableOpacity
-                              style={[
-                                styles.rsvpButtonSmall,
-                                styles.deleteButton,
-                              ]}
-                              onPress={() =>
-                                deleteQuickEventMutation(quickEvent.id)
-                              }
-                              disabled={isDeletingQuickEvent}
-                            >
-                              {isDeletingQuickEvent &&
-                              mutatingQuickEventId === quickEvent.id ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                              ) : (
-                                <Trash2 size={16} color="white" />
-                              )}
-                            </TouchableOpacity>
-                          ) : (
-                            <TouchableOpacity
-                              style={[
-                                styles.rsvpButtonSmall,
-                                isInterested && !isEventPast
-                                  ? styles.rsvpedButtonSmall
-                                  : null,
-                                isEventPast && styles.endedButtonSmall,
-                              ]}
-                              onPress={() =>
-                                !isMutating &&
-                                !isEventPast &&
-                                (isInterested
-                                  ? removeInterestMutation(quickEvent.id)
-                                  : addInterestMutation(quickEvent.id))
-                              }
-                              disabled={isMutating || isEventPast}
-                            >
-                              {isMutating ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                              ) : (
-                                <Text style={styles.rsvpButtonTextSmall}>
-                                  {isEventPast
-                                    ? 'Ended'
-                                    : isInterested
-                                    ? 'Interested'
-                                    : "I'm in"}
-                                </Text>
-                              )}
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }
-              )
+                      quickEvent={quickEvent}
+                      myUserId={myData?.userId}
+                      isFirst={index === 0}
+                      isLast={index === filteredQuickEvents.length - 1}
+                      isAddingInterest={isAddingInterest}
+                      isRemovingInterest={isRemovingInterest}
+                      isDeletingQuickEvent={isDeletingQuickEvent}
+                      mutatingQuickEventId={mutatingQuickEventId}
+                      onAddInterest={addInterestMutation}
+                      onRemoveInterest={removeInterestMutation}
+                      onDeleteQuickEvent={deleteQuickEventMutation}
+                    />
+                  )
+                })
+            
             ) : (
               <View style={styles.emptyState}>
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyTitle}>No Quick Events Found</Text>
-                  <Text style={styles.emptyText}>
-                    Quick events are spontaneous meetups and activities. Check
-                    back soon for new opportunities!
-                  </Text>
-                </View>
+                <Text style={styles.emptyTitle}>No Quick Events Found</Text>
+                <Text style={styles.emptyText}>
+                  Quick events are spontaneous meetups and activities. Check
+                  back soon for new opportunities!
+                </Text>
               </View>
             )}
           </>
@@ -778,71 +599,64 @@ export default function Events() {
       {/* this is button block  */}
 
       {/* FAB Backdrop (tap to close) */}
-{showFabMenu && (
-  <TouchableOpacity
-    activeOpacity={1}
-    onPress={() => setShowFabMenu(false)}
-    style={styles.fabBackdrop}
-  />
-)}
+      {showFabMenu && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowFabMenu(false)}
+          style={styles.fabBackdrop}
+        />
+      )}
 
-{/* Floating Action Button + Speed Dial */}
-<View pointerEvents="box-none" style={styles.fabContainer}>
-  {showFabMenu && (
-    <View style={styles.fabMenu}>
-      {/* Create Quick Event */}
-      <TouchableOpacity
-        style={styles.fabItem}
-        activeOpacity={0.85}
-        onPress={() => {
-          setShowFabMenu(false);
-          setShowCreateQuickEventModal(true);
-        }}
-      >
-        <View style={styles.fabLabelPill}>
-          <Text style={styles.fabLabelText}>Create Quick Event</Text>
-        </View>
-        <View style={styles.fabIconButton}>
-          <Zap size={22} color={theme.primary} />
-        </View>
-      </TouchableOpacity>
+      {/* Floating Action Button + Speed Dial */}
+      <View pointerEvents="box-none" style={styles.fabContainer}>
+        {showFabMenu && (
+          <View style={styles.fabMenu}>
+            {/* Create Quick Event */}
+            <TouchableOpacity
+              style={styles.fabItem}
+              activeOpacity={0.85}
+              onPress={() => {
+                setShowFabMenu(false);
+                setShowCreateQuickEventModal(true);
+              }}
+            >
+              <View style={styles.fabIconButton}>
+                <Zap size={22} color={theme.primary} />
+              </View>
+            </TouchableOpacity>
 
-      {/* Create Event */}
-      <TouchableOpacity
-        style={[styles.fabItem, { marginTop: 12 }]}
-        activeOpacity={0.85}
-        onPress={() => {
-          setShowFabMenu(false);
-          setShowCreateModal(true);
-        }}
-      >
-        <View style={styles.fabLabelPill}>
-          <Text style={styles.fabLabelText}>Create Event</Text>
-        </View>
-        <View style={styles.fabIconButton}>
-          <PlusCircle size={24} color={theme.primary} />
-        </View>
-      </TouchableOpacity>
-    </View>
-  )}
+            {/* Create Event */}
+            <TouchableOpacity
+              style={[styles.fabItem, { marginTop: 12 }]}
+              activeOpacity={0.85}
+              onPress={() => {
+                setShowFabMenu(false);
+                setShowCreateModal(true);
+              }}
+            >
+              <View style={styles.fabIconButton}>
+                <PlusCircle size={24} color={theme.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
-  {/* Main FAB */}
-  <TouchableOpacity
-    accessibilityLabel="Create"
-    accessibilityHint="Open actions to create an event"
-    style={styles.fabMain}
-    activeOpacity={0.9}
-    onPress={() => setShowFabMenu((s) => !s)}
-  >
-    <Text style={styles.fabMainPlus}>{showFabMenu ? '×' : '+'}</Text>
-  </TouchableOpacity>
-</View>
-
-        
-
-
-    </View>
-    </View>
+        {/* Main FAB */}
+        <TouchableOpacity
+          accessibilityLabel="Create"
+          accessibilityHint="Open actions to create an event"
+          style={styles.fabMain}
+          activeOpacity={0.9}
+          onPress={() => setShowFabMenu((s) => !s)}
+        >
+          {showFabMenu ? (
+            <Text style={styles.fabMainPlus}>×</Text>
+          ) : (
+            <PlusCircle size={28} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
+      </View>
+    </GestureHandlerRootView>
     </AnimatedTabPage>
   );
 }
@@ -858,6 +672,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   container: {
+    paddingTop: 12,
     flex: 1,
     backgroundColor: '#F0F3F7', // Updated to match groups page background
   },
@@ -865,6 +680,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fabContainer: {
+    
     position: 'absolute',
     right: 20,
     bottom: 10,
@@ -987,15 +803,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.12)',
   },
   fabMain: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#6365f1',
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
     ...Platform.select({
       ios: {
         shadowColor: '#6365f1',
@@ -1008,9 +821,8 @@ const styles = StyleSheet.create({
   },
   fabMainPlus: {
     color: 'white',
-    fontSize: 34,
-    lineHeight: 34,
-    marginTop: 2,
+    fontSize: 40,
+    lineHeight: 40,
     fontWeight: '700',
   },
   fabMenu: {
@@ -1068,7 +880,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    alignContent: "center",
+    alignContent: 'center',
   },
   heroTitle: {
     fontSize: 32,
@@ -1530,26 +1342,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 60,
     paddingHorizontal: 20,
-  },
-  emptyCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 24,
-    alignItems: 'center',
-    maxWidth: 300,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CDD2D8',
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   emptyTitle: {
     fontSize: 22,

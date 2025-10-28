@@ -185,6 +185,7 @@ export default function Page() {
 
 const styles = StyleSheet.create({
   container: {
+    paddingTop:12,
     flex: 1,
     backgroundColor: '#F0F3F7', // Updated to match groups page background
     marginBottom: 0,
