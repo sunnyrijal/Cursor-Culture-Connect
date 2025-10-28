@@ -1017,8 +1017,8 @@ export default function ActivityBuddyPage() {
   );
 
   return (
-    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flex: 1 }}>
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white'}}>
+      <View style={{ flex: 1, paddingBottom:80 }}>
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>

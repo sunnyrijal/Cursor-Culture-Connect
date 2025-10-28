@@ -345,7 +345,7 @@ export default function Events() {
   };
 
   return (
-     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+     <AnimatedTabPage style={{ flex: 1}}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CreateEventModal
         visible={showCreateModal}
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     
     position: 'absolute',
     right: 20,
-    bottom: 10,
+    bottom: 100,
     alignItems: 'center',
     zIndex: 20,
   },
@@ -827,9 +827,8 @@ const styles = StyleSheet.create({
   },
   fabMenu: {
     position: 'absolute',
-    right: 20,
-    bottom: 100, // sit above the main FAB
-    alignItems: 'flex-end',
+    bottom: 75, // Position it above the main FAB
+    alignItems: 'center',
   },
   fabItem: {
     flexDirection: 'row',
