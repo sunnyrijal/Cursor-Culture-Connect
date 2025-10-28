@@ -40,6 +40,7 @@ import {
 import getDecodedToken from '@/utils/getMyData';
 import { getUsers } from '@/contexts/user.api';
 import useSocket from '@/hooks/useSocket';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 type FilterType = 'DIRECT' | 'GROUP';
 
@@ -505,6 +506,8 @@ export default function ChatListScreen() {
   );
 
   return (
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
     <View style={styles.container}>
       {/* {!isConnected && (
         <View style={[styles.offlineBanner, { paddingTop: insets.top }]}>
@@ -668,6 +671,8 @@ export default function ChatListScreen() {
 
       {renderUserSelectionModal()}
     </View>
+    </View>
+    </AnimatedTabPage>
   );
 }
 

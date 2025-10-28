@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 const theme = {
   primary: '#6366F1',
@@ -105,6 +106,8 @@ export default function Page() {
   };
 
   return (
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
     <View style={styles.container}>
       {/* Hero Section */}
       {/* <View style={styles.heroSection}>
@@ -175,6 +178,8 @@ export default function Page() {
 
       <View style={styles.contentWrapper}>{renderContent()}</View>
     </View>
+    </View>
+    </AnimatedTabPage>
   );
 }
 

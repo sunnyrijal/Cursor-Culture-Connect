@@ -58,6 +58,7 @@ import { Activity } from '@/types/activity';
 import MyPreferencesModal from '@/components/MyPreferenceModal';
 import { useAlert } from '@/contexts/AlertContext';
 import { createDirectChat } from '@/contexts/chat.api';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 const theme = {
   primary: '#6366F1',
@@ -407,6 +408,7 @@ export default function ActivityBuddyPage() {
     };
 
     return (
+      
       <View key={user.id} style={styles.userCard}>
         <TouchableOpacity
           style={styles.userHeader}
@@ -1015,6 +1017,8 @@ export default function ActivityBuddyPage() {
   );
 
   return (
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
@@ -1084,6 +1088,8 @@ export default function ActivityBuddyPage() {
         onClose={() => setIsMyPreferenceVisible(false)}
       />
     </View>
+    </View>
+    </AnimatedTabPage>
   );
 }
 const styles = StyleSheet.create({

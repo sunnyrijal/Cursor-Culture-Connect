@@ -43,6 +43,7 @@ import { Filter } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
 import { Trash2 } from 'lucide-react-native';
 import CountdownTimer from '@/components/CountdownTimer';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 const filterOptions = [
   { key: 'all', label: 'All' },
@@ -346,6 +347,8 @@ export default function Events() {
   };
 
   return (
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
     <View style={styles.container}>
       <CreateEventModal
         visible={showCreateModal}
@@ -839,6 +842,8 @@ export default function Events() {
 
 
     </View>
+    </View>
+    </AnimatedTabPage>
   );
 }
 

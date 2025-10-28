@@ -24,6 +24,7 @@ import AutoplayVideo from '@/components/home/VideoCard';
 import getDecodedToken from '@/utils/getMyData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePushNotifications } from '@/hooks/usePushNotification';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -78,6 +79,8 @@ export default function Dashboard() {
   }, [queryClient]);
 
   return (
+    <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
@@ -128,6 +131,8 @@ export default function Dashboard() {
         onPostStory={handlePostStory}
       />
     </View>
+    </View>
+    </AnimatedTabPage>
   );
 }
 

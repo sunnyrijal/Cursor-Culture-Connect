@@ -32,6 +32,7 @@ import getDecodedToken from '@/utils/getMyData';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { GroupFilterModal } from '@/components/GroupFilterModal';
 import { useAlert } from '@/contexts/AlertContext';
+import AnimatedTabPage from '@/components/AnimatedTabPage';
 
 const placeholderImg = 'https://via.placeholder.com/150';
 
@@ -174,6 +175,8 @@ export default function Groups() {
 
   return (
     <>
+      <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.safeArea}>
           {/* <View style={styles.heroSection}>
@@ -444,6 +447,8 @@ export default function Groups() {
           </View>
         </View>
       </Modal>
+      </View>
+      </AnimatedTabPage>
     </>
   );
 }

@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
   },
   placeholder: {
-    width: 40,
+    width: 15,
   },
   headerContainer: {
     marginHorizontal: 16,
