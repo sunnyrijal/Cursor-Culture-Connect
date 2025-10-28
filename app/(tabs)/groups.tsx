@@ -136,7 +136,7 @@ export default function Groups() {
 
   return (
     <>
-      <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
+      <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white', }}>
         <View style={{ flex: 1 }}>
           <View style={styles.container}>
             {/* <View style={styles.heroSection}>
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   createButton: {
     position: 'absolute',
     right: 20,
-    bottom: 100, // tweak to sit above your bottom tab bar
+    bottom: 120, // tweak to sit above your bottom tab bar
     width: 60,
     height: 60,
     borderRadius: 20,
@@ -597,6 +597,7 @@ const styles = StyleSheet.create({
   // List Styles
   list: {
     flex: 1,
+    marginBottom:20
   },
   listContent: {
     paddingHorizontal: 20,

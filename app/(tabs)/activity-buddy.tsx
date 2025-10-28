@@ -21,6 +21,7 @@ import {
   MapPin,
   Users,
   Plus,
+  PlusCircle,
   MessageCircle,
   Phone,
   Star,
@@ -1018,7 +1019,7 @@ export default function ActivityBuddyPage() {
 
   return (
     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white'}}>
-      <View style={{ flex: 1, paddingBottom:80 }}>
+      <View style={{ flex: 1}}>
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
@@ -1079,9 +1080,9 @@ export default function ActivityBuddyPage() {
       {/* Floating Action Button to Add Preference */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => setIsPreferenceModalVisible(true)}
+        onPress={() => setIsMyPreferenceVisible(true)}
       >
-        <Plus size={24} color={theme.white} />
+        <PlusCircle size={28} color={theme.white} />
       </TouchableOpacity>
       <MyPreferencesModal
         visible={isMyPreferenceVisible}
@@ -1110,18 +1111,25 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3d40ebff',
+    bottom: 120,
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 101, 241, 1)',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    zIndex: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6365f1',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   activitySelectButton: {
     padding: 16,
@@ -1468,6 +1476,7 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
+
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -1512,10 +1521,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+
   },
   contentContainer: {
     // paddingHorizontal: 8,
     paddingVertical: 12,
+    paddingBottom:120
+
   },
 
   loadingText: {

@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Switch } from 'react-native'; // Ensure Switch is imported
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
@@ -393,13 +392,7 @@ export function CreateInterestPreferenceModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
-                style={styles.formGradient}
-              >
+              <View style={styles.formGradient}>
                 {/* Interest Selection */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Activity *</Text>
@@ -483,17 +476,7 @@ export function CreateInterestPreferenceModal({
                         })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          formData.hasEquipment
-                            ? ['#10B981', '#059669']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.optionButtonGradient}
-                      >
+                      <View style={[styles.optionButtonGradient, { backgroundColor: formData.hasEquipment ? '#10B981' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Check
                           size={16}
                           color={formData.hasEquipment ? '#FFFFFF' : '#374151'}
@@ -507,7 +490,7 @@ export function CreateInterestPreferenceModal({
                         >
                           I have equipment
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -523,17 +506,7 @@ export function CreateInterestPreferenceModal({
                         })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          formData.needsEquipment
-                            ? ['#F59E0B', '#D97706']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.optionButtonGradient}
-                      >
+                      <View style={[styles.optionButtonGradient, { backgroundColor: formData.needsEquipment ? '#F59E0B' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Package
                           size={16}
                           color={
@@ -549,7 +522,7 @@ export function CreateInterestPreferenceModal({
                         >
                           I need equipment
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
 
@@ -601,17 +574,7 @@ export function CreateInterestPreferenceModal({
                         })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          formData.hasTransport
-                            ? ['#10B981', '#059669']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.optionButtonGradient}
-                      >
+                      <View style={[styles.optionButtonGradient, { backgroundColor: formData.hasTransport ? '#10B981' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Car
                           size={16}
                           color={formData.hasTransport ? '#FFFFFF' : '#374151'}
@@ -625,7 +588,7 @@ export function CreateInterestPreferenceModal({
                         >
                           I have transportation
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -641,17 +604,7 @@ export function CreateInterestPreferenceModal({
                         })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          formData.needsTransport
-                            ? ['#F59E0B', '#D97706']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.optionButtonGradient}
-                      >
+                      <View style={[styles.optionButtonGradient, { backgroundColor: formData.needsTransport ? '#F59E0B' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Users
                           size={16}
                           color={
@@ -667,7 +620,7 @@ export function CreateInterestPreferenceModal({
                         >
                           I need transportation
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
 
@@ -827,7 +780,7 @@ export function CreateInterestPreferenceModal({
                     />
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -873,12 +826,7 @@ export function CreateInterestPreferenceModal({
               onPress={handleSubmit}
               disabled={isPending}
             >
-              <LinearGradient
-                colors={
-                  isPending ? ['#9CA3AF', '#6B7280'] : ['#6366F1', '#8B5CF6']
-                }
-                style={styles.buttonGradient}
-              >
+              <View style={[styles.buttonGradient, { backgroundColor: isPending ? '#9CA3AF' : '#6366F1' }]}>
                 <View style={styles.buttonContent}>
                   {isPending && (
                     <ActivityIndicator size="small" color="#FFFFFF" />
@@ -894,7 +842,7 @@ export function CreateInterestPreferenceModal({
                     <Zap size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   )}
                 </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -1008,6 +956,7 @@ const styles = StyleSheet.create({
   formGradient: {
     padding: 24,
     borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   inputContainer: {
     marginBottom: 20,
@@ -1067,17 +1016,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     marginTop: 8,
     maxHeight: 200,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   dropdownScroll: {
     maxHeight: 180,
@@ -1113,31 +1051,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'rgba(226, 232, 240, 0.8)',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   optionButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   optionButtonGradient: {
     flexDirection: 'row',
@@ -1146,6 +1062,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 8,
+    borderRadius: 14,
   },
   optionButtonText: {
     fontSize: 13,
@@ -1286,17 +1203,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   primaryButtonDisabled: {
     opacity: 0.7,

@@ -345,7 +345,7 @@ export default function Events() {
   };
 
   return (
-     <AnimatedTabPage style={{ flex: 1}}>
+     <AnimatedTabPage style={{ flex: 1,marginTop:12}}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CreateEventModal
         visible={showCreateModal}
@@ -620,6 +620,9 @@ export default function Events() {
                 setShowCreateQuickEventModal(true);
               }}
             >
+              <View style={styles.fabLabelPill}>
+                <Text style={styles.fabLabelText}>Quick Event</Text>
+              </View>
               <View style={styles.fabIconButton}>
                 <Zap size={22} color={theme.primary} />
               </View>
@@ -634,6 +637,9 @@ export default function Events() {
                 setShowCreateModal(true);
               }}
             >
+              <View style={styles.fabLabelPill}>
+                <Text style={styles.fabLabelText}>Create Event</Text>
+              </View>
               <View style={styles.fabIconButton}>
                 <PlusCircle size={24} color={theme.primary} />
               </View>
@@ -672,18 +678,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   container: {
-    paddingTop: 12,
     flex: 1,
     backgroundColor: '#F0F3F7', // Updated to match groups page background
   },
   safeArea: {
     flex: 1,
+    
   },
   fabContainer: {
     
     position: 'absolute',
     right: 20,
-    bottom: 100,
+    bottom: 120,
     alignItems: 'center',
     zIndex: 20,
   },
@@ -1072,7 +1078,8 @@ const styles = StyleSheet.create({
   },
   eventsListContent: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 100,
+
   },
 
   quickEventCard: {

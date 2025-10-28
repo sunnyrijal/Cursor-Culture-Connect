@@ -481,20 +481,23 @@ export function EditGroupModal({
             updateGroupMutation.isPending
           }
         >
-          <LinearGradient
-            colors={
-              !newSocialPlatform ||
-              !newSocialLink ||
-              isSubmitting ||
-              updateGroupMutation.isPending
-                ? ['#9CA3AF', '#6B7280']
-                : ['#6366F1', '#8B5CF6']
-            }
-            style={styles.addSocialButtonGradient}
+          <View
+            style={[
+              styles.addSocialButtonGradient,
+              {
+                backgroundColor:
+                  !newSocialPlatform ||
+                  !newSocialLink ||
+                  isSubmitting ||
+                  updateGroupMutation.isPending
+                    ? '#9CA3AF'
+                    : '#6366F1',
+              },
+            ]}
           >
             <Plus size={16} color="#FFFFFF" />
             <Text style={styles.addSocialButtonText}>Add Social Media</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     );
@@ -575,14 +578,12 @@ export function EditGroupModal({
                         updateGroupMutation.isPending
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          uploadFileMutation.isPending
-                            ? ['#9CA3AF', '#6B7280']
-                            : ['#6366F1', '#8B5CF6']
+                      <View style={[
+                        styles.uploadButtonGradient,
+                        {
+                          backgroundColor: uploadFileMutation.isPending ? '#9CA3AF' : '#6366F1'
                         }
-                        style={styles.uploadButtonGradient}
-                      >
+                      ]}>
                         {uploadFileMutation.isPending ? (
                           <>
                             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -598,7 +599,7 @@ export function EditGroupModal({
                             </Text>
                           </>
                         )}
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   )}
 
@@ -731,17 +732,7 @@ export function EditGroupModal({
                       }
                       disabled={isSubmitting || updateGroupMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          !formData.isPrivate
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: !formData.isPrivate ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Globe
                           size={16}
                           color={!formData.isPrivate ? '#FFFFFF' : '#374151'}
@@ -755,7 +746,7 @@ export function EditGroupModal({
                         >
                           Public
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -768,17 +759,7 @@ export function EditGroupModal({
                       }
                       disabled={isSubmitting || updateGroupMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.isPrivate
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: formData.isPrivate ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Lock
                           size={16}
                           color={formData.isPrivate ? '#FFFFFF' : '#374151'}
@@ -792,7 +773,7 @@ export function EditGroupModal({
                         >
                           University Only
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -820,14 +801,7 @@ export function EditGroupModal({
             onPress={handleSubmit}
             disabled={isSubmitting || updateGroupMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                isSubmitting || updateGroupMutation.isPending
-                  ? ['#94A3B8', '#64748B']
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
-            >
+            <View style={[styles.buttonGradient, { backgroundColor: isSubmitting || updateGroupMutation.isPending ? '#94A3B8' : '#6366F1' }]}>
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
                   {isSubmitting || updateGroupMutation.isPending
@@ -842,7 +816,7 @@ export function EditGroupModal({
                   />
                 )}
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1095,31 +1069,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'rgba(226, 232, 240, 0.8)',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+  
   },
   visibilityButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+   
   },
   visibilityButtonGradient: {
     flexDirection: 'row',
@@ -1196,17 +1150,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+   
   },
   addMeetingButtonGradient: {
     flexDirection: 'row',
@@ -1240,17 +1184,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cancelButtonText: {
     fontSize: 16,
@@ -1262,23 +1195,12 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   buttonGradient: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -1334,17 +1256,6 @@ const styles = StyleSheet.create({
   addSocialButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   addSocialButtonDisabled: {
     opacity: 0.7,

@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
   },
   section: {
-    marginBottom: spacing.lg,
+    marginBottom: 120,
     backgroundColor: neomorphColors.background,
     paddingHorizontal: 12,
     paddingVertical: 12,

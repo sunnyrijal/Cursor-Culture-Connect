@@ -12,7 +12,6 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
@@ -255,13 +254,7 @@ export function CreateActivityModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
-                style={styles.formGradient}
-              >
+              <View style={styles.formGradient}>
                 {/* Activity Name */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Activity Name *</Text>
@@ -382,7 +375,7 @@ export function CreateActivityModal({
                     />
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -418,12 +411,7 @@ export function CreateActivityModal({
               onPress={handleSubmit}
               disabled={isPending}
             >
-              <LinearGradient
-                colors={
-                  isPending ? ['#9CA3AF', '#6B7280'] : ['#6366F1', '#8B5CF6']
-                }
-                style={styles.buttonGradient}
-              >
+              <View style={[styles.buttonGradient, { backgroundColor: isPending ? '#9CA3AF' : '#6366F1' }]}>
                 <View style={styles.buttonContent}>
                   {isPending && (
                     <ActivityIndicator size="small" color="#FFFFFF" />
@@ -439,7 +427,7 @@ export function CreateActivityModal({
                     <Zap size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   )}
                 </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -456,6 +444,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
+    paddingBottom:16
   },
   addActivityButton: {
     flexDirection: 'row',
@@ -508,6 +497,7 @@ const styles = StyleSheet.create({
   formGradient: {
     padding: 24,
     borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   inputContainer: {
     marginBottom: 20,
@@ -558,7 +548,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     marginTop: 8,
     maxHeight: 200,
-    elevation: 4,
   },
   dropdownScroll: {
     maxHeight: 180,
@@ -625,7 +614,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    elevation: 8,
   },
   primaryButtonDisabled: {
     opacity: 0.7,

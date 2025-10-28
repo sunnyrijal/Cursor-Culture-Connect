@@ -16,7 +16,6 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
@@ -483,13 +482,7 @@ export function EditEventModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
-                style={styles.formGradient}
-              >
+              <View style={styles.formGradient}>
                 {/* Event Title */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Event Title *</Text>
@@ -561,14 +554,7 @@ export function EditEventModal({
                         uploadFileMutation.isPending
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          uploadFileMutation.isPending
-                            ? ['#9CA3AF', '#6B7280']
-                            : ['#6366F1', '#8B5CF6']
-                        }
-                        style={styles.uploadButtonGradient}
-                      >
+                      <View style={[styles.uploadButtonGradient, { backgroundColor: uploadFileMutation.isPending ? '#9CA3AF' : '#6366F1' }]}>
                         {uploadFileMutation.isPending ? (
                           <>
                             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -584,7 +570,7 @@ export function EditEventModal({
                             </Text>
                           </>
                         )}
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   )}
 
@@ -866,14 +852,7 @@ export function EditEventModal({
                       }
                       disabled={updateEventMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.isPublic && !formData.universityOnly
-                            ? ['#6366F1', '#8B5CF6']
-                            : ['transparent', 'transparent']
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: formData.isPublic && !formData.universityOnly ? '#6366F1' : 'transparent' }]}>
                         <Globe
                           size={16}
                           color={
@@ -892,7 +871,7 @@ export function EditEventModal({
                         >
                           Public
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -910,14 +889,7 @@ export function EditEventModal({
                       }
                       disabled={updateEventMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.universityOnly
-                            ? ['#6366F1', '#8B5CF6']
-                            : ['transparent', 'transparent']
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: formData.universityOnly ? '#6366F1' : 'transparent' }]}>
                         <GraduationCap
                           size={16}
                           color={
@@ -933,11 +905,11 @@ export function EditEventModal({
                         >
                           University Only
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -960,14 +932,7 @@ export function EditEventModal({
             onPress={handleSubmit}
             disabled={updateEventMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                updateEventMutation.isPending
-                  ? ['#9CA3AF', '#6B7280']
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
-            >
+            <View style={[styles.buttonGradient, { backgroundColor: updateEventMutation.isPending ? '#9CA3AF' : '#6366F1' }]}>
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
                   {updateEventMutation.isPending
@@ -976,7 +941,7 @@ export function EditEventModal({
                 </Text>
                 <Edit3 size={20} color="#FFFFFF" style={styles.buttonIcon} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -988,13 +953,7 @@ export function EditEventModal({
         >
           <View style={styles.modalOverlay}>
             <View style={styles.datePickerContainer}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.95)',
-                  'rgba(255, 255, 255, 0.85)',
-                ]}
-                style={styles.datePickerGradient}
-              >
+              <View style={styles.datePickerGradient}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity
                     onPress={() => setDisplayYear((y) => y - 1)}
@@ -1055,7 +1014,7 @@ export function EditEventModal({
                 >
                   <Text style={styles.closeDatePickerText}>Close</Text>
                 </TouchableOpacity>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1148,6 +1107,10 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 8,
   },
+    inputWrapperValid: {
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
   subtitle: {
     fontSize: 16,
     color: '#64748B',
@@ -1196,18 +1159,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
-    minHeight: 50,
-  },
-  inputWrapperFocused: {
-    borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inputWrapperValid: {
-    borderColor: '#10B981',
   },
   inputIcon: {
     marginRight: 12,
@@ -1240,6 +1191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
   },
@@ -1374,6 +1326,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
@@ -1398,6 +1351,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     flexDirection: 'row',
     gap: 12,
+    ...Platform.select({
+      android: { paddingBottom: 24 },
+      default: { paddingBottom: 16 },
+    }),
   },
   cancelButton: {
     flex: 1,
@@ -1487,23 +1444,18 @@ const styles = StyleSheet.create({
   },
   datePickerGradient: {
     padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   datePickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   datePickerHeaderText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  navButton: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6366F1',
-    paddingHorizontal: 8,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -1554,22 +1506,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F3F7',
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  groupPickerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   groupList: {
     marginBottom: 24,
@@ -1622,17 +1558,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+  },
+  navButton: {
+    fontSize: 18,
+    color: '#6366F1',
+    fontWeight: '600',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  groupPickerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   closeGroupPickerText: {
     color: '#FFFFFF',

@@ -35,7 +35,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator } from 'react-native';
 import { Plus, ImageIcon } from 'lucide-react-native';
-import { uploadFile } from '@/contexts/file.api';
+import { uploadFile } from '@/contexts/file.api'; // This seems to be a duplicate import
 import { TimeSelectInput } from './TimeSelectInput';
 import { theme, typography } from './theme';
 import { useAlert } from '@/contexts/AlertContext';
@@ -280,7 +280,7 @@ export function CreateGroupModal({
         <View
           style={[
             styles.inputWrapper,
-            isFocused && styles.inputWrapperFocused,
+            // isFocused && styles.inputWrapperFocused,
             hasValue && styles.inputWrapperValid,
           ]}
         >
@@ -411,17 +411,23 @@ export function CreateGroupModal({
           onPress={addSocialMedia}
           disabled={!newSocialPlatform || !newSocialLink || isSubmitting || createGroupMutation.isPending}
         >
-          <LinearGradient
-            colors={
-              (!newSocialPlatform || !newSocialLink || isSubmitting || createGroupMutation.isPending)
-                ? ['#9CA3AF', '#6B7280']
-                : ['#6366F1', '#8B5CF6']
-            }
-            style={styles.addSocialButtonGradient}
+                 <View
+            style={[
+              styles.addSocialButtonGradient,
+              {
+                backgroundColor:
+                  !newSocialPlatform ||
+                  !newSocialLink ||
+                  isSubmitting ||
+                  createGroupMutation.isPending
+                    ? '#9CA3AF'
+                    : '#6366F1',
+              },
+            ]}
           >
             <Plus size={16} color="#FFFFFF" />
             <Text style={styles.addSocialButtonText}>Add Social Media</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     );
@@ -456,11 +462,7 @@ export function CreateGroupModal({
           {/* Form Container */}
           <View style={styles.formContainer}>
             <BlurView intensity={20} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(248, 250, 252, 0.8)',
-                ]}
+              <View
                 style={styles.formGradient}
               >
                 {/* Basic Info */}
@@ -498,14 +500,7 @@ export function CreateGroupModal({
                       onPress={pickImage}
                       disabled={isSubmitting || uploadFileMutation.isPending || createGroupMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          uploadFileMutation.isPending
-                            ? ['#9CA3AF', '#6B7280']
-                            : ['#6366F1', '#8B5CF6']
-                        }
-                        style={styles.uploadButtonGradient}
-                      >
+                      <View style={[styles.uploadButtonGradient, { backgroundColor: uploadFileMutation.isPending ? '#9CA3AF' : '#6366F1' }]}>
                         {uploadFileMutation.isPending ? (
                           <>
                             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -521,7 +516,7 @@ export function CreateGroupModal({
                             </Text>
                           </>
                         )}
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   )}
 
@@ -642,17 +637,7 @@ export function CreateGroupModal({
                       }
                       disabled={isSubmitting || createGroupMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          !formData.isPrivate
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: !formData.isPrivate ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Globe
                           size={16}
                           color={!formData.isPrivate ? '#FFFFFF' : '#374151'}
@@ -666,7 +651,7 @@ export function CreateGroupModal({
                         >
                           Public
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -679,17 +664,7 @@ export function CreateGroupModal({
                       }
                       disabled={isSubmitting || createGroupMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.isPrivate
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: formData.isPrivate ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Lock
                           size={16}
                           color={formData.isPrivate ? '#FFFFFF' : '#374151'}
@@ -703,11 +678,11 @@ export function CreateGroupModal({
                         >
                           University Only
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -730,14 +705,7 @@ export function CreateGroupModal({
             onPress={handleSubmit}
             disabled={isSubmitting || createGroupMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                isSubmitting || createGroupMutation.isPending 
-                  ? ['#94A3B8', '#64748B'] 
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
-            >
+            <View style={[styles.buttonGradient, { backgroundColor: isSubmitting || createGroupMutation.isPending ? '#94A3B8' : '#6366F1' }]}>
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
                   {isSubmitting || createGroupMutation.isPending ? 'Creating...' : 'Create Group'}
@@ -750,7 +718,7 @@ export function CreateGroupModal({
                   />
                 )}
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -925,6 +893,7 @@ const styles = StyleSheet.create({
   formGradient: {
     padding: 16,
     borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   inputContainer: {
     marginTop: 6,
@@ -947,28 +916,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CDD2D8',
     minHeight: 56,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  inputWrapperFocused: {
-    borderColor: '#6366F1',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: -2, height: -2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   inputWrapperValid: {
     borderColor: '#10B981',
@@ -1003,31 +950,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'rgba(226, 232, 240, 0.8)',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   visibilityButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   visibilityButtonGradient: {
     flexDirection: 'row',
@@ -1036,6 +961,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     gap: 8,
+    borderRadius: 14,
   },
   visibilityButtonText: {
     fontSize: 14,
@@ -1148,17 +1074,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cancelButtonText: {
     fontSize: 16,
@@ -1170,23 +1085,12 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   buttonGradient: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -1242,17 +1146,6 @@ const styles = StyleSheet.create({
   addSocialButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   addSocialButtonDisabled: {
     opacity: 0.7,

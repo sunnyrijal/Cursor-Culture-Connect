@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { X, Sparkles, Tag } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -95,13 +94,7 @@ export function CreateInterestModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
-                style={styles.formGradient}
-              >
+              <View style={styles.formGradient}>
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Interest Name *</Text>
                   <View
@@ -126,7 +119,7 @@ export function CreateInterestModal({
                     />
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -148,13 +141,8 @@ export function CreateInterestModal({
             onPress={handleSubmit}
             disabled={createInterestMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                createInterestMutation.isPending
-                  ? ['#9CA3AF', '#6B7280']
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
+            <View
+              style={[styles.buttonGradient, { backgroundColor: createInterestMutation.isPending ? '#9CA3AF' : '#6366F1' }]}
             >
               <View style={styles.buttonContent}>
                 {createInterestMutation.isPending && (
@@ -165,15 +153,8 @@ export function CreateInterestModal({
                     ? 'Creating...'
                     : 'Create Interest'}
                 </Text>
-                {!createInterestMutation.isPending && (
-                  <Sparkles
-                    size={20}
-                    color="#FFFFFF"
-                    style={styles.buttonIcon}
-                  />
-                )}
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -190,7 +171,11 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, color: '#64748B', textAlign: 'center', fontWeight: '500' },
   formContainer: { marginHorizontal: 20, marginBottom: 24 },
   blurView: { borderRadius: 24, overflow: 'hidden' },
-  formGradient: { padding: 24, borderRadius: 24 },
+  formGradient: {
+    padding: 24,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
   inputContainer: { marginBottom: 20 },
   inputLabel: { fontSize: 16, fontWeight: '600', color: '#374151', marginBottom: 12 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F3F7', borderRadius: 16, paddingHorizontal: 16, borderWidth: 2, borderColor: '#CDD2D8', minHeight: 56 },
@@ -200,10 +185,10 @@ const styles = StyleSheet.create({
   actionsContainer: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20, paddingTop: 20, backgroundColor: '#F0F3F7', borderTopWidth: 1, borderTopColor: '#CDD2D8', flexDirection: 'row', gap: 16 },
   cancelButton: { flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderWidth: 2, borderColor: 'rgba(226, 232, 240, 0.8)', justifyContent: 'center', alignItems: 'center' },
   cancelButtonText: { fontSize: 16, fontWeight: '600', color: '#64748B' },
-  primaryButton: { flex: 2, height: 56, borderRadius: 16, overflow: 'hidden', elevation: 8 },
+  primaryButton: { flex: 2, height: 56, borderRadius: 16, overflow: 'hidden', },
   primaryButtonDisabled: { opacity: 0.7 },
   buttonGradient: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
-  buttonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   buttonIcon: { marginLeft: 4 },
+  buttonContent:{display:'flex'}
 });

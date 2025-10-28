@@ -78,10 +78,6 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                ...Platform.select({
-                  ios: { shadowColor: '#CDD2D8', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 1, shadowRadius: 16 },
-                  android: { elevation: 20, shadowColor: '#CDD2D8' },
-                }),
               },
               tabBarItemStyle: { paddingVertical: 2 },
             }}

@@ -16,7 +16,6 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
@@ -410,11 +409,7 @@ export function CreateEventModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
+              <View
                 style={styles.formGradient}
               >
                 {/* Event Title */}
@@ -492,13 +487,8 @@ export function CreateEventModal({
                         uploadFileMutation.isPending
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          uploadFileMutation.isPending
-                            ? ['#9CA3AF', '#6B7280']
-                            : ['#6366F1', '#8B5CF6']
-                        }
-                        style={styles.uploadButtonGradient}
+                      <View
+                        style={[styles.uploadButtonGradient, { backgroundColor: uploadFileMutation.isPending ? '#9CA3AF' : '#6366F1' }]}
                       >
                         {uploadFileMutation.isPending ? (
                           <>
@@ -515,7 +505,7 @@ export function CreateEventModal({
                             </Text>
                           </>
                         )}
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   )}
 
@@ -825,13 +815,8 @@ export function CreateEventModal({
                       }
                       disabled={createEventMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.isPublic && !formData.universityOnly
-                            ? ['#6366F1', '#8B5CF6']
-                            : ['transparent', 'transparent']
-                        }
-                        style={styles.visibilityButtonGradient}
+                      <View
+                        style={[styles.visibilityButtonGradient, { backgroundColor: formData.isPublic && !formData.universityOnly ? '#6366F1' : 'transparent' }]}
                       >
                         <Globe
                           size={16}
@@ -851,7 +836,7 @@ export function CreateEventModal({
                         >
                           Public
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -869,13 +854,8 @@ export function CreateEventModal({
                       }
                       disabled={createEventMutation.isPending}
                     >
-                      <LinearGradient
-                        colors={
-                          formData.universityOnly
-                            ? ['#6366F1', '#8B5CF6']
-                            : ['transparent', 'transparent']
-                        }
-                        style={styles.visibilityButtonGradient}
+                      <View
+                        style={[styles.visibilityButtonGradient, { backgroundColor: formData.universityOnly ? '#6366F1' : 'transparent' }]}
                       >
                         <GraduationCap
                           size={16}
@@ -892,11 +872,11 @@ export function CreateEventModal({
                         >
                           University Only
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -919,14 +899,8 @@ export function CreateEventModal({
             onPress={handleSubmit}
             disabled={createEventMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                createEventMutation.isPending
-                  ? ['#9CA3AF', '#6B7280']
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
-            >
+           <View
+              style={[styles.buttonGradient, { backgroundColor: createEventMutation.isPending ? '#9CA3AF' : '#6366F1' }]}>
               <View style={styles.buttonContent}>
                 <Text style={styles.primaryButtonText}>
                   {createEventMutation.isPending
@@ -935,7 +909,7 @@ export function CreateEventModal({
                 </Text>
                 <Sparkles size={20} color="#FFFFFF" style={styles.buttonIcon} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -947,11 +921,7 @@ export function CreateEventModal({
         >
           <View style={styles.modalOverlay}>
             <View style={styles.datePickerContainer}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.95)',
-                  'rgba(255, 255, 255, 0.85)',
-                ]}
+              <View
                 style={styles.datePickerGradient}
               >
                 <View style={styles.datePickerHeader}>
@@ -1014,7 +984,7 @@ export function CreateEventModal({
                 >
                   <Text style={styles.closeDatePickerText}>Close</Text>
                 </TouchableOpacity>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1204,9 +1174,7 @@ const styles = StyleSheet.create({
   },
   timeSlotContainer: {
     marginBottom: 16,
-    // backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 16,
-    // borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
   },
   timeSlotHeader: {
@@ -1232,10 +1200,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F3F7',
   },
-  // scrollContainer: {
-  //   flex: 1,
-  //   paddingBottom: 40,
-  // },
   headerContainer: {
     marginHorizontal: 20,
     marginTop: Platform.OS === 'ios' ? 60 : 20,
@@ -1264,10 +1228,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '500',
   },
-  // formContainer: {
-  //   marginHorizontal: 20,
-  //   marginBottom: 24,
-  // },
   blurView: {
     borderRadius: 24,
     overflow: 'hidden',
@@ -1302,15 +1262,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CDD2D8',
     minHeight: 56,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   inputWrapperValid: {
     borderColor: '#10B981',
@@ -1366,17 +1317,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   addImageButtonGradient: {
     flex: 1,
@@ -1406,17 +1346,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   visibilityButton: {
     flex: 1,
@@ -1425,32 +1354,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'rgba(226, 232, 240, 0.8)',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
-
   visibilityButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   visibilityButtonGradient: {
     flexDirection: 'row',
@@ -1487,17 +1393,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cancelButtonText: {
     fontSize: 16,
@@ -1509,17 +1404,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   buttonGradient: {
     flex: 1,
@@ -1552,20 +1436,10 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 24,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.2,
-        shadowRadius: 30,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
   },
   datePickerGradient: {
     padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   datePickerHeader: {
     flexDirection: 'row',
@@ -1620,17 +1494,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   closeDatePickerText: {
     color: '#FFFFFF',
@@ -1647,15 +1510,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F3F7',
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   groupPickerTitle: {
     fontSize: 20,
@@ -1692,7 +1546,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-
   groupItemText: {
     flex: 1,
     fontSize: 16,
@@ -1715,17 +1568,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   closeGroupPickerText: {
     color: '#FFFFFF',

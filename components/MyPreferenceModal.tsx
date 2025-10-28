@@ -29,6 +29,7 @@ import {
 } from '../contexts/userInterest.api';
 import { CreateInterestPreferenceModal } from './CreateUserPreferenceModal';
 import { useAlert } from '@/contexts/AlertContext';
+import { theme } from './theme';
 
 interface MyPreferencesModalProps {
   visible: boolean;
@@ -311,8 +312,10 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             <TouchableOpacity
               style={styles.addPreferenceButton}
               onPress={handleAddNew}
+              activeOpacity={0.7}
             >
-              <Plus size={16} color="#007AFF" />
+              <Plus size={14} color="#FFFFFF" />
+              <Text style={styles.addPreferenceButtonText}>Add</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#333" />
@@ -397,12 +400,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
-  addPreferenceButton: {
-    position: 'absolute',
-    right: 60,
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#EFEFF4',
+  addPreferenceButton: { // Updated styles for the "Add" button
+    position: 'absolute', // Keep it positioned relative to the header
+    right: 60, // Adjust position to not overlap close button
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor:theme.primary, // A nice blue color
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 4,
+  },
+  addPreferenceButtonText: { // Style for the "Add" text
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   title: {
     fontSize: 20,

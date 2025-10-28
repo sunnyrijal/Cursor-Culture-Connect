@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
   X,
@@ -261,13 +260,7 @@ export function CreateQuickEventModal({
 
           <View style={styles.formContainer}>
             <BlurView intensity={25} style={styles.blurView}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.9)',
-                  'rgba(255, 255, 255, 0.7)',
-                ]}
-                style={styles.formGradient}
-              >
+              <View style={styles.formGradient}>
                 {/* Event Title */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Event Title *</Text>
@@ -488,17 +481,7 @@ export function CreateQuickEventModal({
                         setFormData({ ...formData, isPublic: true })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          formData.isPublic
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: formData.isPublic ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <Globe
                           size={16}
                           color={formData.isPublic ? '#FFFFFF' : '#374151'}
@@ -512,7 +495,7 @@ export function CreateQuickEventModal({
                         >
                           Public
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -524,17 +507,7 @@ export function CreateQuickEventModal({
                         setFormData({ ...formData, isPublic: false })
                       }
                     >
-                      <LinearGradient
-                        colors={
-                          !formData.isPublic
-                            ? ['#6366F1', '#8B5CF6']
-                            : [
-                                'rgba(255, 255, 255, 0.9)',
-                                'rgba(248, 250, 252, 0.8)',
-                              ]
-                        }
-                        style={styles.visibilityButtonGradient}
-                      >
+                      <View style={[styles.visibilityButtonGradient, { backgroundColor: !formData.isPublic ? '#6366F1' : 'rgba(255, 255, 255, 0.9)' }]}>
                         <GraduationCap
                           size={16}
                           color={!formData.isPublic ? '#FFFFFF' : '#374151'}
@@ -548,28 +521,22 @@ export function CreateQuickEventModal({
                         >
                           University Only
                         </Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 {/* Quick Event Info */}
                 <View style={styles.infoContainer}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(99, 102, 241, 0.1)',
-                      'rgba(139, 92, 246, 0.1)',
-                    ]}
-                    style={styles.infoGradient}
-                  >
+                  <View style={styles.infoGradient}>
                     <Zap size={16} color="#6366F1" />
                     <Text style={styles.infoText}>
                       Quick events are created instantly and visible to everyone
                       immediately!
                     </Text>
-                  </LinearGradient>
+                  </View>
                 </View>
-              </LinearGradient>
+              </View>
             </BlurView>
           </View>
         </ScrollView>
@@ -592,14 +559,7 @@ export function CreateQuickEventModal({
             onPress={handleSubmit}
             disabled={createEventMutation.isPending}
           >
-            <LinearGradient
-              colors={
-                createEventMutation.isPending
-                  ? ['#9CA3AF', '#6B7280']
-                  : ['#6366F1', '#8B5CF6']
-              }
-              style={styles.buttonGradient}
-            >
+            <View style={[styles.buttonGradient, { backgroundColor: createEventMutation.isPending ? '#9CA3AF' : '#6366F1' }]}>
               <View style={styles.buttonContent}>
                 {createEventMutation.isPending ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
@@ -613,7 +573,7 @@ export function CreateQuickEventModal({
                   <Zap size={20} color="#FFFFFF" style={styles.buttonIcon} />
                 )}
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -672,21 +632,6 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginBottom: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  iconGradient: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -724,6 +669,7 @@ const styles = StyleSheet.create({
   formGradient: {
     padding: 24,
     borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   inputContainer: {
     marginBottom: 20,
@@ -745,35 +691,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#CDD2D8',
     minHeight: 56,
-    shadowColor: '#CDD2D8',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   inputWrapperFocused: {
     borderColor: '#6366F1',
     backgroundColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: -2, height: -2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   inputWrapperValid: {
     borderColor: '#10B981',
-    backgroundColor: '#FFFFFF',
-  },
-  inputWrapperError: {
-    borderColor: '#EF4444',
     backgroundColor: '#FFFFFF',
   },
   inputIcon: {
@@ -817,6 +741,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 16,
   },
   infoText: {
     flex: 1,
@@ -836,31 +762,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'rgba(226, 232, 240, 0.8)',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   visibilityButtonActive: {
     borderColor: '#6366F1',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   visibilityButtonGradient: {
     flexDirection: 'row',
@@ -869,6 +773,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     gap: 8,
+    borderRadius: 14,
   },
   visibilityButtonText: {
     fontSize: 14,
@@ -897,17 +802,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cancelButtonText: {
     fontSize: 16,
@@ -919,17 +813,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   primaryButtonDisabled: {
     opacity: 0.7,
@@ -966,10 +849,5 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

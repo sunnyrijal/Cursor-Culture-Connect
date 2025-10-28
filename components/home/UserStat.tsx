@@ -69,18 +69,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: spacing.md,
     marginHorizontal: spacing.sm,
-    padding: spacing.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    padding: spacing.lg, // Increased padding for a bit more space
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   header: {
     flexDirection: 'row',
@@ -103,7 +94,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ecf1f7ff',
+    backgroundColor: '#f0f3fdff', // A light variant of the primary color
     borderRadius: 16,
     paddingVertical: spacing.sm,
   },
@@ -114,7 +105,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: '60%',
-    backgroundColor: '#b6b6b6ff',
+    backgroundColor: '#D1D5DB', // A softer gray from the theme
   },
   statNumber: {
     fontSize: 22,
