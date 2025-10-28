@@ -25,7 +25,8 @@
       "googleServicesFile": "./google-services/GoogleService-Info.plist",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We use your photo library to let you upload a profile picture to your account.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]  
       },
       "notification": {
         "icon": "./assets/logo.png"
@@ -70,7 +71,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": ["Notifications"] 
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
