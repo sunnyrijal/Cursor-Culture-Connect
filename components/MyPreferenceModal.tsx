@@ -298,13 +298,13 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
   };
 
   return (
-    <>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={onClose}
-      >
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <>
         <SafeAreaView style={styles.container}>
           {/* Header */}
           <View style={styles.header}> 
@@ -386,21 +386,21 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
             )}
           </ScrollView>
         </SafeAreaView>
-      </Modal>
 
-      {/* Preference Modal (Create/Edit) */}
-      <CreateInterestPreferenceModal
-        visible={isPreferenceModalVisible}
-        onClose={handleModalClose}
-        editingPreference={editingPreference}
-        onSubmit={() => {
-          // Refresh the list after successful create/update
-          queryClient.invalidateQueries({
-            queryKey: ['myActivityPreferences'],
-          });
-        }}
-      />
-    </>
+        {/* Preference Modal (Create/Edit) */}
+        <CreateInterestPreferenceModal
+          visible={isPreferenceModalVisible}
+          onClose={handleModalClose}
+          editingPreference={editingPreference}
+          onSubmit={() => {
+            // Refresh the list after successful create/update
+            queryClient.invalidateQueries({
+              queryKey: ['myActivityPreferences'],
+            });
+          }}
+        />
+      </>
+    </Modal>
   );
 };
 

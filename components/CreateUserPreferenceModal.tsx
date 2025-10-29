@@ -369,6 +369,7 @@ export function CreateInterestPreferenceModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <>
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
           style={styles.scrollContainer}
@@ -846,12 +847,13 @@ export function CreateInterestPreferenceModal({
             </TouchableOpacity>
           </View>
         </View>
-        <CreateActivityModal
-          visible={isActivityModalVisible}
-          onClose={() => setIsActivityModalVisible(false)}
-          editingActivity={null}
-        />
       </SafeAreaView>
+      <CreateActivityModal
+        visible={isActivityModalVisible}
+        onClose={() => setIsActivityModalVisible(false)}
+        editingActivity={null}
+      />
+      </>
     </Modal>
   );
 }

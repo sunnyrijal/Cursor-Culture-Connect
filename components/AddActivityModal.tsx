@@ -233,6 +233,7 @@ export function CreateActivityModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <>
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollContainer}
@@ -431,11 +432,12 @@ export function CreateActivityModal({
             </TouchableOpacity>
           </View>
         </View>
-        <CreateInterestModal
-          visible={isInterestModalVisible}
-          onClose={() => setIsInterestModalVisible(false)}
-        />
       </View>
+      <CreateInterestModal
+        visible={isInterestModalVisible}
+        onClose={() => setIsInterestModalVisible(false)}
+      />
+      </>
     </Modal>
   );
 }
