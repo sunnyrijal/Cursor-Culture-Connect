@@ -971,18 +971,18 @@ export default function ActivityBuddyPage() {
       <View style={styles.subTabContainer}>
         <View style={styles.tabSelector}>
           <TouchableOpacity
-            style={[styles.tab, activePingTab === 'received' && styles.tabActive]}
+            style={[styles.tab, activePingTab === 'received' && styles.activeTabButton]}
             onPress={() => setActivePingTab('received')}
           >
-            <Text style={[styles.tabText, activePingTab === 'received' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, activePingTab === 'received' && styles.activeTabButtonText]}>
               Received ({pings.received?.length || 0})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activePingTab === 'sent' && styles.tabActive]}
+            style={[styles.tab, activePingTab === 'sent' && styles.activeTabButton]}
             onPress={() => setActivePingTab('sent')}
           >
-            <Text style={[styles.tabText, activePingTab === 'sent' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, activePingTab === 'sent' && styles.activeTabButtonText]}>
               Sent ({pings.sent?.length || 0})
             </Text>
           </TouchableOpacity>
@@ -1033,9 +1033,9 @@ export default function ActivityBuddyPage() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.tabSelector}>
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
+            style={[styles.tabButton, activeTab === 'activities' && styles.activeTabButton]}
             onPress={() => handleTabPress('activities')}
           >
             <Text
@@ -1048,7 +1048,7 @@ export default function ActivityBuddyPage() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'pings' && styles.tabActive]}
+            style={[styles.tabButton, activeTab === 'pings' && styles.activeTabButton]}
             onPress={() => handleTabPress('pings')}
           >
             <Text
@@ -1094,6 +1094,59 @@ export default function ActivityBuddyPage() {
   );
 }
 const styles = StyleSheet.create({
+
+   tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    marginBottom:2,
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#CDD2D8',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  activeTabButton: {
+    backgroundColor: '#6366F1',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+
+  tabButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+
+  activeTabButtonText: {
+    color: '#FFFFFF',
+  },
   addActivityButton: {
     flexDirection: 'row',
     alignItems: 'center',

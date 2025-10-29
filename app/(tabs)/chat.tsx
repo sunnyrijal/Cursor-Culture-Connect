@@ -341,10 +341,7 @@ export default function ChatListScreen() {
       activeOpacity={item.isActive ? 0.7 : 1}
     >
       <BlurView intensity={10} style={styles.chatItemBlur}>
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.9)', 'rgba(248, 250, 252, 0.8)']}
-          style={styles.chatItemGradient}
-        >
+        <View style={styles.chatItemGradient}>
           <View
             style={{
               opacity: item.isActive ? 1 : 0.5,
@@ -386,12 +383,9 @@ export default function ChatListScreen() {
                 <View style={styles.bottomRight}>
                   <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
                   {item.unreadCount > 0 && (
-                    <LinearGradient
-                      colors={['#6366F1', '#8B5CF6']}
-                      style={styles.unreadBadge}
-                    >
+                    <View style={styles.unreadBadge}>
                       <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                    </LinearGradient>
+                    </View>
                   )}
                 </View>
               </View>
@@ -415,7 +409,7 @@ export default function ChatListScreen() {
           <View style={styles.chatArrow}>
             {/* <ArrowRight size={16} color="#94A3B8" /> */}
           </View>
-        </LinearGradient>
+        </View>
       </BlurView>
     </TouchableOpacity>
   );
@@ -610,23 +604,13 @@ export default function ChatListScreen() {
               ]}
               onPress={() => setFilter('DIRECT')}
               activeOpacity={0.8}
-            >
-              {filter === 'DIRECT' ? (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.filterButtonGradient}
-                >
-                  <MessageCircle size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>
-                    Direct
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.filterButtonContent}>
-                  <MessageCircle size={16} color="#64748B" />
-                  <Text style={styles.filterText}>Direct</Text>
-                </View>
-              )}
+            > 
+              <View style={filter === 'DIRECT' ? styles.filterButtonGradient : styles.filterButtonContent}>
+                <MessageCircle size={16} color={filter === 'DIRECT' ? "#FFFFFF" : "#64748B"} />
+                <Text style={[styles.filterText, filter === 'DIRECT' && styles.activeFilterText]}>
+                  Direct
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -636,23 +620,13 @@ export default function ChatListScreen() {
               ]}
               onPress={() => setFilter('GROUP')}
               activeOpacity={0.8}
-            >
-              {filter === 'GROUP' ? (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.filterButtonGradient}
-                >
-                  <Users size={16} color="#FFFFFF" />
-                  <Text style={[styles.filterText, styles.activeFilterText]}>
+            > 
+              <View style={filter === 'GROUP' ? styles.filterButtonGradient : styles.filterButtonContent}>
+                  <Users size={16} color={filter === 'GROUP' ? "#FFFFFF" : "#64748B"}  />
+                  <Text style={[styles.filterText, filter =='GROUP' && styles.activeFilterText]}>
                     Groups
                   </Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.filterButtonContent}>
-                  <Users size={16} color="#64748B" />
-                  <Text style={styles.filterText}>Groups</Text>
-                </View>
-              )}
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -864,6 +838,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 8,
+    backgroundColor: theme.primary,
   },
   filterButtonContent: {
     flexDirection: 'row',
@@ -916,6 +891,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   avatarContainer: {
     position: 'relative',
@@ -1000,6 +976,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 12,
     paddingHorizontal: 8,
+    backgroundColor: theme.primary,
     ...Platform.select({
       ios: {
         shadowColor: '#6366F1',

@@ -9,9 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import {
   ArrowLeft,
@@ -30,12 +27,15 @@ import {
   Mail,
   UserX,
 } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FileWarning } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import LogoutButton from '@/components/LogoutButton';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAlert } from '@/contexts/AlertContext';
-import { getMyData } from '@/contexts/user.api';
+import { getMyData, deleteMe } from '@/contexts/user.api';
 import * as Linking from 'expo-linking';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SettingsOption {
   id: string;
@@ -48,6 +48,7 @@ interface SettingsOption {
 }
 
 export default function Settings() {
+  const { logout: authLogout } = useAuth();
   const { showAlert } = useAlert();
   const handleEditProfile = () => {
     router.push('/profile/edit');
@@ -57,6 +58,43 @@ export default function Settings() {
     queryKey: ['myData'],
     queryFn: () => getMyData(),
   });
+
+  const { mutate: deleteAccountMutation, isPending: isDeleting } = useMutation({
+    mutationFn: deleteMe,
+    onError: (err: any) => {
+      console.error('Delete account error:', err);
+      showAlert({
+        title: 'Error',
+        message: err.message || 'Failed to delete account. Please try again.',
+      });
+    },
+  });
+
+  const handleDeleteAccount = () => {
+    showAlert({
+      title: 'Delete Account',
+      message:
+        'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            deleteAccountMutation(undefined, {
+              onSuccess: async () => {
+                await authLogout();
+                router.replace('/(auth)/login');
+                showAlert({
+                  title: 'Account Deleted',
+                  message: 'Your account has been successfully deleted.',
+                });
+              },
+            }),
+        },
+      ],
+    });
+  };
 
   const url = Linking.useURL();
   const handleShareProfile = async () => {
@@ -130,20 +168,20 @@ export default function Settings() {
         }),
       showChevron: true,
     },
-    {
-      id: 'notifications',
-      icon: Bell,
-      label: 'Notifications',
-      description: 'Manage your notification preferences',
-      color: '#F59E0B',
-      onPress: () =>
-        showAlert({
-          title: 'Notification Settings',
-          message:
-            'Here you will be able to manage your notification preferences (e.g., push, email, event reminders, etc.).',
-        }),
-      showChevron: true,
-    },
+    // {
+    //   id: 'notifications',
+    //   icon: Bell,
+    //   label: 'Notifications',
+    //   description: 'Manage your notification preferences',
+    //   color: '#F59E0B',
+    //   onPress: () =>
+    //     showAlert({
+    //       title: 'Notification Settings',
+    //       message:
+    //         'Here you will be able to manage your notification preferences (e.g., push, email, event reminders, etc.).',
+    //     }),
+    //   showChevron: true,
+    // },
     {
       id: 'security',
       icon: Lock,
@@ -177,6 +215,18 @@ export default function Settings() {
     },
   ];
 
+  const dangerZoneOptions: SettingsOption[] = [
+    {
+      id: 'delete-account',
+      icon: Trash2,
+      label: 'Delete Account',
+      description: 'Permanently delete your account and all associated data',
+      color: '#EF4444',
+      onPress: handleDeleteAccount,
+      showChevron: false,
+    },
+  ];
+
   const supportOptions: SettingsOption[] = [
     {
       id: 'help',
@@ -195,48 +245,25 @@ export default function Settings() {
 
   const renderSettingsSection = (title: string, options: SettingsOption[]) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.neomorphicCard}>
-        <BlurView intensity={20} tint="light" style={styles.blurView}>
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)']}
-            style={styles.cardGradient}
+      <Text style={styles.sectionTitle}>{title.toUpperCase()}</Text>
+      <View style={styles.card}>
+        {options.map((option, index) => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.option,
+              index < options.length - 1 && styles.optionDivider,
+            ]}
+            onPress={option.onPress}
+            activeOpacity={0.7}
           >
-            {options.map((option, index) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.neomorphicOption,
-                  index === options.length - 1 && styles.lastOption,
-                ]}
-                onPress={option.onPress}
-                activeOpacity={0.7}
-              >
-                <View style={styles.optionLeft}>
-                  <View style={styles.neomorphicIconContainer}>
-                    <LinearGradient
-                      colors={[`${option.color}20`, `${option.color}10`]}
-                      style={styles.iconGradient}
-                    >
-                      <option.icon size={22} color={option.color} />
-                    </LinearGradient>
-                  </View>
-                  <View style={styles.optionContent}>
-                    <Text style={styles.optionLabel}>{option.label}</Text>
-                    <Text style={styles.optionDescription}>
-                      {option.description}
-                    </Text>
-                  </View>
-                </View>
-                {option.showChevron && (
-                  <View style={styles.chevronContainer}>
-                    <ChevronRight size={16} color="#94A3B8" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </LinearGradient>
-        </BlurView>
+            <option.icon size={22} color={option.color} />
+            <Text style={styles.optionLabel}>{option.label}</Text>
+            {option.showChevron !== false && (
+              <ChevronRight size={18} color="#9CA3AF" />
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
@@ -300,119 +327,23 @@ export default function Settings() {
   const user = myData?.user;
 
   return (
-    <View style={styles.container}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={['#F8FAFC', '#E2E8F0', '#F1F5F9']}
-        style={styles.gradientBackground}
-      />
-
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.safeArea}>
         {/* Header */}
-        <View style={styles.headerContainer}>
-          <BlurView intensity={30} tint="light" style={styles.headerBlur}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.header}>
-                <TouchableOpacity
-                  onPress={() => router.back()}
-                  style={styles.neomorphicBackButton}
-                >
-                  <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.9)',
-                      'rgba(241, 245, 249, 0.8)',
-                    ]}
-                    style={styles.backButtonGradient}
-                  >
-                    <ArrowLeft size={20} color="#475569" />
-                  </LinearGradient>
-                </TouchableOpacity>
-                <Text style={styles.title}>Settings</Text>
-                <View style={styles.headerRight}>
-                  <LogoutButton />
-                </View>
-              </View>
-            </LinearGradient>
-          </BlurView>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={24} color="#1E293B" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Settings</Text>
+          <View style={styles.headerRight}>
+            <LogoutButton />
+          </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Profile Overview */}
-          <View style={styles.profileContainer}>
-            <BlurView intensity={25} tint="light" style={styles.profileBlur}>
-              <LinearGradient
-                colors={[
-                  'rgba(255, 255, 255, 0.95)',
-                  'rgba(248, 250, 252, 0.9)',
-                ]}
-                style={styles.profileGradient}
-              >
-                <View style={styles.profileHeader}>
-                  <View style={styles.neomorphicAvatar}>
-                    <LinearGradient
-                      colors={[
-                        'rgba(99, 102, 241, 0.15)',
-                        'rgba(99, 102, 241, 0.1)',
-                      ]}
-                      style={styles.avatarGradient}
-                    >
-                      <User size={36} color="#6366F1" />
-                    </LinearGradient>
-                  </View>
-                  <View style={styles.profileInfo}>
-                    <Text style={styles.profileName}>
-                      {user?.name ||
-                        `${user?.firstName || ''} ${
-                          user?.lastName || ''
-                        }`.trim() ||
-                        'User'}
-                    </Text>
-                    <Text style={styles.profileEmail}>
-                      {user?.email || 'No email'}
-                    </Text>
-                    <View style={styles.profileBadgesRow}>
-                      {user?.isVerified && (
-                        <View style={styles.neomorphicBadge}>
-                          <Text style={styles.badgeText}>✓ Verified</Text>
-                        </View>
-                      )}
-                      {user?.classYear && (
-                        <View
-                          style={[styles.neomorphicBadge, styles.studentBadge]}
-                        >
-                          <Text
-                            style={[styles.badgeText, styles.studentBadgeText]}
-                          >
-                            {user.classYear}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    {getAcademicInfo() && (
-                      <Text style={styles.profileMeta}>
-                        {getAcademicInfo()}
-                      </Text>
-                    )}
-                    {user?.university?.name && (
-                      <Text style={styles.profileMeta}>
-                        {user.university.name}
-                      </Text>
-                    )}
-                    {getLocationString() && (
-                      <Text style={styles.profileMeta}>
-                        {getLocationString()}
-                      </Text>
-                    )}
-                    <Text style={styles.profileBio}>{getUserBio()}</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </BlurView>
-          </View>
-
           {/* Profile Management */}
           {renderSettingsSection('Profile Management', profileOptions)}
 
@@ -422,17 +353,20 @@ export default function Settings() {
           {/* Support & Help */}
           {renderSettingsSection('Support', supportOptions)}
 
+          {/* Danger Zone */}
+          {renderSettingsSection('Danger Zone', dangerZoneOptions)}
+
           <View style={styles.bottomSpacing} />
         </ScrollView>
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F0F3F7', // A light gray background
   },
   gradientBackground: {
     position: 'absolute',
@@ -450,248 +384,71 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   headerContainer: {
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  headerBlur: {
-    borderRadius: 20,
-  },
-  headerGradient: {
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  neomorphicBackButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CBD5E1',
-        shadowOffset: { width: -2, height: -2 },
-        shadowOpacity: 0.6,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  backButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  backButton: {
+    padding: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1E293B',
     letterSpacing: -0.5,
   },
   headerRight: {
     width: 44,
+    height: 44,
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  profileContainer: {
-    marginBottom: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  profileBlur: {
-    borderRadius: 24,
-  },
-  profileGradient: {
-    padding: 20,
-    borderRadius: 24,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  neomorphicAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 20,
-    marginRight: 16,
-    overflow: 'hidden',
-  },
-  avatarGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  profileEmail: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 12,
-    fontWeight: '500',
-  },
-  profileBadgesRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  neomorphicBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  studentBadge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  studentBadgeText: {
-    color: '#3B82F6',
-  },
-  profileMeta: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  profileBio: {
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 20,
-    marginTop: 8,
-    fontWeight: '400',
+    paddingTop: 20,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1E293B',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
     marginBottom: 16,
-    marginLeft: 4,
-    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    textTransform: 'uppercase',
   },
-  neomorphicCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 18,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
-  blurView: {
-    borderRadius: 20,
-  },
-  cardGradient: {
-    borderRadius: 20,
-    padding: 4,
-  },
-  neomorphicOption: {
+  option: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    marginBottom: 2,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
-  lastOption: {
-    marginBottom: 0,
-  },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  neomorphicIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    marginRight: 16,
-    overflow: 'hidden',
-  },
-  iconGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionContent: {
-    flex: 1,
+  optionDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   optionLabel: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-  },
-  optionDescription: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 18,
     fontWeight: '500',
-  },
-  chevronContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 163, 184, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: '#1E293B',
+    marginLeft: 16,
+    flex: 1,
   },
   bottomSpacing: {
     height: 20,

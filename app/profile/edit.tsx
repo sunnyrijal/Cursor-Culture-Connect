@@ -18,8 +18,6 @@ import {
   Keyboard, // Keep this
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Picker } from '@react-native-picker/picker';
@@ -966,9 +964,7 @@ export default function EditProfile() {
 
     return (
       <Animated.View style={[styles.formSection, { opacity: formOpacity }]}>
-        <BlurView intensity={20} tint="light" style={styles.blurContainer}>
-          <LinearGradient
-            colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+          <View
             style={styles.gradientContainer}
           >
             <View style={styles.sectionHeader}>
@@ -1032,8 +1028,7 @@ export default function EditProfile() {
                 <Text style={styles.addButtonText}>Add Social Media</Text>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
-        </BlurView>
+          </View>
       </Animated.View>
     );
   };
@@ -1043,7 +1038,7 @@ export default function EditProfile() {
       <Animated.View style={[styles.inputContainer, { opacity: formOpacity }]}>
         <View style={styles.ethnicityHeader}>
           <Heart size={20} color="#8B5CF6" />
-          <Text style={styles.sectionTitle}>Ethnicity & Background</Text>
+          <Text style={[styles.sectionTitle, {marginLeft:2}]}>Ethnicity & Background</Text>
         </View>
         <Text style={styles.sectionSubtitle}>
           Help us build inclusive communities and celebrate diversity
@@ -1075,64 +1070,30 @@ export default function EditProfile() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#F8FAFC', '#E2E8F0', '#F1F5F9']}
-        style={styles.backgroundGradient}
-      />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
-        <View style={styles.headerContainer}>
-          <BlurView intensity={30} tint="light" style={styles.headerBlur}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.header}>
-                <TouchableOpacity
-                  onPress={() => router.back()}
-                  style={styles.headerButton}
-                >
-                  <LinearGradient
-                    colors={[
-                      'rgba(255, 255, 255, 0.9)',
-                      'rgba(241, 245, 249, 0.8)',
-                    ]}
-                    style={styles.headerButtonGradient}
-                  >
-                    <ArrowLeft size={20} color="#475569" />
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>Edit Profile</Text>
-
-                <TouchableOpacity
-                  onPress={handleSave}
-                  style={[
-                    styles.headerButton,
-                    (updateProfileMutation.isPending ||
-                      uploadFileMutation.isPending) &&
-                      styles.disabledButton,
-                  ]}
-                  disabled={
-                    updateProfileMutation.isPending ||
-                    uploadFileMutation.isPending
-                  }
-                >
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    style={styles.headerButtonGradient}
-                  >
-                    {updateProfileMutation.isPending ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Save size={18} color="#FFFFFF" />
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </BlurView>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.headerButton}
+          >
+            <ArrowLeft size={24} color="#1E293B" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <TouchableOpacity
+            onPress={handleSave}
+            style={styles.headerButton}
+            disabled={
+              updateProfileMutation.isPending || uploadFileMutation.isPending
+            }
+          >
+            {updateProfileMutation.isPending ? (
+              <ActivityIndicator size="small" color="#6366F1" />
+            ) : (
+              <Save size={24} color="#6366F1" />
+            )}
+          </TouchableOpacity>
         </View>
 
         {isLoading ? (
@@ -1149,7 +1110,7 @@ export default function EditProfile() {
           <KeyboardAvoidingView
             style={styles.keyboardContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            enabled={keyboardVisible}
+            keyboardVerticalOffset={100}
           >
             <ScrollView
               style={styles.scrollContainer}
@@ -1158,32 +1119,16 @@ export default function EditProfile() {
             >
               {/* Success/Error Messages */}
               {success && (
-                <Animated.View style={styles.successContainer}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(34, 197, 94, 0.1)',
-                      'rgba(34, 197, 94, 0.05)',
-                    ]}
-                    style={styles.messageGradient}
-                  >
-                    <CheckCircle size={20} color="#22C55E" />
-                    <Text style={styles.successText}>{success}</Text>
-                  </LinearGradient>
+                <Animated.View style={[styles.messageContainer, styles.successContainer, { marginHorizontal: 20 }]}>
+                  <CheckCircle size={20} color="#16A34A" />
+                  <Text style={styles.successText}>{success}</Text>
                 </Animated.View>
               )}
 
               {error && (
-                <Animated.View style={styles.errorContainer}>
-                  <LinearGradient
-                    colors={[
-                      'rgba(239, 68, 68, 0.1)',
-                      'rgba(239, 68, 68, 0.05)',
-                    ]}
-                    style={styles.messageGradient}
-                  >
-                    <AlertCircle size={20} color="#EF4444" />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </LinearGradient>
+                <Animated.View style={[styles.messageContainer, styles.errorContainer, { marginHorizontal: 20 }]}>
+                  <AlertCircle size={20} color="#DC2626" />
+                  <Text style={styles.errorText}>{error}</Text>
                 </Animated.View>
               )}
 
@@ -1197,15 +1142,8 @@ export default function EditProfile() {
               <Animated.View
                 style={[styles.formSection, { opacity: formOpacity }]}
               >
-                <BlurView
-                  intensity={20}
-                  tint="light"
-                  style={styles.blurContainer}
-                >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                    style={styles.gradientContainer}
-                  >
+                <View style={styles.card}>
+                  <View style={styles.cardContent}>
                     <View style={styles.sectionHeader}>
                       <Sparkles size={20} color="#6366F1" />
                       <Text style={styles.formSectionTitle}>
@@ -1248,8 +1186,8 @@ export default function EditProfile() {
                         textAlignVertical: 'top',
                       }
                     )}
-                  </LinearGradient>
-                </BlurView>
+                  </View>
+                </View>
               </Animated.View>
 
               {/* Academic Information */}
@@ -1259,15 +1197,8 @@ export default function EditProfile() {
                   { opacity: formOpacity, zIndex: 1000 },
                 ]}
               >
-                <BlurView
-                  intensity={20}
-                  tint="light"
-                  style={styles.blurContainer}
-                >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                    style={styles.gradientContainer}
-                  >
+                <View style={styles.card}>
+                  <View style={styles.cardContent}>
                     <View style={styles.sectionHeader}>
                       <GraduationCap size={20} color="#6366F1" />
                       <Text style={styles.formSectionTitle}>
@@ -1330,8 +1261,8 @@ export default function EditProfile() {
                       'classYear',
                       1000
                     )}
-                  </LinearGradient>
-                </BlurView>
+                  </View>
+                </View>
               </Animated.View>
 
               {/* Location & Contact */}
@@ -1341,15 +1272,8 @@ export default function EditProfile() {
                   { opacity: formOpacity, zIndex: 100 },
                 ]}
               >
-                <BlurView
-                  intensity={20}
-                  tint="light"
-                  style={styles.blurContainer}
-                >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                    style={styles.gradientContainer}
-                  >
+                <View style={styles.card}>
+                  <View style={styles.cardContent}>
                     <View style={styles.sectionHeader}>
                       <MapPin size={20} color="#6366F1" />
                       <Text style={styles.formSectionTitle}>
@@ -1448,23 +1372,16 @@ export default function EditProfile() {
                       'e.g., Nepal',
                       'countryOfOrigin'
                     )}
-                  </LinearGradient>
-                </BlurView>
+                  </View>
+                </View>
               </Animated.View>
 
               {/* Visibility Settings */}
               <Animated.View
                 style={[styles.formSection, { opacity: formOpacity }]}
               >
-                <BlurView
-                  intensity={20}
-                  tint="light"
-                  style={styles.blurContainer}
-                >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-                    style={styles.gradientContainer}
-                  >
+                <View style={styles.card}>
+                  <View style={styles.cardContent}>
                     <View style={styles.sectionHeader}>
                       <UsersIcon size={20} color="#6366F1" />
                       <Text style={styles.formSectionTitle}>
@@ -1498,8 +1415,8 @@ export default function EditProfile() {
                         />
                       </View>
                     </View>
-                  </LinearGradient>
-                </BlurView>
+                  </View>
+                </View>
               </Animated.View>
 
               {renderEthnicitySelection()}
@@ -1525,23 +1442,16 @@ export default function EditProfile() {
                     uploadFileMutation.isPending
                   }
                 >
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    style={styles.saveButtonGradient}
-                  >
-                    <View style={styles.saveButtonContent}>
-                      {updateProfileMutation.isPending ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Save size={20} color="#FFFFFF" />
-                      )}
-                      <Text style={styles.saveButtonText}>
-                        {updateProfileMutation.isPending
-                          ? 'Saving...'
-                          : 'Save Changes'}
-                      </Text>
-                    </View>
-                  </LinearGradient>
+                  {updateProfileMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Save size={20} color="#FFFFFF" />
+                  )}
+                  <Text style={styles.saveButtonText}>
+                    {updateProfileMutation.isPending
+                      ? 'Saving...'
+                      : 'Save Changes'}
+                  </Text>
                 </TouchableOpacity>
               </Animated.View>
             </ScrollView>
@@ -1578,7 +1488,8 @@ const styles = StyleSheet.create({
   ethnicityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 2,
+    gap:4
   },
   checkboxContainer: {
     gap: 0,
@@ -1640,7 +1551,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F0F3F7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -1653,60 +1564,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  headerBlur: {
-    borderRadius: 20,
-  },
-  headerGradient: {
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#CBD5E1',
-        shadowOffset: { width: -2, height: -2 },
-        shadowOpacity: 0.6,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  headerButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1E293B',
     letterSpacing: -0.5,
@@ -1716,37 +1592,41 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 60,
   },
   successContainer: {
     marginBottom: 16,
     borderRadius: 12,
-    overflow: 'hidden',
+    backgroundColor: '#D1FAE5',
+    borderColor: '#6EE7B7',
+    borderWidth: 1,
   },
   errorContainer: {
     marginBottom: 16,
     borderRadius: 12,
-    overflow: 'hidden',
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+    borderWidth: 1,
   },
-  messageGradient: {
+  messageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     gap: 8,
   },
   successText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#22C55E',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#047857',
     flex: 1,
   },
   errorText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#B91C1C',
     flex: 1,
   },
   section: {
@@ -1765,26 +1645,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   formSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  blurContainer: {
-    borderRadius: 20,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+  },
+  cardContent: {
+    padding: 16,
   },
   gradientContainer: {
-    padding: 24,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 12,
     backgroundColor: 'white',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 18,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1793,13 +1666,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   formSectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1E293B',
     letterSpacing: -0.2,
   },
   inputContainer: {
-    marginVertical: 10,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
@@ -1813,20 +1686,16 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
     paddingHorizontal: 16,
     minHeight: 56,
   },
   inputWrapperFocused: {
     borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 2,
   },
   inputWrapperValid: {
     borderColor: '#10B981',
@@ -1841,7 +1710,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#111827',
-    paddingVertical: 0,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 10,
   },
   textAreaInput: {
     minHeight: 96,
@@ -1946,25 +1815,11 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderRadius: 8,
+    backgroundColor: '#ffffffff', // Light gray background
   },
   tagSelected: {
     backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
   },
   tagText: {
     fontSize: 14,
@@ -1979,37 +1834,20 @@ const styles = StyleSheet.create({
   },
   saveContainer: {
     marginTop: 20,
-    marginBottom: 40,
   },
   saveButton: {
+    backgroundColor: '#6366F1',
     borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  saveButtonGradient: {
     paddingVertical: 18,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  saveButtonContent: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
   saveButtonText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -2025,11 +1863,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
   },
-  socialPlatform: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
   socialLink: {
     flex: 1,
     fontSize: 14,
@@ -2037,14 +1870,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addSocialContainer: {
-    flexDirection: 'column',
-    marginBottom: 20,
+    marginTop: 16,
   },
   addSocialButtonContainer: {},
   socialDropdownContainer: {
     flex: 1,
     width: '100%',
-    marginBottom: 20,
   },
   picker: {
     height: 50,
