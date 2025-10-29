@@ -76,3 +76,5 @@ yarn-error.*
 android/
 ios/
 # @end expo-cli
+
+push-notification-trivo.json

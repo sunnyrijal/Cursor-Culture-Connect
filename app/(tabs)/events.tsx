@@ -621,9 +621,8 @@ export default function Events() {
   style={[
     styles.fabContainer,
     {
-      right: Math.max(16, insets.right + 8),
-      // keep the button above the tab bar + safe area
-      bottom: Math.max(16, insets.bottom + tabBarHeight + 12),
+        right: 20,
+        bottom: tabBarHeight + 20,
     },
   ]}
 >

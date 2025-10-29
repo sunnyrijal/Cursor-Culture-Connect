@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "551885233791",
-    "project_id": "trivoconnectcom",
-    "storage_bucket": "trivoconnectcom.firebasestorage.app"
+    "project_number": "836697864577",
+    "project_id": "push-notifications-9a3cd",
+    "storage_bucket": "push-notifications-9a3cd.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:551885233791:android:9168de080aa4feb65a294a",
+        "mobilesdk_app_id": "1:836697864577:android:735be62fd65a1d8ba49080",
         "android_client_info": {
           "package_name": "com.trivo.connect"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCLt-EIWIqSGfvXjKcVeybxA3iXmx9jSIY"
+          "current_key": "AIzaSyBZt_nFbKOnJAVUF4GLMMUb62doui0YqbY"
         }
       ],
       "services": {
