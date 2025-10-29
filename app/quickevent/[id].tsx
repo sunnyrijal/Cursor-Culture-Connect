@@ -159,6 +159,23 @@ export default function QuickEventDetail() {
     return quickEvent.interestedUsers.some((user) => user.id === myData.userId);
   }, [quickEvent, myData]);
 
+  const isEventPast = React.useMemo(() => {
+    if (!quickEvent) return false;
+    const now = new Date();
+
+    if (quickEvent.endTime) {
+      const [endHours, endMinutes] = quickEvent.endTime.split(':').map(Number);
+      const end = new Date();
+      end.setHours(endHours, endMinutes, 0, 0);
+      return end < now;
+    } else if (quickEvent.time) {
+      const [startHours, startMinutes] = quickEvent.time.split(':').map(Number);
+      const start = new Date();
+      start.setHours(startHours, startMinutes, 0, 0);
+      return start < now;
+    }
+    return false;
+  }, [quickEvent]);
   const { mutate: deleteEventMutation, isPending: isDeletingEvent } =
     useMutation({
       mutationFn: (eventIdToDelete: string) =>
@@ -470,7 +487,19 @@ export default function QuickEventDetail() {
         </View>
       </ScrollView>
 
-      {isAlreadyInterested ? (
+      {isEventPast ? (
+        <View style={styles.footer}>
+          <View
+            style={[
+              styles.notForMeButton,
+              styles.removeInterestButton,
+              styles.disabledButton,
+            ]}
+          >
+            <Text style={styles.notForMeButtonText}>Event has ended</Text>
+          </View>
+        </View>
+      ) : isAlreadyInterested ? (
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
@@ -478,7 +507,7 @@ export default function QuickEventDetail() {
               styles.removeInterestButton,
               isRemovingInterest && styles.disabledButton,
             ]}
-            onPress={() => removeInterest()}
+            onPress={!isEventPast ? () => removeInterest() : undefined}
             disabled={isRemovingInterest}
           >
             {isRemovingInterest ? (
@@ -499,13 +528,14 @@ export default function QuickEventDetail() {
             style={[
               styles.notForMeButton,
               (isExpressingInterest ||
+                isEventPast ||
                 isDeletingEvent ||
                 isExpressingNotInterest) &&
                 styles.disabledButton,
             ]}
             onPress={handleNotForMe}
             disabled={
-              isExpressingInterest || isDeletingEvent || isExpressingNotInterest
+              isExpressingInterest || isEventPast || isDeletingEvent || isExpressingNotInterest
             }
           >
             {isExpressingNotInterest ? (
@@ -518,13 +548,14 @@ export default function QuickEventDetail() {
             style={[
               styles.interestedButton,
               (isExpressingInterest ||
+                isEventPast ||
                 isDeletingEvent ||
                 isExpressingNotInterest) &&
                 styles.disabledButton,
             ]}
             onPress={() => expressInterest()}
             disabled={
-              isExpressingInterest || isDeletingEvent || isExpressingNotInterest
+              isExpressingInterest || isEventPast || isDeletingEvent || isExpressingNotInterest
             }
           >
             {isExpressingInterest ? (

@@ -68,7 +68,7 @@ function MainLayout() {
     },
   };
 
- const scheme = useColorScheme(); 
+ const scheme = useColorScheme() ?? 'light';
  console.log(scheme)
   return (
     <SocketProvider serverUrl={API_BASE_URL} userId={userId || ''} onConnect={handleConnect} onDisconnect={handleDisconnect} onError={handleError} onAuthenticated={handleAuthenticated}>

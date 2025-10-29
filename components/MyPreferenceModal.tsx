@@ -307,21 +307,12 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
       >
         <SafeAreaView style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>My Activity Preferences</Text>
-            <TouchableOpacity
-              style={styles.addPreferenceButton}
-              onPress={handleAddNew}
-              activeOpacity={0.7}
-            >
-              <Plus size={14} color="#FFFFFF" />
-              <Text style={styles.addPreferenceButtonText}>Add</Text>
-            </TouchableOpacity>
+          <View style={styles.header}> 
+            <Text style={styles.title}>My Activity Preferences</Text> 
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#333" />
             </TouchableOpacity>
           </View>
-
           {/* Content */}
           <ScrollView
             style={styles.content}
@@ -329,6 +320,15 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
           >
             {isLoading ? (
               <View style={styles.loadingContainer}>
+                <TouchableOpacity
+                  style={styles.fullWidthAddButton}
+                  onPress={handleAddNew}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.fullWidthAddButtonText}>Add Preference</Text>
+                </TouchableOpacity>
+
                 <ActivityIndicator size="large" color="#007AFF" />
                 <Text style={styles.loadingText}>Loading preferences...</Text>
               </View>
@@ -343,6 +343,15 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
                 </TouchableOpacity>
               </View>
             ) : preferences.length === 0 ? (
+              <>
+                <TouchableOpacity
+                  style={styles.fullWidthAddButton}
+                  onPress={handleAddNew}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.fullWidthAddButtonText}>Add Preference</Text>
+                </TouchableOpacity>
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
                   No activity preferences yet
@@ -358,11 +367,22 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
                     Add Your First Preference
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </View>              
+              </>
             ) : (
+              <>
+              <TouchableOpacity
+                  style={styles.fullWidthAddButton}
+                  onPress={handleAddNew}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.fullWidthAddButtonText}>Add Preference</Text>
+                </TouchableOpacity>
               <View style={styles.preferencesContainer}>
                 {preferences.map(renderPreferenceCard)}
               </View>
+              </>
             )}
           </ScrollView>
         </SafeAreaView>
@@ -385,6 +405,24 @@ const MyPreferencesModal: React.FC<MyPreferencesModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+  fullWidthAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  fullWidthAddButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
@@ -399,22 +437,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
-  },
-  addPreferenceButton: { // Updated styles for the "Add" button
-    position: 'absolute', // Keep it positioned relative to the header
-    right: 60, // Adjust position to not overlap close button
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor:theme.primary, // A nice blue color
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
-  },
-  addPreferenceButtonText: { // Style for the "Add" text
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   title: {
     fontSize: 20,

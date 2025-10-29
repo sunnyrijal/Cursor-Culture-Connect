@@ -435,9 +435,10 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   title: {
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.bold,
     color: theme.textPrimary,
+    fontWeight:500
   },
   placeholder: {
     width: 40,

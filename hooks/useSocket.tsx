@@ -23,7 +23,7 @@ interface SocketContextType {
 }
 
 interface SocketProviderProps {
-  children: ReactNode;
+  children: any;
   serverUrl: string;
   userId: string;
   onConnect?: () => void;

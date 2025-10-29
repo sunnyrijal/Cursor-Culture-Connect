@@ -416,7 +416,7 @@ export default function EventDetail() {
     eventTime?.endTime
   );
   const isEventPast = eventTime
-    ? new Date(eventTime.startTime) < new Date()
+    ? new Date(eventTime.endTime || eventTime.startTime) < new Date()
     : false;
 
   const organizer =
@@ -934,15 +934,23 @@ export default function EventDetail() {
         </View>
       </ScrollView>
 
-      {!isHost ? (
+      {isEventPast ? (
+        <View style={styles.footer}>
+          <View style={[styles.rsvpButton, styles.disabledButton, { flex: 1 }]}>
+            <View style={styles.rsvpContent}>
+              <Text style={styles.rsvpButtonText}>Event Ended</Text>
+            </View>
+          </View>
+        </View>
+      ) : !isHost ? (
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
               styles.messageButtonFooter,
-              (isCreatingChat || isEventPast) && styles.disabledButton,
+              isCreatingChat && styles.disabledButton,
             ]}
             onPress={handleMessageHost}
-            disabled={isCreatingChat || isEventPast}
+            disabled={isCreatingChat}
           >
             <View style={styles.rsvpContent}>
               {isCreatingChat ? (
@@ -955,84 +963,68 @@ export default function EventDetail() {
               )}
             </View>
           </TouchableOpacity>
-          {isEventPast ? (
+          {isAttending ? (
+            event.requiresTravel ? (
+              <TouchableOpacity
+                style={[styles.rsvpButton, styles.manageRsvpButton]}
+                onPress={() => setShowTransportationModal(true)}
+              >
+                <View style={styles.rsvpContent}>
+                  <Edit3 size={20} color={theme.white} />
+                  <Text style={styles.rsvpButtonText}>Manage RSVP</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.rsvpButton,
+                  styles.leaveButton,
+                  isLeaving && styles.disabledButton,
+                ]}
+                onPress={() => leaveEventMutation()}
+                disabled={isLeaving}
+              >
+                <View style={styles.rsvpContent}>
+                  {isLeaving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <CheckCircle size={20} color={theme.white} />
+                      <Text style={styles.rsvpButtonText}>Going</Text>
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )
+          ) : (
             <TouchableOpacity
-              style={[styles.rsvpButton, styles.disabledButton]}
-              disabled={true}
+              style={[styles.rsvpButton, isJoining && styles.disabledButton]}
+              onPress={() =>
+                event.requiresTravel
+                  ? setShowTransportationModal(true)
+                  : joinEventMutation({})
+              }
+              disabled={isJoining}
             >
               <View style={styles.rsvpContent}>
-                <Text style={styles.rsvpButtonText}>Event Ended</Text>
+                {isJoining ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.rsvpButtonText}>RSVP Now</Text>
+                )}
               </View>
             </TouchableOpacity>
-          ) : (
-            <>
-              {isAttending ? (
-                event.requiresTravel ? (
-                  <TouchableOpacity
-                    style={[styles.rsvpButton, styles.manageRsvpButton]}
-                    onPress={() => setShowTransportationModal(true)}
-                  >
-                    <View style={styles.rsvpContent}>
-                      <Edit3 size={20} color={theme.white} />
-                      <Text style={styles.rsvpButtonText}>Manage RSVP</Text>
-                    </View>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[
-                      styles.rsvpButton,
-                      styles.leaveButton,
-                      isLeaving && styles.disabledButton,
-                    ]}
-                    onPress={() => leaveEventMutation()}
-                    disabled={isLeaving}
-                  >
-                    <View style={styles.rsvpContent}>
-                      {isLeaving ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <>
-                          <CheckCircle size={20} color={theme.white} />
-                          <Text style={styles.rsvpButtonText}>Going</Text>
-                        </>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                )
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.rsvpButton,
-                    isJoining && styles.disabledButton,
-                  ]}
-                  onPress={() =>
-                    event.requiresTravel
-                      ? setShowTransportationModal(true)
-                      : joinEventMutation({})
-                  }
-                  disabled={isJoining}
-                >
-                  <View style={styles.rsvpContent}>
-                    {isJoining ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.rsvpButtonText}>RSVP Now</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
-            </>
           )}
         </View>
-      ) : (
+      ) : ( // This is for the host
         <View style={styles.footer}>
           {isAttending ? (
-            <>
+            <> 
               {event.requiresTravel ? (
                 <>
                   <TouchableOpacity
                     style={[styles.rsvpButton, styles.manageRsvpButton]}
-                    onPress={() => setShowTransportationModal(true)}
+                    onPress={() => !isEventPast && setShowTransportationModal(true)}
                   >
                     <View style={styles.rsvpContent}>
                       <Edit3 size={20} color={theme.white} />
@@ -1812,7 +1804,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    padding: spacing.md,
+    paddingHorizontal:spacing.md,
+    paddingBottom: spacing.xl,
     backgroundColor: neomorphColors.background,
     borderTopWidth: 1,
     borderTopColor: neomorphColors.lightShadow,
