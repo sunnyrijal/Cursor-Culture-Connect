@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, MessageCircle, UserMinus, Search } from 'lucide-react-native';
 import { getFriends, removeFriend } from '@/contexts/friend.api';
 import { router } from 'expo-router';
+import { createDirectChat } from '@/contexts/chat.api';
 import { useAlert } from '@/contexts/AlertContext';
 
 const theme = {
@@ -58,6 +59,8 @@ export default function FriendsListScreen() {
   }, [refetch]);
 
   const friends = friendsResponse?.data || [];
+
+  console.log(friends)
 
   const filteredFriends = useMemo(() => {
     if (!searchQuery.trim()) return friends;
@@ -110,9 +113,33 @@ export default function FriendsListScreen() {
     });
   };
 
-  const handleMessage = (friendId: string) => {
-    // Navigate to chat screen
-    router.push(`/chat/${friendId}`);
+  const { mutate: createChatAndNavigate, isPending: isCreatingChat } =
+    useMutation({
+      mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
+      onSuccess: (response:any) => {
+        console.log(response)
+        const chatId = response?.data.id;
+        if (chatId) {
+          router.push(`/chat/${chatId}`);
+        } else {
+          showAlert({
+            title: 'Chat Ready',
+            message: 'Chat is ready, you can find it in your chats list.',
+          });
+          queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+      },
+      onError: (error: any) => {
+        showAlert({
+          title: 'Error',
+          message:
+            error?.response?.data?.message || 'Could not start conversation.',
+        });
+      },
+    });
+  const handleMessage = (chatId: string | null, friendId: string) => {
+    if (chatId) router.push(`/chat/${chatId}`);
+    else createChatAndNavigate(friendId);
   };
 
   if (isLoading) {
@@ -210,7 +237,7 @@ export default function FriendsListScreen() {
                 <View style={styles.friendActions}>
                   <TouchableOpacity
                     style={styles.messageButton}
-                    onPress={() => handleMessage(friend.chatId)}
+                    onPress={() => handleMessage(friend.chatId, friend.id)}
                   >
                     <MessageCircle size={20} color={theme.primary} />
                   </TouchableOpacity>

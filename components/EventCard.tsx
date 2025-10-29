@@ -165,6 +165,11 @@ export const EventCard: React.FC<EventCardProps> = ({
               {formatDate(event.eventTimes[0].startTime)} at{' '}
               {formatTime(event.eventTimes[0].startTime)}
             </Text>
+            {isEventPast && (
+              <View style={styles.endedBadge}>
+                <Text style={styles.endedBadgeText}>Ended</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -210,7 +215,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             </View>
           </View>
 
-          {isHost && isEventPast && onDelete ? (
+          {isHost && isEventPast ? (
             <TouchableOpacity
               style={[styles.rsvpButton, styles.deleteButton]}
               onPress={onDelete}
@@ -493,5 +498,17 @@ const styles = StyleSheet.create({
 
   rsvpedButtonText: {
     color: 'white',
+  },
+  endedBadge: {
+    backgroundColor: theme.gray400,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  endedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

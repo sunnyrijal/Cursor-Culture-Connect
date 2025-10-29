@@ -205,6 +205,13 @@ export default function ChatListScreen() {
       });
   }, [chatResponse, myData, filter]);
 
+  // Create a stable dependency for the useEffect hook.
+  // This string will only change if the list of chat IDs changes.
+  const chatIdsString = useMemo(
+    () => processedChats.map((c:any) => c.id).sort().join(','),
+    [processedChats]
+  );
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     refetch().finally(() => {

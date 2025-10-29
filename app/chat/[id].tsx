@@ -34,6 +34,18 @@ export default function ChatScreen() {
     queryFn: () => getDecodedToken(),
   });
 
+    const {
+    data: chatResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['chat', id],
+    queryFn: () => getChatDetails((id as string) || ''),
+    refetchOnMount:'always'
+  });
+
+
   const {
     isConnected,
     joinChat,
@@ -47,7 +59,7 @@ export default function ChatScreen() {
     (message: any) => {
       refetch();
     },
-    [id]
+    [refetch]
   );
 
   // Set up message listener for this screen
@@ -76,16 +88,6 @@ export default function ChatScreen() {
     };
   }, [id, isConnected, joinChat, leaveChat]);
 
-  const {
-    data: chatResponse,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['chat', id],
-    queryFn: () => getChatDetails((id as string) || ''),
-    refetchOnMount:'always'
-  });
 
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,

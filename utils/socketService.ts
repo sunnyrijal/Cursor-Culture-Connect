@@ -197,11 +197,14 @@ class SocketService {
   }
 
   private handleNewMessage(messageData: MessageData): void {
+    if (this.queryClient) {
+      console.log('🔄 Invalidating queries for new message...');
+      this.queryClient.invalidateQueries({ queryKey: ['messages'] });
+      this.queryClient.invalidateQueries({ queryKey: ['chats'] });
+      this.queryClient.invalidateQueries({ queryKey: ['chat'] });
+
+    }
     if (this.onNewMessage) {
-      if (this.queryClient) {
-        this.queryClient.invalidateQueries({ queryKey: ['messages'] });
-        this.queryClient.invalidateQueries({ queryKey: ['chats'] });
-      }
       this.onNewMessage(messageData);
     }
   }

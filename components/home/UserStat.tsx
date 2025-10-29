@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: spacing.md,
     marginHorizontal: spacing.sm,
-    padding: spacing.lg, // Increased padding for a bit more space
+    padding: spacing.md, // Increased padding for a bit more space
     borderWidth: 1,
     borderColor: theme.border,
   },

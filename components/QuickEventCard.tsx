@@ -148,12 +148,6 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             </Text>
           </View>
 
-          <View style={styles.quickEventMeta}>
-            <UserCheck size={14} color={theme.success} />
-            <Text style={[styles.quickEventMetaText, { color: theme.success }]}>
-              {quickEvent.interestedUsers?.length || 0} Interested
-            </Text>
-          </View>
         </View>
 
         <View style={styles.quickEventActions}>
@@ -186,21 +180,27 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
                 isInterested && !isEventPast ? styles.rsvpedButtonSmall : null,
                 isEventPast && styles.endedButtonSmall,
               ]}
-              onPress={() =>
-                !isMutating &&
-                !isEventPast &&
-                (isInterested
-                  ? onRemoveInterest(quickEvent.id)
-                  : onAddInterest(quickEvent.id))
-              }
+              onPress={() => {
+                if (isMutating || isEventPast) return;
+                if (isInterested) {
+                  onRemoveInterest(quickEvent.id);
+                } else {
+                  onAddInterest(quickEvent.id);
+                }
+              }}
               disabled={isMutating || isEventPast}
             >
               {isMutating ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.rsvpButtonTextSmall}>
-                  {isEventPast ? 'Ended' : isInterested ? 'Interested' : "I'm in"}
-                </Text>
+                <>
+                  {isInterested && !isEventPast && (
+                    <UserCheck size={16} color="white" />
+                  )}
+                  <Text style={styles.rsvpButtonTextSmall}>
+                    {isEventPast ? 'Ended' : isInterested ? 'Interested' : "I'm in"}
+                  </Text>
+                </>
               )}
             </TouchableOpacity>
           )}
@@ -336,6 +336,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   rsvpedButtonSmall: {
     backgroundColor: theme.success,
