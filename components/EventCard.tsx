@@ -151,27 +151,29 @@ export const EventCard: React.FC<EventCardProps> = ({
           </Text>
         </View>
 
-        <View style={styles.eventMeta}>
-          <MapPin size={16} color="#64748B" />
-          <Text style={styles.eventMetaText} numberOfLines={1}>
-            {event.location}
-          </Text>
-        </View>
-
-        {event.eventTimes && event.eventTimes.length > 0 && (
+        <View style={styles.eventMetaRow}>
           <View style={styles.eventMeta}>
-            <Calendar size={16} color="#6366F1" />
-            <Text style={styles.eventMetaText}>
-              {formatDate(event.eventTimes[0].startTime)} at{' '}
-              {formatTime(event.eventTimes[0].startTime)}
+            <MapPin size={16} color="#64748B" />
+            <Text style={styles.eventMetaText} numberOfLines={1}>
+              {event.location}
             </Text>
-            {isEventPast && (
-              <View style={styles.endedBadge}>
-                <Text style={styles.endedBadgeText}>Ended</Text>
-              </View>
-            )}
           </View>
-        )}
+
+          {event.eventTimes && event.eventTimes.length > 0 && (
+            <View style={styles.eventMeta}>
+              <Calendar size={16} color="#6366F1" />
+              <Text style={styles.eventMetaText}>
+                {formatDate(event.eventTimes[0].startTime)} at{' '}
+                {formatTime(event.eventTimes[0].startTime)}
+              </Text>
+              {isEventPast && (
+                <View style={styles.endedBadge}>
+                  <Text style={styles.endedBadgeText}>Ended</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         <View style={styles.creatorSection}>
           <View style={styles.creatorInfo}>
@@ -356,6 +358,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
 
+  eventMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',

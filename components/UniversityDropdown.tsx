@@ -197,6 +197,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
             }, 150);
           }}
           editable={!loading}
+          showSoftInputOnFocus={false}
           placeholderTextColor="#9CA3AF"
           autoCapitalize="words"
         />
@@ -284,7 +285,7 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
                         searchText === university.name &&
                           styles.dropdownItemSelected,
                         // Remove border from last item for cleaner look
-                        index === filteredUniversities.length - 1 && 
+                        index === filteredUniversities.length - 1 &&
                           styles.lastDropdownItem,
                       ]}
                       onPress={() => selectUniversity(university)}

@@ -72,6 +72,8 @@ class SocketService {
   private onAuthenticated?: AuthCallback;
   private queryClient: QueryClient | undefined;
   private currentUserId: string | null = null;
+  private onNewUserMessageCallback: ((message: any) => void) | null = null;
+  private onNewMessageReceivedCallback: ((message: any) => void) | null = null;
 
   constructor() {
     this.socket = null;
@@ -131,6 +133,13 @@ class SocketService {
 
     this.socket.on('authenticated', (data: AuthenticatedData) => {
       console.log('✅ Authenticated:', data);
+      
+      // Join user-specific room after authentication
+      if (this.currentUserId) {
+        console.log(`🏠 Joining user room: user_${this.currentUserId}`);
+        this.socket?.emit('join_room', `user_${this.currentUserId}`);
+      }
+      
       if (this.onAuthenticated) {
         this.onAuthenticated(data);
       }
@@ -152,6 +161,31 @@ class SocketService {
     this.socket.on('new_notification', (notificationData: NotificationData) => {
       console.log('🔔 New notification received:', notificationData);
       this.handleNewNotification(notificationData);
+    });
+
+    // Listener for user-specific messages (old pattern)
+    this.socket.on(`chat_${this.currentUserId}`, (message: MessageData) => {
+      if (this.onNewUserMessageCallback) {
+        this.onNewUserMessageCallback(message);
+      }
+    });
+
+    // NEW: Global listener for new_message_received event
+    this.socket.on('new_message_received', (messageData: any) => {
+      console.log('📨 New message received (global listener):', messageData);
+      
+      // Invalidate queries
+      if (this.queryClient) {
+        console.log('🔄 Invalidating queries for new_message_received...');
+        this.queryClient.invalidateQueries({ queryKey: ['chats'] });
+        this.queryClient.invalidateQueries({ queryKey: ['messages'] });
+        this.queryClient.invalidateQueries({ queryKey: ['chat'] });
+      }
+      
+      // Call the callback if set
+      if (this.onNewMessageReceivedCallback) {
+        this.onNewMessageReceivedCallback(messageData);
+      }
     });
 
     this.socket.on('chat_joined', (data: ChatJoinedData) => {
@@ -202,7 +236,6 @@ class SocketService {
       this.queryClient.invalidateQueries({ queryKey: ['messages'] });
       this.queryClient.invalidateQueries({ queryKey: ['chats'] });
       this.queryClient.invalidateQueries({ queryKey: ['chat'] });
-
     }
     if (this.onNewMessage) {
       this.onNewMessage(messageData);
@@ -223,6 +256,22 @@ class SocketService {
   setOnNewMessage(callback: MessageCallback): void {
     console.log('📝 Setting onNewMessage callback');
     this.onNewMessage = callback;
+  }
+
+  onNewUserMessage(callback: (message: any) => void): void {
+    this.onNewUserMessageCallback = callback;
+  }
+
+  // NEW: Setter for new_message_received callback
+  onNewMessageReceived(callback: (message: any) => void): void {
+    console.log('📝 Setting onNewMessageReceived callback');
+    this.onNewMessageReceivedCallback = callback;
+  }
+
+  // NEW: Remove new_message_received callback
+  removeNewMessageReceivedListener(): void {
+    console.log('🧹 Removing onNewMessageReceived callback');
+    this.onNewMessageReceivedCallback = null;
   }
 
   setOnNewNotification(callback: NotificationCallback): void {
@@ -296,6 +345,8 @@ class SocketService {
     this.onDisconnect = undefined;
     this.onError = undefined;
     this.onAuthenticated = undefined;
+    this.onNewUserMessageCallback = null;
+    this.onNewMessageReceivedCallback = null;
   }
 }
 

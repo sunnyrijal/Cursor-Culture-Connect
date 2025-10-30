@@ -14,17 +14,15 @@ import {
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { RefreshControl } from 'react-native';
-// import { Picker } from '@react-native-picker/picker';
+import { RefreshControl } from 'react-native-gesture-handler';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Search, Users, Clock, PlusCircle, Zap } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { ShareButton } from '@/components/ui/ShareButton';
-import { CreateEventModal } from '@/components/CreateEventModal';
 import { useQuery } from '@tanstack/react-query';
-import { getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
+import { deleteEvent, getEvents, joinEvent, leaveEvent } from '@/contexts/event.api';
 import AnimatedTabPage from '@/components/AnimatedTabPage';
 // Add import for date formatting
 import getDecodedToken from '@/utils/getMyData';
@@ -40,10 +38,11 @@ import React from 'react';
 import { EventCard } from '@/components/EventCard';
 import { QuickEventCard } from '@/components/QuickEventCard';
 
-import { Filter } from 'lucide-react-native';
+import { SlidersHorizontal } from 'lucide-react-native';
 import { FilterModal } from '@/components/EventFilterModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { CreateEventModal } from '@/components/CreateEventModal';
 
 const FAB_SIZE = 60;       // matches styles.fabMain width/height
 const FAB_GAP  = 8;        // desired space between main FAB and menu
@@ -111,6 +110,7 @@ interface QuickEvent {
   interestedUsers: { id: string }[];
   time: string;
   endTime?: string;
+  isPublic:boolean;
   createdAt: string;
   user: {
     id: string;
@@ -244,6 +244,18 @@ export default function Events() {
       },
     });
 
+  const { mutate: deleteEventMutation, isPending: isDeletingEvent } = useMutation({
+    mutationFn: (eventId: string) => deleteEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      // Optionally show an alert on success
+      // showAlert({ title: 'Success', message: 'Event deleted successfully.' });
+    },
+    onError: (error) => {
+      console.error('Error deleting event:', error);
+    },
+  });
+
   const { mutate: deleteQuickEventMutation, isPending: isDeletingQuickEvent } =
     useMutation({
       mutationFn: async (quickEventId: string) => {
@@ -366,35 +378,6 @@ export default function Events() {
         onSubmit={handleCreateQuickEvent}
       />
 
-      {/* <View style={styles.heroSection}>
-        <View style={styles.heroOverlay}>
-          <View style={styles.headerContainer}>
-            <View style={styles.headerRow}>
-              {/* <Text style={styles.heroTitle}>Discover</Text> 
-              <Text style={styles.heroSubtitle}>
-                Explore events that match your interests
-              </Text>
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  style={styles.createButtonHero}
-                  onPress={() => setShowCreateQuickEventModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <Zap size={24} color={theme.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.createButtonHero}
-                  onPress={() => setShowCreateModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <PlusCircle size={28} color={theme.primary} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </View> */}
-
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[
@@ -454,7 +437,7 @@ export default function Events() {
               onPress={() => setShowFilterModal(true)}
               activeOpacity={0.7}
             >
-              <Filter
+              <SlidersHorizontal
                 size={20}
                 color={hasActiveFilters ? '#FFFFFF' : '#64748B'}
               />
@@ -525,7 +508,8 @@ export default function Events() {
                       `/event/${event.id}?openTransportationModal=true`
                     )
                   }
-                  isLoading={isJoining || isLeaving}
+                  isLoading={isJoining || isLeaving || (isDeletingEvent && event.id === (deleteEventMutation as any).variables)}
+                  onDelete={() => deleteEventMutation(event.id)}
                 />
               ))
             ) : (

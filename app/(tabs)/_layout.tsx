@@ -16,8 +16,11 @@ import { SocketProvider, useSocket } from '@/hooks/useSocket';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
 import SafeScreen from '@/components/SafeScreen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getUnreadChatCount } from '@/contexts/chat.api';
 
 export default function TabLayout() {
+  const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const TAB_BAR_HEIGHT = 60;
@@ -34,19 +37,78 @@ export default function TabLayout() {
   const handleError = useCallback((err: string) => console.error('Socket error:', err), []);
   const handleAuthenticated = useCallback((data: any) => console.log('✅ Socket authenticated', data), []);
 
+  const { data: unreadChatCountResponse } = useQuery({
+    queryKey: ['unreadChatCount'],
+    queryFn: getUnreadChatCount,
+    enabled: !!userId, // Only run query when userId is available
+  });
+  const unreadChatCount = unreadChatCountResponse?.data.count || 0;
+
   const SocketConnectionManager = ({ children }: { children: React.ReactNode }) => {
-    const { isConnected, reconnect } = useSocket();
+    const {
+      isConnected,
+      reconnect,
+      onNewUserMessage,
+      removeNewUserMessageListener,
+      onNewMessageReceived,
+      removeNewMessageReceivedListener,
+    } = useSocket();
+
+    const handleNewUserMessage = useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+    }, []);
+
+    // NEW: Global handler for new_message_received event
+    const handleNewMessageReceived = useCallback((messageData: any) => {
+      console.log('📨 NEW MESSAGE RECEIVED (GLOBAL):', messageData);
+      
+      // Invalidate all relevant queries
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['chat'] });
+      queryClient.invalidateQueries({ queryKey: ['unreadChatCount'] });
+    }, [queryClient]);
+
     useEffect(() => {
       const sub = AppState.addEventListener('change', state => {
         if (state === 'active' && !isConnected) reconnect();
       });
+      
       if (!isConnected) reconnect();
-      return () => sub.remove();
-    }, [isConnected, reconnect]);
+
+      if (isConnected) {
+        console.log('Setting up socket message listeners');
+        
+        // Old listener (if still needed)
+        onNewUserMessage(handleNewUserMessage);
+        
+        // NEW: Global listener for new_message_received
+        onNewMessageReceived(handleNewMessageReceived);
+      }
+
+      return () => {
+        sub.remove();
+        removeNewUserMessageListener();
+        removeNewMessageReceivedListener();
+      };
+    }, [
+      isConnected, 
+      reconnect, 
+      onNewUserMessage, 
+      handleNewUserMessage,
+      onNewMessageReceived,
+      handleNewMessageReceived,
+      removeNewUserMessageListener,
+      removeNewMessageReceivedListener
+    ]);
+
     return <>{children}</>;
   };
 
-  if (!userId) return null;
+  if (!userId) {
+    // You might want to show a loading indicator here
+    return null;
+  }
 
   return (
     <SocketProvider
@@ -114,7 +176,14 @@ export default function TabLayout() {
               name="chat"
               options={{
                 title: 'Chat',
-                tabBarIcon: ({ focused }) => <TabItem focused={focused} label="Chat" Icon={MessageSquareIcon} />,
+                tabBarIcon: ({ focused }) => (
+                  <TabItem
+                    focused={focused}
+                    label="Chat"
+                    Icon={MessageSquareIcon}
+                    badgeCount={unreadChatCount}
+                  />
+                ),
               }}
             />
             <Tabs.Screen
@@ -136,10 +205,12 @@ function TabItem({
   focused,
   label,
   Icon,
+  badgeCount = 0,
 }: {
   focused: boolean;
   label: string;
   Icon: React.ComponentType<{ color?: string; size?: number; strokeWidth?: number }>;
+  badgeCount?: number;
 }) {
   const color = focused ? '#6366F1' : '#64748B';
   return (
@@ -149,6 +220,9 @@ function TabItem({
         <Icon color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
       </View>
       <Text style={[styles.tabLabel, { color, fontWeight: focused ? '600' : '500' }]}>{label}</Text>
+      {badgeCount > 0 && (
+        <View style={styles.badge} />
+      )}
     </View>
   );
 }
@@ -170,8 +244,21 @@ const styles = StyleSheet.create({
   },
   activeIndicatorVisible: { width: 30 },
   iconWrapper: { marginTop: 7, marginBottom: 2 },
-  tabLabel: { fontSize: 10, 
+  tabLabel: { 
+    fontSize: 10, 
     letterSpacing: 0.3, 
     marginTop: 1, 
-    textAlign: 'center' },
+    textAlign: 'center' 
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#EF4444', // Red color for the dot
+    borderWidth: 2,
+    borderColor: '#F0F3F7', // Match tab bar background
+  },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Picker } from 'react-native';
 import { 
-  Filter, 
+  SlidersHorizontal, 
   MapPin,       // For 'Filter by State'
   GraduationCap, // For 'My University'
   Globe,        // For 'All'
@@ -290,7 +290,7 @@ export function FilterSystem({
         onPress={() => setIsModalVisible(true)}
         activeOpacity={0.8}
       >
-        <Filter size={18} color={activeFilterCount > 0 ? theme.white : theme.primary} />
+        <SlidersHorizontal size={18} color={activeFilterCount > 0 ? theme.white : theme.primary} />
         <Text style={[
           styles.filterTriggerText,
           activeFilterCount > 0 && styles.filterTriggerTextActive

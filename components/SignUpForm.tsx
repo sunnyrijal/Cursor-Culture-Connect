@@ -210,23 +210,22 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
   useEffect(() => {
     // Entry animations
-    headerOpacity.value = withDelay(200, withTiming(1, { duration: 800 }));
+    headerOpacity.value = withDelay(100, withTiming(1, { duration: 600 }));
     headerScale.value = withDelay(
-      200,
-      withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) })
+      100,
+      withSpring(1, { damping: 15, stiffness: 100 })
     );
 
-    formOpacity.value = withDelay(600, withTiming(1, { duration: 800 }));
+    formOpacity.value = withDelay(300, withTiming(1, { duration: 600 }));
     formTranslateY.value = withDelay(
-      600,
-      withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) })
+      300,
+      withSpring(0, { damping: 18, stiffness: 120 })
     );
 
     switchScale.value = withDelay(
-      1000,
-      withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) })
+      500,
+      withSpring(1, { damping: 12, stiffness: 100 })
     );
-    particleOpacity.value = withDelay(1200, withTiming(1, { duration: 1000 }));
 
     backgroundRotation.value = withRepeat(
       withTiming(360, { duration: 60000, easing: Easing.linear }),

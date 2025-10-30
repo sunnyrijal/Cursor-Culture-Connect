@@ -1,13 +1,14 @@
 import {
   createContext,
   useContext,
-  useState,
   ReactNode,
   useEffect,
+  useState,
 } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from './api';
 import { API_URL } from './axiosConfig';
+import { jwtDecode } from 'jwt-decode';
 import { router } from 'expo-router';
 import { SignupData } from '@/types/user';
 import { checkAuthStatus } from '@/utils/auth';
@@ -37,58 +38,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const checkSession = async () => {
+    const checkToken = async () => {
       try {
-        // Check if there's an active session on the server
-        const response = await fetch(`${API_URL}/auth/check-session`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const token = await SecureStore.getItemAsync('token');
+        const userId = await SecureStore.getItemAsync('userId');
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.authenticated) {
-            // Get token from storage if available
-            const token = await SecureStore.getItemAsync('token');
-
+        if (token && userId) {
+          const decoded: { exp?: number } = jwtDecode(token);
+          if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+            console.warn('Token expired, logging out.');
+            await SecureStore.deleteItemAsync('token');
+            await SecureStore.deleteItemAsync('userId');
+            router.replace('/(auth)/login');
+          } else {
             setAuthState({
               authenticated: true,
               token,
-              userId: data.userId,
+              userId,
             });
-            return;
           }
         }
-
-        // If no active session, check local storage as fallback
-        const token = await SecureStore.getItemAsync('token');
-        const userId = await SecureStore.getItemAsync('userId');
-        if (token && userId) {
-          setAuthState({
-            authenticated: true,
-            token,
-            userId,
-          });
-        }
-      } catch (error) {
-        console.error('Session check error:', error);
-        // Fallback to local storage if session check fails
-        const token = await SecureStore.getItemAsync('token');
-        const userId = await SecureStore.getItemAsync('userId');
-        if (token && userId) {
-          setAuthState({
-            authenticated: true,
-            token,
-            userId,
-          });
-        }
+      } catch (e) {
+        console.error('Error checking token:', e);
+        // If there's an error (e.g., invalid token), clear storage
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync('userId');
       }
     };
 
-    checkSession();
+    checkToken();
   }, []);
 
   const login = async (email: string, password: string) => {

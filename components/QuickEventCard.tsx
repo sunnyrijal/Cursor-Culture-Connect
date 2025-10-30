@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Platform,
+  Platform, // Add this import
 } from 'react-native';
 import { router } from 'expo-router';
 import { Clock, Users, Trash2, MapPin, UserCheck } from 'lucide-react-native';
@@ -14,6 +14,7 @@ import { formatTo12Hour } from '@/utils/formatDate';
 import CountdownTimer from '@/components/CountdownTimer';
 import { theme } from '@/components/theme';
 
+import { GraduationCap, Globe } from 'lucide-react-native';
 interface QuickEvent {
   id: string;
   name: string;
@@ -21,6 +22,7 @@ interface QuickEvent {
   max: string;
   location: string;
   interestedUsers: { id: string }[];
+  isPublic: boolean;
   time: string;
   endTime?: string;
   createdAt: string;
@@ -29,6 +31,10 @@ interface QuickEvent {
     name: string;
     email: string;
     profilePicture?: string;
+  };
+  university?: {
+    id: string;
+    name: string;
   };
 }
 
@@ -59,35 +65,41 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
   onRemoveInterest,
   onDeleteQuickEvent,
 }) => {
-  const isInterested = quickEvent.interestedUsers.some(
-    (user) => user.id === myUserId
-  );
-  const isMutating =
-    (isAddingInterest || isRemovingInterest) &&
-    mutatingQuickEventId === quickEvent.id;
-  const isEventPast = (() => {
-    const now = new Date();
-
-    if (quickEvent.endTime) {
-      const [endHours, endMinutes] = quickEvent.endTime.split(':').map(Number);
-      const end = new Date();
-      end.setHours(endHours, endMinutes, 0, 0);
-      return end < now;
-    } else {
-      const [startHours, startMinutes] = quickEvent.time.split(':').map(Number);
-      const start = new Date();
-      start.setHours(startHours, startMinutes, 0, 0);
-      return start < now;
-    }
-  })();
-
+  console.log(quickEvent);
+  const { university } = quickEvent;
   const isHost = quickEvent.user.id === myUserId;
-  const isOldEvent = (() => {
+  const isInterested = useMemo(
+    () => quickEvent.interestedUsers.some((user) => user.id === myUserId),
+    [quickEvent.interestedUsers, myUserId]
+  );
+  const isMutating = useMemo(
+    () =>
+      (isAddingInterest || isRemovingInterest) &&
+      mutatingQuickEventId === quickEvent.id,
+    [isAddingInterest, isRemovingInterest, mutatingQuickEventId, quickEvent.id]
+  );
+
+  const isEventPast = useMemo(() => {
+    // If there's no start time, it can't be in the past.
+    if (!quickEvent.time) return false;
+
+    const now = new Date();
+    const eventCreatedDate = new Date(quickEvent.createdAt);
+    const [hours, minutes] = (quickEvent.endTime || quickEvent.time)
+      .split(':')
+      .map(Number);
+
+    eventCreatedDate.setHours(hours, minutes, 0, 0);
+    return now > eventCreatedDate;
+  }, [quickEvent.createdAt, quickEvent.time, quickEvent.endTime]);
+
+  // This logic seems to be for allowing deletion of events created on a previous day.
+  const isOldEvent = useMemo(() => {
     const eventDate = new Date(quickEvent.createdAt);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return eventDate < today;
-  })();
+  }, [quickEvent.createdAt]);
 
   return (
     <TouchableOpacity
@@ -104,7 +116,7 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
           <Text style={styles.quickEventTitle} numberOfLines={1}>
             {quickEvent.name}
           </Text>
-          {isHost && isOldEvent && (
+          {isHost && isEventPast && (
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => onDeleteQuickEvent(quickEvent.id)}
@@ -114,18 +126,53 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
               mutatingQuickEventId === quickEvent.id ? (
                 <ActivityIndicator color="#9CA3AF" size="small" />
               ) : (
-                <Trash2 size={18} color="#9CA3AF" />
+                <Trash2 size={18} color="#ff0000ff" />
               )}
             </TouchableOpacity>
           )}
         </View>
-        
-        <View style={styles.locationContainer}>
-          <MapPin size={14} color="#64748B" />
-          <Text style={styles.quickEventLocation} numberOfLines={1}>
-            {quickEvent.location}
-          </Text>
+
+        <View style={styles.locationRow}>
+          <View style={styles.locationContainer}>
+            <MapPin size={14} color="#64748B" />
+            <Text style={styles.quickEventLocation} numberOfLines={1}>
+              {quickEvent.location}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.visibilityBadge,
+              {
+                backgroundColor: quickEvent.isPublic
+                  ? 'rgba(16, 185, 129, 0.1)'
+                  : 'rgba(99, 102, 241, 0.1)',
+              },
+            ]}
+          >
+            {quickEvent.isPublic ? (
+              <Globe size={12} color={theme.success} />
+            ) : (
+              <GraduationCap size={12} color={theme.primary} />
+            )}
+            <Text
+              style={[
+                styles.visibilityBadgeText,
+                { color: quickEvent.isPublic ? theme.success : theme.primary },
+              ]}
+            >
+              {quickEvent.isPublic ? 'Public' : 'University Only'}
+            </Text>
+          </View>
         </View>
+
+        {university && (
+          <View style={styles.locationContainer}>
+            <GraduationCap size={14} color="#64748B" />
+            <Text style={styles.quickEventLocation} numberOfLines={1}>
+              {university.name}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.quickEventMetaRow}>
           <View style={styles.quickEventMeta}>
@@ -133,10 +180,10 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             <Text style={styles.quickEventMetaText}>
               {quickEvent.time
                 ? quickEvent.endTime
-                ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(
-                    quickEvent.endTime
-                  )}`
-                : formatTo12Hour(quickEvent.time)
+                  ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(
+                      quickEvent.endTime
+                    )}`
+                  : formatTo12Hour(quickEvent.time)
                 : 'Time not set'}
             </Text>
           </View>
@@ -148,13 +195,18 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             </Text>
           </View>
 
-         {quickEvent.interestedUsers.length>0 && <View style={styles.quickEventMeta}>
-            <UserCheck size={14} color={theme.success} />
-            <Text style={[styles.quickEventMetaText, { color: theme.success }]}>
-              {quickEvent.interestedUsers?.length || 0} Interested
-            </Text>
-          </View>}
+          {quickEvent.interestedUsers.length > 0 && (
+            <View style={styles.quickEventMeta}>
+              <UserCheck size={14} color={theme.success} />
+              <Text
+                style={[styles.quickEventMetaText, { color: theme.success }]}
+              >
+                {quickEvent.interestedUsers?.length || 0} Interested
+              </Text>
+            </View>
+          )}
         </View>
+        <CountdownTimer time={quickEvent.time} endTime={quickEvent.endTime} />
 
         <View style={styles.quickEventActions}>
           <View style={styles.quickEventCreator}>
@@ -178,8 +230,8 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
               </View>
             )}
           </View>
-          
-          {!(isHost && isOldEvent) && (
+
+          {!isHost && (
             <TouchableOpacity
               style={[
                 styles.rsvpButtonSmall,
@@ -199,7 +251,11 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.rsvpButtonTextSmall}>
-                  {isEventPast ? 'Ended' : isInterested ? 'Interested' : "I'm in"}
+                  {isEventPast
+                    ? 'Ended'
+                    : isInterested
+                    ? 'Interested'
+                    : "I'm in"}
                 </Text>
               )}
             </TouchableOpacity>
@@ -251,6 +307,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginBottom: 12,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   quickEventTitle: {
@@ -347,5 +409,29 @@ const styles = StyleSheet.create({
   },
   endedButtonSmall: {
     backgroundColor: theme.gray400,
+  },
+  endedBadge: {
+    backgroundColor: theme.gray400,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  endedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  visibilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  visibilityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

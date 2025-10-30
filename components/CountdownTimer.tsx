@@ -129,7 +129,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E2E8F0', 
+    alignSelf: 'flex-start', // This will make the container fit its content
+    marginBottom:8,
   },
   text: {
     fontSize: 13,

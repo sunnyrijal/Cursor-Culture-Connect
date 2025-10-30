@@ -19,7 +19,7 @@ import {
   Star,
   Calendar,
   Search,
-  Filter,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getAllGroups, joinGroup } from '@/contexts/group.api';
@@ -173,7 +173,7 @@ export default function Groups() {
                   onPress={() => setShowGroupFilterModal(true)}
                   activeOpacity={0.7}
                 >
-                  <Filter
+                  <SlidersHorizontal
                     size={22}
                     color={hasActiveGroupFilters ? theme.white : theme.gray500}
                   />

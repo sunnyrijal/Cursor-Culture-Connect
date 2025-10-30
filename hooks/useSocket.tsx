@@ -20,6 +20,10 @@ interface SocketContextType {
   socketId?: string;
   onNewMessage: (callback: (message: MessageData) => void) => void;
   removeNewMessageListener: () => void;
+  onNewUserMessage: (callback: (message: MessageData) => void) => void;
+  removeNewUserMessageListener: () => void;
+  onNewMessageReceived: (callback: (message: any) => void) => void;
+  removeNewMessageReceivedListener: () => void;
 }
 
 interface SocketProviderProps {
@@ -46,6 +50,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   onAuthenticated,
 }) => {
   const messageCallbackRef = useRef<((message: MessageData) => void) | null>(null);
+  const userMessageCallbackRef = useRef<((message: MessageData) => void) | null>(null);
+  const newMessageReceivedCallbackRef = useRef<((message: any) => void) | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   
   // Use refs for callbacks to avoid dependency issues
@@ -63,14 +69,29 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   }, [onConnect, onDisconnect, onError, onAuthenticated]);
 
   useEffect(() => {
-
     const globalMessageHandler = (message: MessageData) => {
       if (messageCallbackRef.current) {
         messageCallbackRef.current(message);
       }
     };
 
+    const globalUserMessageHandler = (message: MessageData) => {
+      if (userMessageCallbackRef.current) {
+        console.log('new message please');
+        userMessageCallbackRef.current(message);
+      }
+    };
+
+    const globalNewMessageReceivedHandler = (message: any) => {
+      if (newMessageReceivedCallbackRef.current) {
+        console.log('📨 New message received handler called');
+        newMessageReceivedCallbackRef.current(message);
+      }
+    };
+
     SocketService.setOnNewMessage(globalMessageHandler);
+    SocketService.onNewUserMessage(globalUserMessageHandler);
+    SocketService.onNewMessageReceived(globalNewMessageReceivedHandler);
 
     const handleConnect = () => {
       console.log('✅ Socket connected in context');
@@ -126,7 +147,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     console.log('🔄 Reconnecting socket...');
     setIsConnected(false);
     const response = SocketService.reconnect();
-    console.log(response)
+    console.log(response);
     // The handleConnect callback will update isConnected to true
   }, []);
 
@@ -144,6 +165,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     },
     removeNewMessageListener: () => {
       messageCallbackRef.current = null;
+    },
+    onNewUserMessage: (callback: (message: MessageData) => void) => {
+      userMessageCallbackRef.current = callback;
+    },
+    removeNewUserMessageListener: () => {
+      userMessageCallbackRef.current = null;
+    },
+    onNewMessageReceived: (callback: (message: any) => void) => {
+      newMessageReceivedCallbackRef.current = callback;
+    },
+    removeNewMessageReceivedListener: () => {
+      newMessageReceivedCallbackRef.current = null;
     },
   };
 
