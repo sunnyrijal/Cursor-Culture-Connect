@@ -17,7 +17,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Search,
-  Filter,
   MapPin,
   Users,
   Plus,

@@ -482,7 +482,8 @@ const styles = StyleSheet.create({
 
   requestsList: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 100,
+
   },
 
   requestCard: {

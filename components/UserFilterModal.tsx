@@ -8,7 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Filter, ChevronDown } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { useQuery } from '@tanstack/react-query';
@@ -162,6 +162,7 @@ export const FriendFilterModal: React.FC<FriendFilterModalProps> = ({
   const [stateOpen, setStateOpen] = React.useState(false);
   const [cityOpen, setCityOpen] = React.useState(false);
   const [stateItems, setStateItems] = React.useState<Array<{label: string; value: string}>>([]);
+  const [locationExpanded, setLocationExpanded] = React.useState(false);
   const [cityItems, setCityItems] = React.useState<Array<{label: string; value: string}>>([]);
 
   const { data: universities } = useQuery({
@@ -286,84 +287,91 @@ const updateFilter = (key: keyof FriendFilters, value: any) => {
 
           {/* Location Filter */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Location</Text>
+            <TouchableOpacity onPress={() => setLocationExpanded(!locationExpanded)} style={[styles.expandableHeader, !locationExpanded && { marginBottom: 0 }]}>
+              <Text style={[styles.sectionTitle, !locationExpanded && { marginBottom: 0 }]}>Location</Text>
+              <ChevronDown size={20} color={theme.textSecondary} style={{ transform: [{ rotate: locationExpanded ? '180deg' : '0deg' }] }} />
+            </TouchableOpacity>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Country (Optional)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g., United States"
-                value={tempFilters.country || ''}
-                onChangeText={(text) => updateFilter('country', text)}
-                placeholderTextColor="#A0AEC0"
-              />
-            </View>
+            {locationExpanded && (
+              <View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Country (Optional)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="e.g., United States"
+                    value={tempFilters.country || ''}
+                    onChangeText={(text) => updateFilter('country', text)}
+                    placeholderTextColor="#A0AEC0"
+                  />
+                </View>
 
-            {/* State Dropdown */}
-            <View style={[styles.inputContainer, { zIndex: 2000 }]}>
-              <Text style={styles.inputLabel}>State (Optional)</Text>
-              <DropDownPicker
-                open={stateOpen}
-                value={tempFilters.state || null}
-                items={stateItems}
-                setOpen={setStateOpen}
-                setValue={(callback) => {
-                  const newValue = typeof callback === 'function' ? callback(tempFilters.state || null) : callback;
-                  updateFilter('state', newValue);
-                }}
-                setItems={setStateItems}
-                placeholder="Select state"
-                searchable={true}
-                searchPlaceholder="Search states..."
-                listMode="MODAL"
-                zIndexInverse={5000}
-                modalProps={{
-                  animationType: 'slide',
-                }}
-                style={styles.pickerStyle}
-                dropDownContainerStyle={styles.pickerDropDownContainerStyle}
-                textStyle={styles.pickerTextStyle}
-                placeholderStyle={styles.pickerPlaceholderStyle}
-                searchTextInputStyle={styles.pickerSearchStyle}
-                ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
-                ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={3000} 
-              />
-            </View>
+                {/* State Dropdown */}
+                <View style={[styles.inputContainer, { zIndex: 2000 }]}>
+                  <Text style={styles.inputLabel}>State (Optional)</Text>
+                  <DropDownPicker
+                    open={stateOpen}
+                    value={tempFilters.state || null}
+                    items={stateItems}
+                    setOpen={setStateOpen}
+                    setValue={(callback) => {
+                      const newValue = typeof callback === 'function' ? callback(tempFilters.state || null) : callback;
+                      updateFilter('state', newValue);
+                    }}
+                    setItems={setStateItems}
+                    placeholder="Select state"
+                    searchable={true}
+                    searchPlaceholder="Search states..."
+                    listMode="MODAL"
+                    zIndexInverse={5000}
+                    modalProps={{
+                      animationType: 'slide',
+                    }}
+                    style={styles.pickerStyle}
+                    dropDownContainerStyle={styles.pickerDropDownContainerStyle}
+                    textStyle={styles.pickerTextStyle}
+                    placeholderStyle={styles.pickerPlaceholderStyle}
+                    searchTextInputStyle={styles.pickerSearchStyle}
+                    ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                    ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={3000}
+                  />
+                </View>
 
-            {/* City Dropdown */}
-            <View style={[styles.inputContainer, { zIndex: 1000 }]}>
-              <Text style={styles.inputLabel}>City (Optional)</Text>
-              <DropDownPicker
-                open={cityOpen}
-                value={tempFilters.city || null}
-                items={cityItems}
-                setOpen={setCityOpen}
-                setValue={(callback) => {
-                  const newValue = typeof callback === 'function' ? callback(tempFilters.city || null) : callback;
-                  updateFilter('city', newValue);
-                }}
-                setItems={setCityItems}
-                placeholder={tempFilters.state ? 'Select city' : 'Select a state first'}
-                disabled={!tempFilters.state}
-                searchable={true}
-                searchPlaceholder="Search cities..."
-                listMode="MODAL"
-                zIndexInverse={4000}
-                modalProps={{
-                  animationType: 'slide',
-                }}
-                scrollViewProps={{
-                  nestedScrollEnabled: true,
-                }}
-                style={[styles.pickerStyle, !tempFilters.state && styles.pickerDisabled]}
-                dropDownContainerStyle={styles.pickerDropDownContainerStyle}
-                textStyle={styles.pickerTextStyle}
-                placeholderStyle={styles.pickerPlaceholderStyle}
-                searchTextInputStyle={styles.pickerSearchStyle}
-                ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
-                ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={2000} 
-              />
-            </View>
+                {/* City Dropdown */}
+                <View style={[styles.inputContainer, { zIndex: 1000 }]}>
+                  <Text style={styles.inputLabel}>City (Optional)</Text>
+                  <DropDownPicker
+                    open={cityOpen}
+                    value={tempFilters.city || null}
+                    items={cityItems}
+                    setOpen={setCityOpen}
+                    setValue={(callback) => {
+                      const newValue = typeof callback === 'function' ? callback(tempFilters.city || null) : callback;
+                      updateFilter('city', newValue);
+                    }}
+                    setItems={setCityItems}
+                    placeholder={tempFilters.state ? 'Select city' : 'Select a state first'}
+                    disabled={!tempFilters.state}
+                    searchable={true}
+                    searchPlaceholder="Search cities..."
+                    listMode="MODAL"
+                    zIndexInverse={4000}
+                    modalProps={{
+                      animationType: 'slide',
+                    }}
+                    scrollViewProps={{
+                      nestedScrollEnabled: true,
+                    }}
+                    style={[styles.pickerStyle, !tempFilters.state && styles.pickerDisabled]}
+                    dropDownContainerStyle={styles.pickerDropDownContainerStyle}
+                    textStyle={styles.pickerTextStyle}
+                    placeholderStyle={styles.pickerPlaceholderStyle}
+                    searchTextInputStyle={styles.pickerSearchStyle}
+                    ArrowDownIconComponent={() => <ChevronDown size={20} color="#9CA3AF" />}
+                    ArrowUpIconComponent={() => <ChevronDown size={20} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />} zIndex={2000}
+                  />
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Major Filter */}
@@ -538,6 +546,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  expandableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,

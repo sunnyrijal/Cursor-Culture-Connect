@@ -113,8 +113,8 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
     >
       <View style={styles.quickEventContent}>
         <View style={styles.quickEventHeader}>
-          <Text style={styles.quickEventTitle} numberOfLines={1}>
-            {quickEvent.name}
+          <Text style={styles.quickEventTitle} numberOfLines={2}>
+            {`${quickEvent.name} at ${quickEvent.location}`}
           </Text>
           {isHost && isEventPast && (
             <TouchableOpacity
@@ -131,14 +131,8 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             </TouchableOpacity>
           )}
         </View>
-
+        
         <View style={styles.locationRow}>
-          <View style={styles.locationContainer}>
-            <MapPin size={14} color="#64748B" />
-            <Text style={styles.quickEventLocation} numberOfLines={1}>
-              {quickEvent.location}
-            </Text>
-          </View>
           <View
             style={[
               styles.visibilityBadge,
@@ -163,6 +157,11 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
               {quickEvent.isPublic ? 'Public' : 'University Only'}
             </Text>
           </View>
+          {isEventPast && (
+            <View style={styles.endedBadge}>
+              <Text style={styles.endedBadgeText}>Ended</Text>
+            </View>
+          )}
         </View>
 
         {university && (
@@ -174,39 +173,38 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
           </View>
         )}
 
-        <View style={styles.quickEventMetaRow}>
-          <View style={styles.quickEventMeta}>
+        <View style={[styles.quickEventMetaRow, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+          <View style={[styles.quickEventMeta]}>
             <Clock size={14} color={theme.primary} />
             <Text style={styles.quickEventMetaText}>
               {quickEvent.time
                 ? quickEvent.endTime
-                  ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(
-                      quickEvent.endTime
-                    )}`
+                  ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
                   : formatTo12Hour(quickEvent.time)
                 : 'Time not set'}
             </Text>
           </View>
 
-          <View style={styles.quickEventMeta}>
-            <Users size={14} color="#9CA3AF" />
-            <Text style={styles.quickEventMetaText}>
-              {quickEvent.max || 'No Limit'}
-            </Text>
-          </View>
-
-          {quickEvent.interestedUsers.length > 0 && (
+          <View style={{ flexDirection: 'row',columnGap: 16 }}>
             <View style={styles.quickEventMeta}>
-              <UserCheck size={14} color={theme.success} />
-              <Text
-                style={[styles.quickEventMetaText, { color: theme.success }]}
-              >
-                {quickEvent.interestedUsers?.length || 0} Interested
+              <Users size={14} color="#9CA3AF" />
+              <Text style={styles.quickEventMetaText}>
+                {quickEvent.max ? `${quickEvent.max} people limit` : 'No Limit'}
               </Text>
             </View>
-          )}
+
+            {quickEvent.interestedUsers.length > 0 && (
+              <View style={styles.quickEventMeta}>
+                <UserCheck size={14} color={theme.success} />
+                <Text style={[styles.quickEventMetaText, { color: theme.success }]}>
+                  {quickEvent.interestedUsers?.length || 0} Interested
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-        <CountdownTimer time={quickEvent.time} endTime={quickEvent.endTime} />
+        {/* <CountdownTimer time={quickEvent.time} endTime={quickEvent.endTime} date={quickEvent.createdAt} /> */}
+       
 
         <View style={styles.quickEventActions}>
           <View style={styles.quickEventCreator}>

@@ -23,7 +23,7 @@ import {
   UserCheck,
   UserX,
   MessageCircle,
-  Filter,
+  SlidersHorizontal as Filter,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { getUsers } from '@/contexts/user.api';
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
 
   usersList: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
 
   userCard: {

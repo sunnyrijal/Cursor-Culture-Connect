@@ -350,7 +350,7 @@ export default function Groups() {
                           <View style={styles.statItem}>
                             <Calendar size={14} color={theme.gray500} />
                             <Text style={styles.statText}>
-                              Joined{' '}
+                              Created{' '}
                               {new Date(group.createdAt).toLocaleDateString(
                                 'en-US',
                                 {

@@ -5,18 +5,19 @@ import { theme } from './theme';
 interface CountdownTimerProps {
   time: string;   // Start time in "HH:mm"
   endTime?: string; // Optional end time in "HH:mm"
+  date: string; // The date of the event
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ time, endTime }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ time, endTime, date }) => {
   const calculateRemainingTime = (): React.ReactNode => {
     if (!time) {
       return <Text style={styles.text}>Time not set</Text>;
     }
 
     const now = new Date();
+    const eventDate = new Date(date);
     const [startHours, startMinutes] = time.split(':').map(Number);
-    console.log(startHours, startMinutes)
-    const start = new Date();
+    const start = new Date(eventDate);
     start.setHours(startHours, startMinutes, 0, 0);
 
     let end: Date | null = null;
@@ -117,7 +118,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ time, endTime }) => {
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [time, endTime]);
+  }, [time, endTime, date]);
 
   return <View style={styles.container}>{content}</View>;
 };

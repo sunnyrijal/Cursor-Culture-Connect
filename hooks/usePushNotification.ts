@@ -127,6 +127,8 @@ export const usePushNotifications = (): PushNotificationState => {
         case 'NEW_MESSAGE':
           if (data.chatId) {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            queryClient.invalidateQueries({ queryKey: ['chat'] });
+
             queryClient.invalidateQueries({
               queryKey: ['messages', data.chatId],
             });
@@ -135,6 +137,7 @@ export const usePushNotifications = (): PushNotificationState => {
           break;
 
         case 'NEW_QUICK_EVENT':
+        case 'QUICK_EVENT_JOINED':
           if (data.quickEventId) {
             queryClient.invalidateQueries({ queryKey: ['quick-events'] });
             router.push(`/quickevent/${data.quickEventId}`);

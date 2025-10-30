@@ -60,7 +60,7 @@ export default function FriendsListScreen() {
 
   const friends = friendsResponse?.data || [];
 
-  console.log(friends)
+  console.log(friends);
 
   const filteredFriends = useMemo(() => {
     if (!searchQuery.trim()) return friends;
@@ -116,8 +116,8 @@ export default function FriendsListScreen() {
   const { mutate: createChatAndNavigate, isPending: isCreatingChat } =
     useMutation({
       mutationFn: (userId: string) => createDirectChat({ otherUserId: userId }),
-      onSuccess: (response:any) => {
-        console.log(response)
+      onSuccess: (response: any) => {
+        console.log(response);
         const chatId = response?.data.id;
         if (chatId) {
           router.push(`/chat/${chatId}`);
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
 
   friendsList: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
 
   friendCard: {
