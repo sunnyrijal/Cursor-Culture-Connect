@@ -9,8 +9,8 @@ import {
   Platform, // Add this import
 } from 'react-native';
 import { router } from 'expo-router';
-import { Clock, Users, Trash2, MapPin, UserCheck } from 'lucide-react-native';
-import { formatTo12Hour } from '@/utils/formatDate';
+import { Clock, Users, Trash2, MapPin, UserCheck, Calendar } from 'lucide-react-native';
+import { formatTo12Hour, formatDate } from '@/utils/formatDate';
 import CountdownTimer from '@/components/CountdownTimer';
 import { theme } from '@/components/theme';
 
@@ -80,17 +80,31 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
   );
 
   const isEventPast = useMemo(() => {
-    // If there's no start time, it can't be in the past.
-    if (!quickEvent.time) return false;
+    const { time, endTime, createdAt } = quickEvent;
+
+    // If there's no start time, it can't be considered past.
+    if (!time) return false;
 
     const now = new Date();
-    const eventCreatedDate = new Date(quickEvent.createdAt);
-    const [hours, minutes] = (quickEvent.endTime || quickEvent.time)
-      .split(':')
-      .map(Number);
+    const eventDate = new Date(createdAt);
 
-    eventCreatedDate.setHours(hours, minutes, 0, 0);
-    return now > eventCreatedDate;
+    const [startHours, startMinutes] = time.split(':').map(Number);
+    const effectiveEndTime = endTime || time;
+    const [endHours, endMinutes] = effectiveEndTime.split(':').map(Number);
+
+    const endTimeDate = new Date(eventDate);
+    endTimeDate.setHours(endHours, endMinutes, 0, 0);
+
+    // If end time is earlier than start time, it's an overnight event, so add a day.
+    if (
+      endTime &&
+      (endHours < startHours ||
+        (endHours === startHours && endMinutes < startMinutes))
+    ) {
+      endTimeDate.setDate(endTimeDate.getDate() + 1);
+    }
+
+    return now > endTimeDate;
   }, [quickEvent.createdAt, quickEvent.time, quickEvent.endTime]);
 
   // This logic seems to be for allowing deletion of events created on a previous day.
@@ -131,7 +145,7 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.locationRow}>
           <View
             style={[
@@ -157,11 +171,14 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
               {quickEvent.isPublic ? 'Public' : 'University Only'}
             </Text>
           </View>
-          {isEventPast && (
+          {isHost && (
+            <View style={styles.hostBadge}><Text style={styles.hostBadgeText}>Host</Text></View>
+          )}
+          {/* {isEventPast && isHost && (
             <View style={styles.endedBadge}>
               <Text style={styles.endedBadgeText}>Ended</Text>
             </View>
-          )}
+          )} */}
         </View>
 
         {university && (
@@ -173,19 +190,26 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
           </View>
         )}
 
-        <View style={[styles.quickEventMetaRow, { flexDirection: 'column', alignItems: 'flex-start' }]}>
-          <View style={[styles.quickEventMeta]}>
-            <Clock size={14} color={theme.primary} />
+        <View
+          style={[
+            styles.quickEventMetaRow,
+            { flexDirection: 'column', alignItems: 'flex-start' },
+          ]}
+        >
+          <View style={[styles.quickEventMeta, {  flexWrap: 'wrap' }]}>
+            <Calendar size={14} color={theme.primary} />
             <Text style={styles.quickEventMetaText}>
-              {quickEvent.time
-                ? quickEvent.endTime
-                  ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
-                  : formatTo12Hour(quickEvent.time)
-                : 'Time not set'}
+              {`${formatDate(quickEvent.createdAt)} at ${
+                quickEvent.time
+                  ? quickEvent.endTime
+                    ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
+                    : formatTo12Hour(quickEvent.time)
+                  : 'Time not set'
+              }`}
             </Text>
           </View>
 
-          <View style={{ flexDirection: 'row',columnGap: 16 }}>
+          <View style={{ flexDirection: 'row', columnGap: 16 }}>
             <View style={styles.quickEventMeta}>
               <Users size={14} color="#9CA3AF" />
               <Text style={styles.quickEventMetaText}>
@@ -196,7 +220,9 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
             {quickEvent.interestedUsers.length > 0 && (
               <View style={styles.quickEventMeta}>
                 <UserCheck size={14} color={theme.success} />
-                <Text style={[styles.quickEventMetaText, { color: theme.success }]}>
+                <Text
+                  style={[styles.quickEventMetaText, { color: theme.success }]}
+                >
                   {quickEvent.interestedUsers?.length || 0} Interested
                 </Text>
               </View>
@@ -204,7 +230,6 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
           </View>
         </View>
         {/* <CountdownTimer time={quickEvent.time} endTime={quickEvent.endTime} date={quickEvent.createdAt} /> */}
-       
 
         <View style={styles.quickEventActions}>
           <View style={styles.quickEventCreator}>
@@ -222,14 +247,9 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
               </View>
             )}
             <Text style={styles.creatorName}>{quickEvent.user.name}</Text>
-            {isHost && (
-              <View style={styles.hostBadge}>
-                <Text style={styles.hostBadgeText}>Host</Text>
-              </View>
-            )}
           </View>
 
-          {!isHost && (
+          {(
             <TouchableOpacity
               style={[
                 styles.rsvpButtonSmall,
@@ -377,16 +397,15 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   hostBadge: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginLeft: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   hostBadgeText: {
     fontSize: 11,
     fontWeight: '500',
-    color: theme.primary,
+    color: '#FFFFFF',
   },
   deleteButton: {
     padding: 4,
