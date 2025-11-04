@@ -189,7 +189,6 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
             }
           }}
           editable={!loading}
-          showSoftInputOnFocus={false}
           placeholderTextColor="#9CA3AF"
           autoCapitalize="words"
         />

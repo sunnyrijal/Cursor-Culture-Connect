@@ -197,7 +197,6 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
             }, 150);
           }}
           editable={!loading}
-          showSoftInputOnFocus={false}
           placeholderTextColor="#9CA3AF"
           autoCapitalize="words"
         />

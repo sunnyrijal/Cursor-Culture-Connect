@@ -24,8 +24,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   signup: (signupData: SignupData) => Promise<void>;
   logout: () => Promise<void>;
-  loading:boolean;
-  authenticated:boolean
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -36,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     userId: null,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkToken = async () => {
@@ -57,12 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               userId,
             });
           }
+        } else {
+          setAuthState({ authenticated: false, token: null, userId: null });
         }
       } catch (e) {
         console.error('Error checking token:', e);
         // If there's an error (e.g., invalid token), clear storage
         await SecureStore.deleteItemAsync('token');
         await SecureStore.deleteItemAsync('userId');
+        setAuthState({ authenticated: false, token: null, userId: null });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -127,22 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const [loading, setLoading] = useState(true); // ← needed for splash
-
-  const [authenticated, setAuthenticated] = useState(false);
-  useEffect(() => {
-    const initAuth = async () => {
-      const isValid = await checkAuthStatus();
-      setAuthenticated(isValid);
-      setAuthState(()=>({...authState, authenticated:isValid}))
-      setLoading(false); // auth check complete
-    };
-
-    initAuth();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ authState, login, signup, logout, authenticated, loading }}>
+    <AuthContext.Provider
+      value={{ authState, login, signup, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

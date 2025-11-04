@@ -236,6 +236,8 @@ class SocketService {
       this.queryClient.invalidateQueries({ queryKey: ['messages'] });
       this.queryClient.invalidateQueries({ queryKey: ['chats'] });
       this.queryClient.invalidateQueries({ queryKey: ['chat'] });
+      this.queryClient.invalidateQueries({ queryKey: ['unreadChatCount'] });
+
     }
     if (this.onNewMessage) {
       this.onNewMessage(messageData);

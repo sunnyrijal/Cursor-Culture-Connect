@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,6 @@ import {
 } from 'react-native';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
-import { ShareCultureModal } from '@/components/ShareCultureModal';
-import { CulturalStoriesModal } from '@/components/CulturalStoriesModal';
 import { currentUser } from '@/data/mockData';
 import { theme, spacing } from '@/components/theme';
 import Header from '@/components/home/Header';
@@ -25,6 +23,7 @@ import getDecodedToken from '@/utils/getMyData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePushNotifications } from '@/hooks/usePushNotification';
 import AnimatedTabPage from '@/components/AnimatedTabPage';
+// import AdMobBanner from '@/components/Admob';
 
 export default function Dashboard() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
@@ -40,28 +39,16 @@ export default function Dashboard() {
   const data = JSON.stringify(notification, undefined, 2);
 
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
-  const [showStoriesModal, setShowStoriesModal] = useState(false);
-  const [showShareCultureModal, setShowShareCultureModal] = useState(false);
 
   const handleCreateEvent = (eventData: any) => {
     setShowCreateEventModal(false);
   };
 
   const handleCreateQuickEvent = (eventData: any) => {
-    setShowCreateQuickEventModal(false);
   };
 
   const handleCreateGroup = (groupData: any) => {
     setShowCreateGroupModal(false);
-  };
-
-  const handleShareStory = (storyData: any) => {
-    setShowShareCultureModal(false);
-  };
-
-  const handlePostStory = () => {
-    setShowStoriesModal(false);
-    setShowShareCultureModal(true);
   };
   const queryClient=useQueryClient()
   const onRefresh = useCallback(async () => {
@@ -76,7 +63,7 @@ export default function Dashboard() {
     } finally {
       setRefreshing(false);
     }
-  }, [queryClient]);
+  }, []);
 
   return (
     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
@@ -89,7 +76,7 @@ export default function Dashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <Header setShowStoriesModal={setShowStoriesModal} />
+        <Header />
 
         <UserStat currentUser={currentUser} />
 
@@ -100,6 +87,7 @@ export default function Dashboard() {
 
         <UpcommingEvents />
 
+        {/* <AdMobBanner /> */}
 
       </ScrollView>
 
@@ -119,16 +107,6 @@ export default function Dashboard() {
         visible={showCreateGroupModal}
         onClose={() => setShowCreateGroupModal(false)}
         onSubmit={handleCreateGroup}
-      />
-      <ShareCultureModal
-        visible={showShareCultureModal}
-        onClose={() => setShowShareCultureModal(false)}
-        onSubmit={handleShareStory}
-      />
-      <CulturalStoriesModal
-        visible={showStoriesModal}
-        onClose={() => setShowStoriesModal(false)}
-        onPostStory={handlePostStory}
       />
     </View>
     </View>

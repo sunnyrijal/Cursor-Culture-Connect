@@ -37,11 +37,7 @@ export const clayColors = {
 
 const currentUser = { name: 'Alex' };
 
-const Header = ({
-  setShowStoriesModal,
-}: {
-  setShowStoriesModal: (value: boolean) => void;
-}) => {
+const Header = () => {
   const router = useRouter();
   const [pressedButton, setPressedButton] = useState<string | null>(null);
   const [showProfileTooltip, setShowProfileTooltip] = useState(false);
