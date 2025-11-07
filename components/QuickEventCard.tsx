@@ -79,6 +79,34 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
     [isAddingInterest, isRemovingInterest, mutatingQuickEventId, quickEvent.id]
   );
 
+  const isEventOngoing = useMemo(() => {
+    if (!quickEvent) return false;
+
+    const { time, endTime, createdAt } = quickEvent;
+
+    // If there's no start time, it can't be ongoing.
+    if (!time) return false;
+
+    const now = new Date();
+    const eventDate = new Date(createdAt || now.toISOString());
+
+    const [startHours, startMinutes] = time.split(':').map(Number);
+    const startTimeDate = new Date(eventDate);
+    startTimeDate.setHours(startHours, startMinutes, 0, 0);
+
+    if (!endTime) return false;
+
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const endTimeDate = new Date(eventDate);
+    endTimeDate.setHours(endHours, endMinutes, 0, 0);
+
+    if (endHours < startHours || (endHours === startHours && endMinutes < startMinutes)) {
+      endTimeDate.setDate(endTimeDate.getDate() + 1);
+    }
+
+    return now >= startTimeDate && now <= endTimeDate;
+  }, [quickEvent]);
+
   const isEventPast = useMemo(() => {
     const { time, endTime, createdAt } = quickEvent;
 
@@ -147,29 +175,36 @@ export const QuickEventCard: React.FC<QuickEventCardProps> = ({
         </View>
 
         <View style={styles.locationRow}>
-          <View
-            style={[
-              styles.visibilityBadge,
-              {
-                backgroundColor: quickEvent.isPublic
-                  ? 'rgba(16, 185, 129, 0.1)'
-                  : 'rgba(99, 102, 241, 0.1)',
-              },
-            ]}
-          >
-            {quickEvent.isPublic ? (
-              <Globe size={12} color={theme.success} />
-            ) : (
-              <GraduationCap size={12} color={theme.primary} />
-            )}
-            <Text
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
               style={[
-                styles.visibilityBadgeText,
-                { color: quickEvent.isPublic ? theme.success : theme.primary },
+                styles.visibilityBadge,
+                {
+                  backgroundColor: quickEvent.isPublic
+                    ? 'rgba(16, 185, 129, 0.1)'
+                    : 'rgba(99, 102, 241, 0.1)',
+                },
               ]}
             >
-              {quickEvent.isPublic ? 'Public' : 'University Only'}
-            </Text>
+              {quickEvent.isPublic ? (
+                <Globe size={12} color={theme.success} />
+              ) : (
+                <GraduationCap size={12} color={theme.primary} />
+              )}
+              <Text
+                style={[
+                  styles.visibilityBadgeText,
+                  { color: quickEvent.isPublic ? theme.success : theme.primary },
+                ]}
+              >
+                {quickEvent.isPublic ? 'Public' : 'University Only'}
+              </Text>
+            </View>
+            {isEventOngoing && (
+              <View style={styles.ongoingBadge}>
+                <Text style={styles.ongoingBadgeText}>Ongoing</Text>
+              </View>
+            )}
           </View>
           {isHost && (
             <View style={styles.hostBadge}><Text style={styles.hostBadgeText}>Host</Text></View>
@@ -338,6 +373,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     flex: 1,
+    marginBottom:4,
   },
   quickEventLocation: {
     fontSize: 14,
@@ -450,5 +486,17 @@ const styles = StyleSheet.create({
   visibilityBadgeText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  ongoingBadge: {
+    backgroundColor: theme.success,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  ongoingBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

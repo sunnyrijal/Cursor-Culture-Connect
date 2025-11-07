@@ -671,15 +671,37 @@ export function EditEventModal({
                   </TouchableOpacity>
 
                   {showNativeDatePicker && (
-                    <DateTimePicker
-                      value={formData.date}
-                      mode="date"
-                      themeVariant="light"
-                      textColor="black"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={onNativeDateChange}
-                      minimumDate={new Date()}
-                    />
+                    Platform.OS === 'ios' ? (
+                      <View style={styles.iosPickerContainer}>
+                        <View style={styles.iosPickerWrapper}>
+                          <DateTimePicker
+                            value={formData.date}
+                            mode="date"
+                            display="spinner"
+                            themeVariant="light"
+                            textColor="black"
+                            onChange={onNativeDateChange}
+                            minimumDate={new Date()}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={styles.iosConfirmButton}
+                          onPress={() => setShowNativeDatePicker(false)}
+                        >
+                          <Text style={styles.iosConfirmButtonText}>Done</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <DateTimePicker
+                        value={formData.date}
+                        mode="date"
+                        themeVariant="light"
+                        textColor="black"
+                        display="default"
+                        onChange={onNativeDateChange}
+                        minimumDate={new Date()}
+                      />
+                    )
                   )}
                 </View>
 
@@ -1575,6 +1597,33 @@ const styles = StyleSheet.create({
   },
   closeGroupPickerText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  iosPickerContainer: {
+    marginTop: 12,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  iosPickerWrapper: {
+    alignItems: 'center',
+    paddingTop: 16,
+  },
+  iosConfirmButton: {
+    backgroundColor: '#6366F1',
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  iosConfirmButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

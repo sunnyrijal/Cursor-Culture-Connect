@@ -196,10 +196,10 @@ export function CreateQuickEventModal({
       return;
     }
 
-    if (formData.time && formData.endTime && formData.endTime <= formData.time) {
-      showAlert({ title: 'Invalid Time', message: 'End time must be after start time.' });
-      return;
-    }
+    // if (formData.time && formData.endTime && formData.endTime <= formData.time) {
+    //   showAlert({ title: 'Invalid Time', message: 'End time must be after start time.' });
+    //   return;
+    // }
 
 
     if (

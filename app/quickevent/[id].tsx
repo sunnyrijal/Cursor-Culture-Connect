@@ -68,6 +68,7 @@ interface QuickEventDetailType {
   isPublic: boolean;
   location: string;
   userId: string;
+  createdAt:string;
   user?: {
     id: string;
     name?: string;
@@ -159,23 +160,64 @@ export default function QuickEventDetail() {
     return quickEvent.interestedUsers.some((user) => user.id === myData.userId);
   }, [quickEvent, myData]);
 
-  const isEventPast = React.useMemo(() => {
+  const isEventOngoing = React.useMemo(() => {
     if (!quickEvent) return false;
-    const now = new Date();
 
-    if (quickEvent.endTime) {
-      const [endHours, endMinutes] = quickEvent.endTime.split(':').map(Number);
-      const end = new Date();
-      end.setHours(endHours, endMinutes, 0, 0);
-      return end < now;
-    } else if (quickEvent.time) {
-      const [startHours, startMinutes] = quickEvent.time.split(':').map(Number);
-      const start = new Date();
-      start.setHours(startHours, startMinutes, 0, 0);
-      return start < now;
+    const { time, endTime, createdAt } = quickEvent;
+
+    // If there's no start time, it can't be ongoing.
+    if (!time) return false;
+
+    const now = new Date();
+    const eventDate = new Date(createdAt || now.toISOString());
+
+    const [startHours, startMinutes] = time.split(':').map(Number);
+    const startTimeDate = new Date(eventDate);
+    startTimeDate.setHours(startHours, startMinutes, 0, 0);
+
+    if (!endTime) return false;
+
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const endTimeDate = new Date(eventDate);
+    endTimeDate.setHours(endHours, endMinutes, 0, 0);
+
+    if (endHours < startHours || (endHours === startHours && endMinutes < startMinutes)) {
+      endTimeDate.setDate(endTimeDate.getDate() + 1);
     }
-    return false;
+
+    return now >= startTimeDate && now <= endTimeDate;
   }, [quickEvent]);
+
+    const isEventPast = React.useMemo(() => {
+      // Guard: if event data is not yet loaded, it's not past.
+      if (!quickEvent) return false;
+
+      const { time, endTime, createdAt } = quickEvent;
+  
+      // If there's no start time, it can't be considered past.
+      if (!time) return false;
+  
+      const now = new Date();
+      const eventDate = new Date(createdAt || now.toISOString());
+  
+      const [startHours, startMinutes] = time.split(':').map(Number);
+      const effectiveEndTime = endTime || time;
+      const [endHours, endMinutes] = effectiveEndTime.split(':').map(Number);
+  
+      const endTimeDate = new Date(eventDate);
+      endTimeDate.setHours(endHours, endMinutes, 0, 0);
+  
+      // If end time is earlier than start time, it's an overnight event, so add a day.
+      if (
+        endTime &&
+        (endHours < startHours ||
+          (endHours === startHours && endMinutes < startMinutes))
+      ) {
+        endTimeDate.setDate(endTimeDate.getDate() + 1);
+      }
+  
+      return now > endTimeDate;
+    }, [quickEvent]);
   const { mutate: deleteEventMutation, isPending: isDeletingEvent } =
     useMutation({
       mutationFn: (eventIdToDelete: string) =>
@@ -355,18 +397,26 @@ export default function QuickEventDetail() {
                   >
                     <Clock size={24} color={extendedTheme.accent} />
                   </View>
-                  <View style={styles.infoContent}>
-                    {/* <Text style={styles.infoValue}>
-                      {formatTo12Hour(quickEvent.time)}
-                    </Text> */}
-
+                  <View
+                    style={[
+                      styles.infoContent,
+                      {
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
                     <Text style={styles.infoValue}>
                       {quickEvent.endTime
-                        ? `${formatTo12Hour(
-                            quickEvent.time
-                          )} - ${formatTo12Hour(quickEvent.endTime)}`
+                        ? `${formatTo12Hour(quickEvent.time)} - ${formatTo12Hour(quickEvent.endTime)}`
                         : formatTo12Hour(quickEvent.time)}
                     </Text>
+                      {isEventOngoing && (
+                        <View style={styles.ongoingBadge}>
+                          <Text style={styles.ongoingBadgeText}>Ongoing</Text>
+                        </View>
+                      )}
                   </View>
                 </View>
 
@@ -751,6 +801,18 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: '700',
     paddingHorizontal: 10,
+  },
+  ongoingBadge: {
+    backgroundColor: theme.success,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  ongoingBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   titleContainer: {
     marginBottom: spacing.md,

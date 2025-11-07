@@ -169,16 +169,19 @@ export default function Events() {
   const [mutatingQuickEventId, setMutatingQuickEventId] = useState<
     string | null
   >(null);
-  const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>(() => {
-    const tabParam = params.tab;
-    if (tabParam === 'event') {
-      return 'events';
-    } else if (tabParam === 'quickevent') {
-      return 'quickEvents';
-    }
-    return 'events';
-  });
 
+  // normalize tab param from router (params?.tab can be string | string[])
+  const [activeTab, setActiveTab] = useState<'events' | 'quickEvents'>('events');
+
+  useEffect(() => {
+    const t = params?.tab;
+    const tab = Array.isArray(t) ? t[0] : t;
+    if (tab === 'quickevent') {
+      setActiveTab('quickEvents');
+    } else {
+      setActiveTab('events');
+    }
+  }, [params?.tab]);
   const [showCreateQuickEventModal, setShowCreateQuickEventModal] =
     useState(false);
 
@@ -571,6 +574,13 @@ export default function Events() {
                   Quick events are spontaneous meetups and activities. Check
                   back soon for new opportunities!
                 </Text>
+                <TouchableOpacity
+                  onPress={() => setShowCreateQuickEventModal(true)}
+                >
+                  <Text style={styles.createQuickEventText}>
+                    Or create a quick event
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </>
@@ -1380,6 +1390,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '500',
+  },
+  createQuickEventText: {
+    marginTop: 16,
+    color: theme.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
 
   bottomSpacing: {
