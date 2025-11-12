@@ -945,7 +945,7 @@ useEffect(() => {
           />
         )}
 
-        {/* {showDatePicker && Platform.OS === 'ios' && (
+        {showDatePicker && Platform.OS === 'ios' && (
           <TouchableOpacity
             style={styles.doneButton}
             onPress={() => {
@@ -954,7 +954,7 @@ useEffect(() => {
           >
             <Text style={styles.doneButtonText}>Done</Text>
           </TouchableOpacity>
-        )} */}
+        )}
 
         {fieldValidation['dateOfBirth'] === false && profile.dateOfBirth && (
           <Text style={styles.validationText}>

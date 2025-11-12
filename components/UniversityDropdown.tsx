@@ -191,9 +191,9 @@ const UniversityDropdown: React.FC<UniversityDropdownProps> = ({
           onBlur={() => {
             // Delay blur to allow for dropdown selection
             setTimeout(() => {
-              if (!isDropdownOpen) {
-                onBlur();
-              }
+              // If dropdown is open when blurring, close it.
+              // The timeout prevents it from closing when an item inside is selected.
+              if (isDropdownOpen) toggleDropdown();
             }, 150);
           }}
           editable={!loading}

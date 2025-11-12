@@ -709,7 +709,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
             textColor="black"
           />
         )}
-        {/* {showDatePicker && Platform.OS === 'ios' && (
+        {showDatePicker && Platform.OS === 'ios' && (
           <TouchableOpacity
             style={styles.doneButton}
             onPress={() => {
@@ -718,7 +718,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
           >
             <Text style={styles.doneButtonText}>Done</Text>
           </TouchableOpacity>
-        )} */}
+        )}
 
         {fieldValidation['dateOfBirth'] === false && dateOfBirth && (
           <Text style={styles.validationText}>
@@ -2042,16 +2042,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6366F1',
   },
-  datePickerModalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  datePickerModalContent: {
+  datePickerModalContainer: { // New style
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   doneButton: {
     backgroundColor: '#6366F1',
@@ -2065,18 +2067,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // doneButton: {
-  //   backgroundColor: '#6366F1',
-  //   borderRadius: 12,
-  //   padding: 14,
-  //   alignItems: 'center',
-  //   marginTop: 16,
-  // },
-  // doneButtonText: {
-  //   color: 'white',
-  //   fontSize: 16,
-  //   fontWeight: '600',
-  // },
 });
 
 export default SignUpForm;

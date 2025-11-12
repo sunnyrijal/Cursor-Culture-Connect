@@ -188,6 +188,11 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
               toggleDropdown();
             }
           }}
+           onBlur={() => {
+            setTimeout(() => {
+              if (isDropdownOpen) toggleDropdown();
+            }, 150);
+          }}
           editable={!loading}
           placeholderTextColor="#9CA3AF"
           autoCapitalize="words"
