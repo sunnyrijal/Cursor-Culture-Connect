@@ -91,6 +91,7 @@ export default function EditProfile() {
   const [loading, setLoading] = useState<boolean>(false);
   const [university, setUniversity] = useState<string>('');
   const [interests, setInterests] = useState<string[]>([]);
+  const [fullName, setFullName] = useState<string>('');
   const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState<string>('');
   const [newLanguage, setNewLanguage] = useState<string>('');
@@ -209,68 +210,85 @@ export default function EditProfile() {
     return isValid;
   };
 
-  const { isLoading, error: queryError } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: async () => {
-      const response = await getMyData();
-
-      if (response.success && response.user) {
-        const userData = response.user;
-        setProfile({
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || '',
-          bio: userData.bio || '',
-          city: userData.city || '',
-          state: userData.state || '',
-          classYear: userData.classYear || '',
-          countryOfOrigin: userData.countryOfOrigin || '',
-          dateOfBirth: userData.dateOfBirth
-            ? userData.dateOfBirth.split('T')[0]
-            : '',
-          major: userData.major || '',
-          publicPreference:
-            userData.publicPreference !== undefined
-              ? userData.publicPreference
-              : true,
-        });
-
-        if (userData.university) {
-          setUniversity(userData.university.name || '');
-        }
-        if (userData.interests) {
-          setInterests(userData.interests);
-        }
-        if (userData.languagesSpoken) {
-          setLanguagesSpoken(userData.languagesSpoken);
-        }
-        if (userData.profilePicture) {
-          setProfilePicture(userData.profilePicture);
-        }
-        if (userData.socialMedia) {
-          setSocialMedia(userData.socialMedia);
-        }
-        if (userData.ethnicity) {
-          setEthnicity(userData.ethnicity);
-        }
-        if (userData.pronouns) {
-          setPronouns(userData.pronouns);
-        }
-
-        if (userData.dateOfBirth) {
-          setSelectedDate(new Date(userData.dateOfBirth));
-        }
-        return userData;
-      }
-      throw new Error('Failed to load profile data');
-    },
+ // Add this function before your query definition
+const updateStateWithUserData = (userData: any) => {
+  setProfile({
+    firstName: userData.firstName || '',
+    lastName: userData.lastName || '',
+    bio: userData.bio || '',
+    city: userData.city || '',
+    state: userData.state || '',
+    classYear: userData.classYear || '',
+    countryOfOrigin: userData.countryOfOrigin || '',
+    dateOfBirth: userData.dateOfBirth
+      ? userData.dateOfBirth.split('T')[0]
+      : '',
+    major: userData.major || '',
+    publicPreference:
+      userData.publicPreference !== undefined
+        ? userData.publicPreference
+        : true,
   });
 
-  useEffect(() => {
-    if (queryError) {
-      console.error('[v0] Error fetching user data:', queryError);
-      setError('Failed to load profile data');
+  if (userData.university) {
+    setUniversity(userData.university.name || '');
+  }
+  if (userData.interests) {
+    setInterests(userData.interests);
+  }
+  if (userData.languagesSpoken) {
+    setLanguagesSpoken(userData.languagesSpoken);
+  }
+  if (userData.profilePicture) {
+    setProfilePicture(userData.profilePicture);
+  }
+  if (userData.socialMedia) {
+    setSocialMedia(userData.socialMedia);
+  }
+  if (userData.ethnicity) {
+    setEthnicity(userData.ethnicity);
+  }
+  if (userData.pronouns) {
+    setPronouns(userData.pronouns);
+  }
+  if (userData.dateOfBirth) {
+    setSelectedDate(new Date(userData.dateOfBirth));
+  }
+};
+
+// Replace your existing useQuery with this:
+const { isLoading, error: queryError, data: userData } = useQuery({
+  queryKey: ['userProfile'],
+  queryFn: async () => {
+    const response = await getMyData();
+    console.log(response);
+    if (response.success && response.user) {
+      return response.user;
     }
-  }, [queryError]);
+    throw new Error('Failed to load profile data');
+  },
+  refetchOnMount: true,
+  refetchOnWindowFocus: true,
+  staleTime: 0, // Always consider data stale
+});
+
+// Add this useEffect to update state whenever userData changes
+useEffect(() => {
+  if (userData) {
+    updateStateWithUserData(userData);
+  }
+    if (userData?.firstName && userData?.lastName) {
+      setFullName(`${userData.firstName} ${userData.lastName}`);
+    }
+}, [userData]);
+
+// Keep your existing error handling useEffect
+useEffect(() => {
+  if (queryError) {
+    console.error('[v0] Error fetching user data:', queryError);
+    setError('Failed to load profile data');
+  }
+}, [queryError]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: any) => {
@@ -308,18 +326,19 @@ export default function EditProfile() {
   });
 
   const handleSave = async () => {
-    if (!profile.firstName?.trim() || !profile.lastName?.trim()) {
-      setError('First and last name are required');
+    if (!fullName.trim() || !fullName.trim().includes(' ')) {
+      setError('Please enter your full name (first and last name).');
       setSuccess(null);
       return;
     }
 
     setError(null);
     setSuccess(null);
+    const nameParts = fullName.trim().split(' ');
 
     const updateData: any = {
-      firstName: profile.firstName,
-      lastName: profile.lastName,
+      firstName: nameParts[0],
+      lastName: nameParts.slice(1).join(' '),
       name: `${profile.firstName} ${profile.lastName}`,
     };
 
@@ -350,6 +369,10 @@ export default function EditProfile() {
 
   const updateProfileValue = (key: keyof UserProfile, value: any) => {
     setProfile((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleFullNameChange = (text: string) => {
+    setFullName(text);
   };
 
   const handleImagePicker = async () => {
@@ -1003,16 +1026,14 @@ export default function EditProfile() {
                 )}
               </View>
 
-              <View style={{ width: '100%' }}>
-                {renderAnimatedInput(
-                  Link,
-                  'Username or Profile Link',
-                  newSocialLink,
-                  setNewSocialLink,
-                  'e.g., @username or https://...',
-                  'socialLink',
-                )}
-              </View>
+              {renderAnimatedInput(
+                Link,
+                'Username or Profile Link',
+                newSocialLink,
+                setNewSocialLink,
+                'e.g., @username or https://...',
+                'socialLink'
+              )}
             </View>
             <View style={styles.addSocialButtonContainer}>
               <TouchableOpacity
@@ -1152,25 +1173,14 @@ export default function EditProfile() {
                     </View>
 
                     {renderAnimatedInput(
-                      User,
-                      'First Name',
-                      profile.firstName || '',
-                      (text) => updateProfileValue('firstName', text),
-                      'Enter your first name',
-                      'firstName',
+                      User, // Icon
+                      'Full Name', // Label
+                      fullName, // Value
+                      handleFullNameChange, // onChangeText
+                      'Enter your first and last name', // Placeholder
+                      'fullName', // inputKey
                       { autoCapitalize: 'words' }
                     )}
-
-                    {renderAnimatedInput(
-                      User,
-                      'Last Name',
-                      profile.lastName || '',
-                      (text) => updateProfileValue('lastName', text),
-                      'Enter your last name',
-                      'lastName',
-                      { autoCapitalize: 'words' }
-                    )}
-
                     {renderDateOfBirthPicker()}
 
                     {renderAnimatedInput(
@@ -1595,7 +1605,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 60,
   },
   successContainer: {
     marginBottom: 16,
@@ -1851,6 +1860,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
+  socialPlatform: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   socialMediaItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1871,11 +1884,15 @@ const styles = StyleSheet.create({
   },
   addSocialContainer: {
     marginTop: 16,
+    gap: 16,
   },
-  addSocialButtonContainer: {},
   socialDropdownContainer: {
     flex: 1,
     width: '100%',
+  },
+  addSocialButtonContainer: {
+    marginTop: 16,
+    alignItems: 'flex-end',
   },
   picker: {
     height: 50,

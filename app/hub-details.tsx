@@ -1,6 +1,6 @@
 // project/app/hub-details.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  RefreshControl,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,11 +54,18 @@ export default function HubDetails() {
   const {
     data: res,
     isLoading,
+    isFetching,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['hubDetails'],
     queryFn: () => getHubDetails(),
   });
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   const navigateToChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
   };
@@ -152,8 +160,7 @@ export default function HubDetails() {
           <View style={styles.emptyCard}>
             <Users
               size={48}
-              color={theme.textSecondary}
-              style={{ opacity: 0.3 }}
+              color={theme.primary}
             />
             <Text style={styles.emptyText}>No groups found</Text>
             <Text style={styles.emptySubtext}>
@@ -229,8 +236,7 @@ export default function HubDetails() {
           <View style={styles.emptyCard}>
             <Calendar
               size={48}
-              color={theme.textSecondary}
-              style={{ opacity: 0.3 }}
+              color={theme.primary}
             />
             <Text style={styles.emptyText}>No events found</Text>
             <Text style={styles.emptySubtext}>
@@ -400,6 +406,13 @@ export default function HubDetails() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+          />
+        }
       >
         {renderContent()}
       </ScrollView>

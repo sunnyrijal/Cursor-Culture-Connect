@@ -44,18 +44,12 @@ export default function LogoutButton() {
               // Call the logout function from AuthContext
               // This will handle both server-side session destruction and client-side cleanup
               await logout();
-              
-              // Redirect to login page
-              router.replace('/login');
             } catch (error) {
               console.error('Logout error:', error);
               showAlert({
                 title: 'Logout Error',
                 message: 'There was a problem logging out. Please try again.',
               });
-              
-              // Even if there's an error, try to redirect to login
-              router.replace('/login');
             }
           }
         }

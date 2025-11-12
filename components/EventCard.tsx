@@ -15,6 +15,8 @@ import {
   Users,
   Crown,
 } from 'lucide-react-native';
+import { Globe, GraduationCap } from 'lucide-react-native';
+
 import { theme } from '@/components/theme';
 import { router } from 'expo-router';
 import { formatDate, formatTime } from '@/utils/formatDate';
@@ -28,6 +30,7 @@ interface Event {
   userId: string;
   attendingUsers: any;
   requiresTravel?: boolean;
+  UniversityOnly?: boolean;
   eventTimes: {
     id: number;
     eventId: string;
@@ -73,6 +76,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   const isAttending = event?.attendingUsers?.some(
     (attendee: any) => attendee.id === myUserId
   );
+
+  console.log(event)
 
   const eventTime = event.eventTimes?.[0];
   const isEventPast = eventTime
@@ -149,6 +154,30 @@ export const EventCard: React.FC<EventCardProps> = ({
           <Text style={styles.eventTitle} numberOfLines={2}>
             {event.name}
           </Text>
+          <View
+            style={[
+              styles.visibilityBadge,
+              {
+                backgroundColor: !event.UniversityOnly
+                  ? 'rgba(16, 185, 129, 0.1)'
+                  : 'rgba(99, 102, 241, 0.1)',
+              },
+            ]}
+          >
+            {!event.UniversityOnly ? (
+              <Globe size={12} color={theme.success} />
+            ) : (
+              <GraduationCap size={12} color={theme.primary} />
+            )}
+            <Text
+              style={[
+                styles.visibilityBadgeText,
+                { color: !event.UniversityOnly ? theme.success : theme.primary },
+              ]}
+            >
+              {!event.UniversityOnly ? 'Public' : 'University Only'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.eventMetaRow}>
@@ -519,5 +548,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  visibilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  visibilityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

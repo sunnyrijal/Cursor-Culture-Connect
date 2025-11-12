@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  RefreshControl,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -97,11 +98,17 @@ export default function QuickEventDetail() {
     isLoading,
     isError,
     error,
+    refetch,
+    isFetching,
   } = useQuery<{ data: QuickEventDetailType }, Error>({
     queryKey: ['quickevent', eventId],
     queryFn: () => getQuickEventById(eventId as string),
     enabled: !!eventId,
   });
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const quickEvent = eventResponse?.data;
   console.log(error)
@@ -302,6 +309,12 @@ export default function QuickEventDetail() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={onRefresh}
+          />
+        }
       >
         <View style={styles.headerContainer}>
           <View style={styles.headerActions}>

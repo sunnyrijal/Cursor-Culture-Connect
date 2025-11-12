@@ -60,7 +60,7 @@ export const usePushNotifications = (): PushNotificationState => {
         projectId: Constants.expoConfig?.extra?.eas.projectId,
       });
     } else {
-      alert('Must be using a physical device for Push notifications');
+      // alert('Must be using a physical device for Push notifications');
     }
 
     if (Platform.OS === 'android') {

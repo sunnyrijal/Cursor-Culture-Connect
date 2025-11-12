@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Share,
   Modal,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -99,13 +100,28 @@ export default function EventDetail() {
     isLoading,
     isError,
     error,
+    refetch,
+    isFetching,
   } = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => getEvent(eventId as string),
     enabled: !!eventId, // Only run query if eventId exists
   });
 
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   const event = eventResponse?.event;
+
+  const providersCount =
+    event?.transportationPreferences?.filter(
+      (p: any) => p.preference === 'CAN_PROVIDE_RIDE'
+    ).length || 0;
+  const seekersCount =
+    event?.transportationPreferences?.filter(
+      (p: any) => p.preference === 'NEED_RIDE'
+    ).length || 0;
 
   console.log(event);
 
@@ -448,6 +464,12 @@ export default function EventDetail() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={onRefresh}
+          />
+        }
       >
         {/* Hero Image Section */}
         <View style={styles.heroContainer}>
@@ -755,7 +777,7 @@ export default function EventDetail() {
                           styles.transportTabTextActive,
                       ]}
                     >
-                      Offering Rides
+                      Offering Rides ({providersCount})
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -773,7 +795,7 @@ export default function EventDetail() {
                           styles.transportTabTextActive,
                       ]}
                     >
-                      Needing Rides
+                      Needing Rides ({seekersCount})
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 // import { LinearGradient } from 'expo-linear-gradient'; // REMOVED: No longer needed for solid background
@@ -8,7 +8,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSequence, w
 import { useAuth } from '@/contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
-
+import { useFocusEffect } from 'expo-router';
 const theme = {
   primary: '#6366F1',
   secondary: '#EC4899',
@@ -21,7 +21,7 @@ const theme = {
 
 export default function Index() {
   const router = useRouter();
-  const { authState } = useAuth();
+  const { authState, loading } = useAuth();
 
   // Animation shared values
   const logoScale = useSharedValue(0);
@@ -34,6 +34,20 @@ export default function Index() {
   const particleScale = useSharedValue(0);
   const particleRotate = useSharedValue(0);
   const glowScale = useSharedValue(0.8);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) {
+        return;
+      }
+      if (authState.authenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    }, [authState.authenticated, loading, router])
+  );
+
 
   useEffect(() => {
     // Logo animation sequence
@@ -80,16 +94,6 @@ export default function Index() {
       true
     );
   }, [authState.authenticated]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      runOnJS(() => {
-        router.replace(authState.authenticated ? '/(tabs)' : '/(auth)/login');
-      })();
-    }, 2000); // redirect after splash
-
-    return () => clearTimeout(timer);
-  }, [authState.authenticated, router]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [

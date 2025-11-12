@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './api';
 import { API_URL } from './axiosConfig';
 import { jwtDecode } from 'jwt-decode';
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userId: null,
   });
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const checkToken = async () => {
@@ -120,6 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     //   // Continue with client-side logout even if server logout fails
     // }
 
+    // Clear the query cache
+    // queryClient.clear();
+
     // Clear local storage
     await SecureStore.deleteItemAsync('token');
     await SecureStore.deleteItemAsync('userId');
@@ -130,6 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: null,
       userId: null,
     });
+
+    // Replace the entire navigation stack with the login route
+    router.replace('/(auth)/login');
   };
 
   return (

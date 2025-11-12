@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TextInput,
   Platform,
   Share,
+  RefreshControl,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -133,12 +134,17 @@ export default function GroupDetailEnhanced() {
     data: groupResponse,
     isLoading,
     error,
+    isFetching,
     isError,
     refetch,
   } = useQuery({
     queryKey: ['group', id],
     queryFn: () => getGroup((id as string) || ''),
   });
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
 
   const { data: usersResponse } = useQuery({
@@ -453,7 +459,15 @@ if (error || !group || isError) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={onRefresh}
+          />
+        }
+      >
         {/* Hero Section */}
         <View style={styles.heroContainer}>
           {group.imageUrl ? (

@@ -36,6 +36,7 @@ import { useAlert } from '@/contexts/AlertContext';
 import { getMyData, deleteMe } from '@/contexts/user.api';
 import * as Linking from 'expo-linking';
 import { useAuth } from '@/contexts/AuthContext';
+import getDecodedToken from '@/utils/getMyData';
 
 interface SettingsOption {
   id: string;
@@ -57,6 +58,11 @@ export default function Settings() {
   const { data: myData, isLoading, isFetching } = useQuery({
     queryKey: ['myData'],
     queryFn: () => getMyData(),
+  });
+
+    const { data: myDataLocal } = useQuery({
+    queryKey: ['myData'],
+    queryFn: () => getDecodedToken(),
   });
 
   const { mutate: deleteAccountMutation, isPending: isDeleting } = useMutation({
@@ -117,11 +123,8 @@ export default function Settings() {
 
   const handleViewPublicProfile = () => {
     router.push({
-      pathname: '/public/profile/[id]',
-      params: {
-        id: String(myData?.user?.id ?? '1'),
-        sameuser: 'true',
-      },
+      pathname: `/public/profile/${myDataLocal?.userId || myData.userId || myData?.user.id || '1'}`,
+     
     });
   };
 
