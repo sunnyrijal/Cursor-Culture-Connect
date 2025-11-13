@@ -1024,7 +1024,6 @@ export default function ActivityBuddyPage() {
         <View style={styles.headerTopRow}>
           <View>
             <Text style={styles.headerTitle}>Activity Buddy</Text>
-            <Text style={styles.headerSubtitle}>Match with college buddies for any activity — on or off campus.</Text>
           </View>
           <TouchableOpacity
             style={styles.addActivityButton}
@@ -1063,6 +1062,7 @@ export default function ActivityBuddyPage() {
             </Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.headerSubtitle}>Match with college buddies for any activity — on or off campus.</Text>
       </View>
 
       {activeTab === 'activities' ? renderActivitiesTab() : renderPingsTab()}
@@ -1441,8 +1441,8 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     color: theme.textSecondary,
-    marginTop: 2,
-    maxWidth: 220,
+    marginTop: 12,
+    width:'100%'
   },
   addInterestButton: {
     flexDirection: 'row',
