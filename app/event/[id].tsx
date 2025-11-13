@@ -1188,7 +1188,6 @@ export default function EventDetail() {
                 >
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
                   </View>
                   {selectedUserIds.includes(user.id) && (
                     <View style={styles.selectedIndicator}>

@@ -1022,7 +1022,10 @@ export default function ActivityBuddyPage() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
-          <Text style={styles.headerTitle}>Activity Buddy</Text>
+          <View>
+            <Text style={styles.headerTitle}>Activity Buddy</Text>
+            <Text style={styles.headerSubtitle}>Match with college buddies for any activity — on or off campus.</Text>
+          </View>
           <TouchableOpacity
             style={styles.addActivityButton}
             onPress={() => setIsMyPreferenceVisible(true)}
@@ -1434,6 +1437,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: theme.textPrimary,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    marginTop: 2,
+    maxWidth: 220,
   },
   addInterestButton: {
     flexDirection: 'row',
