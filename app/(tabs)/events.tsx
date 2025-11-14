@@ -572,7 +572,7 @@ export default function Events() {
                 <Text style={styles.emptyTitle}>No Quick Events Found</Text>
                 <Text style={styles.emptyText}>
                   Quick events are spontaneous meetups and activities. Check
-                  back soon for new opportunities!
+                  back soon for new opportunities! Or create a quick event.
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowCreateQuickEventModal(true)}

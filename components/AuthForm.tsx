@@ -117,11 +117,11 @@ export const MAJOR_OPTIONS = [
 ];
 
 export const CLASS_YEAR_OPTIONS = [
-  '2026 Senior',
-  '2027 Junior',
-  '2028 Sophomore',
-  '2029 Freshman',
-  'Graduate',
+  '2026',
+  '2027',
+  '2028',
+  '2029',
+  
 ];
 
 interface AuthFormProps {
