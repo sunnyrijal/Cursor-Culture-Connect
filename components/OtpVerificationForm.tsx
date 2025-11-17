@@ -45,11 +45,11 @@ import { useAlert } from '@/contexts/AlertContext';
 const { width, height } = Dimensions.get('window');
 
 const OtpVerificationForm: React.FC = () => {
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [focusedInput, setFocusedInput] = useState<number>(0);
   const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const [focusedInput, setFocusedInput] = useState<number>(0);
 
   const router = useRouter();
   const { email: emailParam } = useLocalSearchParams<{ email: string }>();
@@ -77,7 +77,7 @@ const OtpVerificationForm: React.FC = () => {
     onSuccess: (data) => {
       console.log('✅ OTP resent successfully:', data);
       setResendCooldown(60);
-      setOtp(['', '', '', '', '', '']);
+      setOtp('');
       setError('');
       inputRefs.current[0]?.focus();
       setFocusedInput(0);
@@ -107,9 +107,6 @@ const OtpVerificationForm: React.FC = () => {
       easing: Easing.ease,
     });
 
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 300);
   }, [emailParam]);
 
   useEffect(() => {
@@ -121,35 +118,20 @@ const OtpVerificationForm: React.FC = () => {
     }
   }, [resendCooldown]);
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (!/^\d*$/.test(value)) return;
+  const handleOtpChange = (value: string) => {
+    // Sanitize input to allow only digits
+    const sanitizedValue = value.replace(/[^0-9]/g, '').slice(0, 6);
 
-    const newOtp = [...otp];
-    newOtp[index] = value;
-
-    setOtp(newOtp);
+    setOtp(sanitizedValue);
     setError('');
 
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-      setFocusedInput(index + 1);
-    }
-
-    if (value && index === 5 && newOtp.every((digit) => digit !== '')) {
-      setTimeout(() => handleSubmit(newOtp), 300);
+    if (sanitizedValue.length === 6) {
+      handleSubmit(sanitizedValue);
     }
   };
 
-  const handleKeyPress = (key: string, index: number) => {
-    if (key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-      setFocusedInput(index - 1);
-    }
-  };
-
-  const handleSubmit = (otpArray?: string[]) => {
-    const currentOtp = otpArray || otp;
-    const otpString = currentOtp.join('');
+  const handleSubmit = (otpArray?: string | string[]) => {
+    const otpString = typeof otpArray === 'string' ? otpArray : Array.isArray(otpArray) ? otpArray.join('') : otp;
 
     if (otpString.length !== 6) {
       setError('Please enter all 6 digits');
@@ -194,50 +176,6 @@ const OtpVerificationForm: React.FC = () => {
 
   const handleGoBack = () => {
     router.back();
-  };
-
-  const renderOtpInput = (index: number) => {
-    const isFocused = focusedInput === index;
-    const hasValue = otp[index] !== '';
-
-    return (
-      <View
-        key={index}
-        style={[
-          styles.otpInputContainer,
-          isFocused && styles.otpInputFocused,
-          hasValue && styles.otpInputFilled,
-        ]}
-      >
-        <TextInput
-          ref={(ref) => {
-            if (ref) inputRefs.current[index] = ref;
-          }}
-          style={[
-            styles.otpInput,
-            isFocused && styles.otpInputTextFocused,
-            hasValue && styles.otpInputTextFilled,
-          ]}
-          value={otp[index]}
-          onChangeText={(value) => handleOtpChange(value, index)}
-          onKeyPress={({ nativeEvent }) =>
-            handleKeyPress(nativeEvent.key, index)
-          }
-          onFocus={() => setFocusedInput(index)}
-          keyboardType="numeric"
-          maxLength={1}
-          selectTextOnFocus
-          editable={!isVerifying}
-          textAlign="center"
-        />
-
-        {hasValue && (
-          <View style={styles.otpCheckIcon}>
-            <CheckCircle size={12} color="#10B981" />
-          </View>
-        )}
-      </View>
-    );
   };
 
   const formAnimatedStyle = useAnimatedStyle(() => ({
@@ -352,9 +290,20 @@ const OtpVerificationForm: React.FC = () => {
 
                 <Text style={styles.otpLabel}>Enter Verification Code</Text>
 
-                <View style={styles.otpContainer}>
-                  {[0, 1, 2, 3, 4, 5].map(renderOtpInput)}
-                </View>
+                <TextInput
+                  style={styles.singleOtpInput}
+                  value={otp}
+                  onChangeText={handleOtpChange}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  editable={!isVerifying}
+                  placeholder="------"
+                  placeholderTextColor="#CBD5E1"
+                  textAlign="center"
+                  autoFocus={true}
+                  selectTextOnFocus
+                  textContentType="oneTimeCode"
+                />
 
                 <View style={styles.resendContainer}>
                   <Text style={styles.resendLabel}>
@@ -392,8 +341,7 @@ const OtpVerificationForm: React.FC = () => {
               ]}
               onPress={() => handleSubmit()}
               disabled={
-                isVerifying ||
-                otp.some((digit) => digit === '') ||
+                isVerifying || otp.length !== 6 ||
                 !email.trim()
               }
               activeOpacity={0.8}
@@ -401,7 +349,7 @@ const OtpVerificationForm: React.FC = () => {
               <LinearGradient
                 colors={
                   isVerifying ||
-                  otp.some((digit) => digit === '') ||
+                  otp.length !== 6 ||
                   !email.trim()
                     ? ['#CBD5E1', '#94A3B8']
                     : ['#8B5CF6', '#6366F1', '#3B82F6']
@@ -642,6 +590,21 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  singleOtpInput: {
+    width: '100%',
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    letterSpacing: 8,
+    marginBottom: 32,
+    paddingHorizontal: 16,
   },
   otpContainer: {
     flexDirection: 'row',

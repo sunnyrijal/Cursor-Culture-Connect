@@ -111,9 +111,6 @@ const CulturalExperienceCard = ({
 
         {content.metrics && (
           <View style={styles.statsContainer}>
-            <Text style={styles.statsText}>
-              {content.metrics.views} views
-            </Text>
             {content.offer && (
               <View style={styles.discountBadge}>
                 <Text style={styles.discountText}>{content.offer}</Text>

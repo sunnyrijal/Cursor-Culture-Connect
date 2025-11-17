@@ -177,10 +177,6 @@ const CulturalExperiences = () => {
     setActiveSponsoredCategory(categoryId);
   };
 
-  const handleViewAll = () => {
-    router.push('/');
-  };
-
   // const handleViewAll = () => {
   //   router.push('/');
   // };

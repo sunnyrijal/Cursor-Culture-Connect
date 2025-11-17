@@ -120,10 +120,14 @@ export const MAJOR_OPTIONS = [
 ];
 
 export const CLASS_YEAR_OPTIONS = [
+  '2024',
+  '2025',
   '2026',
   '2027',
   '2028',
   '2029',
+  '2030',
+  '2031',
   
 ];
 

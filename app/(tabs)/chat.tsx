@@ -16,19 +16,16 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import {
   Search,
   MessageCircle,
   Users,
   ArrowRight,
-  UserPlus,
   MailPlus,
   X,
-  WifiOff,
   Trash2,
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { theme } from '@/components/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -661,6 +658,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
+    paddingBottom:80
   },
   offlineBanner: {
     position: 'absolute',

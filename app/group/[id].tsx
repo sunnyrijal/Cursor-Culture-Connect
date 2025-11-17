@@ -1333,7 +1333,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.5)',
   },
 
-
   groupDescriptionText: {
     paddingHorizontal: 16,
   },
@@ -1525,6 +1524,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom:40
   },
 
   // Error States
@@ -1968,7 +1968,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 16,
     backgroundColor: theme.primary,
-    marginBottom: spacing.sm,
+    marginTop:spacing.sm,
     ...Platform.select({
       ios: {
         shadowColor: theme.primary,
