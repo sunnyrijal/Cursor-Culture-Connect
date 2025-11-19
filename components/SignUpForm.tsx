@@ -14,6 +14,7 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Modal,
+  Keyboard,
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -152,6 +153,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -237,6 +239,25 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     );
   }, []);
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
   useEffect(() => {
     formTranslateY.value = withSequence(
       withTiming(20, { duration: 200 }),
@@ -402,7 +423,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
     setFocusedInput(inputKey);
 
     // Scroll to the input's position when focused
-    if (inputKey === 'university' || inputKey === 'major') {
+    if ((inputKey === 'university' || inputKey === 'major') && isKeyboardVisible) {
       setTimeout(() => {
         inputRefs.current[inputKey]?.measureLayout(
           scrollViewRef.current as any,
