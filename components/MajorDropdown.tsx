@@ -36,7 +36,7 @@ interface MajorDropdownProps {
   placeholder: string;
   isValid?: boolean;
   isFocused: boolean;
-  onFocus: () => void;
+  onFocus: (ref: React.RefObject<View | null>) => void;
   onBlur: () => void;
   loading?: boolean;
 }
@@ -60,6 +60,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
   const dropdownOpacity = useSharedValue(0);
   const rotateAnimation = useSharedValue(0);
 
+  const containerRef = useRef<View>(null);
   const inputRef = useRef<TextInput>(null);
   const dropdownRef = useRef<ScrollView>(null);
 
@@ -96,7 +97,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
     setIsDropdownOpen(newState);
 
     if (newState) {
-      onFocus();
+      onFocus(containerRef);
       // Use fixed height for consistent scrolling behavior
       dropdownHeight.value = withTiming(MAX_DROPDOWN_HEIGHT, { duration: 250 });
       dropdownOpacity.value = withTiming(1, { duration: 200 });
@@ -116,6 +117,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
     setSearchText(major.name);
     setIsDropdownOpen(false);
 
+    inputRef.current?.blur(); // Explicitly blur the input to dismiss the keyboard
     dropdownHeight.value = withTiming(0, { duration: 200 });
     dropdownOpacity.value = withTiming(0, { duration: 200 });
     rotateAnimation.value = withTiming(0, { duration: 200 });
@@ -131,7 +133,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
 
     if (!isDropdownOpen && text.length > 0) {
       setIsDropdownOpen(true);
-      onFocus();
+      onFocus(containerRef);
 
       // Use fixed height for consistent behavior
       dropdownHeight.value = withTiming(MAX_DROPDOWN_HEIGHT, { duration: 250 });
@@ -150,7 +152,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={containerRef}>
       <Text style={styles.inputLabel}>{label}</Text>
 
       <View
@@ -183,7 +185,7 @@ const MajorDropdown: React.FC<MajorDropdownProps> = ({
           value={searchText}
           onChangeText={handleTextChange}
           onFocus={() => {
-            onFocus();
+            onFocus(containerRef);
             if (!isDropdownOpen) {
               toggleDropdown();
             }

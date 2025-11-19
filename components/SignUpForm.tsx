@@ -128,7 +128,6 @@ export const CLASS_YEAR_OPTIONS = [
   '2029',
   '2030',
   '2031',
-  
 ];
 
 interface SignUpFormProps {
@@ -396,6 +395,29 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
   const closeLegalModal = (): void => {
     setShowModal(false);
     setModalType(null);
+  };
+
+  const inputRefs = useRef<{ [key: string]: any }>({});
+  const handleInputFocus = (inputKey: string) => {
+    setFocusedInput(inputKey);
+
+    // Scroll to the input's position when focused
+    if (inputKey === 'university' || inputKey === 'major') {
+      setTimeout(() => {
+        inputRefs.current[inputKey]?.measureLayout(
+          scrollViewRef.current as any,
+          (x:number, y:number, width:number, height:number) => {
+            scrollViewRef.current?.scrollTo({
+              y: y - 40, // Subtract 20 to add some padding at top
+              animated: true,
+            });
+          },
+          () => {
+            console.log('Failed to measure layout');
+          }
+        );
+      }, 100);
+    }
   };
 
   const renderLegalCheckboxes = () => {
@@ -1184,14 +1206,18 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
 
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Change 'height' to undefined for Android
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0} // Increase offset for iOS
       >
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled" // Change from 'always' to 'handled'
+          keyboardDismissMode="interactive" // Add this
+          scrollEventThrottle={16} // Add this for smoother scrolling
+          contentInsetAdjustmentBehavior="automatic"
+          automaticallyAdjustKeyboardInsets={true} // Add this for iOS
         >
           {/* Header */}
           <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -1221,132 +1247,137 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                 end={{ x: 1, y: 1 }}
                 style={styles.formGradient}
               >
-                  <>
-                    {renderProfilePictureInput()}
+                <>
+                  {renderProfilePictureInput()}
 
-                    {renderAnimatedInput(
-                      User,
-                      'Full Name *',
-                      fullName,
-                      setFullName,
-                      'John',
-                      'fullName',
-                      {
-                        autoCapitalize: 'words',
-                        autoComplete: 'given-name',
-                      }
-                    )}
+                  {renderAnimatedInput(
+                    User,
+                    'Full Name *',
+                    fullName,
+                    setFullName,
+                    'John',
+                    'fullName',
+                    {
+                      autoCapitalize: 'words',
+                      autoComplete: 'given-name',
+                    }
+                  )}
 
-                    {renderDateOfBirthPicker()}
+                  {renderDateOfBirthPicker()}
 
-                    {renderAnimatedInput(
-                      Mail,
-                      'College Email Address *',
-                      email,
-                      setEmail,
-                      'john.doe@university.edu',
-                      'email',
-                      {
-                        keyboardType: 'email-address',
-                        autoCapitalize: 'none',
-                        autoComplete: 'email',
-                        autoCorrect: false,
-                      }
-                    )}
+                  {renderAnimatedInput(
+                    Mail,
+                    'College Email Address *',
+                    email,
+                    setEmail,
+                    'john.doe@university.edu',
+                    'email',
+                    {
+                      keyboardType: 'email-address',
+                      autoCapitalize: 'none',
+                      autoComplete: 'email',
+                      autoCorrect: false,
+                    }
+                  )}
 
-                    <Animated.View
-                      style={[{ opacity: formOpacity, zIndex: 5000 }]}
-                    >
-                      <UniversityDropdown
-                        universities={universities?.data || []}
-                        value={university}
-                        onValueChange={setUniversity}
-                        label="College/University *"
-                        placeholder="Search for your college..."
-                        isValid={fieldValidation['university']}
-                        isFocused={focusedInput === 'university'}
-                        onFocus={() => setFocusedInput('university')}
-                        onBlur={() => {
-                          setFocusedInput('');
-                          if (university)
-                            validateField('university', university);
-                        }}
-                        loading={loading}
-                      />
-                    </Animated.View>
+                  <Animated.View
+                    style={[{ opacity: formOpacity, zIndex: 5000 }]}
+                    ref={(ref) => {
+                      inputRefs.current['university'] = ref;
+                    }}
+                  >
+                    <UniversityDropdown
+                      universities={universities?.data || []}
+                      value={university}
+                      onValueChange={setUniversity}
+                      label="College/University *"
+                      placeholder="Search for your college..."
+                      isValid={fieldValidation['university']}
+                      isFocused={focusedInput === 'university'}
+                      onFocus={() => handleInputFocus('university')}
+                      onBlur={() => {
+                        setFocusedInput('');
+                        if (university) validateField('university', university);
+                      }}
+                      loading={loading}
+                    />
+                  </Animated.View>
 
-                    <Animated.View
-                      style={[{ opacity: formOpacity, zIndex: 4000 }]}
-                    >
-                      <MajorDropdown
-                        value={major}
-                        onValueChange={setMajor}
-                        label="Major/Field of Study *"
-                        placeholder="Search for your major..."
-                        isValid={fieldValidation['major']}
-                        isFocused={focusedInput === 'major'}
-                        onFocus={() => setFocusedInput('major')}
-                        onBlur={() => {
-                          setFocusedInput('');
-                          if (major) validateField('major', major);
-                        }}
-                        loading={loading}
-                      />
-                    </Animated.View>
+                  <Animated.View
+                    style={[{ opacity: formOpacity, zIndex: 4000 }]}
+                     ref={(ref) => {
+                      inputRefs.current['major'] = ref;
+                    }}
+                  >
+                    <MajorDropdown
+                      value={major}
+                      onValueChange={setMajor}
+                      label="Major/Field of Study *"
+                      placeholder="Search for your major..."
+                      isValid={fieldValidation['major']}
+                      isFocused={focusedInput === 'major'}
+                      onFocus={() => handleInputFocus('major')}
+                      onBlur={() => {
+                        setFocusedInput('');
+                        if (major) validateField('major', major);
+                      }}
+                      loading={loading}
+                    />
+                  </Animated.View>
 
-                    {renderNativeDropdown(
-                      Calendar,
-                      'Expected Graduation Year *',
-                      classYear,
-                      setClassYear,
-                      'Select your class year',
-                      classYearItems,
-                      setClassYearItems,
-                      classYearOpen,
-                      setClassYearOpen,
-                      'classYear',
-                      1000
-                    )}
+                  {renderNativeDropdown(
+                    Calendar,
+                    'Expected Graduation Year *',
+                    classYear,
+                    setClassYear,
+                    'Select your class year',
+                    classYearItems,
+                    setClassYearItems,
+                    classYearOpen,
+                    setClassYearOpen,
+                    'classYear',
+                    1000
+                  )}
 
-                    {renderAnimatedInput(
-                      Globe,
-                      'Country of Origin',
-                      countryOfOrigin,
-                      setCountryOfOrigin,
-                      'e.g., Nepal',
-                      'countryOfOrigin'
-                    )}
+                  {renderAnimatedInput(
+                    Globe,
+                    'Country of Origin',
+                    countryOfOrigin,
+                    setCountryOfOrigin,
+                    'e.g., Nepal',
+                    'countryOfOrigin'
+                  )}
 
-                    {renderAnimatedInput(
-                      Lock,
-                      'Password *',
-                      password,
-                      setPassword,
-                      'Enter your password',
-                      'password',
-                      {
-                        secureTextEntry: !showPassword,
-                        autoComplete: 'password',
-                        autoCorrect: false,
-                      }
-                    )}
+                  {renderAnimatedInput(
+                    Lock,
+                    'Password *',
+                    password,
+                    setPassword,
+                    'Enter your password',
+                    'password',
+                    {
+                      secureTextEntry: !showPassword,
+                      autoComplete: 'password',
+                      autoCorrect: false,
+                    }
+                  )}
 
-                    {renderAnimatedInput(
-                      Lock,
-                      'Confirm Password *',
-                      confirmPassword,
-                      setConfirmPassword,
-                      '••••••••',
-                      'confirmPassword',
-                      {
-                        secureTextEntry: !showConfirmPassword,
-                        autoComplete: 'password',
-                        autoCorrect: false,
-                      }
-                    )}
+                  {renderAnimatedInput(
+                    Lock,
+                    'Confirm Password *',
+                    confirmPassword,
+                    setConfirmPassword,
+                    '••••••••',
+                    'confirmPassword',
+                    {
+                      secureTextEntry: !showConfirmPassword,
+                      autoComplete: 'password',
+                      autoCorrect: false,
+                    }
+                  )}
 
-                    {renderLegalCheckboxes()}
-                  </>
+                  {renderLegalCheckboxes()}
+                </>
               </LinearGradient>
             </BlurView>
           </Animated.View>
@@ -1376,9 +1407,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToSignIn }) => {
                   </View>
                 ) : (
                   <View style={styles.buttonContent}>
-                    <Text style={styles.primaryButtonText}>
-                      Create Account
-                    </Text>
+                    <Text style={styles.primaryButtonText}>Create Account</Text>
                     <View style={styles.buttonIcon}>
                       <Sparkles size={16} color="white" />
                     </View>
@@ -2046,7 +2075,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6366F1',
   },
-  datePickerModalContainer: { // New style
+  datePickerModalContainer: {
+    // New style
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
