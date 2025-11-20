@@ -414,7 +414,7 @@ export function CreateEventModal({
               >
                 {/* Event Title */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Event Title *</Text>
+                  <Text style={styles.inputLabel}>Event Title  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -448,7 +448,7 @@ export function CreateEventModal({
 
                 {/* Description */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Description *</Text>
+                  <Text style={styles.inputLabel}>Description  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -609,7 +609,7 @@ export function CreateEventModal({
 
                 {/* Date */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Date *</Text>
+                  <Text style={styles.inputLabel}>Date  <Text style={styles.required}>*</Text></Text>
                   <TouchableOpacity
                     onPress={() => setShowNativeDatePicker(!showNativeDatePicker)}
                     disabled={createEventMutation.isPending}
@@ -661,7 +661,7 @@ export function CreateEventModal({
 
                 <View style={styles.inputContainer}>
                   <View style={styles.timeSlotsHeader}>
-                    <Text style={styles.inputLabel}>Event Times *</Text>
+                    <Text style={styles.inputLabel}>Event Times</Text>
                     <TouchableOpacity
                       style={styles.addTimeSlotButton}
                       onPress={addTimeSlot}
@@ -716,7 +716,7 @@ export function CreateEventModal({
 
                 {/* Location */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Location *</Text>
+                  <Text style={styles.inputLabel}>Location  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -1214,6 +1214,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: Platform.OS === 'ios' ? 60 : 20,
     marginBottom: 24,
+  },
+    required: {
+    color: '#EF4444',
   },
   closeButton: {
     position: 'absolute',

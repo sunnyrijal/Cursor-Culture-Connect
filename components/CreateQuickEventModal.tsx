@@ -186,8 +186,11 @@ export function CreateQuickEventModal({
   });
 
   const handleSubmit = async () => {
-    if (!formData.title.trim() || !formData.location.trim()) {
-      showAlert({ title: 'Missing Fields', message: 'Please fill in all required fields.' });
+    if (!formData.title.trim() || !formData.location.trim() || !formData.time) {
+      showAlert({
+        title: 'Missing Fields',
+        message: 'Please fill in all required fields, including start time.',
+      });
       return;
     }
 
@@ -263,7 +266,7 @@ export function CreateQuickEventModal({
               <View style={styles.formGradient}>
                 {/* Event Title */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Event Title *</Text>
+                  <Text style={styles.inputLabel}>Event Title  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -331,7 +334,7 @@ export function CreateQuickEventModal({
 
                 {/* Location */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Location *</Text>
+                  <Text style={styles.inputLabel}>Location  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -372,6 +375,7 @@ export function CreateQuickEventModal({
                   label="Start Time"
                   placeholder="Select a start time"
                   disabled={createEventMutation.isPending}
+                  required
                 />
 
                 <TimeSelectInput
@@ -673,6 +677,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 20,
+  },
+    required: {
+    color: '#EF4444',
   },
   inputLabel: {
     fontSize: 16,

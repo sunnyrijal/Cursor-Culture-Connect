@@ -693,7 +693,7 @@ export default function EventDetail() {
                     </Text>
                   </View>
 
-                  {event?.userId === myData?.userId && (
+                  {(isAttending || event?.userId === myData?.userId) && (
                     <TouchableOpacity
                       onPress={() => setShowAttendees(!showAttendees)}
                       style={styles.attendeesHeader}
@@ -712,7 +712,7 @@ export default function EventDetail() {
                 </Pressable>
 
                 {/* Attendee List for Host */}
-                {event?.userId === myData?.userId && (
+                {(isAttending || event?.userId === myData?.userId)  && (
                   <>
                     {showAttendees && (
                       <View style={styles.attendeesList}>
@@ -743,6 +743,9 @@ export default function EventDetail() {
                               <Text style={styles.attendeeEmail}>
                                 {attendee.major}
                               </Text>
+                              {!event.UniversityOnly && <Text style={styles.attendeeEmail}>
+                                {attendee?.university.name}
+                              </Text>}
                             </View>
                           </TouchableOpacity>
                         ))}
@@ -1964,12 +1967,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  attendeesTitle: {
-    fontSize: typography.fontSize.base,
-    fontFamily: typography.fontFamily.semiBold,
-    color: theme.primary,
+    borderTopColor: theme.border,
   },
   attendeesList: {
     marginTop: spacing.sm,
@@ -1978,8 +1976,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.border,
   },
   attendeeImage: {
     width: 40,
@@ -1995,6 +1993,7 @@ const styles = StyleSheet.create({
   attendeeEmail: {
     fontSize: typography.fontSize.sm,
     color: theme.textSecondary,
+    fontFamily: typography.fontFamily.regular,
   },
   // Modal Styles
   modalOverlay: {

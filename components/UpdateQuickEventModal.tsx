@@ -344,8 +344,8 @@ export function EditQuickEventModal({
                 <TimeSelectInput
                   value={formData.time}
                   onTimeChange={(time) => setFormData({ ...formData, time })}
-                  label="End Time"
-                  placeholder="Select a end time"
+                  label="Start Time"
+                  placeholder="Select a start time"
                   disabled={isSubmitting || updateQuickEventMutation.isPending}
                   required={false}
                 />

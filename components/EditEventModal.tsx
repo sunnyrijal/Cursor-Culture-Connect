@@ -485,7 +485,7 @@ export function EditEventModal({
               <View style={styles.formGradient}>
                 {/* Event Title */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Event Title *</Text>
+                  <Text style={styles.inputLabel}>Event Title  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -515,7 +515,7 @@ export function EditEventModal({
 
                 {/* Description */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Description *</Text>
+                  <Text style={styles.inputLabel}>Description  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -708,7 +708,7 @@ export function EditEventModal({
                 {/* Event Times */}
                 <View style={styles.inputContainer}>
                   <View style={styles.timeSlotsHeader}>
-                    <Text style={styles.inputLabel}>Event Times *</Text>
+                    <Text style={styles.inputLabel}>Event Times  <Text style={styles.required}>*</Text></Text>
                     <TouchableOpacity
                       style={styles.addTimeSlotButton}
                       onPress={addTimeSlot}
@@ -741,7 +741,7 @@ export function EditEventModal({
                         onTimeChange={(time) =>
                           updateTimeSlot(index, 'startTime', time)
                         }
-                        label="Start Time *"
+                        label="Start Time"
                         placeholder="Select start time"
                         disabled={updateEventMutation.isPending}
                         required
@@ -752,7 +752,7 @@ export function EditEventModal({
                         onTimeChange={(time) =>
                           updateTimeSlot(index, 'endTime', time)
                         }
-                        label="End Time *"
+                        label="End Time"
                         placeholder="Select end time"
                         disabled={updateEventMutation.isPending}
                         required
@@ -763,7 +763,7 @@ export function EditEventModal({
 
                 {/* Location */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Location *</Text>
+                  <Text style={styles.inputLabel}>Location  <Text style={styles.required}>*</Text></Text>
                   <View
                     style={[
                       styles.inputWrapper,
@@ -1225,6 +1225,9 @@ const styles = StyleSheet.create({
   },
   imagesPreview: {
     marginTop: 12,
+  },
+    required: {
+    color: '#EF4444',
   },
   imagePreviewContainer: {
     position: 'relative',
