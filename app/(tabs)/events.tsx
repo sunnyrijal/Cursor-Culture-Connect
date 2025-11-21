@@ -197,6 +197,8 @@ export default function Events() {
       joinEvent(eventId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event'] });
+
     },
     onError: (error) => {
       console.error('Error joining event:', error);
@@ -207,6 +209,8 @@ export default function Events() {
     mutationFn: (eventId: string) => leaveEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event'] });
+
     },
     onError: (error) => {
       console.error('Error leaving event:', error);
@@ -221,6 +225,8 @@ export default function Events() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+        queryClient.invalidateQueries({ queryKey: ['quickevent'] });
+
       },
       onError: (error) => {
         console.error('Error adding interest:', error);
@@ -238,6 +244,8 @@ export default function Events() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['quick-events'] });
+        queryClient.invalidateQueries({ queryKey: ['quickevent'] });
+
       },
       onError: (error) => {
         console.error('Error removing interest:', error);

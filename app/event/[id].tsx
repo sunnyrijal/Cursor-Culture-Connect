@@ -741,10 +741,10 @@ export default function EventDetail() {
                                 {attendee.name}
                               </Text>
                               <Text style={styles.attendeeEmail}>
-                                {attendee.major}
+                                {attendee?.major}
                               </Text>
                               {!event.UniversityOnly && <Text style={styles.attendeeEmail}>
-                                {attendee?.university.name}
+                                {attendee?.university?.name}
                               </Text>}
                             </View>
                           </TouchableOpacity>
