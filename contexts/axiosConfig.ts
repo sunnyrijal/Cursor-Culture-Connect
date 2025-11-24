@@ -7,8 +7,12 @@ import * as SecureStore from 'expo-secure-store';
 // export const API_URL = 'http://localhost:4000/api';
 // export const API_BASE_URL = 'http://localhost:4000';
 
-export const API_URL = 'https://secureapi.trivoconnect.com/api';
-export const API_BASE_URL = 'https://secureapi.trivoconnect.com';
+// export const API_URL = 'https://secureapi.trivoconnect.com/api';
+// export const API_BASE_URL = 'https://secureapi.trivoconnect.com';
+
+
+export const API_URL = 'https://dev.secureapi.trivoconnect.com/api';
+export const API_BASE_URL = 'https://dev.secureapi.trivoconnect.com';
 
 const api = axios.create({
   baseURL: API_URL,
