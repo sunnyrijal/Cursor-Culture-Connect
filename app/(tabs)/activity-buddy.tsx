@@ -825,8 +825,15 @@ export default function ActivityBuddyPage() {
   );
 
   const renderActivitiesTab = () => (
-    <View style={styles.tabContent}>
-      {/* Search Bar */}
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={styles.contentContainer}
+      >
+        <Text style={styles.headerSubtitle}>Match with college buddies for any activity — on or off campus.</Text>
+         {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search size={18} color={theme.gray500} />
@@ -893,15 +900,6 @@ export default function ActivityBuddyPage() {
           )}
         </ScrollView>
       </View>
-
-      {/* Results */}
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={styles.contentContainer}
-      >
         {usersLoading && !(usersPages as any)?.pages.length ? (
           <Text style={styles.loadingText}>Loading users...</Text>
         ) : selectedActivity ? (
@@ -962,7 +960,6 @@ export default function ActivityBuddyPage() {
           </View>
         )}
       </ScrollView>
-    </View>
   );
 
   const renderPingsTab = () => (
@@ -1062,7 +1059,6 @@ export default function ActivityBuddyPage() {
             </Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.headerSubtitle}>Match with college buddies for any activity — on or off campus.</Text>
       </View>
 
       {activeTab === 'activities' ? renderActivitiesTab() : renderPingsTab()}
@@ -1439,9 +1435,10 @@ const styles = StyleSheet.create({
     color: theme.textPrimary,
   },
   headerSubtitle: {
+    marginHorizontal:12,
     fontSize: 13,
     color: theme.textSecondary,
-    marginTop: 12,
+    marginVertical: 4,
     width:'100%'
   },
   addInterestButton: {

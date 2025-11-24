@@ -33,6 +33,7 @@ const formatTime = (dateString: string) => {
 
 export default function MyUniversity() {
   const [activeTab, setActiveTab] = useState('events');
+  const [activeEventTab, setActiveEventTab] = useState<'upcoming' | 'past'>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -51,27 +52,48 @@ export default function MyUniversity() {
   }, [refetch]);
 
   const renderEvents = () => {
-    const events = res?.data?.events || [];
+    const allEvents = res?.data?.events || [];
+    const now = new Date();
 
-    if (events.length === 0) {
-      return (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyCard}>
-            <Calendar size={48} color={theme.primary} style={{ opacity: 0.3 }} />
-            <Text style={styles.emptyText}>No events found</Text>
-            <Text style={styles.emptySubtext}>Check back later for upcoming events</Text>
-          </View>
-        </View>
+    const upcomingEvents = allEvents
+      .filter((event: any) => new Date(event.eventTimes?.[0]?.startTime) >= now)
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.eventTimes?.[0]?.startTime).getTime() -
+          new Date(b.eventTimes?.[0]?.startTime).getTime()
       );
-    }
 
-    return (
-      <View style={styles.contentContainer}>
-        {events.map((event: any) => {
-          const organizerName = event.associatedGroup?.name || event.user?.name || 'Unknown';
-          return (
+    const pastEvents = allEvents
+      .filter((event: any) => new Date(event.eventTimes?.[0]?.startTime) < now)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.eventTimes?.[0]?.startTime).getTime() -
+          new Date(a.eventTimes?.[0]?.startTime).getTime()
+      );
+
+    const eventsToDisplay = activeEventTab === 'upcoming' ? upcomingEvents : pastEvents;
+
+    const renderEventList = (events: any[]) => {
+      let lastDate: string | null = null;
+
+      return events.map((event: any) => {
+        const eventDate = new Date(event.eventTimes?.[0]?.startTime).toDateString();
+        const showHeader = eventDate !== lastDate;
+        lastDate = eventDate;
+        const organizerName = event.associatedGroup?.name || event.user?.name || 'Unknown';
+
+        return (
+          <View key={event.id}>
+            {showHeader && (
+              <Text style={styles.dateHeader}>
+                {new Date(event.eventTimes?.[0]?.startTime).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Text>
+            )}
             <TouchableOpacity
-              key={event.id}
               onPress={() => router.push(`/event/${event.id}`)}
               activeOpacity={0.8}
               style={styles.eventCard}
@@ -117,8 +139,50 @@ export default function MyUniversity() {
                 </View>
               </View>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        );
+      });
+    };
+
+    if (allEvents.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyCard}>
+            <Calendar size={48} color={theme.primary} style={{ opacity: 0.3 }} />
+            <Text style={styles.emptyText}>No events found</Text>
+            <Text style={styles.emptySubtext}>Check back later for upcoming events</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.contentContainer}>
+        <View style={styles.eventTabContainer}>
+          <TouchableOpacity
+            style={[styles.eventTab, activeEventTab === 'upcoming' && styles.activeEventTab]}
+            onPress={() => setActiveEventTab('upcoming')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.eventTabText, activeEventTab === 'upcoming' && styles.activeEventTabText]}>
+              Upcoming ({upcomingEvents.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.eventTab, activeEventTab === 'past' && styles.activeEventTab]}
+            onPress={() => setActiveEventTab('past')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.eventTabText, activeEventTab === 'past' && styles.activeEventTabText]}>
+              Past ({pastEvents.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {eventsToDisplay.length > 0 ? (
+          renderEventList(eventsToDisplay)
+        ) : (
+          <Text style={styles.noEventsInCategoryText}>No {activeEventTab} events.</Text>
+        )}
       </View>
     );
   };
@@ -673,6 +737,56 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   // Group Card Styles
+  eventTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.white,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  eventTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  activeEventTab: {
+    backgroundColor: theme.primary,
+  },
+  eventTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  activeEventTabText: {
+    color: theme.white,
+  },
+  dateHeader: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.bold,
+    color: theme.textPrimary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  noEventsInCategoryText: {
+    textAlign: 'center',
+    color: theme.textSecondary,
+    marginTop: spacing.xl,
+  },
   groupCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
