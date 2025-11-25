@@ -226,7 +226,7 @@ export default function ChatScreen() {
                       }
                       style={styles.headerImage}
                     />
-                    {!isGroupChat && <View style={styles.onlineIndicator} />}
+                    {/* {!isGroupChat && <View style={styles.onlineIndicator} />} */}
                   </View>
 
                   <View style={styles.chatDetails}>
@@ -246,7 +246,7 @@ export default function ChatScreen() {
                       </TouchableOpacity>
                     )}
                     <Text style={styles.headerSubtitle}>
-                      {isGroupChat ? 'Group chat' : 'Online'}
+                      {isGroupChat ? 'Group chat' : ''}
                     </Text>
                   </View>
                 </View>

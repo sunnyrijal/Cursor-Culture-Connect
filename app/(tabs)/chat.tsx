@@ -112,7 +112,7 @@ export default function ChatListScreen() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['chats', filter],
+    queryKey: ['chats', filter, myData?.userId],
     queryFn: () => getUserChats(),
   });
 
