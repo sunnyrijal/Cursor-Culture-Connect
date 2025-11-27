@@ -108,9 +108,14 @@ export const getAllUsers = async () => {
 //   }
 // };
 // In your user.api.ts file
-export const getUsers = async (filters?:FriendFilters) => {
+export const getUsers = async (filters?: FriendFilters, page = 1, limit = 20) => {
   try {
     const params = new URLSearchParams();
+    
+    // Add pagination params
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
     if (filters) {
       if (filters.myUniversity) params.append('myUniversity', 'true');
       if (filters.major) params.append('major', filters.major);
@@ -118,17 +123,13 @@ export const getUsers = async (filters?:FriendFilters) => {
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
       if (filters.language) params.append('language', filters.language);
       if (filters.country) params.append('country', filters.country);
-
-      if (filters.universityId)
-        params.append('universityId', filters.universityId);
+      if (filters.universityId) params.append('universityId', filters.universityId);
       if (filters.state) params.append('state', filters.state);
       if (filters.city) params.append('city', filters.city);
     }
 
-    const queryString = params.toString();
-    const url = queryString ? `/user/?${queryString}` : '/user/';
-
-    const response = await api.get(url);
+    const response = await api.get(`/user/?${params.toString()}`);
+    console.log(response)
     return response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);

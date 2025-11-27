@@ -21,6 +21,17 @@ export const getUserChats = async () => {
   }
 };
 
+// 11. MARK CHAT AS SEEN
+export const markChatAsSeen = async (chatId: string) => {
+  try {
+    const response = await api.patch(`/chat/markseen/${chatId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking chat as seen:', error);
+    throw error;
+  }
+};
+
 // 2. CREATE DIRECT CHAT
 export const createDirectChat = async (data: CreateDirectChatRequest) => {
   try {

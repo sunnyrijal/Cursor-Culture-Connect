@@ -50,6 +50,9 @@ export default function HubDetails() {
       return 'events';
     }
   );
+  const [activeEventTab, setActiveEventTab] = useState<'upcoming' | 'past'>(
+    'upcoming'
+  );
 
   const {
     data: res,
@@ -228,16 +231,33 @@ export default function HubDetails() {
   };
 
   const renderEvents = () => {
-    const events = res?.data?.events || [];
+    const allEvents = res?.data?.events || [];
+    const now = new Date();
 
-    if (events.length === 0) {
+    const upcomingEvents = allEvents
+      .filter((event: any) => new Date(event.eventTimes?.[0]?.startTime) >= now)
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.eventTimes?.[0]?.startTime).getTime() -
+          new Date(b.eventTimes?.[0]?.startTime).getTime()
+      );
+
+    const pastEvents = allEvents
+      .filter((event: any) => new Date(event.eventTimes?.[0]?.startTime) < now)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.eventTimes?.[0]?.startTime).getTime() -
+          new Date(a.eventTimes?.[0]?.startTime).getTime()
+      );
+
+    const eventsToDisplay =
+      activeEventTab === 'upcoming' ? upcomingEvents : pastEvents;
+
+    if (allEvents.length === 0) {
       return (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyCard}>
-            <Calendar
-              size={48}
-              color={theme.primary}
-            />
+            <Calendar size={48} color={theme.primary} />
             <Text style={styles.emptyText}>No events found</Text>
             <Text style={styles.emptySubtext}>
               Check back later for upcoming events
@@ -247,65 +267,111 @@ export default function HubDetails() {
       );
     }
 
-    return (
-      <View style={styles.contentContainer}>
-        {events.map((event: any) => {
-          const organizerName = event.associatedGroup?.name || event.user.name;
+    const renderEventList = (events: any[]) => {
+      return events.map((event: any) => {
+        const organizerName = event.associatedGroup?.name || event.user.name;
 
-          return (
-            <TouchableOpacity
-              key={event.id}
-              onPress={() => router.push(`/event/${event.id}`)}
-              activeOpacity={0.8}
-              style={styles.eventCard}
-            >
-              <View style={styles.eventCardInner}>
-                <View style={styles.eventDateBadge}>
-                  <Text style={styles.eventDateText}>
-                    {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[0]}
-                  </Text>
-                  <Text style={styles.eventDateNumber}>
-                    {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[1]}
+        return (
+          <TouchableOpacity
+            key={event.id}
+            onPress={() => router.push(`/event/${event.id}`)}
+            activeOpacity={0.8}
+            style={styles.eventCard}
+          >
+            <View style={styles.eventCardInner}>
+              <View style={styles.eventDateBadge}>
+                <Text style={styles.eventDateText}>
+                  {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[0]}
+                </Text>
+                <Text style={styles.eventDateNumber}>
+                  {formatDate(event.eventTimes?.[0]?.startTime).split(' ')[1]}
+                </Text>
+              </View>
+              <View style={styles.eventImageContainer}>
+                <Image
+                  source={
+                    event.imageUrl
+                      ? { uri: event.imageUrl }
+                      : require('../assets/logo.png')
+                  }
+                  style={styles.eventImage}
+                />
+              </View>
+              <View style={styles.eventDetails}>
+                <Text style={styles.eventTitle} numberOfLines={2}>
+                  {event.name}
+                </Text>
+                <View style={styles.eventMetaRow}>
+                  <Text style={styles.eventTime}>
+                    🕒 {formatTime(event.eventTimes?.[0]?.startTime)}
                   </Text>
                 </View>
-                <View style={styles.eventImageContainer}>
-                  <Image
-                    source={
-                      event.imageUrl
-                        ? { uri: event.imageUrl }
-                        : require('../assets/logo.png')
-                    }
-                    style={styles.eventImage}
-                  />
-                </View>
-                <View style={styles.eventDetails}>
-                  <Text style={styles.eventTitle} numberOfLines={2}>
-                    {event.name}
+                <Text style={styles.eventLocation} numberOfLines={1}>
+                  📍 {event.location}
+                </Text>
+                <View style={styles.eventFooter}>
+                  <Text style={styles.eventHost} numberOfLines={1}>
+                    by {organizerName}
                   </Text>
-                  <View style={styles.eventMetaRow}>
-                    <Text style={styles.eventTime}>
-                      🕒 {formatTime(event.eventTimes?.[0]?.startTime)}
+                  <View style={styles.eventAttendees}>
+                    <Users size={14} color={theme.primary} />
+                    <Text style={styles.eventAttendeesText}>
+                      {event.attendingUsers?.length || 0}
                     </Text>
-                  </View>
-                  <Text style={styles.eventLocation} numberOfLines={1}>
-                    📍 {event.location}
-                  </Text>
-                  <View style={styles.eventFooter}>
-                    <Text style={styles.eventHost} numberOfLines={1}>
-                      by {organizerName}
-                    </Text>
-                    <View style={styles.eventAttendees}>
-                      <Users size={14} color={theme.primary} />
-                      <Text style={styles.eventAttendeesText}>
-                        {event.attendingUsers?.length || 0}
-                      </Text>
-                    </View>
                   </View>
                 </View>
               </View>
-            </TouchableOpacity>
-          );
-        })}
+            </View>
+          </TouchableOpacity>
+        );
+      });
+    };
+
+    return (
+      <View style={styles.contentContainer}>
+        <View style={styles.eventTabContainer}>
+          <TouchableOpacity
+            style={[
+              styles.eventTab,
+              activeEventTab === 'upcoming' && styles.activeEventTab,
+            ]}
+            onPress={() => setActiveEventTab('upcoming')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.eventTabText,
+                activeEventTab === 'upcoming' && styles.activeEventTabText,
+              ]}
+            >
+              Upcoming ({upcomingEvents.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.eventTab,
+              activeEventTab === 'past' && styles.activeEventTab,
+            ]}
+            onPress={() => setActiveEventTab('past')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.eventTabText,
+                activeEventTab === 'past' && styles.activeEventTabText,
+              ]}
+            >
+              Past ({pastEvents.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {eventsToDisplay.length > 0 ? (
+          renderEventList(eventsToDisplay)
+        ) : (
+          <Text style={styles.noEventsInCategoryText}>
+            No {activeEventTab} events.
+          </Text>
+        )}
       </View>
     );
   };
@@ -575,6 +641,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     textAlign: 'center',
+  },
+  // Event Tab Styles
+  eventTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.white,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#A3B1C6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  eventTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  activeEventTab: {
+    backgroundColor: theme.primary,
+  },
+  eventTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  activeEventTabText: {
+    color: theme.white,
+  },
+  noEventsInCategoryText: {
+    textAlign: 'center',
+    color: theme.textSecondary,
+    marginTop: spacing.xl,
   },
   // Enhanced Friends styles
   friendCard: {

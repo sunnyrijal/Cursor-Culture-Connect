@@ -26,6 +26,7 @@ import {
   X,
   Trash2,
 } from 'lucide-react-native';
+import { CheckCircle2 } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { theme } from '@/components/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -77,6 +78,7 @@ interface Message {
     id: string;
     name: string;
   };
+  seenAt?: string | null;
 }
 
 interface Chat {
@@ -153,12 +155,20 @@ export default function ChatListScreen() {
       .map((chat: Chat) => {
         const lastMessage = chat.messages[0];
         const isMyMessage = lastMessage?.senderId === myData.userId;
+        const isSeenByOther = !!lastMessage?.seenAt;
+
         const messageContent = lastMessage?.content || 'No messages yet';
         const displayMessage =
           lastMessage && isMyMessage
             ? `You: ${messageContent}`
             : messageContent;
 
+        const seenAtTime = lastMessage?.seenAt
+          ? new Date(lastMessage.seenAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : null;
         if (chat.type === 'GROUP') {
           return {
             id: chat.id,
@@ -177,11 +187,14 @@ export default function ChatListScreen() {
             type: 'GROUP' as const,
             isMyLastMessage: isMyMessage,
             isActive: true, // Always active for now
+            seenAt: seenAtTime,
+            isSeen: isSeenByOther,
           };
         } else {
           const otherParticipant = chat.participants.find(
             (p) => p.userId !== myData.userId
           );
+          console.log(otherParticipant)
           return {
             id: chat.id,
             name: otherParticipant?.user.name || 'Unknown User',
@@ -197,6 +210,8 @@ export default function ChatListScreen() {
             type: 'DIRECT' as const,
             isMyLastMessage: isMyMessage,
             isActive: chat.isActive,
+            seenAt: seenAtTime,
+            isSeen: isSeenByOther,
           };
         }
       });
@@ -340,6 +355,14 @@ export default function ChatListScreen() {
       <BlurView intensity={10} style={styles.chatItemBlur}>
         <View style={styles.chatItemGradient}>
           <View
+            style={[
+              styles.unreadIndicator,
+              {
+                backgroundColor: !item.isMyLastMessage && !item.isSeen ? theme.primary : 'transparent',
+              },
+            ]}
+          />
+          <View
             style={{
               opacity: item.isActive ? 1 : 0.5,
               flexDirection: 'row',
@@ -367,17 +390,42 @@ export default function ChatListScreen() {
             </View>
 
             <View style={styles.chatContent}>
-              <Text style={styles.chatName} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.chatName,
+                  {
+                    fontWeight:
+                      !item.isMyLastMessage && !item.isSeen ? '800' : '600',
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {item.name}
               </Text>
               <View style={styles.bottomRow}>
                 <Text
-                  style={[styles.lastMessage, { fontWeight: '500' }]}
+                  style={[
+                    styles.lastMessage,
+                    {
+                      fontWeight:
+                        !item.isMyLastMessage && !item.isSeen ? '800' : '500',
+                      color:
+                        !item.isMyLastMessage && !item.isSeen
+                          ? theme.textPrimary
+                          : '#64748B',
+                    },
+                  ]}
                   numberOfLines={1}
                 >
                   {item.lastMessage}
                 </Text>
                 <View style={styles.bottomRight}>
+                  {item.isMyLastMessage && item.isSeen && ( // This is my message, and it has been seen
+                    <CheckCircle2 size={16} color={theme.primary} style={{marginRight: -8}}/>
+                  )}
+                  {item.isMyLastMessage && item.isSeen && ( // This is my message, and it has been seen
+                    <Text style={styles.seenText}>Seen {item.seenAt}</Text>
+                  )}
                   <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
                   {item.unreadCount > 0 && (
                     <View style={styles.unreadBadge}>
@@ -893,8 +941,15 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 12, // Reduced margin to accommodate the dot
   },
+  unreadIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+
   avatar: {
     width: 56,
     height: 56,
@@ -937,7 +992,7 @@ const styles = StyleSheet.create({
   },
   chatName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#1E293B',
     letterSpacing: -0.2,
     flex: 1,
@@ -963,8 +1018,12 @@ const styles = StyleSheet.create({
     color: '#64748B',
     flex: 1,
     fontSize: 15,
-    fontWeight: 'bold',
     lineHeight: 20,
+  },
+  seenText: {
+    fontSize: 13,
+    color: theme.primary,
+    fontWeight: '600',
   },
   unreadBadge: {
     borderRadius: 12,
