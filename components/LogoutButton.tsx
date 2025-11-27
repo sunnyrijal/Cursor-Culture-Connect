@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { router } from 'expo-router';
 import { useAlert } from '@/contexts/AlertContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const neomorphColors = {
   background: '#F0F3F7',
@@ -15,8 +16,8 @@ export const neomorphColors = {
 export default function LogoutButton() {
   const { logout } = useAuth();
   const { showAlert } = useAlert();
+  const queryClient = useQueryClient();
   const [isPressed, setIsPressed] = useState(false);
-
   const handlePressIn = () => {
     setIsPressed(true);
   };
@@ -39,10 +40,9 @@ export default function LogoutButton() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Show loading indicator or disable button here if needed
-              
-              // Call the logout function from AuthContext
-              // This will handle both server-side session destruction and client-side cleanup
+              queryClient.removeQueries({ queryKey: ['chats'] });
+              queryClient.removeQueries({ queryKey: ['chat'] });
+              queryClient.removeQueries({ queryKey: ['chatRequests'] });
               await logout();
             } catch (error) {
               console.error('Logout error:', error);

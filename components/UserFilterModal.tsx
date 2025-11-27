@@ -57,6 +57,8 @@ export interface FriendFilters {
   language?: string;
   country?: string;
   city?: string;
+  page?:number
+  limit?:number
 }
 
 interface FriendFilterModalProps {

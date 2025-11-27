@@ -19,7 +19,11 @@ import { theme, spacing, typography, borderRadius } from '@/components/theme';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import getDecodedToken from '@/utils/getMyData';
-import { getChatDetails, sendMessage } from '@/contexts/chat.api';
+import {
+  getChatDetails,
+  sendMessage,
+  markChatAsSeen,
+} from '@/contexts/chat.api';
 import useSocket from '@/hooks/useSocket';
 
 export default function ChatScreen() {
@@ -45,6 +49,23 @@ export default function ChatScreen() {
     refetchOnMount:'always'
   });
 
+  const markAsSeenMutation = useMutation({
+    mutationFn: (chatId: string) => markChatAsSeen(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['unreadChatCount'] });
+    },
+    onError: (error) => {
+      console.error('Failed to mark chat as seen:', error);
+    },
+  });
+
+  useEffect(() => {
+    if (id) {
+      markAsSeenMutation.mutate(id as string);
+    }
+  }, [id]);
 
   const {
     isConnected,
@@ -57,9 +78,12 @@ export default function ChatScreen() {
   // Handle new message received via socket
   const handleNewMessage = useCallback(
     (message: any) => {
+      if (id) {
+        markAsSeenMutation.mutate(id as string);
+      }
       refetch();
     },
-    [refetch]
+    [refetch, id, markAsSeenMutation]
   );
 
   // Set up message listener for this screen
@@ -91,14 +115,49 @@ export default function ChatScreen() {
 
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
-    onSuccess: (data, variables) => {
-      refetch();
+    onMutate: async (newMessage) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['chat', id] });
+
+      // Snapshot the previous value
+      const previousChatData = queryClient.getQueryData(['chat', id]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['chat', id], (old: any) => {
+        const optimisticMessage = {
+          id: `temp-${Date.now()}`,
+          content: newMessage.content,
+          senderId: myData?.userId,
+          chatId: id,
+          createdAt: new Date().toISOString(),
+          status: 'pending', // Add a pending status
+        };
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            messages: [optimisticMessage, ...old.data.messages],
+          },
+        };
+      });
+
       setNewMessage('');
-      setIsSending(false)
+      setIsSending(false);
+
+      // Return a context object with the snapshotted value
+      return { previousChatData };
     },
-    onError: (error: any) => {
-      setIsSending(false)
+    onError: (err, newMessage, context: any) => {
       console.error('Error sending message:', error);
+      // Rollback to the previous state on error
+      if (context?.previousChatData) {
+        queryClient.setQueryData(['chat', id], context.previousChatData);
+      }
+      setIsSending(false);
+    },
+    onSettled: () => {
+      // Always refetch after the mutation is settled (either success or error)
+      queryClient.invalidateQueries({ queryKey: ['chat', id] });
     },
   });
 
@@ -175,7 +234,8 @@ export default function ChatScreen() {
           {!isMyMessage && isGroupChat && (
             <Text style={styles.senderName}>{sender?.name}</Text>
           )}
-          <View
+          <View style={{ opacity: item.status === 'pending' ? 0.6 : 1 }}>
+            <View
             style={[
               styles.messageBubble,
               isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
@@ -192,6 +252,7 @@ export default function ChatScreen() {
                 minute: '2-digit',
               })}
             </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -245,9 +306,9 @@ export default function ChatScreen() {
                         <Text style={styles.headerTitle}>{chatName}</Text>
                       </TouchableOpacity>
                     )}
-                    <Text style={styles.headerSubtitle}>
+                   {isGroupChat && <Text style={styles.headerSubtitle}>
                       {isGroupChat ? 'Group chat' : ''}
-                    </Text>
+                    </Text>}
                   </View>
                 </View>
               </View>

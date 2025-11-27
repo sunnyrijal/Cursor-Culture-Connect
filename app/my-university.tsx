@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   },
   eventTab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.primary,
   },
   eventTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.textSecondary,
   },
