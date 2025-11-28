@@ -136,7 +136,7 @@ export default function ChatScreen() {
           ...old,
           data: {
             ...old.data,
-            messages: [optimisticMessage, ...old.data.messages],
+            messages: [...old.data.messages, optimisticMessage],
           },
         };
       });
@@ -204,6 +204,18 @@ export default function ChatScreen() {
   const chatImageUri = isGroupChat
     ? chat.group?.image
     : otherParticipant?.profilePicture;
+
+  const lastMessage = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+  const isMyLastMessage = lastMessage?.senderId === myData?.userId;
+  const isLastMessageSeen = !!lastMessage?.seenAt;
+  const seenAtTime =
+    isLastMessageSeen && lastMessage.seenAt
+      ? new Date(lastMessage.seenAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null;
+
 
   const renderMessage = ({ item }: { item: any }) => {
     const isMyMessage = item.senderId === myData?.userId;
@@ -337,6 +349,11 @@ export default function ChatScreen() {
               contentContainerStyle={styles.messageListContent}
               inverted
               showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                isMyLastMessage && isLastMessageSeen ? (
+                  <Text style={styles.seenReceipt}>Seen at {seenAtTime}</Text>
+                ) : null
+              }
             />
           </View>
 
@@ -709,5 +726,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  seenReceipt: {
+    alignSelf: 'flex-end',
+    fontSize: 12,
+    color: theme.gray500,
+    fontWeight: '500',
+    marginRight: spacing.sm,
   },
 });
