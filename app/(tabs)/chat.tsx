@@ -25,6 +25,7 @@ import {
   MailPlus,
   X,
   Trash2,
+  CheckCheck,
 } from 'lucide-react-native';
 import { CheckCircle2 } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
@@ -118,7 +119,7 @@ export default function ChatListScreen() {
     queryFn: () => getUserChats(),
   });
 
-  console.log(chatResponse)
+  console.log(chatResponse);
 
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
@@ -128,14 +129,13 @@ export default function ChatListScreen() {
   const users = usersResponse?.users || [];
 
   const deleteChatMutation = useMutation({
-    mutationFn: (chatId: string) => deleteChat(chatId), 
+    mutationFn: (chatId: string) => deleteChat(chatId),
     onSuccess: () => {
       console.log('✅ Chat Deleted');
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       queryClient.invalidateQueries({ queryKey: ['chatRequests'] });
     },
   });
-
 
   // Get socket connection and methods
   const {
@@ -153,9 +153,10 @@ export default function ChatListScreen() {
     return chatResponse.data
       .filter((chat: Chat) => chat.type === filter)
       .map((chat: Chat) => {
-        const lastMessage = chat.messages[0];
+        const lastMessage = chat.messages.length > 0 ? chat.messages[0] : null;
         const isMyMessage = lastMessage?.senderId === myData.userId;
-        const isSeenByOther = !!lastMessage?.seenAt;
+        // If there's no last message, consider it "seen". Otherwise, check the seenAt property.
+        const isSeenByOther = !lastMessage || !!lastMessage.seenAt;
 
         const messageContent = lastMessage?.content || 'No messages yet';
         const displayMessage =
@@ -194,7 +195,7 @@ export default function ChatListScreen() {
           const otherParticipant = chat.participants.find(
             (p) => p.userId !== myData.userId
           );
-          console.log(otherParticipant)
+          console.log(otherParticipant);
           return {
             id: chat.id,
             name: otherParticipant?.user.name || 'Unknown User',
@@ -220,7 +221,11 @@ export default function ChatListScreen() {
   // Create a stable dependency for the useEffect hook.
   // This string will only change if the list of chat IDs changes.
   const chatIdsString = useMemo(
-    () => processedChats.map((c:any) => c.id).sort().join(','),
+    () =>
+      processedChats
+        .map((c: any) => c.id)
+        .sort()
+        .join(','),
     [processedChats]
   );
 
@@ -358,7 +363,10 @@ export default function ChatListScreen() {
             style={[
               styles.unreadIndicator,
               {
-                backgroundColor: !item.isMyLastMessage && !item.isSeen ? theme.primary : 'transparent',
+                backgroundColor:
+                  !item.isMyLastMessage && !item.isSeen
+                    ? theme.primary
+                    : 'transparent',
               },
             ]}
           />
@@ -372,13 +380,13 @@ export default function ChatListScreen() {
           >
             <View style={styles.avatarContainer}>
               <Image
-                  source={{
-                    uri:
-                      item.image ||
-                      'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
-                  }}
-                  style={styles.userAvatar}
-                />
+                source={{
+                  uri:
+                    item.image ||
+                    'https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png',
+                }}
+                style={styles.userAvatar}
+              />
 
               {item.type === 'GROUP' ? (
                 <View style={styles.groupBadge}>
@@ -403,6 +411,14 @@ export default function ChatListScreen() {
                 {item.name}
               </Text>
               <View style={styles.bottomRow}>
+                {item.isMyLastMessage &&
+                  item.isSeen && ( // This is my message, and it has been seen
+                    <CheckCheck
+                      size={16}
+                      color={theme.primary}
+                      style={{ marginRight: 2 }}
+                    />
+                  )}
                 <Text
                   style={[
                     styles.lastMessage,
@@ -420,12 +436,9 @@ export default function ChatListScreen() {
                   {item.lastMessage}
                 </Text>
                 <View style={styles.bottomRight}>
-                  {item.isMyLastMessage && item.isSeen && ( // This is my message, and it has been seen
-                    <CheckCircle2 size={16} color={theme.primary} style={{marginRight: -8}}/>
-                  )}
-                  {item.isMyLastMessage && item.isSeen && ( // This is my message, and it has been seen
+                  {/* {item.isMyLastMessage && item.isSeen && ( // This is my message, and it has been seen
                     <Text style={styles.seenText}>Seen {item.seenAt}</Text>
-                  )}
+                  )} */}
                   <Text style={styles.chatTime}>{item.lastMessageTime}</Text>
                   {item.unreadCount > 0 && (
                     <View style={styles.unreadBadge}>
@@ -554,8 +567,8 @@ export default function ChatListScreen() {
   return (
     <AnimatedTabPage style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flex: 1 }}>
-    <View style={styles.container}>
-      {/* {!isConnected && (
+        <View style={styles.container}>
+          {/* {!isConnected && (
         <View style={[styles.offlineBanner, { paddingTop: insets.top }]}>
           <LinearGradient
             colors={['#FCA5A5', '#F87171']}
@@ -569,22 +582,22 @@ export default function ChatListScreen() {
         </View>
       )} */}
 
-      <View style={styles.safeArea}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <MessageCircle size={28} color={theme.primary} />
-              <Text style={styles.headerTitle}>Messages</Text>
-              {/* Connection status indicator dot */}
-              <View
-                style={[
-                  styles.connectionDot,
-                  { backgroundColor: isConnected ? theme.success : 'red' },
-                ]}
-              />
-            </View>
-            <View style={styles.headerRight}>
-              {/* <TouchableOpacity
+          <View style={styles.safeArea}>
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <View style={styles.headerLeft}>
+                  <MessageCircle size={28} color={theme.primary} />
+                  <Text style={styles.headerTitle}>Messages</Text>
+                  {/* Connection status indicator dot */}
+                  <View
+                    style={[
+                      styles.connectionDot,
+                      { backgroundColor: isConnected ? theme.success : 'red' },
+                    ]}
+                  />
+                </View>
+                <View style={styles.headerRight}>
+                  {/* <TouchableOpacity
                 onPress={() => setShowUserModal(true)}
                 style={styles.userPlusButton}
                 activeOpacity={0.7}
@@ -592,112 +605,143 @@ export default function ChatListScreen() {
                 <UserPlus size={24} color={theme.primary} />
               </TouchableOpacity> */}
 
-              <TouchableOpacity
-                onPress={() => router.push('/message-requests')}
-                style={styles.mailPlusButton}
-              >
-                <MailPlus size={24} color={theme.primary} />
-                {chatResponse?.chatRequestsCount > 0 && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>
-                      {chatResponse.chatRequestsCount}
+                  <TouchableOpacity
+                    onPress={() => router.push('/message-requests')}
+                    style={styles.mailPlusButton}
+                  >
+                    <MailPlus size={24} color={theme.primary} />
+                    {chatResponse?.chatRequestsCount > 0 && (
+                      <View style={styles.notificationBadge}>
+                        <Text style={styles.notificationBadgeText}>
+                          {chatResponse.chatRequestsCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.searchWrapper}>
+              <BlurView intensity={20} style={styles.searchBlur}>
+                <View
+                  style={[
+                    styles.searchContainer,
+                    searchFocused && styles.searchContainerFocused,
+                  ]}
+                >
+                  <Search
+                    size={20}
+                    color={searchFocused ? '#6366F1' : '#94A3B8'}
+                    style={styles.searchIcon}
+                  />
+                  <TextInput
+                    placeholder="Search conversations..."
+                    placeholderTextColor="#94A3B8"
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                      <Text style={styles.clearButton}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </BlurView>
+            </View>
+
+            <View style={styles.filterWrapper}>
+              <View style={styles.filterContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filter === 'DIRECT' && styles.activeFilter,
+                  ]}
+                  onPress={() => setFilter('DIRECT')}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={
+                      filter === 'DIRECT'
+                        ? styles.filterButtonGradient
+                        : styles.filterButtonContent
+                    }
+                  >
+                    <MessageCircle
+                      size={16}
+                      color={filter === 'DIRECT' ? '#FFFFFF' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.filterText,
+                        filter === 'DIRECT' && styles.activeFilterText,
+                      ]}
+                    >
+                      Direct
                     </Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.searchWrapper}>
-          <BlurView intensity={20} style={styles.searchBlur}>
-            <View
-              style={[
-                styles.searchContainer,
-                searchFocused && styles.searchContainerFocused,
-              ]}
-            >
-              <Search
-                size={20}
-                color={searchFocused ? '#6366F1' : '#94A3B8'}
-                style={styles.searchIcon}
-              />
-              <TextInput
-                placeholder="Search conversations..."
-                placeholderTextColor="#94A3B8"
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Text style={styles.clearButton}>✕</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filter === 'GROUP' && styles.activeFilter,
+                  ]}
+                  onPress={() => setFilter('GROUP')}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={
+                      filter === 'GROUP'
+                        ? styles.filterButtonGradient
+                        : styles.filterButtonContent
+                    }
+                  >
+                    <Users
+                      size={16}
+                      color={filter === 'GROUP' ? '#FFFFFF' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.filterText,
+                        filter == 'GROUP' && styles.activeFilterText,
+                      ]}
+                    >
+                      Groups
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.listContainer}>
+              {isLoading ? (
+                renderLoading()
+              ) : (
+                <FlatList
+                  data={filteredChats}
+                  renderItem={renderChatItem}
+                  keyExtractor={(item) => item.id}
+                  style={styles.list}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.listContent}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                    />
+                  }
+                />
               )}
             </View>
-          </BlurView>
-        </View>
-
-        <View style={styles.filterWrapper}>
-          <View style={styles.filterContainer}>
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                filter === 'DIRECT' && styles.activeFilter,
-              ]}
-              onPress={() => setFilter('DIRECT')}
-              activeOpacity={0.8}
-            > 
-              <View style={filter === 'DIRECT' ? styles.filterButtonGradient : styles.filterButtonContent}>
-                <MessageCircle size={16} color={filter === 'DIRECT' ? "#FFFFFF" : "#64748B"} />
-                <Text style={[styles.filterText, filter === 'DIRECT' && styles.activeFilterText]}>
-                  Direct
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                filter === 'GROUP' && styles.activeFilter,
-              ]}
-              onPress={() => setFilter('GROUP')}
-              activeOpacity={0.8}
-            > 
-              <View style={filter === 'GROUP' ? styles.filterButtonGradient : styles.filterButtonContent}>
-                  <Users size={16} color={filter === 'GROUP' ? "#FFFFFF" : "#64748B"}  />
-                  <Text style={[styles.filterText, filter =='GROUP' && styles.activeFilterText]}>
-                    Groups
-                  </Text>
-              </View>
-            </TouchableOpacity>
           </View>
-        </View>
 
-        <View style={styles.listContainer}>
-          {isLoading ? (
-            renderLoading()
-          ) : (
-            <FlatList
-              data={filteredChats}
-              renderItem={renderChatItem}
-              keyExtractor={(item) => item.id}
-              style={styles.list}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-            />
-          )}
+          {renderUserSelectionModal()}
         </View>
       </View>
-
-      {renderUserSelectionModal()}
-    </View>
-    </View>
     </AnimatedTabPage>
   );
 }
@@ -706,7 +750,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F3F7',
-    paddingBottom:80
+    paddingBottom: 80,
   },
   offlineBanner: {
     position: 'absolute',
