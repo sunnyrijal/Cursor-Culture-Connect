@@ -9,7 +9,6 @@
     "owner": "rijalboy1",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
@@ -19,7 +18,6 @@
         "backgroundColor": "#000000"
       }
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trivo.connect",
@@ -28,29 +26,32 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We use your photo library to let you upload a profile picture to your account.",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
       "notification": {
         "icon": "./assets/logo.png"
       }
     },
-
     "android": {
       "package": "com.trivo.connect",
       "googleServicesFile": "./google-services/google-services.json",
-      "permissions": ["NOTIFICATIONS", "VIBRATE", "WAKE_LOCK"],
+      "permissions": [
+        "NOTIFICATIONS",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
       "notification": {
         "icon": "./assets/logo.png",
         "color": "#FF231F7C"
       }
     },
-
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/logo.png"
     },
-
     "plugins": [
       "expo-router",
       "expo-font",
@@ -63,24 +64,38 @@
             "deploymentTarget": "15.1",
             "useFrameworks": "static",
             "extraPods": [
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "FirebaseCoreInternal", "modular_headers": true }
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "FirebaseCoreInternal",
+                "modular_headers": true
+              }
             ]
           }
         }
       ],
-
       "expo-secure-store",
       [
         "react-native-permissions",
-        { "iosPermissions": ["Notifications"] }
-      ]
+        {
+          "iosPermissions": [
+            "Notifications"
+          ]
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+      {
+        "androidAppId": "ca-app-pub-4289098365837690~2373905837",
+        "iosAppId": "ca-app-pub-4289098365837690~7227081496"
+      }
+    ]
     ],
-
     "experiments": {
       "typedRoutes": true
     },
-
     "extra": {
       "router": {},
       "eas": {
