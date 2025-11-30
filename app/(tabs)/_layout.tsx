@@ -17,8 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getUnreadChatCount } from '@/contexts/chat.api';
 import { useSocketListeners } from '@/hooks/useSocketListener';
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads"
+import { getAdUnitId, logAdMobConfig } from '@/utils/admobConfig';
 
 export default function TabLayout() {
+  useEffect(() => {
+    logAdMobConfig();
+  }, []);
   const [userId, setUserId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const TAB_BAR_HEIGHT = 60;
@@ -44,90 +49,114 @@ export default function TabLayout() {
   }
 
   return (
-    <SafeScreen>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-          tabBarHideOnKeyboard: true,
-          tabBarStyle: {
-            height: TAB_BAR_HEIGHT + insets.bottom,
-            paddingTop: 4,
-            paddingBottom: Math.max(insets.bottom, 8),
-            backgroundColor: '#F0F3F7',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: 'rgba(0,0,0,0.06)',
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-          },
-          tabBarItemStyle: { paddingVertical: 2 },
+    <>
+      <SafeScreen>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarShowLabel: false,
+            tabBarHideOnKeyboard: true,
+            tabBarStyle: {
+              height: TAB_BAR_HEIGHT + insets.bottom,
+              paddingTop: 4,
+              paddingBottom: Math.max(insets.bottom, 8),
+              backgroundColor: '#F0F3F7',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: 'rgba(0,0,0,0.06)',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+            },
+            tabBarItemStyle: { paddingVertical: 2 },
+          }}
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: 'Home',
+              tabBarIcon: ({ focused }) => (
+                <TabItem focused={focused} label="Home" Icon={HomeIcon} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="discover"
+            options={{
+              title: 'People',
+              tabBarIcon: ({ focused }) => (
+                <TabItem focused={focused} label="People" Icon={SearchIcon} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="groups"
+            options={{
+              title: 'Groups',
+              tabBarIcon: ({ focused }) => (
+                <TabItem focused={focused} label="Groups" Icon={UsersIcon} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="events"
+            options={{
+              title: 'Events',
+              tabBarIcon: ({ focused }) => (
+                <TabItem focused={focused} label="Events" Icon={CalendarIcon} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="chat"
+            options={{
+              title: 'Chat',
+              tabBarIcon: ({ focused }) => (
+                <TabItem
+                  focused={focused}
+                  label="Chat"
+                  Icon={MessageSquareIcon}
+                  badgeCount={unreadChatCount}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="activity-buddy"
+            options={{
+              title: 'Activity',
+              tabBarIcon: ({ focused }) => (
+                <TabItem focused={focused} label="Activity" Icon={ActivityIcon} />
+              ),
+            }}
+          />
+        </Tabs>
+      </SafeScreen>
+      <BannerAd
+        unitId={getAdUnitId('banner')}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        requestOptions={{
+          requestNonPersonalizedAdsOnly: true,
+          networkExtras: {
+            collapsible: "bottom"
+          }
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ focused }) => (
-              <TabItem focused={focused} label="Home" Icon={HomeIcon} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="discover"
-          options={{
-            title: 'People',
-            tabBarIcon: ({ focused }) => (
-              <TabItem focused={focused} label="People" Icon={SearchIcon} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="groups"
-          options={{
-            title: 'Groups',
-            tabBarIcon: ({ focused }) => (
-              <TabItem focused={focused} label="Groups" Icon={UsersIcon} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="events"
-          options={{
-            title: 'Events',
-            tabBarIcon: ({ focused }) => (
-              <TabItem focused={focused} label="Events" Icon={CalendarIcon} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="chat"
-          options={{
-            title: 'Chat',
-            tabBarIcon: ({ focused }) => (
-              <TabItem
-                focused={focused}
-                label="Chat"
-                Icon={MessageSquareIcon}
-                badgeCount={unreadChatCount}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="activity-buddy"
-          options={{
-            title: 'Activity',
-            tabBarIcon: ({ focused }) => (
-              <TabItem focused={focused} label="Activity" Icon={ActivityIcon} />
-            ),
-          }}
-        />
-      </Tabs>
-    </SafeScreen>
+        onAdFailedToLoad={(error) => {
+          console.warn(' Banner ad failed to load:', error);
+        }}
+        onAdLoaded={() => {
+          console.log('Banner ad loaded successfully');
+        }}
+        onAdOpened={() => {
+          console.log('Banner ad opened');
+        }}
+        onAdClosed={() => {
+          console.log('Banner ad closed');
+        }}
+      />
+    </>
   );
 }
 

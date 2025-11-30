@@ -7,15 +7,16 @@ import { StatusBar } from 'expo-status-bar';
 import getDecodedToken from '@/utils/getMyData';
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { API_BASE_URL } from '@/contexts/axiosConfig';
-import socketService from '@/utils/socketService'; 
-import { SocketProvider } from '@/hooks/useSocket'; 
-import 'react-native-reanimated'; 
+import socketService from '@/utils/socketService';
+import { SocketProvider } from '@/hooks/useSocket';
+import 'react-native-reanimated';
 import { AlertProvider } from '@/contexts/AlertContext';
 import * as Linking from 'expo-linking';
 import SafeScreen from '@/components/SafeScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { usePushNotifications } from '@/hooks/usePushNotification';
+import mobileAds from 'react-native-google-mobile-ads';
 
 // Create queryClient outside component to prevent recreation on re-renders
 const queryClient = new QueryClient({
@@ -57,17 +58,16 @@ function MainLayout() {
         console.error('Error fetching user data:', error);
       }
     };
-    
+
     fetchMyData();
 
     // Set the queryClient for the socket service singleton
     socketService.setQueryClient(queryClient);
 
-    // Uncomment if using AdMob
-    // mobileAds()
-    //   .initialize()
-    //   .then(adapterStatuses => console.log('✅ AdMob initialized', adapterStatuses))
-    //   .catch(err => console.log('❌ AdMob init error:', err));
+    mobileAds()
+      .initialize()
+      .then(adapterStatuses => console.log('✅ AdMob initialized', adapterStatuses))
+      .catch(err => console.log('❌ AdMob init error:', err));
   }, []);
 
   const linking = {
@@ -82,7 +82,7 @@ function MainLayout() {
       },
     },
   };
-    const { expoPushToken, notification } = usePushNotifications();
+  const { expoPushToken, notification } = usePushNotifications();
 
   return (
     <SocketProvider
